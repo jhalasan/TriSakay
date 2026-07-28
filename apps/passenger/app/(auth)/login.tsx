@@ -1,0 +1,90 @@
+import { useState } from 'react';
+import { useRouter } from 'expo-router';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Button, TextField } from '@trisakay/ui';
+import { useAuthStore } from '../../src/store/useAuthStore';
+import { isValidEmail, isValidPassword } from '../../src/utils/validation';
+import { wait } from '../../src/mocks/delay';
+import { styles } from './login.styles';
+
+export default function LoginScreen() {
+  const router = useRouter();
+  const login = useAuthStore((state) => state.login);
+
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [submitting, setSubmitting] = useState(false);
+
+  async function handleLogin() {
+    const nextErrors: typeof errors = {};
+    if (!isValidEmail(email)) nextErrors.email = 'Enter a valid email address.';
+    if (!isValidPassword(password)) nextErrors.password = 'Password must be at least 6 characters.';
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) return;
+
+    setSubmitting(true);
+    await wait(600);
+    setSubmitting(false);
+    login(email);
+  }
+
+  return (
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <View style={styles.mark}>
+          <Text style={styles.markText}>TS</Text>
+        </View>
+        <Text style={styles.title}>Welcome back</Text>
+        <Text style={styles.subtitle}>Log in to book your next ride.</Text>
+
+        <View style={styles.fields}>
+          <TextField
+            label="Email"
+            placeholder="you@example.com"
+            value={email}
+            onChangeText={setEmail}
+            error={errors.email}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            autoComplete="email"
+          />
+          <TextField
+            label="Password"
+            placeholder="••••••••"
+            value={password}
+            onChangeText={setPassword}
+            error={errors.password}
+            secureTextEntry
+            autoComplete="password"
+          />
+        </View>
+
+        <View style={styles.forgotLink}>
+          <Text
+            style={styles.forgotLinkText}
+            onPress={() => Alert.alert('Forgot password', 'Password recovery is not available in this preview.')}
+          >
+            Forgot password?
+          </Text>
+        </View>
+
+        <Button label="Log in" onPress={handleLogin} loading={submitting} fullWidth />
+
+        <View style={styles.dividerRow}>
+          <View style={styles.dividerLine} />
+          <Text style={styles.dividerText}>OR</Text>
+          <View style={styles.dividerLine} />
+        </View>
+
+        <Button
+          label="Create account"
+          variant="outline"
+          tone="neutral"
+          fullWidth
+          onPress={() => router.push('/(auth)/register')}
+        />
+      </ScrollView>
+    </KeyboardAvoidingView>
+  );
+}

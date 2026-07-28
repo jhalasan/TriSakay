@@ -1,6 +1,2 @@
-export function PrimaryCard({ title, subtitle }: { title: string; subtitle: string }) {
-  return {
-    title,
-    subtitle,
-  };
-}
+export * from './theme';
+export * from './components';

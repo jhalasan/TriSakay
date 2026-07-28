@@ -1,3 +1,3 @@
-export function formatCurrency(value: number) {
-  return `$${value.toFixed(2)}`;
+export function formatCurrency(value: number, symbol = '₱') {
+  return `${symbol}${value.toFixed(2)}`;
 }
