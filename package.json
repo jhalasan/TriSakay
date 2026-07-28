@@ -1,22 +1,23 @@
 {
-  "name": "trisakay_app",
-  "version": "1.0.0",
-  "main": "index.ts",
+  "name": "trisakay-monorepo",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
   "scripts": {
-    "start": "expo start",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web"
-  },
-  "dependencies": {
-    "expo": "~54.0.34",
-    "expo-status-bar": "~3.0.9",
-    "react": "19.1.0",
-    "react-native": "0.81.5"
+    "start:passenger": "npm --workspace apps/passenger run start",
+    "start:driver": "npm --workspace apps/driver run start",
+    "dev:admin": "npm --workspace apps/admin run dev",
+    "build:admin": "npm --workspace apps/admin run build",
+    "test:passenger": "npm --workspace apps/passenger run test",
+    "test:driver": "npm --workspace apps/driver run test",
+    "test:admin": "npm --workspace apps/admin run test",
+    "typecheck": "tsc -b"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
+    "@types/react-dom": "^19.1.0",
     "typescript": "~5.9.2"
-  },
-  "private": true
+  }
 }
