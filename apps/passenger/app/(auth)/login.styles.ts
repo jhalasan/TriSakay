@@ -60,4 +60,9 @@ export const styles = StyleSheet.create({
     ...typography.label,
     color: colors.inkSoft, // sits on bg, needs 4.5:1 — inkFaint only clears it on panel
   },
+  authError: {
+    ...typography.caption,
+    color: colors.danger,
+    marginBottom: spacing.md,
+  },
 });

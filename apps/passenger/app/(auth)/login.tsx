@@ -4,12 +4,13 @@ import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'r
 import { Button, TextField } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isValidEmail, isValidPassword } from '../../src/utils/validation';
-import { wait } from '../../src/mocks/delay';
 import { styles } from './login.styles';
 
 export default function LoginScreen() {
   const router = useRouter();
   const login = useAuthStore((state) => state.login);
+  const authError = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -23,10 +24,10 @@ export default function LoginScreen() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    clearError();
     setSubmitting(true);
-    await wait(600);
+    await login(email, password);
     setSubmitting(false);
-    login(email);
   }
 
   return (
@@ -59,6 +60,8 @@ export default function LoginScreen() {
             autoComplete="password"
           />
         </View>
+
+        {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
         <View style={styles.forgotLink}>
           <Text

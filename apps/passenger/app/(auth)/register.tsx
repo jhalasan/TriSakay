@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { Button, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/validation';
-import { wait } from '../../src/mocks/delay';
 import { styles } from './register.styles';
 
 interface FormState {
@@ -16,7 +16,10 @@ interface FormState {
 }
 
 export default function RegisterScreen() {
+  const router = useRouter();
   const register = useAuthStore((state) => state.register);
+  const authError = useAuthStore((state) => state.error);
+  const clearError = useAuthStore((state) => state.clearError);
 
   const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '', password: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
@@ -35,10 +38,18 @@ export default function RegisterScreen() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
+    clearError();
     setSubmitting(true);
-    await wait(600);
+    const outcome = await register(form.name, form.email, form.phone, form.password);
     setSubmitting(false);
-    register(form.name, form.email);
+
+    if (outcome === 'check_email') {
+      Alert.alert(
+        'Check your email',
+        `We sent a confirmation link to ${form.email}. Confirm it, then log in.`,
+        [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
+      );
+    }
   }
 
   return (
@@ -87,6 +98,8 @@ export default function RegisterScreen() {
             secureTextEntry
           />
         </View>
+
+        {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
         <Button label="Register" onPress={handleRegister} loading={submitting} fullWidth />
 

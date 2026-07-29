@@ -29,6 +29,10 @@ export const styles = StyleSheet.create({
   fields: {
     gap: spacing.md,
   },
+  authError: {
+    ...typography.caption,
+    color: colors.danger,
+  },
   legalText: {
     ...typography.caption,
     color: colors.inkSoft,

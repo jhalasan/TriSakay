@@ -6,24 +6,35 @@ import { useAuthStore } from '../src/store/useAuthStore';
 import { wait } from '../src/mocks/delay';
 import { styles } from './splash.styles';
 
+function waitUntilHydrated(): Promise<void> {
+  if (!useAuthStore.getState().isHydrating) return Promise.resolve();
+  return new Promise((resolve) => {
+    const unsubscribe = useAuthStore.subscribe((state) => {
+      if (!state.isHydrating) {
+        unsubscribe();
+        resolve();
+      }
+    });
+  });
+}
+
 export default function SplashScreen() {
   const router = useRouter();
-  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      await wait(1400);
+      await Promise.all([wait(1400), waitUntilHydrated()]);
       if (cancelled) return;
+      const isAuthenticated = useAuthStore.getState().isAuthenticated;
       router.replace(isAuthenticated ? '/(tabs)/home' : '/(auth)/login');
     })();
 
     return () => {
       cancelled = true;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [router]);
 
   return (
     <View style={styles.container}>

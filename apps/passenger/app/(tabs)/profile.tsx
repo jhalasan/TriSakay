@@ -12,6 +12,19 @@ export default function ProfileScreen() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name ?? '');
+  const [saving, setSaving] = useState(false);
+
+  async function handleToggleEdit() {
+    if (!isEditing) {
+      setIsEditing(true);
+      return;
+    }
+    setSaving(true);
+    const { updateProfile } = await import('@trisakay/services');
+    await updateProfile({ fullName: name });
+    setSaving(false);
+    setIsEditing(false);
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -23,7 +36,8 @@ export default function ProfileScreen() {
             size="sm"
             variant="outline"
             tone="neutral"
-            onPress={() => setIsEditing((prev) => !prev)}
+            loading={saving}
+            onPress={handleToggleEdit}
           />
         </View>
 
