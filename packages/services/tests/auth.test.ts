@@ -1,0 +1,145 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
+import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
+import {
+  getCurrentUserProfile,
+  onAuthStateChange,
+  signIn,
+  signOut,
+  signUp,
+  updateProfile,
+} from '../src/auth/index.ts';
+
+test('signUp sends full name, phone, and default role as signup metadata', async () => {
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signUp: async (args) => {
+        capturedArgs = args;
+        return { data: { session: null }, error: null };
+      },
+    })
+  );
+
+  await signUp({
+    fullName: 'Juan Dela Cruz',
+    email: 'juan@example.com',
+    phone: '09171234567',
+    password: 'secret1',
+  });
+
+  assert.equal(capturedArgs.email, 'juan@example.com');
+  assert.equal(capturedArgs.password, 'secret1');
+  assert.deepEqual(capturedArgs.options.data, {
+    full_name: 'Juan Dela Cruz',
+    phone: '09171234567',
+    role: 'passenger',
+  });
+});
+
+test('signUp returns the error message when Supabase rejects the signup', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signUp: async () => ({ data: { session: null }, error: { message: 'Email already registered' } }),
+    })
+  );
+
+  const result = await signUp({ fullName: 'A', email: 'dup@example.com', phone: '0917', password: 'secret1' });
+  assert.equal(result.error, 'Email already registered');
+  assert.equal(result.session, null);
+});
+
+test('signIn returns a session on success', async () => {
+  const fakeSession = { access_token: 'abc', user: { id: 'u1' } };
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signInWithPassword: async () => ({ data: { session: fakeSession }, error: null }),
+    })
+  );
+
+  const result = await signIn({ email: 'juan@example.com', password: 'secret1' });
+  assert.deepEqual(result.session, fakeSession);
+  assert.equal(result.error, null);
+});
+
+test('signOut calls the underlying auth.signOut', async () => {
+  let called = false;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signOut: async () => {
+        called = true;
+      },
+    })
+  );
+  await signOut();
+  assert.equal(called, true);
+});
+
+test('getCurrentUserProfile returns null when there is no active session', async () => {
+  __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
+  const profile = await getCurrentUserProfile();
+  assert.equal(profile, null);
+});
+
+test('getCurrentUserProfile returns the public.users row for the active session', async () => {
+  const fakeSession = { user: { id: 'u1' } };
+  const userRow = {
+    id: 'u1',
+    full_name: 'Juan',
+    email: 'juan@example.com',
+    contact_no: '0917',
+    role: 'passenger',
+  };
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: fakeSession } }),
+      userRow,
+    })
+  );
+  const profile = await getCurrentUserProfile();
+  assert.deepEqual(profile, userRow);
+});
+
+test('updateProfile updates full_name and reports no error on success', async () => {
+  const fakeSession = { user: { id: 'u1' } };
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({ getSession: async () => ({ data: { session: fakeSession } }), updateError: null })
+  );
+  const result = await updateProfile({ fullName: 'New Name' });
+  assert.equal(result.error, null);
+});
+
+test('updateProfile returns an error when there is no active session', async () => {
+  __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
+  const result = await updateProfile({ fullName: 'New Name' });
+  assert.equal(result.error, 'Not signed in');
+});
+
+test('onAuthStateChange forwards session changes and returns an unsubscribe function', () => {
+  let receivedSession: unknown = 'not-called';
+  let unsubscribed = false;
+  __setSupabaseClientForTests({
+    auth: {
+      onAuthStateChange: (cb: (event: string, session: unknown) => void) => {
+        cb('SIGNED_IN', { access_token: 'xyz' });
+        return {
+          data: {
+            subscription: {
+              unsubscribe: () => {
+                unsubscribed = true;
+              },
+            },
+          },
+        };
+      },
+    },
+  } as any);
+
+  const unsubscribe = onAuthStateChange((session) => {
+    receivedSession = session;
+  });
+  assert.deepEqual(receivedSession, { access_token: 'xyz' });
+  unsubscribe();
+  assert.equal(unsubscribed, true);
+});
