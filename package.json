@@ -14,6 +14,7 @@
     "test:passenger": "npm --workspace apps/passenger run test",
     "test:driver": "npm --workspace apps/driver run test",
     "test:admin": "npm --workspace apps/admin run test",
+    "test:services": "npm --workspace packages/services run test",
     "typecheck": "tsc -b"
   },
   "devDependencies": {

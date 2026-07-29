@@ -16,6 +16,7 @@ config.resolver.nodeModulesPaths = [
   path.resolve(workspaceRoot, 'node_modules'),
 ];
 config.resolver.extraNodeModules = {
+  '@trisakay/services': path.resolve(workspaceRoot, 'packages/services/src'),
   '@trisakay/shared': path.resolve(workspaceRoot, 'packages/shared/src'),
   '@trisakay/ui': path.resolve(workspaceRoot, 'packages/ui/src'),
   '@trisakay/utils': path.resolve(workspaceRoot, 'packages/utils/src'),

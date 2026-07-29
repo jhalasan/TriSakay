@@ -3,6 +3,9 @@ import * as authService from '@trisakay/services';
 import type { PublicUser } from '@trisakay/services';
 import type { User } from '../types/user';
 
+/** `Session | null`, derived from the service so this app needn't depend on supabase-js directly. */
+type AuthSession = Awaited<ReturnType<typeof authService.getSession>>;
+
 function toAppUser(profile: PublicUser): User {
   return {
     id: profile.id,
@@ -24,25 +27,46 @@ interface AuthState {
 }
 
 export const useAuthStore = create<AuthState>()((set) => {
-  authService.onAuthStateChange((session) => {
-    if (!session) {
-      set({ user: null, isAuthenticated: false });
-      return;
-    }
-    authService.getCurrentUserProfile().then((profile) => {
-      set({ user: profile ? toAppUser(profile) : null, isAuthenticated: true });
-    });
-  });
+  // Staleness guard for async profile fetches. Every auth event (the initial
+  // hydration and each onAuthStateChange callback) synchronously claims a new
+  // epoch; a profile fetch applies its result only while the epoch it captured
+  // is still current. Without this, a fetch started by e.g. TOKEN_REFRESHED
+  // could resolve after a later SIGNED_OUT and re-authenticate a user who has
+  // already logged out.
+  let authEpoch = 0;
 
-  authService.getSession().then((session) => {
+  /**
+   * Applies one observed auth event. Every path — including failure — clears
+   * `isHydrating`, so a rejected promise can never strand the splash screen
+   * (which waits on hydration with no timeout).
+   */
+  function applyAuthEvent(session: AuthSession): void {
+    const epoch = ++authEpoch;
+
     if (!session) {
-      set({ isHydrating: false });
+      set({ user: null, isAuthenticated: false, isHydrating: false });
       return;
     }
-    authService.getCurrentUserProfile().then((profile) => {
-      set({ user: profile ? toAppUser(profile) : null, isAuthenticated: true, isHydrating: false });
-    });
-  });
+
+    authService
+      .getCurrentUserProfile()
+      // A failed profile fetch does not invalidate the session, so stay
+      // authenticated with a null profile rather than signing the user out.
+      .catch(() => null)
+      .then((profile) => {
+        if (epoch !== authEpoch) return; // superseded by a newer auth event
+        set({ user: profile ? toAppUser(profile) : null, isAuthenticated: true, isHydrating: false });
+      });
+  }
+
+  authService.onAuthStateChange(applyAuthEvent);
+
+  authService
+    .getSession()
+    // Session unreadable: treat as signed out rather than leaving the app
+    // stuck on the splash screen forever.
+    .catch(() => null)
+    .then(applyAuthEvent);
 
   return {
     user: null,

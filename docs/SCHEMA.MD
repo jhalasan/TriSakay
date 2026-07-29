@@ -471,12 +471,13 @@ create trigger trg_complaints_touch     before update on public.complaints      
 create or replace function public.handle_new_auth_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.users (id, full_name, email, role)
+  insert into public.users (id, full_name, email, role, contact_no)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', 'Unnamed User'),
     new.email,
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger')
+    coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger'),
+    new.raw_user_meta_data->>'phone'
   );
   return new;
 end $$;
