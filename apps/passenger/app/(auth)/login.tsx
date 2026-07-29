@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { Button, TextField } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isValidEmail, isValidPassword } from '../../src/utils/validation';
@@ -33,9 +33,12 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-        <View style={styles.mark}>
-          <Text style={styles.markText}>TS</Text>
-        </View>
+        <Image
+          source={require('../../../../assets/brand/trisakay-mark.png')}
+          style={styles.mark}
+          resizeMode="contain"
+          accessibilityLabel="TriSakay"
+        />
         <Text style={styles.title}>Welcome back</Text>
         <Text style={styles.subtitle}>Log in to book your next ride.</Text>
 

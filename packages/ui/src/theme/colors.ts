@@ -3,6 +3,11 @@
  * boundaries ≥3:1. The accents are deliberately deep rather than pastel —
  * this app is used outdoors in daylight, and the earlier pale blue failed
  * white-on-blue button labels at 2.63:1.
+ *
+ * accentBlue is the brand mark's navy exactly. accentGreen is the brand
+ * mark's green darkened ~25% (same hue/saturation) — the logo's raw green
+ * only clears 3.35:1 with white, below the 4.5:1 floor this file holds
+ * everywhere else.
  */
 export const colors = {
   bg: '#F6F7F9',
@@ -19,13 +24,13 @@ export const colors = {
   fill: '#EDF1F4',
   white: '#FFFFFF',
 
-  accentBlue: '#0B6BAF', // 5.62:1 with white — primary actions
-  accentBluePressed: '#095A94',
-  accentBlueSoft: '#E3EFFA',
+  accentBlue: '#002E60', // 13.46:1 with white — primary actions, brand navy
+  accentBluePressed: '#002043',
+  accentBlueSoft: '#E3EDF7',
 
-  accentGreen: '#157A4B', // 5.36:1 with white — positive/complete status only
-  accentGreenPressed: '#10633D',
-  accentGreenSoft: '#E1F1E8',
+  accentGreen: '#477434', // 5.50:1 with white — positive/complete status only, brand green
+  accentGreenPressed: '#3B602B',
+  accentGreenSoft: '#E9F7E3',
 
   danger: '#B3261E', // 6.54:1 with white
   dangerPressed: '#931E17',

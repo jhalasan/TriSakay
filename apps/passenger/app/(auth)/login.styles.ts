@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   scrollContent: {
@@ -10,16 +10,8 @@ export const styles = StyleSheet.create({
   },
   mark: {
     width: 64,
-    height: 64,
-    borderRadius: radius.lg,
-    backgroundColor: colors.accentBlue,
-    alignItems: 'center',
-    justifyContent: 'center',
+    height: 76,
     marginBottom: spacing.xl,
-  },
-  markText: {
-    ...typography.h2,
-    color: colors.white,
   },
   title: {
     ...typography.display,

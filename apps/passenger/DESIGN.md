@@ -19,12 +19,12 @@ The accents are deliberately deep rather than pastel. This app is used **outdoor
 | `lineStrong` | `#838B91` | **Input/control boundaries** | 3.46:1 on panel |
 | `lineSoft` | `#EBEFF2` | Hairline separators | — |
 | `fill` | `#EDF1F4` | Neutral fill, inactive chips | — |
-| `accentBlue` ("Sky") | `#0B6BAF` | Primary actions, active tab, links | 5.62:1 with white |
-| `accentBluePressed` | `#095A94` | Pressed state | 7.24:1 with white |
-| `accentBlueSoft` | `#E3EFFA` | Badge + fare-surface backgrounds | 6.20:1 with pressed text |
-| `accentGreen` ("Leaf") | `#157A4B` | Positive status only: Done, Paid, pickup | 5.36:1 with white |
-| `accentGreenPressed` | `#10633D` | Pressed state | — |
-| `accentGreenSoft` | `#E1F1E8` | Green badge backgrounds | 6.24:1 with pressed text |
+| `accentBlue` ("Navy") | `#002E60` | Primary actions, active tab, links — brand mark navy | 13.46:1 with white |
+| `accentBluePressed` | `#002043` | Pressed state | 16.31:1 with white |
+| `accentBlueSoft` | `#E3EDF7` | Badge + fare-surface backgrounds | 13.76:1 with pressed text |
+| `accentGreen` ("Leaf") | `#477434` | Positive status only: Done, Paid, pickup — brand mark green, darkened ~25% off the raw logo swatch to clear 4.5:1 (raw logo green only measured 3.35:1) | 5.50:1 with white |
+| `accentGreenPressed` | `#3B602B` | Pressed state | 7.26:1 with white |
+| `accentGreenSoft` | `#E9F7E3` | Green badge backgrounds | 6.52:1 with pressed text |
 | `danger` | `#B3261E` | Destructive actions, validation | 6.54:1 with white |
 
 Two rules that matter more than the hex values:

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Text, View } from 'react-native';
+import { ActivityIndicator, Image, Text, View } from 'react-native';
 import { colors } from '@trisakay/ui';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { wait } from '../src/mocks/delay';
@@ -38,12 +38,14 @@ export default function SplashScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.mark}>
-        <Text style={styles.markText}>TS</Text>
-      </View>
-      <Text style={styles.title}>TriSakay</Text>
+      <Image
+        source={require('../../../assets/brand/trisakay-lockup.png')}
+        style={styles.logo}
+        resizeMode="contain"
+        accessibilityLabel="TriSakay"
+      />
       <Text style={styles.subtitle}>Book a tricycle, hassle-free</Text>
-      <ActivityIndicator color={colors.white} style={styles.loader} />
+      <ActivityIndicator color={colors.accentBlue} style={styles.loader} />
     </View>
   );
 }
