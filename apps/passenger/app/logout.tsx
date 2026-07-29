@@ -8,8 +8,8 @@ export default function LogoutScreen() {
   const logout = useAuthStore((state) => state.logout);
   const resetBooking = useBookingStore((state) => state.reset);
 
-  function handleConfirm() {
-    logout();
+  async function handleConfirm() {
+    await logout();
     resetBooking();
     router.dismiss();
   }

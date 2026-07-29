@@ -18,7 +18,7 @@ interface AuthState {
   isHydrating: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, phone: string, password: string) => Promise<'signed_in' | 'check_email'>;
+  register: (name: string, email: string, phone: string, password: string) => Promise<'signed_in' | 'check_email' | 'error'>;
   logout: () => Promise<void>;
   clearError: () => void;
 }
@@ -61,7 +61,7 @@ export const useAuthStore = create<AuthState>()((set) => {
       const { session, error } = await authService.signUp({ fullName: name, email, phone, password });
       if (error) {
         set({ error });
-        return 'check_email';
+        return 'error';
       }
       return session ? 'signed_in' : 'check_email';
     },

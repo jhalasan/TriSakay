@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Button, Card, ListRow, TextField } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -21,8 +21,12 @@ export default function ProfileScreen() {
     }
     setSaving(true);
     const { updateProfile } = await import('@trisakay/services');
-    await updateProfile({ fullName: name });
+    const { error } = await updateProfile({ fullName: name });
     setSaving(false);
+    if (error) {
+      Alert.alert('Could not save', error);
+      return;
+    }
     setIsEditing(false);
   }
 
