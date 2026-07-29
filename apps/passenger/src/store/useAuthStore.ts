@@ -1,3 +1,4 @@
+import '../lib/supabase';
 import { create } from 'zustand';
 import * as authService from '@trisakay/services';
 import type { PublicUser } from '@trisakay/services';
