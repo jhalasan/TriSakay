@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
-import { Button, MapPlaceholder, colors } from '@trisakay/ui';
+import { Button, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { pickRandomDriver } from '../../src/mocks/drivers';
@@ -11,6 +11,7 @@ import { styles } from './finding-driver.styles';
 
 export default function FindingDriverScreen() {
   const router = useRouter();
+  const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
   const setDriver = useBookingStore((state) => state.setDriver);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
@@ -41,7 +42,15 @@ export default function FindingDriverScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.mapFill}>
-        <MapPlaceholder variant="plain" height="100%" />
+        <OsmMap
+          variant="plain"
+          height="100%"
+          latitude={pickup?.latitude}
+          longitude={pickup?.longitude}
+          zoom={16}
+          // Full-screen with only a sheet below it — no scroller to compete with.
+          interactive
+        />
         <View style={styles.beaconWrap} pointerEvents="none">
           <PulseBeacon size={80}>
             <Ionicons name="search" size={32} color={colors.white} />

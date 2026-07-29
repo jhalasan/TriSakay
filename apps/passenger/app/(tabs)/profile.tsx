@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Button, Card, ListRow, StarRating, TextField } from '@trisakay/ui';
+import { Avatar, Button, Card, ListRow, TextField } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { styles } from './profile.styles';
 
@@ -36,7 +36,6 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.name}>{name || 'Rider'}</Text>
           )}
-          <StarRating value={5} size={16} />
         </View>
 
         <Card style={styles.detailsCard}>

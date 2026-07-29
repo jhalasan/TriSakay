@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
-import { Avatar, Badge, MapPlaceholder } from '@trisakay/ui';
+import { Avatar, Badge, OsmMap } from '@trisakay/ui';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { randomBetween, wait } from '../../src/mocks/delay';
 import { styles } from './trip-in-progress.styles';
@@ -9,6 +9,7 @@ import { styles } from './trip-in-progress.styles';
 export default function TripInProgressScreen() {
   const router = useRouter();
   const driver = useBookingStore((state) => state.driver);
+  const pickup = useBookingStore((state) => state.pickup);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
 
   useEffect(() => {
@@ -29,7 +30,22 @@ export default function TripInProgressScreen() {
 
   return (
     <View style={styles.container}>
-      <MapPlaceholder variant="route" caption="Map · live route" height="100%" />
+      <OsmMap
+        variant="route"
+        caption="Map · live route"
+        height="100%"
+        latitude={pickup?.latitude}
+        longitude={pickup?.longitude}
+        zoom={16}
+        interactive
+        // driverStrip sits at bottom: 24 across nearly the full width, so keep
+        // the OSM attribution clear of it.
+        attributionLeft
+        // Height of that strip plus an 8px gap: spacing.xl (24) bottom offset +
+        // spacing.md padding twice (24) + the text slot, which is taller than the
+        // 40pt avatar at bodyStrong 24 + gap 2 + caption 18 = 44.
+        bottomInset={100}
+      />
 
       <View style={styles.statusBadgeWrap}>
         <Badge label="On trip" tone="blue" dot />
@@ -40,9 +56,9 @@ export default function TripInProgressScreen() {
           <Avatar name={driver.name} size="md" />
           <View style={styles.textSlot}>
             <Text style={styles.name} numberOfLines={1}>
-              {driver.name}
+              {driver.name || 'Driver assigned'}
             </Text>
-            <Text style={styles.plate}>{driver.plateNumber}</Text>
+            <Text style={styles.plate}>{driver.plateNumber || '—'}</Text>
           </View>
         </View>
       )}

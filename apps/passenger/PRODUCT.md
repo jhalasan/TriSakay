@@ -26,11 +26,15 @@ Primarily outdoor, on-the-go use; one-handed thumb reach on booking screens; bri
 
 ## Capabilities and Constraints
 
-- **No backend integration in this build.** Auth, ride booking, matching, and payment are all local mock data/state (Zustand). Wiring a real backend (Supabase vs. PocketBase is currently undecided in this repo) is an explicit, separate follow-up task.
+- **No backend integration, and no sample content either.** Auth, booking, matching, and payment are local state (Zustand), and every data module now starts empty — no invented drivers, destinations, ride history, notifications or fares. Screens render their empty states, and values the backend owns show a placeholder rather than a plausible-looking default. Wiring a real backend (Supabase vs. PocketBase is currently undecided in this repo) is an explicit, separate follow-up task; `src/mocks/` is kept as the named seam to wire it into.
+- **The flows still run end to end** so the UI stays reviewable: login accepts what you type, and the ride sequence advances through to Payment and Rate driver with an unpopulated driver record.
 - **No in-app call or chat.** Product constraint carried directly from the wireframe spec, not a gap: once matched, passenger and driver coordinate in person.
-- **No real map yet.** Screens use a designed `MapPlaceholder` component; this build is meant to be swapped for a live OpenStreetMap-backed map in a later, separate session — its interface is already shaped for that swap.
+- **Real OpenStreetMap basemap.** All six map surfaces render live OSM tiles via Leaflet inside a WebView, centred on General Santos City. Markers, route lines, driver movement, and device GPS are a deliberate next step — the current maps show the correct area but do not yet plot the trip. `MapPlaceholder` is retained as the loading/offline skeleton.
+- **All six maps pan and zoom** — drag, pinch, and double-tap, with a recenter button that appears once the rider has moved off the home view. Home pins its map above a scrolling list so the map gesture and the page gesture never compete.
+- **Tiles come from OSMF's free community service**, which permits development and low-volume use only. Production requires a commercial or self-hosted tile provider. Interactive maps are bounded to roughly 27 km around the city with a zoom floor, so panning cannot turn into bulk tile fetching.
 - Portrait-only, light-mode only (matches `app.json`).
 - Currency is Philippine peso (₱); copy is English.
+- **Service area is General Santos City** (centre 6.116243, 125.171738). That centre is the map's fallback when no pickup has been resolved; it is a service-area constant, not sample data.
 
 ## Brand Commitments
 

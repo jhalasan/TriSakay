@@ -6,6 +6,7 @@ export * from './ConfirmModal';
 export * from './EmptyState';
 export * from './ListRow';
 export * from './MapPlaceholder';
+export * from './OsmMap';
 export * from './SegmentedControl';
 export * from './Spinner';
 export * from './StarRating';

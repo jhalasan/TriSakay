@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { Animated, Text, View } from 'react-native';
-import { Button, EmptyState, MapPlaceholder, motion } from '@trisakay/ui';
+import { Button, EmptyState, OsmMap, motion } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { randomBetween, wait } from '../../src/mocks/delay';
@@ -10,6 +10,7 @@ import { styles } from './driver-found.styles';
 export default function DriverFoundScreen() {
   const router = useRouter();
   const driver = useBookingStore((state) => state.driver);
+  const pickup = useBookingStore((state) => state.pickup);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const reset = useBookingStore((state) => state.reset);
 
@@ -60,7 +61,15 @@ export default function DriverFoundScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.mapWrap}>
-        <MapPlaceholder variant="route" caption="Map · driver en route" height="100%" />
+        <OsmMap
+          variant="route"
+          caption="Map · driver en route"
+          height="100%"
+          latitude={pickup?.latitude}
+          longitude={pickup?.longitude}
+          zoom={15}
+          interactive
+        />
       </View>
 
       <Animated.View

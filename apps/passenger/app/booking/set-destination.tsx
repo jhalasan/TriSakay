@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { FlatList, Pressable, Text, View } from 'react-native';
-import { Button, ListRow, MapPlaceholder, TextField, colors } from '@trisakay/ui';
+import { Button, EmptyState, ListRow, OsmMap, TextField, colors } from '@trisakay/ui';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { searchDestinations } from '../../src/mocks/destinations';
 import type { LocationPoint } from '../../src/types/booking';
@@ -45,7 +45,17 @@ export default function SetDestinationScreen() {
       </View>
 
       <View style={styles.mapWrap}>
-        <MapPlaceholder variant="pin" caption="Map · drop pin" height={160} />
+        <OsmMap
+          variant="pin"
+          caption="Map · drop pin"
+          height={160}
+          latitude={selected?.latitude}
+          longitude={selected?.longitude}
+          zoom={selected ? 16 : 14}
+          // Sits between the search field and the results list, in no scroller
+          // of its own — nothing to compete with for the drag.
+          interactive
+        />
       </View>
 
       <Text style={styles.resultsLabel}>Search results</Text>
@@ -69,6 +79,16 @@ export default function SetDestinationScreen() {
             onPress={() => setSelected(item)}
           />
         )}
+        ListEmptyComponent={
+          <EmptyState
+            title={query ? 'No matches' : 'No destinations yet'}
+            message={
+              query
+                ? 'Try a different search term.'
+                : 'Places will appear here once the service is connected.'
+            }
+          />
+        }
       />
 
       <View style={styles.footer}>

@@ -5,8 +5,12 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  /** Explicit flex: a ScrollView between fixed siblings otherwise sizes to content. */
+  scrollArea: {
+    flex: 1,
+  },
   scrollContent: {
-    paddingBottom: spacing.xxl,
+    paddingBottom: spacing.lg,
   },
   topBar: {
     flexDirection: 'row',
@@ -98,5 +102,7 @@ export const styles = StyleSheet.create({
   },
   ctaWrap: {
     paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
 });

@@ -1,12 +1,18 @@
 import type { Driver } from '../types/driver';
 
-export const mockDrivers: Driver[] = [
-  { id: 'd1', name: 'Ramon Dela Cruz', plateNumber: 'ABC-1234', rating: 4.8, etaMinutes: 3 },
-  { id: 'd2', name: 'Ernie Villanueva', plateNumber: 'XYZ-4521', rating: 4.6, etaMinutes: 5 },
-  { id: 'd3', name: 'Boyet Santos', plateNumber: 'TRK-8890', rating: 4.9, etaMinutes: 2 },
-  { id: 'd4', name: 'Nonoy Ramirez', plateNumber: 'PGN-3317', rating: 4.5, etaMinutes: 6 },
-];
+/**
+ * Empty pending the backend — matching is a server concern, not a client one.
+ *
+ * `pickRandomDriver` still returns a record so the ride flow stays walkable end
+ * to end for design review; every field the backend would supply is left unset,
+ * and the UI renders those as placeholders rather than inventing a person. Swap
+ * this for the real match response and the screens need no changes.
+ */
+export const drivers: Driver[] = [];
 
 export function pickRandomDriver(): Driver {
-  return mockDrivers[Math.floor(Math.random() * mockDrivers.length)];
+  if (drivers.length > 0) {
+    return drivers[Math.floor(Math.random() * drivers.length)];
+  }
+  return { id: 'pending', name: '', plateNumber: '', rating: null, etaMinutes: null };
 }

@@ -12,4 +12,7 @@ export type TripStatus =
 export interface LocationPoint {
   label: string;
   address: string;
+  /** WGS84. Required so no undefined coordinate can reach the map. */
+  latitude: number;
+  longitude: number;
 }

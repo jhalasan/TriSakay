@@ -1,0 +1,218 @@
+import { colors } from '../../theme';
+
+/**
+ * TILE SOURCE — READ BEFORE CHANGING
+ *
+ * `tile.openstreetmap.org` is the OSM Foundation's free community service. Its
+ * usage policy (https://operations.osmfoundation.org/policies/tiles/) permits
+ * development and low-volume use only, and requires:
+ *   1. visible "© OpenStreetMap contributors" attribution  → attributionControl below
+ *   2. a unique User-Agent naming the app                  → applicationNameForUserAgent in OsmMap.tsx
+ *   3. no bulk downloading / tile pre-fetching             → ROAM_BOUNDS + INTERACTIVE_MIN_ZOOM below
+ *   4. honouring HTTP cache headers                        → WebView cacheEnabled stays true
+ * OSMF may block usage that degrades the service, without notice.
+ *
+ * For production, move to a commercial or self-hosted provider (MapTiler,
+ * Thunderforest, Stadia, or switch2osm.org). That swap is this URL plus the
+ * attribution string — deliberately kept to one place.
+ */
+const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
+const TILE_ATTRIBUTION =
+  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+
+/** Leaflet 1.9.4. SRI hashes computed from the published files. */
+const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+const LEAFLET_CSS_SRI = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
+const LEAFLET_JS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
+const LEAFLET_JS_SRI = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
+
+/** General Santos City centre. */
+export const DEFAULT_CENTER = { latitude: 6.116243, longitude: 125.171738 } as const;
+export const DEFAULT_ZOOM = 15;
+
+/**
+ * How far an interactive map may roam from the city centre, in degrees (~27 km).
+ * Two jobs: a stray fling can't strand the rider looking at open ocean, and no
+ * single gesture can walk the viewport across the planet pulling tiles — which
+ * is the honest version of the "no bulk downloading" rule now that panning is
+ * allowed. Applied only when interactive; a frozen map has nothing to clamp.
+ */
+const ROAM_DEGREES = 0.25;
+
+/** Floor for interactive zoom. Below city scale one pinch requests a lot of tiles. */
+const INTERACTIVE_MIN_ZOOM = 12;
+
+/** Must outlast Leaflet's pan/zoom animation (250ms default). See __recenter. */
+const RECENTER_SETTLE_MS = 600;
+
+export interface MapHtmlOptions {
+  latitude: number;
+  longitude: number;
+  zoom: number;
+  /** Bottom-left instead of bottom-right, where a bottom overlay would cover it. */
+  attributionLeft?: boolean;
+  /** Pan/pinch/double-tap + a recenter bridge. Off means the map is inert. */
+  interactive?: boolean;
+  /** Pixels of the map's bottom edge covered by a native overlay. Lifts attribution. */
+  bottomInset?: number;
+}
+
+/** Messages the page posts back over the WebView bridge. */
+export type MapMessage =
+  | { type: 'ready' }
+  | { type: 'error'; reason: string }
+  /** The rider moved the map off its home view. Fires once until recentred. */
+  | { type: 'moved' }
+  | { type: 'recentered' };
+
+const finite = (value: number, fallback: number) =>
+  Number.isFinite(value) ? Number(value) : fallback;
+
+export function buildMapHtml({
+  latitude,
+  longitude,
+  zoom,
+  attributionLeft = false,
+  interactive = false,
+  bottomInset = 0,
+}: MapHtmlOptions): string {
+  // Nothing interpolated below may be non-numeric — these values land inside a
+  // <script> block.
+  const lat = finite(latitude, DEFAULT_CENTER.latitude);
+  const lng = finite(longitude, DEFAULT_CENTER.longitude);
+  const z = Math.min(19, Math.max(3, Math.round(finite(zoom, DEFAULT_ZOOM))));
+  const attributionPosition = attributionLeft ? 'bottomleft' : 'bottomright';
+  const attributionBottom = 6 + Math.max(0, finite(bottomInset, 0));
+
+  // Anchored on the city centre rather than this screen's centre, so every
+  // interactive map roams the same, predictable box.
+  const south = DEFAULT_CENTER.latitude - ROAM_DEGREES;
+  const north = DEFAULT_CENTER.latitude + ROAM_DEGREES;
+  const west = DEFAULT_CENTER.longitude - ROAM_DEGREES;
+  const east = DEFAULT_CENTER.longitude + ROAM_DEGREES;
+
+  return `<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<link rel="stylesheet" href="${LEAFLET_CSS}" integrity="${LEAFLET_CSS_SRI}" crossorigin="anonymous" />
+<style>
+  html, body { margin:0; padding:0; height:100%; overflow:hidden; background:${colors.fill}; }
+  /* Longhand rather than inset: Android System WebView on budget handsets can predate inset support. */
+  #map { position:absolute; top:0; left:0; right:0; bottom:0; background:${colors.fill}; }
+  .leaflet-container { background:${colors.fill}; }
+  .leaflet-control-attribution {
+    font-size:12px; line-height:16px; padding:2px 6px;
+    margin:0 6px ${attributionBottom}px 6px;
+    color:${colors.inkSoft}; background:rgba(255,255,255,0.9); border-radius:6px;
+  }
+  .leaflet-control-attribution a { color:${colors.inkSoft}; }
+</style>
+</head>
+<body>
+<div id="map"></div>
+<script src="${LEAFLET_JS}" integrity="${LEAFLET_JS_SRI}" crossorigin="anonymous"></script>
+<script>
+(function () {
+  function post(message) {
+    if (window.ReactNativeWebView) {
+      window.ReactNativeWebView.postMessage(JSON.stringify(message));
+    }
+  }
+  try {
+    if (typeof L === 'undefined') { post({ type: 'error', reason: 'leaflet-missing' }); return; }
+
+    // Gestures live here rather than on the WebView: scrollEnabled is iOS-only,
+    // so Leaflet's own handlers are the one cross-platform switch. Freezing a map
+    // takes BOTH this and pointerEvents="none" in OsmMap.tsx — either alone leaves
+    // it inert, so both must be checked when this behaviour looks wrong.
+    var INTERACTIVE = ${interactive ? 'true' : 'false'};
+    var HOME = [${lat}, ${lng}];
+    var HOME_ZOOM = ${z};
+
+    var options = {
+      center: HOME,
+      zoom: HOME_ZOOM,
+      zoomControl: false,
+      attributionControl: false,
+      minZoom: INTERACTIVE ? ${INTERACTIVE_MIN_ZOOM} : 3,
+      maxZoom: 19,
+      dragging: INTERACTIVE,
+      touchZoom: INTERACTIVE,
+      doubleClickZoom: INTERACTIVE,
+      inertia: INTERACTIVE,
+      zoomAnimation: INTERACTIVE,
+      // Never useful on a phone, and boxZoom/keyboard have no touch equivalent.
+      scrollWheelZoom: false, boxZoom: false, keyboard: false,
+      // Tile cross-fade only, and it is the animation that janks on budget Android.
+      fadeAnimation: false
+    };
+    if (INTERACTIVE) {
+      options.maxBounds = L.latLngBounds([${south}, ${west}], [${north}, ${east}]);
+      options.maxBoundsViscosity = 1.0;
+    }
+
+    var map = L.map('map', options);
+
+    L.control.attribution({ position: '${attributionPosition}', prefix: '' })
+      .addAttribution('${TILE_ATTRIBUTION}')
+      .addTo(map);
+
+    // Each of these fires repeatedly once panning is allowed — 'load' on every
+    // completed tile batch, 'tileerror' per failed tile. The bridge is level-
+    // triggered by design, so latch each signal and post it once.
+    var readyPosted = false;
+    var errorPosted = false;
+    var tileErrors = 0;
+    var layer = L.tileLayer('${TILE_URL}', { minZoom: 3, maxZoom: 19 });
+    layer.on('tileerror', function () {
+      tileErrors++;
+      if (tileErrors >= 3 && !errorPosted) { errorPosted = true; post({ type: 'error', reason: 'tile' }); }
+    });
+    layer.on('load', function () {
+      if (readyPosted) return;
+      readyPosted = true;
+      post({ type: 'ready' });
+    });
+    layer.addTo(map);
+
+    if (INTERACTIVE) {
+      var movedPosted = false;
+      var suppress = false;
+      var suppressTimer = null;
+
+      function onUserMove() {
+        if (suppress || movedPosted) return;
+        movedPosted = true;
+        post({ type: 'moved' });
+      }
+      map.on('dragend', onUserMove);
+      map.on('zoomend', onUserMove);
+
+      window.__recenter = function () {
+        // setView emits the same zoomend/moveend family a real gesture does, so
+        // without this the button would instantly re-arm from its own recentre.
+        // A timer rather than a moveend listener because a setView that changes
+        // nothing emits no event at all, which would strand the flag set.
+        suppress = true;
+        movedPosted = false;
+        if (suppressTimer) clearTimeout(suppressTimer);
+        suppressTimer = setTimeout(function () { suppress = false; }, ${RECENTER_SETTLE_MS});
+        map.setView(HOME, HOME_ZOOM, { animate: true });
+        post({ type: 'recentered' });
+      };
+    }
+
+    // Leaflet measures its container on init. Android frequently reports a
+    // zero-height viewport on the first frame, which leaves the map initialised
+    // with no tiles and no recovery — this is the classic "grey box" failure.
+    setTimeout(function () { map.invalidateSize(); }, 0);
+  } catch (e) {
+    post({ type: 'error', reason: String((e && e.message) || e) });
+  }
+})();
+</script>
+</body>
+</html>`;
+}

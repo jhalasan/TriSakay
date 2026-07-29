@@ -85,7 +85,11 @@ Each primitive lives in its own folder with a colocated `ComponentName.styles.ts
 - **SegmentedControl** — GCash/Cash. The active segment is a solid `accentBlue` fill with white text, not a subtle tint.
 - **Stepper** — seat count, min/max clamped, 44pt targets, disabled at bounds.
 - **ConfirmModal** — dimmed backdrop + floating card (`elevation.sheet`), Cancel (outline) / Confirm (solid, optionally `danger`).
-- **MapPlaceholder** — SVG road-grid plus optional pin or dashed route and a caption chip. Props (`variant`, `caption`, `height`) are intentionally minimal so a live OpenStreetMap view can replace the internals without touching call sites — a confirmed follow-up.
+- **OsmMap** — the real map. Leaflet + OSM raster tiles inside a `react-native-webview` (included in Expo Go on SDK 54, so no dev build). Sizes itself from `height` exactly like `MapPlaceholder`: no `flex` on the container, WebView on `absoluteFillObject`, so both numeric heights and `height="100%"` work without a parent `flex:1`. Two things are load-bearing and must not be "simplified" away: the `source` object is memoized on props only — never on `hasMoved` — because a fresh literal each render remounts the WebView and throws away the tiles the rider just panned to; and readiness is detected via `onMessage` plus an 8s timeout, because with `source={{html}}` the document always loads and `onError` never fires for dead tiles.
+- **Every map is interactive**, via an explicit `interactive` prop rather than by default — freezing takes **both** `pointerEvents="none"` on the WebView **and** Leaflet's own handlers in `mapHtml.ts`, so both are the place to look when this behaviour surprises someone. The first pass unlocked only the three full-screen ride maps, which was backwards: those are exactly the screens that auto-advance on a 2.5–8s timer, so the rider never gets a chance to touch them. The maps you actually dwell on are Home, Set destination and Confirm. **Where a map is interactive, it must not live inside a scroller** — a draggable map competes for the same vertical gesture and wins on Android. Home therefore pins its map (see below); Set destination's map already sat outside its list; Confirm's stays in the scroll flow because the form beneath it is the point of that screen, and there is ample non-map area to scroll from.
+- **Home is a fixed frame, not a scrolling page** — greeting, map, and the "Where to?" button are pinned, and only the saved-places list between them scrolls. This resolves the gesture conflict at the source rather than arbitrating it, keeps the map visible while the rider reads the list, and keeps the primary action permanently in thumb reach.
+- **Recenter control** — appears only after the rider actually moves the map, and disappears again on use, so it never sits there as permanent chrome. Without it, panning away on Trip in progress would be one-way until the screen remounts. Placement is driven by `bottomInset`, the number of pixels the *screen* knows are covered by its own bottom overlay: it lifts both the recenter button and the OSM attribution, and the button always takes the corner opposite the attribution. This is why Trip in progress passes `bottomInset={100}` — the driver strip's real height plus a gap.
+- **MapPlaceholder** — no longer used directly by any screen. It is now `OsmMap`'s loading and offline skeleton: shown at full opacity until the first tile paints, then faded out over `motion.duration.settle`. Kept as a separate component so rollback is a one-line import change and the native WebView dep stays confined to one file.
 - **PulseBeacon** (passenger-local) — the searching animation described under Motion.
 - **EmptyState / Spinner** — shared empty-list and loading affordances.
 
@@ -97,8 +101,32 @@ Each primitive lives in its own folder with a colocated `ComponentName.styles.ts
 - Mock delays always show a loading state rather than jumping instantly, so those states are exercised even without a network.
 - Log out is a `transparentModal` route dismissed via `router.dismiss()` — transparent because the screen renders only an RN `<Modal>`, so an opaque presentation would slide a blank page up behind the dialog.
 
+## Map & OSM compliance
+
+Tiles come from `tile.openstreetmap.org`, OSMF's free community service, whose usage policy is binding and non-obvious:
+
+- **Attribution** — "© OpenStreetMap contributors" renders via Leaflet's own attribution control at 12px in `colors.inkSoft`. On `trip-in-progress` it moves bottom-left (`attributionLeft`) *and* is lifted by `bottomInset`, because `driverStrip` spans the bottom of the screen — moving it sideways alone still left it clipped.
+- **User-Agent** — `applicationNameForUserAgent` *appends* `TriSakayPassenger/1.0` to the platform UA. A generic library default is blocked without notice; replacing the UA wholesale risks CDN heuristics.
+- **Bounded panning** — riders can pan the maps, which is ordinary permitted use; the policy's actual target is bulk downloading. What keeps this honest is that an interactive map is clamped to a ~27 km box around the city (`maxBounds` at full viscosity) with a zoom floor of 12, so no single gesture can walk the viewport across the planet or pull a continent's worth of tiles.
+- **Caching** — `cacheEnabled` stays true; the policy requires honouring cache headers.
+- **Quiet bridge** — `ready` and tile-error signals are latched in the page and posted once each. Before panning existed, Leaflet's `load` fired once; now it fires on every completed tile batch, and an unlatched bridge would chatter across the WebView on every drag.
+
+Swapping to a commercial or self-hosted provider for production is one URL and one attribution string in `mapHtml.ts`, kept deliberately in one place.
+
+## Empty by default
+
+The app ships with **no sample content**. There are no invented riders, drivers, destinations, ride histories, notifications or fares anywhere — the modules under `src/mocks/` are empty arrays kept as named seams for the backend to fill. This is a deliberate design constraint, not an unfinished state: fake data hides exactly the screens that are hardest to get right, and a demo full of plausible names reads as working software that isn't.
+
+Three conventions hold the result together:
+
+- **Absent is not zero.** Anything the backend owns is nullable, and the UI distinguishes "unknown" from a real value. A driver rating of `null` hides the stars rather than rendering zero of them — no stars reads as *unrated*, zero stars reads as *terrible*. Fares show `—`, matching the placeholder already used on Profile.
+- **Every list has an empty state**, and it says what will appear there, not merely that nothing is there.
+- **Partial records degrade to nothing, not to fragments.** A history row missing one endpoint drops the whole route line rather than rendering "→ SM City", which reads as a bug instead of as missing data.
+
+Flows still run end to end so the UI stays walkable for design review: login accepts what you type, and `pickRandomDriver()` returns an unpopulated record so the ride sequence reaches Payment and Rate driver. Rides completed in a session are appended to history, so the list fills as you use the app.
+
 ## Known provisional decisions
 
-- `MapPlaceholder` stands in for a live map; OpenStreetMap integration is a planned follow-up.
-- No backend integration — all data is local mock state (Zustand); see `PRODUCT.md`.
+- Maps pan and zoom but carry no markers, route line, driver movement, or device GPS — the planned next step. Pickup is `null` until GPS or the backend supplies it, and the map falls back to the service-area centre.
+- No backend integration — state is local (Zustand) and empty; see `PRODUCT.md`.
 - Light mode only, chosen from the use scene (outdoor daylight), not by category default.

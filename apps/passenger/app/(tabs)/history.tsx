@@ -53,8 +53,14 @@ export default function HistoryScreen() {
         ListEmptyComponent={<EmptyState title="No rides yet" message="Your completed trips will show up here." />}
         renderItem={({ item }) => (
           <ListRow
-            title={item.driverName}
-            subtitle={`${formatDate(item.date)} · ${item.pickup} → ${item.dropoff}`}
+            title={item.driverName || 'Driver'}
+            // Route is omitted rather than shown half-empty when an endpoint is
+            // unknown — "→ SM City" reads as a rendering bug, not as missing data.
+            subtitle={
+              item.pickup && item.dropoff
+                ? `${formatDate(item.date)} · ${item.pickup} → ${item.dropoff}`
+                : formatDate(item.date)
+            }
             leading={<Avatar name={item.driverName} size="md" />}
             trailing={
               <View style={styles.trailingSlot}>

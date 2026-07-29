@@ -3,7 +3,8 @@ import type { LocationPoint, PaymentMethod, TripStatus } from '../types/booking'
 import type { Driver } from '../types/driver';
 
 interface BookingState {
-  pickup: LocationPoint;
+  /** Null until device GPS or the backend resolves it — there is no default rider. */
+  pickup: LocationPoint | null;
   dropoff: LocationPoint | null;
   seats: number;
   fare: number | null;
@@ -12,7 +13,7 @@ interface BookingState {
   tripStatus: TripStatus;
   setDropoff: (point: LocationPoint) => void;
   setSeats: (seats: number) => void;
-  setFare: (fare: number) => void;
+  setFare: (fare: number | null) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setDriver: (driver: Driver) => void;
   setTripStatus: (status: TripStatus) => void;
@@ -20,7 +21,7 @@ interface BookingState {
 }
 
 const initialState = {
-  pickup: { label: 'Current location', address: 'Brgy. San Isidro, Poblacion' } as LocationPoint,
+  pickup: null as LocationPoint | null,
   dropoff: null as LocationPoint | null,
   seats: 1,
   fare: null as number | null,

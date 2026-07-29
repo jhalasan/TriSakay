@@ -38,6 +38,13 @@ export const styles = StyleSheet.create({
   pickerFieldPlaceholder: {
     color: colors.inkFaint,
   },
+  pickerEmpty: {
+    ...typography.body,
+    color: colors.inkSoft,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    textAlign: 'center',
+  },
   pickerList: {
     borderWidth: 1,
     borderColor: colors.line,

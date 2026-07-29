@@ -1,9 +1,10 @@
-const BASE_FARE = 15;
-const PER_EXTRA_SEAT = 5;
-const DISTANCE_RATE_PER_KM = 8;
-const MOCK_DISTANCE_KM = 2.4;
-
-export function estimateFare(seats: number, distanceKm: number = MOCK_DISTANCE_KM) {
-  const extraSeats = Math.max(0, seats - 1);
-  return BASE_FARE + PER_EXTRA_SEAT * extraSeats + DISTANCE_RATE_PER_KM * distanceKm;
+/**
+ * Fares are quoted by the backend — they depend on the routed distance, the
+ * operator's tariff, and local ordinance, none of which the client can know.
+ * Returns null so screens show a placeholder instead of a plausible-looking
+ * peso amount that nothing stands behind.
+ */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+export function estimateFare(seats: number): number | null {
+  return null;
 }

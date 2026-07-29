@@ -72,18 +72,24 @@ export default function ComplaintsScreen() {
 
             {pickerOpen && (
               <Card style={styles.pickerList}>
-                {rides.map((ride, index) => (
-                  <ListRow
-                    key={ride.id}
-                    title={ride.driverName}
-                    subtitle={`${ride.pickup} → ${ride.dropoff}`}
-                    onPress={() => {
-                      setRelatedTripId(ride.id);
-                      setPickerOpen(false);
-                    }}
-                    divider={index < rides.length - 1}
-                  />
-                ))}
+                {rides.length === 0 ? (
+                  <Text style={styles.pickerEmpty}>
+                    No past rides to report on yet.
+                  </Text>
+                ) : (
+                  rides.map((ride, index) => (
+                    <ListRow
+                      key={ride.id}
+                      title={ride.driverName || 'Driver'}
+                      subtitle={ride.pickup && ride.dropoff ? `${ride.pickup} → ${ride.dropoff}` : undefined}
+                      onPress={() => {
+                        setRelatedTripId(ride.id);
+                        setPickerOpen(false);
+                      }}
+                      divider={index < rides.length - 1}
+                    />
+                  ))
+                )}
               </Card>
             )}
           </View>

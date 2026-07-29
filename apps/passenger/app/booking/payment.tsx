@@ -39,7 +39,7 @@ export default function PaymentScreen() {
         id: `r-${Date.now()}`,
         driverName: driver.name,
         date: new Date().toISOString(),
-        pickup: pickup.label,
+        pickup: pickup?.label ?? '',
         dropoff: dropoff.label,
         fare: fare ?? 0,
         status: 'done',
@@ -56,7 +56,7 @@ export default function PaymentScreen() {
       <View style={styles.content}>
         <Card style={styles.amountCard}>
           <Text style={styles.amountLabel}>Amount due</Text>
-          <Text style={styles.amountValue}>{formatCurrency(fare ?? 0)}</Text>
+          <Text style={styles.amountValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
           {dropoff && <Text style={styles.amountNote}>Trip to {dropoff.label}</Text>}
         </Card>
 

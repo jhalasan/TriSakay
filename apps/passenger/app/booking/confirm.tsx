@@ -4,7 +4,7 @@ import { ScrollView, Text, View } from 'react-native';
 import {
   Button,
   Card,
-  MapPlaceholder,
+  OsmMap,
   SegmentedControl,
   Stepper,
   colors,
@@ -32,6 +32,18 @@ export default function ConfirmScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seats]);
 
+  /**
+   * Both ends of the trip in one frame. Falls back to the service-area centre
+   * inside OsmMap when pickup has not been resolved yet.
+   */
+  const midpoint =
+    pickup && dropoff
+      ? {
+          latitude: (pickup.latitude + dropoff.latitude) / 2,
+          longitude: (pickup.longitude + dropoff.longitude) / 2,
+        }
+      : dropoff;
+
   if (!dropoff) {
     return (
       <View style={styles.container}>
@@ -53,14 +65,24 @@ export default function ConfirmScreen() {
     <View style={styles.container}>
       <ScreenHeader title="Confirm ride" />
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <MapPlaceholder variant="route" caption="Route preview" height={180} />
+        <OsmMap
+          variant="route"
+          caption="Route preview"
+          height={180}
+          // Midpoint of the trip, so both ends are plausibly in frame until the
+          // route line and fit-bounds arrive in the next step.
+          latitude={midpoint?.latitude}
+          longitude={midpoint?.longitude}
+          zoom={14}
+          interactive
+        />
 
         <Card style={styles.routeCard}>
           <View style={styles.routeRow}>
             <View style={[styles.routeDot, { backgroundColor: colors.accentGreen }]} />
             <View style={styles.routeTextSlot}>
-              <Text style={styles.routeLabel}>{pickup.label}</Text>
-              <Text style={styles.routeAddress}>{pickup.address}</Text>
+              <Text style={styles.routeLabel}>{pickup?.label ?? 'Pickup point'}</Text>
+              <Text style={styles.routeAddress}>{pickup?.address ?? 'Not set yet'}</Text>
             </View>
           </View>
           <View style={styles.routeDivider} />
@@ -80,8 +102,10 @@ export default function ConfirmScreen() {
 
         <Card style={styles.fareCard}>
           <Text style={styles.fareLabel}>Estimated fare</Text>
-          <Text style={styles.fareValue}>{formatCurrency(fare ?? estimateFare(seats))}</Text>
-          <Text style={styles.fareNote}>Final fare is confirmed at drop-off</Text>
+          <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
+          <Text style={styles.fareNote}>
+            {fare === null ? 'Fare is quoted once the service is connected' : 'Final fare is confirmed at drop-off'}
+          </Text>
         </Card>
 
         <View>
