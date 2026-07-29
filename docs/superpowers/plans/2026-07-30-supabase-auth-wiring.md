@@ -15,6 +15,7 @@
 - Generated file `packages/services/src/supabase/database.types.ts` is machine-generated — never hand-edit; regenerate via the same MCP tool call if the schema changes.
 - Real secrets (Supabase URL/anon key) go in `apps/passenger/.env.local` (already covered by the repo's `.env*.local` gitignore rule); `apps/passenger/.env.example` is committed with placeholder values.
 - Test convention: mirror the existing `node --test ./tests/*.test.<ext>` pattern used by `apps/driver`/`apps/admin`, but as `.test.ts` files (Node 24 runs these directly, confirmed working in this environment).
+- **Confirmed during Task 1:** Node 24's native `node --test` requires explicit `.ts` extensions (and explicit `/index.ts` for directory imports) on any relative import that resolves to a file it loads directly or transitively via a value import — `import type` is erased and needs no extension. `packages/services/package.json` now has `"type": "module"` for this reason. This only applies inside `packages/services/src` and `packages/services/tests` — app-side imports of the `@trisakay/services` package name (resolved by Metro/Vite, not plain Node) are unaffected and must stay exactly as written.
 - Out of scope for this plan: ride requests, fare quotes/RPC, realtime trip tracking, payments, ratings, ride history, notifications, complaints, destination geocoding, and any `apps/driver` / `apps/admin` code. Do not touch those.
 - Live Supabase project: `ygdgbvxxqrkxlezpckif` (name "TriSakay"), URL `https://ygdgbvxxqrkxlezpckif.supabase.co`. The `SCHEMA.MD` schema (including `handle_new_auth_user` trigger) is already applied.
 
@@ -222,8 +223,8 @@ Create `packages/services/tests/auth.test.ts`:
 ```ts
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { __setSupabaseClientForTests } from '../src/supabase/client';
-import { createFakeSupabaseClient } from './fakeSupabaseClient';
+import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
+import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
 import {
   getCurrentUserProfile,
   onAuthStateChange,
@@ -231,7 +232,7 @@ import {
   signOut,
   signUp,
   updateProfile,
-} from '../src/auth';
+} from '../src/auth/index.ts';
 
 test('signUp sends full name, phone, and default role as signup metadata', async () => {
   let capturedArgs: any = null;
@@ -378,7 +379,7 @@ Replace the contents of `packages/services/src/auth/index.ts`:
 
 ```ts
 import type { Session } from '@supabase/supabase-js';
-import { getSupabaseClient } from '../supabase/client';
+import { getSupabaseClient } from '../supabase/client.ts';
 import type { Database } from '../supabase/database.types';
 
 export type PublicUser = Database['public']['Tables']['users']['Row'];
