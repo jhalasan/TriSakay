@@ -105,11 +105,12 @@ Two matching moments, both governed by the same system-assisted route-corridor h
 - FR-2.2 Passenger sets destination — either by selecting a point on the map or by searching for the location by name
 - FR-2.3 System computes estimated fare before request confirmation (includes FR-3)
 - FR-2.4 Passenger submits ride request
-- FR-2.5 System matches request to available driver(s) via bearing/distance-tolerance heuristic run server-side in a Supabase Edge Function
+- FR-2.5 System matches request to available driver(s) via a two-stage check: **(1) hard cluster-authorization filter** — per Ordinance No. 37, Series of 2018, Section 119, a tricycle's assigned cluster (Red/White/Apple Green/Melting Pot) must be authorized to serve the pickup barangay's cluster (colored clusters serve only their own + Melting Pot; Melting Pot units serve Melting Pot only) — followed by **(2) the bearing/distance-tolerance heuristic** (soft check), both run server-side in a Supabase Edge Function
   - FR-2.5a **Pre-trip Request Board**: before starting a trip, Driver declares intended direction; system surfaces compatible pending requests
   - FR-2.5b Driver may select multiple passengers from the board, up to seat capacity, before departing
   - FR-2.5c **Mid-trip pickup**: once trip is active, system continues surfacing new compatible requests for driver to accept, subject to remaining seats
   - FR-2.5d Driver retains final discretion to accept/decline at both stages
+  - FR-2.5e *(Scope note)* Cluster authorization is confirmed to apply system-wide, not just the pilot locale — pilot **testing** is limited to Barangay Dadiangas West (entirely within the Melting Pot cluster, so the constraint doesn't bind during testing itself), but the app is architecturally built to extend to other barangays/clusters
 - FR-2.6 Driver toggles availability (online/offline)
 - FR-2.7 Available driver(s) notified of incoming requests
 - FR-2.8 Driver accepts/declines requests
@@ -126,11 +127,17 @@ Based on **General Santos City Ordinance No. 08, Series of 2023**: ₱15 for the
 - FR-3.3 Final fare locked and passed to payment transaction upon ride completion
 - FR-3.4 *(New — worth citing in your Introduction/Related Literature)* Public enforcement of this ordinance is documented as inconsistent; automated, ordinance-based fare computation directly addresses this compliance gap and strengthens your project's social value justification
 
-### FR-4: Complaint Management
+**Passenger fare discounts (FR-3.10–3.15):** per the ordinance's preserved discount privileges (RA 9994 senior citizen, RA 10754 PWD; extended to students for simplicity), a passenger may apply for a fare discount by uploading a valid ID photo in-app. PSO Supervisor/Admin reviews and approves/rejects — same reviewer authority as driver verification, mirroring that same document-review pattern rather than inventing a new workflow. Once approved, a flat **20%** discount is automatically applied to that passenger's fare on every ride. The rate is Admin-configurable (`fare_config.discount_rate_percent`), not hardcoded. A passenger with no approved discount pays full fare. PSO Supervisor/Admin may revoke an approved discount if found invalid. New use cases: **UC47 — Apply for Fare Discount** (Passenger, mirrors UC18), **UC48 — Review Discount Application** (PSO Supervisor+, mirrors UC37).
+
+### FR-4: Complaint Management — UPDATED per PSO-MTPS-PR-03 (Processing of Complaints Involving Tricycle Drivers)
+Real PSO process: verify → forward to Department Head → DH directs staff to contact both parties → both parties are scheduled for and attend an **MTFRB (Motorized Tricycle Franchising and Regulatory Board) mediation meeting** for final settlement — resolution is a mediated outcome, not a self-contained digital PSO decision.
 - FR-4.1 Passenger submits complaint against driver/ride
 - FR-4.2 Driver submits complaint against passenger/ride
 - FR-4.3 PSO Staff triages/categorizes complaints
-- FR-4.4 PSO Supervisor/Admin resolves escalated complaints; status: open, under review, escalated, resolved, dismissed
+- FR-4.4 Status flow: `open` → `under_review` → `escalated` → `mediation_scheduled` → `resolved` / `dismissed`
+- FR-4.5 PSO Supervisor/Admin schedules an MTFRB mediation meeting for escalated complaints, recording meeting date/time and location; both parties are notified (FR-7.3)
+- FR-4.6 PSO Supervisor/Admin records the mediation outcome/settlement details after the meeting occurs, setting final status to resolved or dismissed
+- FR-4.7 Complaint records and any submitted evidence are handled per RA 10173 (Data Privacy Act of 2012) — same confidentiality standard the PSO's own complaint form already cites, which TriSakay's Privacy Policy (FR-11.2) is designed to mirror rather than invent independently
 
 ### FR-5: Monitoring & Reporting
 - FR-5.1 Real-time ride activity dashboard (PSO Staff+)
@@ -229,20 +236,20 @@ PSO sub-roles are a simple fixed enum (not a configurable permissions table), si
 
 ## 7. System Features — LOCKED
 
-**Passenger App:** Registration & Login, Profile Management, GPS Pickup Selection, Destination Selection (map or search), Fare Estimation, Ride Request, Ride Status Tracking, Driver Info View, Ride History, Payment (Cash/GCash), Payment History, Rate Driver, Complaint Submission, Notifications, Settings, Logout
+**Passenger App:** Registration & Login, Profile Management, GPS Pickup Selection, Destination Selection (map or search), Fare Estimation, Ride Request, Ride Status Tracking, Driver Info View, Ride History, Payment (Cash/GCash), Payment History, Rate Driver, Apply for Fare Discount, Complaint Submission, Notifications, Settings, Logout
 
 **Driver App:** Registration & Login, Profile Management, Document Upload, Verification Status Tracking, Availability Toggle, Request Board, Accept/Decline Ride, Passenger Info View, Trip History, Earnings (simulated), View Own Ratings, Complaint Submission/Management, Notifications, Logout
 
 **Admin Web App:**
 - Shared (PSO Staff, Supervisor, Admin): Login, Dashboard, Complaint Handling, Reports & Analytics (view), Transaction Oversight (view), View Driver Rating Trends
-- PSO Supervisor + Admin: Driver/Tricycle Verification Review, Account Suspension/Deactivation, Review Flagged Ratings
+- PSO Supervisor + Admin: Driver/Tricycle Verification Review, Account Suspension/Deactivation, Review Flagged Ratings, Review Fare Discount Applications
 - Admin only: PSO Account Management, System Settings, Full User Management
 
 ---
 
 ## 8. Use Case Summary — LOCKED
 
-44 total use cases (UC1–UC44) across 5 actors, with generalization: PSO Supervisor inherits PSO Staff use cases; Administrator inherits PSO Supervisor use cases. Key relationships: UC6 (Request Ride) «include»s UC5 (Estimate Fare); UC21 (Select Passengers Pre-Trip) «extend»s UC20 (View Request Board); UC23 (Accept Mid-Trip Pickup) «extend»s UC22 (Start Trip). UC43 (Rate Driver, Passenger) and UC44 (Review Flagged Rating, PSO Supervisor+) were added for the Rating & Merit System (FR-10). UC45 (Accept Terms of Service & Privacy Policy) and UC46 (Grant Location Permission) were added for FR-11, bringing the total to 46.
+44 total use cases (UC1–UC44) across 5 actors, with generalization: PSO Supervisor inherits PSO Staff use cases; Administrator inherits PSO Supervisor use cases. Key relationships: UC6 (Request Ride) «include»s UC5 (Estimate Fare); UC21 (Select Passengers Pre-Trip) «extend»s UC20 (View Request Board); UC23 (Accept Mid-Trip Pickup) «extend»s UC22 (Start Trip). UC43 (Rate Driver, Passenger) and UC44 (Review Flagged Rating, PSO Supervisor+) were added for the Rating & Merit System (FR-10). UC45 (Accept Terms of Service & Privacy Policy) and UC46 (Grant Location Permission) were added for FR-11. UC47 (Apply for Fare Discount, Passenger) and UC48 (Review Discount Application, PSO Supervisor+) were added for the fare discount feature, bringing the total to 48.
 
 Full actor-by-actor use case list and all 42 formal specifications (actor, precondition, main flow, alternate flow, postcondition, business rules) were drafted in-session — priority specs covered UC6, UC10, UC20–23 in depth (matching, request board, payment), with the remaining 36 specified at standard depth. Diagrams produced: package-level use case diagrams (3, grouped by app) and full individual-oval UML-style use case diagrams (3, one per app) matching classic notation.
 

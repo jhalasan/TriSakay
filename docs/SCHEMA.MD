@@ -56,6 +56,23 @@ create type document_type as enum (
   'tricycle_photo'
 );
 
+create type discount_category as enum (
+  'senior_citizen',
+  'pwd',
+  'student'
+);
+
+create type tricycle_cluster as enum (
+  'red',
+  'white',
+  'apple_green',
+  'melting_pot'
+);
+-- Per Ordinance No. 37, Series of 2018, Section 119: the city is divided
+-- into 4 clusters. Red/White/Apple Green units may also enter the Melting
+-- Pot (CBD) cluster, but not each other's exclusive zones. Melting Pot
+-- units are confined to the Melting Pot cluster only.
+
 create type trip_status as enum (
   'forming',      -- driver selecting from request board, not yet departed
   'active',       -- trip in progress
@@ -93,6 +110,7 @@ create type complaint_status as enum (
   'open',
   'under_review',
   'escalated',
+  'mediation_scheduled',  -- MTFRB meeting set (PSO-MTPS-PR-03)
   'resolved',
   'dismissed'
 );
@@ -182,7 +200,7 @@ create table public.tricycles (
   driver_id           uuid not null references public.driver_profiles(user_id) on delete cascade,
   plate_no            text not null unique,
   body_no             text,
-  cluster_color       text,          -- white / apple green / red (Ord. 08 s.2023)
+  cluster             tricycle_cluster,   -- red/white/apple_green/melting_pot (Ord. 37 s.2018, Sec. 119)
   seat_capacity       smallint not null default 6,
   verification_status verification_status not null default 'unsubmitted',
   verified_by         uuid references public.users(id) on delete set null,
@@ -225,6 +243,28 @@ create unique index driver_documents_unique_current
   on public.driver_documents (driver_id, coalesce(tricycle_id, '00000000-0000-0000-0000-000000000000'::uuid), doc_type);
 
 
+-- 2.4b passenger_discounts ----------------------------------------------
+-- Fare discount eligibility (Senior Citizen / PWD / Student), per FR-3.10-15.
+-- Verified via ID photo review, mirroring the driver_documents pattern
+-- rather than inventing a separate workflow.
+create table public.passenger_discounts (
+  id            uuid primary key default gen_random_uuid(),
+  passenger_id  uuid not null references public.users(id) on delete cascade,
+  category      discount_category not null,
+  id_photo_path text not null,          -- Supabase Storage object path
+  status        verification_status not null default 'pending',
+  reviewed_by   uuid references public.users(id) on delete set null,
+  reviewed_at   timestamptz,
+  remarks       text,
+  submitted_at  timestamptz not null default now()
+);
+
+-- A passenger may only have one pending-or-approved discount claim at a time.
+create unique index passenger_discounts_one_live_claim
+  on public.passenger_discounts (passenger_id)
+  where status in ('pending', 'approved');
+
+
 -- 2.5 trips -----------------------------------------------------------
 -- One tricycle journey. Holds MANY ride_requests (shared/pooled rides).
 create table public.trips (
@@ -252,6 +292,49 @@ create table public.trips (
 );
 
 
+-- 2.5b barangays --------------------------------------------------------
+-- Cluster reference per Ordinance No. 37, Series of 2018, Section 119.
+-- Enables cluster-authorization checks so the matching heuristic (FR-2.5)
+-- generalizes beyond the Barangay Dadiangas West pilot to any barangay,
+-- per the project's confirmed scope (the app is not architecturally
+-- limited to the pilot locale, even though testing is).
+create table public.barangays (
+  id          uuid primary key default gen_random_uuid(),
+  name        text not null unique,
+  cluster     tricycle_cluster,   -- NULL where the ordinance splits the
+                                  -- barangay by portion (see is_split)
+  is_split    boolean not null default false,
+  notes       text,               -- e.g. which portion belongs to which cluster
+  created_at  timestamptz not null default now()
+);
+
+comment on column public.barangays.cluster is
+  'NULL for barangays the ordinance divides by portion (e.g. northwest/southeast of the national highway) — sub-barangay geofencing is out of scope for this prototype; see notes.';
+
+-- Seed: barangays explicitly named in Ordinance No. 37, s.2018, Sec. 119.
+-- Whole (unsplit) barangays get a confident cluster assignment.
+insert into public.barangays (name, cluster) values
+  ('Calumpang', 'red'), ('Fatima/Uhaw', 'red'), ('Apopong', 'red'),
+  ('Tambler', 'red'), ('Bawing', 'red'), ('San Jose', 'red'), ('Sinawal', 'red'),
+  ('City Heights', 'white'), ('San Isidro', 'white'), ('Mabuhay', 'white'),
+  ('Conel', 'white'), ('Olympog', 'white'), ('Upper Labay', 'white'),
+  ('Bula', 'apple_green'), ('Buayan', 'apple_green'), ('Baluan', 'apple_green'),
+  ('Ligaya', 'apple_green'),
+  ('Dadiangas East', 'melting_pot'), ('Dadiangas West', 'melting_pot'),
+  ('Dadiangas South', 'melting_pot'), ('Dadiangas North', 'melting_pot');
+
+-- Split barangays: the ordinance divides these by portion (e.g. northwest
+-- vs. southeast of the national highway). Cluster left NULL pending
+-- sub-barangay resolution — noted as a documented limitation, not silently
+-- guessed at.
+insert into public.barangays (name, cluster, is_split, notes) values
+  ('Labangal', null, true, 'West of Makar traffic signal = Red; East = Melting Pot'),
+  ('Lagao', null, true, 'Northwest of national highway = White; Southeast = Melting Pot'),
+  ('Katangawan', null, true, 'Northwest of national highway = White; Southeast = Apple Green'),
+  ('Tinagacan', null, true, 'Northwest of national highway = White; Southeast = Apple Green'),
+  ('Batomelong', null, true, 'Northwest of national highway = White; Southeast = Apple Green');
+
+
 -- 2.6 ride_requests ---------------------------------------------------
 -- One passenger's booking. Attaches to a trip when a driver takes it.
 create table public.ride_requests (
@@ -262,6 +345,7 @@ create table public.ride_requests (
   pickup_lat        numeric(9,6) not null,
   pickup_lng        numeric(9,6) not null,
   pickup_label      text,
+  pickup_barangay_id uuid references public.barangays(id) on delete set null,
   dest_lat          numeric(9,6) not null,
   dest_lng          numeric(9,6) not null,
   dest_label        text,
@@ -270,6 +354,8 @@ create table public.ride_requests (
   distance_km       numeric(6,2),
   estimated_fare    numeric(8,2),
   final_fare        numeric(8,2),
+  discount_applied  boolean not null default false,
+  discount_percent  numeric(4,2),        -- snapshot of rate at time of ride (FR-3.13)
 
   status            ride_status not null default 'pending',
   preferred_method  payment_method not null default 'cash',
@@ -360,15 +446,28 @@ create table public.complaints (
 
   triaged_by        uuid references public.users(id) on delete set null,
   triaged_at        timestamptz,
+
+  -- MTFRB mediation meeting (PSO-MTPS-PR-03, Activity 4-5): both parties
+  -- are contacted and attend a mediation meeting before final resolution.
+  mediation_scheduled_by  uuid references public.users(id) on delete set null,
+  mediation_scheduled_at  timestamptz,
+  mediation_meeting_at    timestamptz,   -- date/time the MTFRB meeting is set for
+  mediation_location      text,          -- typically the PSO office
+
   resolved_by       uuid references public.users(id) on delete set null,
   resolved_at       timestamptz,
-  resolution_notes  text,
+  resolution_notes  text,                -- mediation outcome / settlement details
 
   created_at        timestamptz not null default now(),
   updated_at        timestamptz not null default now(),
 
   constraint complaint_not_self check (
     against_user_id is null or against_user_id <> submitted_by
+  ),
+  -- A mediation meeting time can't be set before it was scheduled.
+  constraint complaint_mediation_order check (
+    mediation_meeting_at is null or mediation_scheduled_at is null
+    or mediation_meeting_at >= mediation_scheduled_at
   )
 );
 
@@ -397,6 +496,7 @@ create table public.fare_config (
   base_fare     numeric(6,2) not null,   -- 15.00
   base_km       numeric(4,2) not null,   -- 4.00
   rate_per_km   numeric(6,2) not null,   -- 1.00
+  discount_rate_percent numeric(4,2) not null default 20.00,  -- RA 9994 / RA 10754 (FR-3.12)
   ordinance_ref text,                    -- 'City Ordinance No. 08, s. 2023'
   effective_from timestamptz not null default now(),
   is_active     boolean not null default true,
@@ -405,7 +505,8 @@ create table public.fare_config (
 
   constraint fare_values_positive check (
     base_fare >= 0 and base_km > 0 and rate_per_km >= 0
-  )
+  ),
+  constraint fare_discount_range check (discount_rate_percent between 0 and 100)
 );
 
 create unique index fare_config_one_active on public.fare_config (is_active) where is_active;
@@ -493,13 +594,12 @@ create trigger trg_complaints_touch     before update on public.complaints      
 create or replace function public.handle_new_auth_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.users (id, full_name, email, role, contact_no)
+  insert into public.users (id, full_name, email, role)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', 'Unnamed User'),
     new.email,
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger'),
-    new.raw_user_meta_data->>'phone'
+    coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger')
   );
   return new;
 end $$;
@@ -511,13 +611,17 @@ create trigger trg_auth_user_created
 
 -- 4.3 fare computation (Ordinance No. 08, s. 2023) --------------------
 -- P15 for the first 4 km, +P1 per succeeding km, per passenger seat.
+-- If p_passenger_id has an approved passenger_discounts row (senior/PWD/
+-- student), the active discount_rate_percent is applied (FR-3.10-3.13).
 create or replace function public.compute_fare(
-  p_distance_km numeric,
-  p_seats       smallint default 1
+  p_distance_km  numeric,
+  p_seats        smallint default 1,
+  p_passenger_id uuid default null
 ) returns numeric language plpgsql stable as $$
 declare
   cfg  public.fare_config%rowtype;
   per_passenger numeric;
+  is_eligible boolean;
 begin
   select * into cfg from public.fare_config where is_active limit 1;
   if not found then
@@ -530,8 +634,45 @@ begin
     per_passenger := cfg.base_fare + ceil(p_distance_km - cfg.base_km) * cfg.rate_per_km;
   end if;
 
-  return round(per_passenger * p_seats, 2);
+  per_passenger := per_passenger * p_seats;
+
+  if p_passenger_id is not null then
+    select exists(
+      select 1 from public.passenger_discounts
+      where passenger_id = p_passenger_id and status = 'approved'
+    ) into is_eligible;
+
+    if is_eligible then
+      per_passenger := per_passenger * (1 - cfg.discount_rate_percent / 100);
+    end if;
+  end if;
+
+  return round(per_passenger, 2);
 end $$;
+
+
+-- 4.3b cluster authorization (Ordinance No. 37, s.2018, Sec. 119) -------
+-- Hard pre-filter run BEFORE the bearing/detour heuristic (FR-2.5): a
+-- tricycle may only be matched to a pickup in its authorized cluster.
+-- Melting Pot barangays accept all three colored clusters; colored
+-- clusters otherwise only serve their own. NULL cluster (unresolved split
+-- barangay, or tricycle not yet assigned a cluster) is treated as
+-- unauthorized rather than silently allowed — safer default.
+create or replace function public.is_cluster_authorized(
+  p_tricycle_cluster tricycle_cluster,
+  p_barangay_cluster tricycle_cluster
+) returns boolean language sql immutable as $$
+  select
+    p_tricycle_cluster is not null
+    and p_barangay_cluster is not null
+    and (
+      p_tricycle_cluster = p_barangay_cluster
+      or (p_barangay_cluster = 'melting_pot' and p_tricycle_cluster <> 'melting_pot')
+    );
+$$;
+
+comment on function public.is_cluster_authorized is
+  'Within the single-barangay Dadiangas West pilot (Melting Pot cluster), this always returns true for any colored tricycle — the constraint only binds once the system extends to other barangays, per confirmed scope.';
 
 
 -- 4.4 seat capacity enforcement ---------------------------------------
@@ -650,10 +791,15 @@ create index idx_documents_driver          on public.driver_documents (driver_id
 create index idx_documents_status          on public.driver_documents (status)
   where status = 'pending';
 
+create index idx_discounts_passenger       on public.passenger_discounts (passenger_id);
+create index idx_discounts_pending         on public.passenger_discounts (status)
+  where status = 'pending';
+
 create index idx_trips_driver              on public.trips (driver_id);
 create index idx_trips_status              on public.trips (status) where status = 'active';
 
 create index idx_rr_passenger              on public.ride_requests (passenger_id);
+create index idx_rr_barangay               on public.ride_requests (pickup_barangay_id);
 create index idx_rr_trip                   on public.ride_requests (trip_id);
 create index idx_rr_pending                on public.ride_requests (status) where status = 'pending';
 create index idx_rr_requested_at           on public.ride_requests (requested_at desc);
@@ -732,7 +878,9 @@ $$;
 alter table public.users            enable row level security;
 alter table public.driver_profiles  enable row level security;
 alter table public.tricycles        enable row level security;
+alter table public.barangays        enable row level security;
 alter table public.driver_documents enable row level security;
+alter table public.passenger_discounts enable row level security;
 alter table public.trips            enable row level security;
 alter table public.ride_requests    enable row level security;
 alter table public.transactions     enable row level security;
@@ -778,9 +926,30 @@ create policy tricycles_owner_rw on public.tricycles
   for all using (driver_id = auth.uid() or public.is_pso())
   with check (driver_id = auth.uid() or public.is_supervisor());
 
+-- 7.2b barangays --------------------------------------------------------
+-- Reference/lookup data: any authenticated user may read; only Admin
+-- maintains it (e.g. if the MTFRB amends cluster boundaries).
+create policy barangays_read_all on public.barangays
+  for select using (auth.uid() is not null);
+
+create policy barangays_write_admin on public.barangays
+  for all using (public.is_admin()) with check (public.is_admin());
+
 create policy documents_owner_rw on public.driver_documents
   for all using (driver_id = auth.uid() or public.is_pso())
   with check (driver_id = auth.uid() or public.is_supervisor());
+
+-- 7.3b passenger_discounts ----------------------------------------------
+-- Passenger submits their own claim (insert only, cannot self-approve);
+-- only PSO Supervisor/Admin may approve/reject (mirrors driver verification).
+create policy discounts_submit_own on public.passenger_discounts
+  for insert with check (passenger_id = auth.uid());
+
+create policy discounts_read on public.passenger_discounts
+  for select using (passenger_id = auth.uid() or public.is_pso());
+
+create policy discounts_review_supervisor on public.passenger_discounts
+  for update using (public.is_supervisor()) with check (public.is_supervisor());
 
 -- 7.4 trips -----------------------------------------------------------
 create policy trips_driver_rw on public.trips
