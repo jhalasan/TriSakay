@@ -15,13 +15,14 @@
     "test:driver": "npm --workspace apps/driver run test",
     "test:admin": "npm --workspace apps/admin run test",
     "test:services": "npm --workspace packages/services run test",
-    "typecheck": "tsc -b"
+    "typecheck": "tsc -b && tsc -p packages/services/tsconfig.tests.json"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
     "@types/react-dom": "~19.1.7",
     "typescript": "~5.9.2"
   },
+  "//typecheck": "packages/services/tests is checked by a second, non-emitting project rather than by the build graph: a composite project may not disable declaration emit (TS6304), so tsconfig.tests.json cannot be a `tsc -b` reference without emitting throwaway .d.ts for test files. Running it after `tsc -b` also guarantees the declarations it references are current.",
   "//overrides": "Expo SDK 54 / React Native 0.81 pin React 19.1.0. Without this, apps/admin's caret range resolves React 19.2.8 into the hoisted root while the RN apps keep a nested 19.1.0 — Metro then bundles two Reacts and hooks break at runtime.",
   "overrides": {
     "react": "19.1.0",

@@ -1,0 +1,24 @@
+{
+  // ./tests is deliberately outside the main project. It cannot simply be
+  // added to that project's `include`: rootDir is "src", so tests/ would push
+  // the common root up to the package directory and rearrange the declaration
+  // output under dist/. This project checks them instead — it emits nothing,
+  // and it references the main project so imports of ../src/* resolve through
+  // its declarations rather than being compiled a second time as inputs here.
+  //
+  // Not composite, and so not a `tsc -b` reference target: a composite project
+  // may not disable declaration emit (TS6304), and the only way to make one
+  // would be to emit throwaway .d.ts files for the tests. The root `typecheck`
+  // script runs this project explicitly after `tsc -b` instead, which also
+  // guarantees the referenced dist/ is up to date by the time it runs.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "composite": false,
+    "declaration": false,
+    "emitDeclarationOnly": false,
+    "noEmit": true,
+    "rootDir": "."
+  },
+  "references": [{ "path": "./tsconfig.json" }],
+  "include": ["tests/**/*"]
+}
