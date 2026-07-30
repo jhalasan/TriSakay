@@ -17,6 +17,39 @@ import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsent
 export const unstable_settings = { initialRouteName: 'index' };
 
 /**
+ * The first path segment of the current route — '(tabs)', 'consent',
+ * 'booking', and so on; `undefined` on the index route itself. Both gate
+ * effects below decide purely on this, so deriving it once keeps them from
+ * drifting into two different notions of "where are we". Returning the string
+ * rather than the array also stops the effects re-running on every render,
+ * since useSegments() hands back a fresh array each time.
+ */
+function useRootSegment(): string | undefined {
+  const segments = useSegments();
+  return segments[0] as string | undefined;
+}
+
+/**
+ * Routes the location prompt is allowed to appear over: the ordinary app
+ * surfaces a rider can be on once both gates have passed.
+ *
+ * An allowlist, deliberately, not a denylist of gates. The prompt is a
+ * transparentModal that pushes itself on top of whatever is showing, and the
+ * set of screens it must not cover is open-ended — every gate ('splash',
+ * '(auth)', 'consent'), the prompt itself, and every other modal route
+ * ('logout' today, more later). A denylist makes each new modal a silent bug
+ * the day it is added; this way a route that nobody thought about simply does
+ * not get the prompt, which is the safe direction to fail.
+ *
+ * This is also what keeps the prompt off a gate during the one commit where
+ * `segments` still reads the pre-replace route: useProtectedRoute's
+ * router.replace() out of '(auth)' or 'consent' lands in the same effect flush
+ * as this one (both fire off the same consentStatus transition), so the old
+ * root segment is still visible here when this effect runs.
+ */
+const LOCATION_PROMPT_ROUTES: readonly string[] = ['(tabs)', 'booking', 'profile', 'notifications'];
+
+/**
  * expo-router@6 has no built-in Protected-route API in this SDK, so the
  * auth gate is the manual segment-watching pattern from Expo's own docs:
  * splash owns its own timed redirect, this effect is the safety net for
@@ -24,11 +57,10 @@ export const unstable_settings = { initialRouteName: 'index' };
  * two things in order — authentication first, then consent (FR-11.1).
  */
 function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateStatus) {
-  const segments = useSegments();
+  const root = useRootSegment();
   const router = useRouter();
 
   useEffect(() => {
-    const root = segments[0] as string | undefined;
     const isSplashOrRoot = root === undefined || root === 'splash';
     if (isSplashOrRoot) return;
 
@@ -50,7 +82,7 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
     } else if (inAuthGroup || onConsent) {
       router.replace('/(tabs)/home');
     }
-  }, [isAuthenticated, consentStatus, segments, router]);
+  }, [isAuthenticated, consentStatus, root, router]);
 }
 
 /**
@@ -88,7 +120,7 @@ function useConsentSync(sessionUserId: string | null) {
  * start, not a one-time prompt.
  */
 function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateStatus) {
-  const segments = useSegments();
+  const root = useRootSegment();
   const router = useRouter();
   const { state, dismissedThisForeground } = useLocationPermission();
 
@@ -97,26 +129,10 @@ function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateS
     if (!isAuthenticated || consentStatus !== 'accepted') return;
     if (state === 'granted' || state === 'unknown') return;
     if (dismissedThisForeground) return;
-
-    // Excludes '(auth)' and 'consent' in addition to the terminal/self cases:
-    // useProtectedRoute's router.replace() out of those routes lands in the
-    // same effect-flush as this one (both fire off the same consentStatus
-    // transition), so `segments` here can still read the pre-replace route
-    // for one commit. Without this exclusion this effect would push
-    // /location-permission on top of /consent or /(auth)/login before the
-    // replace has taken effect, stranding the prompt over a screen the user
-    // is not entitled to be on yet.
-    const root = segments[0] as string | undefined;
-    const isGateOrSelf =
-      root === undefined ||
-      root === 'splash' ||
-      root === '(auth)' ||
-      root === 'consent' ||
-      root === 'location-permission';
-    if (isGateOrSelf) return;
+    if (root === undefined || !LOCATION_PROMPT_ROUTES.includes(root)) return;
 
     router.push('/location-permission');
-  }, [isAuthenticated, consentStatus, state, dismissedThisForeground, segments, router]);
+  }, [isAuthenticated, consentStatus, state, dismissedThisForeground, root, router]);
 }
 
 export default function RootLayout() {
