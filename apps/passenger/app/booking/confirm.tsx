@@ -9,7 +9,7 @@ import {
   Stepper,
   colors,
 } from '@trisakay/ui';
-import { LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
+import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -125,7 +125,15 @@ export default function ConfirmScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Request ride" fullWidth disabled={!isGranted} onPress={handleRequestRide} />
+        <Button
+          label="Request ride"
+          fullWidth
+          disabled={!isGranted}
+          // Only while disabled — an enabled button must not announce a reason
+          // that no longer applies.
+          accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
+          onPress={handleRequestRide}
+        />
         <LocationRequiredNotice />
       </View>
     </View>

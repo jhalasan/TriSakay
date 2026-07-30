@@ -9,12 +9,27 @@ export interface CheckboxProps extends Omit<PressableProps, 'style' | 'onPress'>
   label?: string;
 }
 
-export function Checkbox({ checked, onChange, label, disabled = false, ...pressableProps }: CheckboxProps) {
+export function Checkbox({
+  checked,
+  onChange,
+  label,
+  accessibilityLabel,
+  disabled = false,
+  ...pressableProps
+}: CheckboxProps) {
   return (
     <Pressable
       accessibilityRole="checkbox"
+      // `?? false` is not redundant with the `= false` default above. RN types
+      // PressableProps.disabled as `null | boolean | undefined`, and a parameter
+      // default only substitutes for `undefined`, so an explicit
+      // `disabled={null}` still arrives here as null — which AccessibilityState
+      // does not accept. Removing this is a type error, not a tidy-up.
       accessibilityState={{ checked, disabled: disabled ?? false }}
-      accessibilityLabel={label}
+      // `label` is optional, so binding the accessible name to it alone leaves
+      // a screen-reader user with an unnamed checkbox any time the visible text
+      // sits outside this component. Let such a caller name the control.
+      accessibilityLabel={accessibilityLabel ?? label}
       disabled={disabled}
       hitSlop={8}
       onPress={() => onChange(!checked)}

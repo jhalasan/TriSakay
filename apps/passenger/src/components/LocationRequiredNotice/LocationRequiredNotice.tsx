@@ -6,6 +6,15 @@ import { useLocationPermission } from '../../hooks/useLocationPermission';
 import { styles } from './LocationRequiredNotice.styles';
 
 /**
+ * The same reason, phrased for the button rather than for the notice. Call
+ * sites pass this as the `accessibilityHint` of the control this notice
+ * explains, so a screen-reader user hears why the button is dead without
+ * having to find and focus a second element. Apply it only while that control
+ * is actually disabled.
+ */
+export const LOCATION_REQUIRED_HINT = 'Location access is required. Turn on location to enable this.';
+
+/**
  * Renders nothing once permission is granted, so call sites can drop it in
  * unconditionally next to the control it explains. Routes to the same prompt
  * the app shows on resume — tapping here bypasses the "Not now" dismissal,

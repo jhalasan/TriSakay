@@ -14,11 +14,12 @@ export default function LocationPermissionScreen() {
   // The hook's module-load refresh is sticky if it fails — state stays
   // 'unknown' with no retry until the next foreground transition. This screen
   // can also be reached directly (Task 7's inline notices) without an
-  // intervening foreground transition, so refresh again on mount.
+  // intervening foreground transition, so refresh again on mount. `refresh` is
+  // a Zustand action and so a stable reference for the store's lifetime, which
+  // makes this a mount-only effect despite the honest dependency list.
   useEffect(() => {
     void refresh();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [refresh]);
 
   // Dismissal on grant lives here, not in handleEnable, because 'granted' can
   // arrive from outside this screen's own request() call: the 'blocked' →
@@ -66,9 +67,14 @@ export default function LocationPermissionScreen() {
             TriSakay needs your location to match you with nearby drivers and estimate pickup accurately.
           </Text>
 
+          {/*
+            Not "turn it back on": on iOS a single "Don't allow" sets
+            canAskAgain to false without location ever having been on for this
+            app, so "back on" describes a state that never existed.
+          */}
           {isBlocked ? (
             <Text style={styles.blockedNote}>
-              Location is turned off for TriSakay in your device settings. Open settings to turn it back on.
+              Location is off for TriSakay in your device settings. Open settings to turn it on.
             </Text>
           ) : null}
 
@@ -79,7 +85,19 @@ export default function LocationPermissionScreen() {
               loading={working}
               onPress={handleEnable}
             />
-            <Button label="Not now" variant="ghost" tone="neutral" fullWidth onPress={handleNotNow} />
+            {/*
+              Disabled while the request is in flight: the OS dialog is modal
+              on device, but a stray tap either side of it would fire a second
+              router.dismiss() on an already-dismissing modal.
+            */}
+            <Button
+              label="Not now"
+              variant="ghost"
+              tone="neutral"
+              fullWidth
+              disabled={working}
+              onPress={handleNotNow}
+            />
           </View>
         </View>
       </View>

@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, EmptyState, OsmMap, colors } from '@trisakay/ui';
-import { LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
+import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -104,6 +104,9 @@ export default function HomeScreen() {
           label="Where to?"
           fullWidth
           disabled={!isGranted}
+          // Only while disabled — an enabled button must not announce a reason
+          // that no longer applies.
+          accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
           onPress={() => router.push('/booking/set-destination')}
         />
         <LocationRequiredNotice />

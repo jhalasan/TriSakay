@@ -23,44 +23,75 @@ function toState(response: Location.LocationPermissionResponse): LocationPermiss
   return response.canAskAgain ? 'denied' : 'blocked';
 }
 
-export const useLocationPermissionStore = create<LocationPermissionStore>()((set, get) => ({
-  state: 'unknown',
-  dismissedThisForeground: false,
+export const useLocationPermissionStore = create<LocationPermissionStore>()((set, get) => {
+  // Staleness guard, the same monotonic-token idiom as useAuthStore's authEpoch
+  // and useConsentStore's requestEpoch: claim a token, apply the result only
+  // while that token is still current.
+  //
+  // Both calls below are async and both write `state`, and they genuinely
+  // interleave — raising the OS permission dialog drives the app
+  // inactive → active, which fires the AppState listener's refresh() while
+  // request() is still waiting on the user's answer. That refresh reads the
+  // permission as it stands *before* the answer, so if it resolved last it
+  // would overwrite request()'s 'granted' with 'denied' and re-disable every
+  // location-gated control until the next foreground.
+  //
+  // One asymmetry from the other two stores, and it is deliberate: request()
+  // claims the token when it RESOLVES rather than when it starts, so it always
+  // wins. It is the only call that can change the permission, and its answer is
+  // by construction newer than any read taken while the dialog was still up.
+  // Claiming at start instead would invert the fix — a refresh() that began
+  // after request() would outrank it and the stale read would win every time.
+  let epoch = 0;
 
-  refresh: async () => {
-    let next: LocationPermissionState;
-    try {
-      next = toState(await Location.getForegroundPermissionsAsync());
-    } catch {
-      // A read that throws must never be interpreted as granted — staying
-      // 'unknown' keeps location-dependent actions disabled rather than
-      // letting the user into a flow that cannot work.
-      next = 'unknown';
-    }
-    set({ state: next });
-    return next;
-  },
+  return {
+    state: 'unknown',
+    dismissedThisForeground: false,
 
-  request: async () => {
-    if (get().state === 'blocked') {
-      // The OS will not prompt again; send the user to system Settings instead
-      // of firing a request that silently resolves to denied.
-      await Linking.openSettings().catch(() => {});
-      return 'blocked';
-    }
+    refresh: async () => {
+      const claimed = ++epoch;
+      let next: LocationPermissionState;
+      try {
+        next = toState(await Location.getForegroundPermissionsAsync());
+      } catch {
+        // A read that throws must never be interpreted as granted — staying
+        // 'unknown' keeps location-dependent actions disabled rather than
+        // letting the user into a flow that cannot work.
+        next = 'unknown';
+      }
+      // Superseded by a read that started later, or by a request() that has
+      // since answered. Return what was read so the caller still sees it, but
+      // do not publish it.
+      if (claimed === epoch) set({ state: next });
+      return next;
+    },
 
-    let next: LocationPermissionState;
-    try {
-      next = toState(await Location.requestForegroundPermissionsAsync());
-    } catch {
-      next = 'unknown';
-    }
-    set({ state: next });
-    return next;
-  },
+    request: async () => {
+      if (get().state === 'blocked') {
+        // The OS will not prompt again; send the user to system Settings instead
+        // of firing a request that silently resolves to denied. No token claimed
+        // and nothing written: this path changes nothing itself, and must not
+        // invalidate the AppState refresh that returning from Settings fires —
+        // that refresh is the only thing that notices the permission was granted
+        // there.
+        await Linking.openSettings().catch(() => {});
+        return 'blocked';
+      }
 
-  dismiss: () => set({ dismissedThisForeground: true }),
-}));
+      let next: LocationPermissionState;
+      try {
+        next = toState(await Location.requestForegroundPermissionsAsync());
+      } catch {
+        next = 'unknown';
+      }
+      epoch++;
+      set({ state: next });
+      return next;
+    },
+
+    dismiss: () => set({ dismissedThisForeground: true }),
+  };
+});
 
 /**
  * One listener for the whole app, registered at module load — the same idiom
