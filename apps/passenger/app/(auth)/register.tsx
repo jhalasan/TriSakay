@@ -20,6 +20,10 @@ export default function RegisterScreen() {
   const register = useAuthStore((state) => state.register);
   const authError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
+  // See login.tsx: registration that returns an immediate session leaves this
+  // screen mounted while the consent gate decides, so the button has to stay
+  // busy until the gate routes away rather than inviting a second submit.
+  const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
 
   const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '', password: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
@@ -101,7 +105,7 @@ export default function RegisterScreen() {
 
         {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
-        <Button label="Register" onPress={handleRegister} loading={submitting} fullWidth />
+        <Button label="Register" onPress={handleRegister} loading={submitting || awaitingGate} fullWidth />
 
         <Text style={styles.legalText}>
           By creating an account, you agree to TriSakay's Terms of Service and Privacy Policy.

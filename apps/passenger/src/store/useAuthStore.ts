@@ -18,6 +18,15 @@ function toAppUser(profile: PublicUser): User {
 
 interface AuthState {
   user: User | null;
+  /**
+   * The signed-in user's id, taken straight off the session and set
+   * synchronously with every auth event. `user` is not a substitute: it only
+   * lands once the profile fetch resolves (and stays null if that fetch
+   * fails), so during a user switch `user.id` still reads as the *previous*
+   * user. Anything that must re-key when the identity changes — the consent
+   * gate — has to watch this field.
+   */
+  sessionUserId: string | null;
   isAuthenticated: boolean;
   isHydrating: boolean;
   error: string | null;
@@ -45,9 +54,15 @@ export const useAuthStore = create<AuthState>()((set) => {
     const epoch = ++authEpoch;
 
     if (!session) {
-      set({ user: null, isAuthenticated: false, isHydrating: false });
+      set({ user: null, sessionUserId: null, isAuthenticated: false, isHydrating: false });
       return;
     }
+
+    // Publish the identity before awaiting anything. The consent gate keys off
+    // it, and it must not lag behind the session by the length of a profile
+    // fetch — that window is exactly when a second sign-in would otherwise be
+    // judged against the previous user's consent verdict.
+    set({ sessionUserId: session.user.id });
 
     authService
       .getCurrentUserProfile()
@@ -71,6 +86,7 @@ export const useAuthStore = create<AuthState>()((set) => {
 
   return {
     user: null,
+    sessionUserId: null,
     isAuthenticated: false,
     isHydrating: true,
     error: null,

@@ -44,11 +44,17 @@ export default function ConsentScreen() {
 
   async function handleAccept() {
     setSubmitting(true);
-    const saved = await accept();
-    setSubmitting(false);
-    // Only navigate on a confirmed write. On failure the store's `error` is
-    // already set and renders below the button, and the user can retry.
-    if (saved) router.replace('/(tabs)/home');
+    try {
+      const saved = await accept();
+      // Only navigate on a confirmed write. On failure the store's `error` is
+      // already set and renders below the button, and the user can retry.
+      if (saved) router.replace('/(tabs)/home');
+    } finally {
+      // A gate has no back navigation, so a button left spinning is a
+      // force-quit. accept() already swallows its own failures; this is the
+      // second layer, covering anything thrown after it returns.
+      setSubmitting(false);
+    }
   }
 
   return (

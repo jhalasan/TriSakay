@@ -56,22 +56,29 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
 /**
  * Drives the consent check from the auth state rather than from inside
  * useConsentStore, so consent stays decoupled from useAuthStore's internals.
- * Resetting on sign-out matters: without it a second user signing in on the
- * same device would inherit the first user's `accepted`.
+ *
+ * Keyed on the session's user id, not on `isAuthenticated`: signing in (or
+ * registering) on a client that already holds a session replaces that session
+ * and fires SIGNED_IN without the boolean ever passing through false, so a
+ * boolean-keyed effect never re-runs and the new user silently inherits the
+ * previous user's verdict. `sessionUserId` moves on every auth event, and it
+ * moves synchronously — `user?.id` would still read as the previous user for
+ * the length of the profile fetch, which is precisely the window that has to
+ * be closed.
+ *
+ * Clearing first matters in both directions: on sign-out so nothing is
+ * inherited, and on a switch so reset()'s epoch bump discards any check still
+ * in flight for the identity being replaced.
  */
-function useConsentSync(isAuthenticated: boolean) {
+function useConsentSync(sessionUserId: string | null) {
   const check = useConsentStore((state) => state.check);
   const reset = useConsentStore((state) => state.reset);
 
   useEffect(() => {
-    if (!isAuthenticated) {
-      reset();
-      return;
-    }
-    // Read through getState so an already-running check is not restarted on
-    // every re-render.
-    if (useConsentStore.getState().status === 'unknown') void check();
-  }, [isAuthenticated, check, reset]);
+    reset();
+    if (sessionUserId === null) return;
+    void check();
+  }, [sessionUserId, check, reset]);
 }
 
 /**
@@ -114,8 +121,9 @@ function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateS
 
 export default function RootLayout() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
+  const sessionUserId = useAuthStore((state) => state.sessionUserId);
   const consentStatus = useConsentStore((state) => state.status);
-  useConsentSync(isAuthenticated);
+  useConsentSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 

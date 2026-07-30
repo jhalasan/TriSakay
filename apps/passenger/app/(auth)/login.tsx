@@ -11,6 +11,13 @@ export default function LoginScreen() {
   const login = useAuthStore((state) => state.login);
   const authError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
+  // Sign-in succeeded and the consent gate is still deciding where this user
+  // goes; the root layout deliberately holds this screen in place meanwhile.
+  // Without keeping the buttons busy for that whole window the screen looks
+  // idle and invites a second sign-in — which would replace the session the
+  // in-flight consent check was started for. Bounded by the store's request
+  // timeout, and cleared by sign-out, so it cannot latch.
+  const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -75,7 +82,7 @@ export default function LoginScreen() {
           </Text>
         </View>
 
-        <Button label="Log in" onPress={handleLogin} loading={submitting} fullWidth />
+        <Button label="Log in" onPress={handleLogin} loading={submitting || awaitingGate} fullWidth />
 
         <View style={styles.dividerRow}>
           <View style={styles.dividerLine} />
@@ -88,6 +95,7 @@ export default function LoginScreen() {
           variant="outline"
           tone="neutral"
           fullWidth
+          disabled={submitting || awaitingGate}
           onPress={() => router.push('/(auth)/register')}
         />
       </ScrollView>
