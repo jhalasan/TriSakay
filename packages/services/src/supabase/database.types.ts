@@ -783,6 +783,38 @@ export type Database = {
           },
         ]
       }
+      user_consents: {
+        Row: {
+          accepted_at: string
+          id: string
+          policy_type: string
+          policy_version: string
+          user_id: string
+        }
+        Insert: {
+          accepted_at?: string
+          id?: string
+          policy_type: string
+          policy_version: string
+          user_id: string
+        }
+        Update: {
+          accepted_at?: string
+          id?: string
+          policy_type?: string
+          policy_version?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_consents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       users: {
         Row: {
           avatar_url: string | null
@@ -2042,4 +2074,3 @@ export const Constants = {
     },
   },
 } as const
-

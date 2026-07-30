@@ -1,6 +1,11 @@
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../src/supabase/database.types';
 
+export interface FakeConsentRow {
+  policy_type: string;
+  policy_version: string;
+}
+
 export interface FakeClientConfig {
   signUp?: (args: unknown) => Promise<{ data: { session: unknown }; error: { message: string } | null }>;
   signInWithPassword?: (
@@ -10,6 +15,12 @@ export interface FakeClientConfig {
   signOut?: () => Promise<void>;
   userRow?: Record<string, unknown> | null;
   updateError?: string | null;
+  /** Rows `user_consents` selects resolve to. */
+  consentRows?: FakeConsentRow[];
+  consentSelectError?: string | null;
+  consentInsertError?: string | null;
+  /** Receives the array passed to `.insert()`, so tests can assert the payload shape. */
+  onConsentInsert?: (rows: unknown) => void;
 }
 
 export function createFakeSupabaseClient(config: FakeClientConfig = {}): SupabaseClient<Database> {
@@ -36,12 +47,32 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     eq: async () => ({ error: config.updateError ? { message: config.updateError } : null }),
   };
 
-  const from = () => ({
+  const usersTable = {
     select: usersQuery.select,
     eq: usersQuery.eq,
     single: usersQuery.single,
     update: () => updateQuery,
-  });
+  };
+
+  // `.in()` terminates the consent query, so it is the only awaitable link.
+  const consentsQuery = {
+    select: () => consentsQuery,
+    eq: () => consentsQuery,
+    in: async () =>
+      config.consentSelectError
+        ? { data: null, error: { message: config.consentSelectError } }
+        : { data: config.consentRows ?? [], error: null },
+  };
+
+  const consentsTable = {
+    select: consentsQuery.select,
+    insert: async (rows: unknown) => {
+      config.onConsentInsert?.(rows);
+      return { error: config.consentInsertError ? { message: config.consentInsertError } : null };
+    },
+  };
+
+  const from = (table: string) => (table === 'user_consents' ? consentsTable : usersTable);
 
   return { auth, from } as unknown as SupabaseClient<Database>;
 }
