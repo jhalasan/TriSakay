@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import * as authService from '@trisakay/services';
 import type { PublicUser } from '@trisakay/services';
 import type { User } from '../types/user';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout';
 
 /** `Session | null`, derived from the service so this app needn't depend on supabase-js directly. */
 type AuthSession = Awaited<ReturnType<typeof authService.getSession>>;
@@ -46,9 +47,12 @@ export const useAuthStore = create<AuthState>()((set) => {
   let authEpoch = 0;
 
   /**
-   * Applies one observed auth event. Every path — including failure — clears
-   * `isHydrating`, so a rejected promise can never strand the splash screen
-   * (which waits on hydration with no timeout).
+   * Applies one observed auth event. Every path — including failure and a
+   * server that accepts the connection but never answers — clears
+   * `isHydrating` within REQUEST_TIMEOUT_MS, so no promise can strand the
+   * splash screen (which waits on hydration with no deadline of its own) or
+   * the auth screens (whose buttons stay busy while `sessionUserId` is set but
+   * `isAuthenticated` is still false).
    */
   function applyAuthEvent(session: AuthSession): void {
     const epoch = ++authEpoch;
@@ -64,8 +68,13 @@ export const useAuthStore = create<AuthState>()((set) => {
     // judged against the previous user's consent verdict.
     set({ sessionUserId: session.user.id });
 
-    authService
-      .getCurrentUserProfile()
+    // Timed, not merely try/caught. A profile fetch that hangs rather than
+    // fails is the dangerous case: it never rejects, so `.catch()` never runs,
+    // `isAuthenticated` stays false forever, and both the splash screen and
+    // the login/register buttons (which key on `sessionUserId !== null`) wait
+    // on it indefinitely. The timeout collapses a hang into the failure path
+    // that is already handled.
+    withTimeout(authService.getCurrentUserProfile(), REQUEST_TIMEOUT_MS, 'Profile fetch timed out')
       // A failed profile fetch does not invalidate the session, so stay
       // authenticated with a null profile rather than signing the user out.
       .catch(() => null)

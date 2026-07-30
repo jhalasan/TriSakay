@@ -15,8 +15,16 @@ export default function LoginScreen() {
   // goes; the root layout deliberately holds this screen in place meanwhile.
   // Without keeping the buttons busy for that whole window the screen looks
   // idle and invites a second sign-in — which would replace the session the
-  // in-flight consent check was started for. Bounded by the store's request
-  // timeout, and cleared by sign-out, so it cannot latch.
+  // in-flight consent check was started for.
+  //
+  // This flag follows the session, not any one request, so no single store
+  // timeout bounds it directly. What bounds it is that each step it waits on
+  // is itself timed: useAuthStore's profile fetch settles `isAuthenticated`
+  // within the request timeout, and useConsentStore's check() settles
+  // `status` within another — after which the root layout routes away and
+  // this screen unmounts. It also clears outright if the session drops. So it
+  // cannot latch, but only because both of those timeouts exist; removing
+  // either one puts this button back at the mercy of a hung request.
   const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
 
   const [email, setEmail] = useState('');

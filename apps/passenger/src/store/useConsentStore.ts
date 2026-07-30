@@ -5,15 +5,16 @@
 import '../lib/supabase';
 import { create } from 'zustand';
 import { getConsentStatus, recordConsent } from '@trisakay/services';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout';
 
 export type ConsentGateStatus = 'unknown' | 'checking' | 'accepted' | 'required';
 
-// React Native's fetch has no default timeout, so a connection that
-// establishes but never responds (captive portal, dead rural link) would
-// otherwise leave a request pending indefinitely — check() stuck on 'checking',
-// or accept() stuck with its button spinning on a gate that has no way back.
-// 10s matches the upper end of NFR-1's 5-10s envelope for normal operations.
-const REQUEST_TIMEOUT_MS = 10_000;
+// Every request here is timed. React Native's fetch has no default timeout, so
+// a connection that establishes but never responds (captive portal, dead rural
+// link) would otherwise leave a request pending indefinitely — check() stuck on
+// 'checking', or accept() stuck with its button spinning on a gate that has no
+// way back.
+const TIMEOUT_MESSAGE = 'Consent check timed out';
 
 /**
  * The single user-facing failure message. Both a failed verification and a
@@ -22,22 +23,6 @@ const REQUEST_TIMEOUT_MS = 10_000;
  * (`user_consents` is append-only).
  */
 const UNVERIFIED_MESSAGE = 'Could not verify your acceptance.';
-
-/**
- * Races `promise` against a timeout so a request that establishes a
- * connection but never responds (captive portal, dead link) cannot hang
- * forever. Clears the timer on either outcome so the success path never
- * leaks a pending timeout.
- */
-function withTimeout<T>(promise: Promise<T>, ms: number): Promise<T> {
-  let timer: ReturnType<typeof setTimeout> | undefined;
-  const timeout = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error('Consent check timed out')), ms);
-  });
-  return Promise.race([promise, timeout]).finally(() => {
-    if (timer) clearTimeout(timer);
-  });
-}
 
 interface ConsentState {
   status: ConsentGateStatus;
@@ -75,7 +60,7 @@ export const useConsentStore = create<ConsentState>()((set) => {
       set({ status: 'checking', error: null });
 
       try {
-        const { status, error } = await withTimeout(getConsentStatus(), REQUEST_TIMEOUT_MS);
+        const { status, error } = await withTimeout(getConsentStatus(), REQUEST_TIMEOUT_MS, TIMEOUT_MESSAGE);
         if (epoch !== requestEpoch) return; // superseded: a different user's answer now
 
         if (error || !status) {
@@ -103,7 +88,7 @@ export const useConsentStore = create<ConsentState>()((set) => {
 
       let error: string | null;
       try {
-        ({ error } = await withTimeout(recordConsent(), REQUEST_TIMEOUT_MS));
+        ({ error } = await withTimeout(recordConsent(), REQUEST_TIMEOUT_MS, TIMEOUT_MESSAGE));
       } catch {
         // recordConsent() rejecting rather than returning { error } — a throwing
         // getSupabaseClient(), a rejected auth.getSession(), a fetch-level
@@ -114,8 +99,19 @@ export const useConsentStore = create<ConsentState>()((set) => {
       }
 
       // The session this write was made for is gone (sign-out mid-submit).
-      // Report failure rather than marking a stale identity accepted.
-      if (epoch !== requestEpoch) return false;
+      // Report failure rather than marking a stale identity accepted — and say
+      // so, because nothing else will re-settle this screen: the newer epoch
+      // belongs to a different identity, so returning false silently would
+      // stop the button spinning with no visible outcome at all. The message
+      // is the same UNVERIFIED_MESSAGE as every other failure because it means
+      // the same thing to the user: acceptance was not confirmed, retry is
+      // safe. (If the supersession was a sign-out, useConsentSync's reset()
+      // has already cleared this store and will clear it again on the next
+      // sign-in, so the message cannot leak to the next user.)
+      if (epoch !== requestEpoch) {
+        set({ error: UNVERIFIED_MESSAGE });
+        return false;
+      }
 
       if (error) {
         set({ error });
