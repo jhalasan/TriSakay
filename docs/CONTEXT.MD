@@ -176,6 +176,17 @@ New use cases: **UC43 — Rate Driver** (Passenger, post-trip) and **UC44 — Re
 
 ---
 
+### FR-11: Terms of Service & Privacy Consent — LOCKED
+- FR-11.1 On first launch/registration, system presents Terms of Service and Privacy Policy; user must explicitly accept before proceeding to any core feature
+- FR-11.2 Privacy Policy discloses what data is collected and shared: name/contact (visible to matched Driver/Passenger during active ride only), live location (ride-scoped per NFR-2.5), ride/payment history (visible to PSO for oversight), payment details (shared with GCash for processing only)
+- FR-11.3 System records consent as an auditable event (user, policy version, timestamp), not just a one-time popup with no trace
+- FR-11.4 On app start, if location permission is not granted, system prompts the user to enable it before allowing location-dependent features, with a plain explanation of why it's needed
+- FR-11.5 If the user declines, location-dependent features are disabled gracefully with a retry option, rather than crashing or failing silently
+
+New use cases: **UC45 — Accept Terms of Service & Privacy Policy** (all roles, first launch/registration); **UC46 — Grant Location Permission** (Passenger, Driver, app startup). This is the disclosure/consent layer sitting on top of the technical enforcement already defined in NFR-2.5.
+
+---
+
 ## 5. Non-Functional Requirements (NFR-1 to NFR-8) — LOCKED
 *(Balanced scope: realistic prototype targets with explicitly stated academic limitations)*
 
@@ -231,7 +242,7 @@ PSO sub-roles are a simple fixed enum (not a configurable permissions table), si
 
 ## 8. Use Case Summary — LOCKED
 
-44 total use cases (UC1–UC44) across 5 actors, with generalization: PSO Supervisor inherits PSO Staff use cases; Administrator inherits PSO Supervisor use cases. Key relationships: UC6 (Request Ride) «include»s UC5 (Estimate Fare); UC21 (Select Passengers Pre-Trip) «extend»s UC20 (View Request Board); UC23 (Accept Mid-Trip Pickup) «extend»s UC22 (Start Trip). UC43 (Rate Driver, Passenger) and UC44 (Review Flagged Rating, PSO Supervisor+) were added for the Rating & Merit System (FR-10).
+44 total use cases (UC1–UC44) across 5 actors, with generalization: PSO Supervisor inherits PSO Staff use cases; Administrator inherits PSO Supervisor use cases. Key relationships: UC6 (Request Ride) «include»s UC5 (Estimate Fare); UC21 (Select Passengers Pre-Trip) «extend»s UC20 (View Request Board); UC23 (Accept Mid-Trip Pickup) «extend»s UC22 (Start Trip). UC43 (Rate Driver, Passenger) and UC44 (Review Flagged Rating, PSO Supervisor+) were added for the Rating & Merit System (FR-10). UC45 (Accept Terms of Service & Privacy Policy) and UC46 (Grant Location Permission) were added for FR-11, bringing the total to 46.
 
 Full actor-by-actor use case list and all 42 formal specifications (actor, precondition, main flow, alternate flow, postcondition, business rules) were drafted in-session — priority specs covered UC6, UC10, UC20–23 in depth (matching, request board, payment), with the remaining 36 specified at standard depth. Diagrams produced: package-level use case diagrams (3, grouped by app) and full individual-oval UML-style use case diagrams (3, one per app) matching classic notation.
 

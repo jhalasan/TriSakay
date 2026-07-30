@@ -447,6 +447,28 @@ create table public.notifications (
 );
 
 
+-- 3.6 user_consents -----------------------------------------------------
+-- Auditable record of Terms of Service / Privacy Policy acceptance (FR-11.3).
+-- One row per acceptance event — never updated, only inserted, so the
+-- history of what a user agreed to (and when) is never lost.
+create table public.user_consents (
+  id             uuid primary key default gen_random_uuid(),
+  user_id        uuid not null references public.users(id) on delete cascade,
+  policy_type    text not null,       -- 'terms_of_service' | 'privacy_policy'
+  policy_version text not null,       -- e.g. 'v1.0', 'v1.1'
+  accepted_at    timestamptz not null default now(),
+
+  constraint consent_policy_type_check check (
+    policy_type in ('terms_of_service', 'privacy_policy')
+  )
+);
+
+create index idx_consents_user on public.user_consents (user_id, policy_type);
+
+comment on table public.user_consents is
+  'Append-only. A new row per (re-)acceptance — supports proving consent to a specific policy version at a specific time.';
+
+
 -- ---------------------------------------------------------------------
 -- 4. FUNCTIONS & TRIGGERS
 -- ---------------------------------------------------------------------
@@ -720,6 +742,7 @@ alter table public.account_actions  enable row level security;
 alter table public.fare_config      enable row level security;
 alter table public.system_settings  enable row level security;
 alter table public.notifications    enable row level security;
+alter table public.user_consents    enable row level security;
 
 -- 7.1 users -----------------------------------------------------------
 create policy users_select_self on public.users
@@ -864,6 +887,15 @@ create policy settings_write_admin on public.system_settings
 -- 7.11 notifications --------------------------------------------------
 create policy notif_own on public.notifications
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- 7.12 user_consents ---------------------------------------------------
+-- Insert-only from the user's own side; PSO/Admin may read for audit
+-- purposes but nobody may update or delete a consent record.
+create policy consents_insert_own on public.user_consents
+  for insert with check (user_id = auth.uid());
+
+create policy consents_read on public.user_consents
+  for select using (user_id = auth.uid() or public.is_pso());
 
 
 -- ---------------------------------------------------------------------
