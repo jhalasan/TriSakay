@@ -1,9 +1,12 @@
 import type { TextStyle } from 'react-native';
 
 /**
- * Inter, chosen for legibility rather than personality: tall x-height, open
- * apertures, and unambiguous 1/l/I — the properties that survive a phone held
- * at arm's length outdoors, which is where this app is used.
+ * Poppins — geometric, rounded, and noticeably more branded than a neutral UI
+ * face. The trade it makes is legibility at small sizes: a short x-height
+ * relative to its caps, single-storey `a`, and near-circular `o`/`e` counters
+ * that close up on a low-DPI screen in daylight. `caption` (13px) is where
+ * that shows first, so check it outdoors before committing to this face —
+ * NFR-3's low-literacy requirement leans the other way.
  *
  * **Weight lives in the family name, never in `fontWeight`.** React Native
  * cannot synthesise weights for a custom face, so each weight is a separate
@@ -19,10 +22,10 @@ import type { TextStyle } from 'react-native';
  * strings.
  */
 export const fontFamily = {
-  regular: 'Inter_400Regular',
-  semibold: 'Inter_600SemiBold',
-  bold: 'Inter_700Bold',
-  extrabold: 'Inter_800ExtraBold',
+  regular: 'Poppins_400Regular',
+  semibold: 'Poppins_600SemiBold',
+  bold: 'Poppins_700Bold',
+  extrabold: 'Poppins_800ExtraBold',
 } as const;
 
 export type FontFamilyToken = keyof typeof fontFamily;

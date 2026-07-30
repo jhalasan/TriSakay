@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
 import {
-  Inter_400Regular,
-  Inter_600SemiBold,
-  Inter_700Bold,
-  Inter_800ExtraBold,
-} from '@expo-google-fonts/inter';
+  Poppins_400Regular,
+  Poppins_600SemiBold,
+  Poppins_700Bold,
+  Poppins_800ExtraBold,
+} from '@expo-google-fonts/poppins';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -148,10 +148,10 @@ export default function RootLayout() {
   // loader from the tokens that reference it — a family that is not loaded
   // falls back to the system face with no error.
   const [fontsLoaded, fontError] = useFonts({
-    [fontFamily.regular]: Inter_400Regular,
-    [fontFamily.semibold]: Inter_600SemiBold,
-    [fontFamily.bold]: Inter_700Bold,
-    [fontFamily.extrabold]: Inter_800ExtraBold,
+    [fontFamily.regular]: Poppins_400Regular,
+    [fontFamily.semibold]: Poppins_600SemiBold,
+    [fontFamily.bold]: Poppins_700Bold,
+    [fontFamily.extrabold]: Poppins_800ExtraBold,
   });
 
   // Hold the tree until the faces resolve, so nothing paints in the system font
