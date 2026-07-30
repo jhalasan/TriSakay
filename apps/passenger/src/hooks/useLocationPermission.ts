@@ -67,15 +67,30 @@ export const useLocationPermissionStore = create<LocationPermissionStore>()((set
  * useAuthStore uses for onAuthStateChange. Re-reading on every foreground is
  * what makes a permission granted in system Settings take effect on return,
  * with no reinstall and no cold start.
+ *
+ * The dismissal reset is gated on having observed an actual 'background'
+ * state first, not merely on "previous state wasn't active". iOS fires
+ * 'inactive' for the multitasking view, Notification Center, and incoming
+ * calls — none of those is a new foreground session — so gating on
+ * `previousAppState !== 'active'` would clear a "Not now" dismissal on a
+ * blip the user never left the app for. `refresh()` still runs on every
+ * transition to 'active' regardless (cheap, idempotent, and what makes the
+ * Settings round-trip work); only the dismissal reset is narrowed to a real
+ * background → foreground cycle.
  */
-let previousAppState: AppStateStatus = AppState.currentState;
-AppState.addEventListener('change', (nextAppState) => {
-  const returningToForeground = previousAppState !== 'active' && nextAppState === 'active';
-  previousAppState = nextAppState;
-  if (!returningToForeground) return;
+let wasBackgrounded = false;
+AppState.addEventListener('change', (nextAppState: AppStateStatus) => {
+  if (nextAppState === 'background') {
+    wasBackgrounded = true;
+    return;
+  }
+  if (nextAppState !== 'active') return;
 
-  useLocationPermissionStore.setState({ dismissedThisForeground: false });
   void useLocationPermissionStore.getState().refresh();
+
+  if (!wasBackgrounded) return;
+  wasBackgrounded = false;
+  useLocationPermissionStore.setState({ dismissedThisForeground: false });
 });
 
 void useLocationPermissionStore.getState().refresh();

@@ -34,7 +34,9 @@
       [
         "expo-location",
         {
-          "locationWhenInUsePermission": "TriSakay needs your location to match you with nearby drivers and estimate pickup accurately."
+          "locationWhenInUsePermission": "TriSakay needs your location to match you with nearby drivers and estimate pickup accurately.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false
         }
       ]
     ]
