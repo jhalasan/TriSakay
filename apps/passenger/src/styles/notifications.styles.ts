@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, fontFamily, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -12,7 +12,7 @@ export const styles = StyleSheet.create({
   markReadText: {
     ...typography.caption,
     color: colors.accentBlue,
-    fontWeight: '600',
+    fontFamily: fontFamily.semibold,
   },
   row: {
     flexDirection: 'row',

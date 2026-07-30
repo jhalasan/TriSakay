@@ -1,9 +1,16 @@
 import { useEffect } from 'react';
+import {
+  Inter_400Regular,
+  Inter_600SemiBold,
+  Inter_700Bold,
+  Inter_800ExtraBold,
+} from '@expo-google-fonts/inter';
+import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { colors } from '@trisakay/ui';
+import { colors, fontFamily } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
@@ -136,6 +143,34 @@ function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateS
 }
 
 export default function RootLayout() {
+  // Keyed by the theme's own constants rather than by the imported binding
+  // names, so renaming a family in packages/ui cannot silently desync the
+  // loader from the tokens that reference it — a family that is not loaded
+  // falls back to the system face with no error.
+  const [fontsLoaded, fontError] = useFonts({
+    [fontFamily.regular]: Inter_400Regular,
+    [fontFamily.semibold]: Inter_600SemiBold,
+    [fontFamily.bold]: Inter_700Bold,
+    [fontFamily.extrabold]: Inter_800ExtraBold,
+  });
+
+  // Hold the tree until the faces resolve, so nothing paints in the system font
+  // and then reflows once Inter arrives. `fontError` counts as resolved on
+  // purpose: a font that fails to load must degrade to the system face, never
+  // strand the app on a blank screen — the same fail-open rule the auth and
+  // consent gates already follow.
+  if (!fontsLoaded && !fontError) return null;
+
+  return <RootLayoutNav />;
+}
+
+/**
+ * Split from the font gate above so the navigation effects cannot run before
+ * the Stack is mounted. Returning null from a component that had already called
+ * useProtectedRoute would let a router.replace() fire with no navigator
+ * present, which expo-router treats as an error.
+ */
+function RootLayoutNav() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
   const consentStatus = useConsentStore((state) => state.status);

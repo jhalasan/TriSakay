@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, fontFamily, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   scrollContent: {
@@ -35,7 +35,7 @@ export const styles = StyleSheet.create({
   forgotLinkText: {
     ...typography.caption,
     color: colors.accentBlue,
-    fontWeight: '700',
+    fontFamily: fontFamily.bold,
   },
   dividerRow: {
     flexDirection: 'row',

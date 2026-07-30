@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '../../theme';
+import { colors, fontFamily, elevation, radius, spacing, typography } from '../../theme';
 
 /** Recenter control. 44pt minimum touch target (see PRODUCT.md accessibility). */
 export const RECENTER_SIZE = 44;
@@ -38,7 +38,7 @@ export const styles = StyleSheet.create({
   labelText: {
     ...typography.caption,
     color: colors.inkSoft,
-    fontWeight: '600',
+    fontFamily: fontFamily.semibold,
   },
   offlineChip: {
     position: 'absolute',

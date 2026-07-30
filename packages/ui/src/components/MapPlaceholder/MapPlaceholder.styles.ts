@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '../../theme';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme';
 
 export const styles = StyleSheet.create({
   container: {
@@ -22,6 +22,6 @@ export const styles = StyleSheet.create({
   labelText: {
     ...typography.caption,
     color: colors.inkSoft,
-    fontWeight: '600',
+    fontFamily: fontFamily.semibold,
   },
 });

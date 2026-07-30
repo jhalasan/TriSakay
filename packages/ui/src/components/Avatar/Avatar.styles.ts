@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors } from '../../theme';
+import { colors, fontFamily } from '../../theme';
 
 export const styles = StyleSheet.create({
   base: {
@@ -14,6 +14,6 @@ export const styles = StyleSheet.create({
   },
   initials: {
     color: colors.accentBluePressed,
-    fontWeight: '700',
+    fontFamily: fontFamily.bold,
   },
 });

@@ -34,21 +34,25 @@ Two rules that matter more than the hex values:
 
 ## Typography
 
-System font (SF on iOS, Roboto on Android) — no custom font load, matching native expectations for an Operate surface. Steps are deliberately wide: on a phone held at arm's length outdoors, a 2px difference between levels reads as noise. Negative tracking on large sizes only, floor −0.04em.
+**Inter**, loaded at startup via `expo-font` and gated in `app/_layout.tsx` so nothing paints in the system face and then reflows. Chosen for legibility over personality — tall x-height, open apertures, unambiguous 1/l/I — which is what survives a phone held at arm's length outdoors, and what NFR-3's low-literacy requirement actually asks for. Steps are deliberately wide: at that distance a 2px difference between levels reads as noise. Negative tracking on large sizes only, floor −0.04em.
 
-| Style | Size / Line height | Weight | Tracking |
+**Weight lives in the family name, not `fontWeight`.** React Native cannot synthesise weights for a custom face, so each weight is a separate loaded font (`Inter_400Regular`, `Inter_600SemiBold`, `Inter_700Bold`, `Inter_800ExtraBold`, exported as `fontFamily` from `@trisakay/ui`). Setting `fontWeight` as well makes Android fake-bold *on top of* the real bold face, which reads as smeared — so the `TypeStyle` type omits `fontWeight` entirely and the compiler rejects re-adding one. Anywhere that needs a heavier weight than its token, override `fontFamily`, never `fontWeight`.
+
+If a face fails to load the app still renders, falling back to the system font at regular weight — a missing font degrades the look, it never blocks the app.
+
+| Style | Size / Line height | Family | Tracking |
 |---|---|---|---|
-| `amount` | 40 / 46 | 800 | −1.2 |
-| `display` | 34 / 40 | 800 | −0.8 |
-| `h1` | 27 / 33 | 700 | −0.4 |
-| `h2` | 20 / 26 | 700 | −0.2 |
-| `h3` | 17 / 23 | 600 | — |
-| `body` | 16 / 24 | 400 | — |
-| `bodyStrong` | 16 / 24 | 600 | — |
-| `caption` | 13 / 18 | 400 | — |
-| `label` | 12 / 16, uppercase | 700 | +0.6 |
-| `button` | 16 / 20 | 700 | — |
-| `buttonSmall` | 14 / 18 | 600 | — |
+| `amount` | 40 / 46 | `extrabold` | −1.2 |
+| `display` | 34 / 40 | `extrabold` | −0.8 |
+| `h1` | 27 / 33 | `bold` | −0.4 |
+| `h2` | 20 / 26 | `bold` | −0.2 |
+| `h3` | 17 / 23 | `semibold` | — |
+| `body` | 16 / 24 | `regular` | — |
+| `bodyStrong` | 16 / 24 | `semibold` | — |
+| `caption` | 13 / 18 | `regular` | — |
+| `label` | 12 / 16, uppercase | `bold` | +0.6 |
+| `button` | 16 / 20 | `bold` | — |
+| `buttonSmall` | 14 / 18 | `semibold` | — |
 
 `amount` exists for one job: fares and amounts due. Money is what the rider is scanning for, so it gets its own step at the top of the scale **and** its own tinted surface (`accentBlueSoft`, `radius.lg`) on both Confirm and Payment — the number reads identically at estimate time and at pay time.
 
