@@ -20,16 +20,30 @@ export default function LocationPermissionScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Dismissal on grant lives here, not in handleEnable, because 'granted' can
+  // arrive from outside this screen's own request() call: the 'blocked' →
+  // "Open settings" path backgrounds the app into system Settings without
+  // dismissing (request() short-circuits to Linking.openSettings() and
+  // returns 'blocked'), and the AppState listener in useLocationPermission
+  // refreshes state to 'granted' on return with the modal still mounted. This
+  // effect is what closes it in that case, and it also covers permission
+  // being granted from any other surface while the modal is open. Do not
+  // fold this back into handleEnable — that would miss the Settings
+  // round-trip entirely.
+  useEffect(() => {
+    if (state === 'granted') router.dismiss();
+  }, [state, router]);
+
   const isBlocked = state === 'blocked';
 
   async function handleEnable() {
     setWorking(true);
-    const next = await request();
+    await request();
     setWorking(false);
-    // Close only on success. After a fresh denial the sheet stays up and the
+    // No dismiss here — the effect above closes the modal once `state`
+    // reflects 'granted'. After a fresh denial the sheet stays up and the
     // primary button re-labels to "Open settings", so the user can see why it
     // changed instead of the modal vanishing with nothing having happened.
-    if (next === 'granted') router.dismiss();
   }
 
   function handleNotNow() {
