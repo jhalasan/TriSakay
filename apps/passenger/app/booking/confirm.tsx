@@ -9,7 +9,9 @@ import {
   Stepper,
   colors,
 } from '@trisakay/ui';
+import { LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { estimateFare } from '../../src/mocks/fareCalculator';
 import { formatCurrency } from '../../src/utils/currency';
@@ -26,6 +28,7 @@ export default function ConfirmScreen() {
   const setFare = useBookingStore((state) => state.setFare);
   const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
+  const { isGranted } = useLocationPermission();
 
   useEffect(() => {
     setFare(estimateFare(seats));
@@ -122,7 +125,8 @@ export default function ConfirmScreen() {
       </ScrollView>
 
       <View style={styles.footer}>
-        <Button label="Request ride" fullWidth onPress={handleRequestRide} />
+        <Button label="Request ride" fullWidth disabled={!isGranted} onPress={handleRequestRide} />
+        <LocationRequiredNotice />
       </View>
     </View>
   );

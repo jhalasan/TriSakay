@@ -3,6 +3,8 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, EmptyState, OsmMap, colors } from '@trisakay/ui';
+import { LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
+import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
@@ -18,6 +20,7 @@ export default function HomeScreen() {
   const pickup = useBookingStore((state) => state.pickup);
   const setDropoff = useBookingStore((state) => state.setDropoff);
   const unreadCount = useNotificationsStore((state) => state.items.filter((n) => !n.read).length);
+  const { isGranted } = useLocationPermission();
 
   function handleShortcutPress(point: LocationPoint) {
     setDropoff(point);
@@ -97,7 +100,13 @@ export default function HomeScreen() {
 
       {/* Pinned so the primary action stays reachable no matter what scrolls. */}
       <View style={styles.ctaWrap}>
-        <Button label="Where to?" fullWidth onPress={() => router.push('/booking/set-destination')} />
+        <Button
+          label="Where to?"
+          fullWidth
+          disabled={!isGranted}
+          onPress={() => router.push('/booking/set-destination')}
+        />
+        <LocationRequiredNotice />
       </View>
     </SafeAreaView>
   );
