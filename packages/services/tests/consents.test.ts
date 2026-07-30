@@ -54,6 +54,25 @@ test('getConsentStatus reports nothing accepted when the user has no consent row
   assert.deepEqual(status, { termsAccepted: false, privacyAccepted: false, bothAccepted: false });
 });
 
+test('getConsentStatus scopes the query to the signed-in user', async () => {
+  const filters: any[] = [];
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      consentRows: [],
+      onConsentSelect: (column, value) => {
+        filters.push([column, value]);
+      },
+    })
+  );
+
+  await getConsentStatus();
+  // RLS is the real control; this is defence in depth. Without it the fake
+  // ignores filters entirely and deleting `.eq('user_id', userId)` from
+  // getConsentStatus() passes every other test in this file.
+  assert.deepEqual(filters, [['user_id', 'u1']]);
+});
+
 test('getConsentStatus surfaces a query error instead of reporting a false status', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({ getSession: async () => SESSION, consentSelectError: 'network down' })

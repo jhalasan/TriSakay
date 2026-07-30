@@ -21,6 +21,13 @@ export interface FakeClientConfig {
   consentInsertError?: string | null;
   /** Receives the array passed to `.insert()`, so tests can assert the payload shape. */
   onConsentInsert?: (rows: unknown) => void;
+  /**
+   * Receives each `.eq()` applied to the consent query. Without it the fake
+   * returns `consentRows` regardless of any filter, so dropping the
+   * `user_id` scope from getConsentStatus() would leave every status test
+   * green while the query returned other users' rows.
+   */
+  onConsentSelect?: (column: string, value: unknown) => void;
 }
 
 export function createFakeSupabaseClient(config: FakeClientConfig = {}): SupabaseClient<Database> {
@@ -57,7 +64,10 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
   // `.in()` terminates the consent query, so it is the only awaitable link.
   const consentsQuery = {
     select: () => consentsQuery,
-    eq: () => consentsQuery,
+    eq: (column: string, value: unknown) => {
+      config.onConsentSelect?.(column, value);
+      return consentsQuery;
+    },
     in: async () =>
       config.consentSelectError
         ? { data: null, error: { message: config.consentSelectError } }
