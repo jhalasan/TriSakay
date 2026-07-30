@@ -78,12 +78,22 @@ export const useLocationPermissionStore = create<LocationPermissionStore>()((set
         return 'blocked';
       }
 
-      let next: LocationPermissionState;
+      let response: Location.LocationPermissionResponse;
       try {
-        next = toState(await Location.requestForegroundPermissionsAsync());
+        response = await Location.requestForegroundPermissionsAsync();
       } catch {
-        next = 'unknown';
+        // Deliberately does NOT claim the token and does NOT write. Everything
+        // said above about request() outranking reads rests on it carrying the
+        // user's answer; a request that threw carries no answer at all, so it
+        // has no business invalidating a refresh() that succeeded. Bumping the
+        // token here would publish 'unknown' and then discard the correct value
+        // a concurrent read is about to deliver. Do not fold this arm together
+        // with the success path below.
+        return 'unknown';
       }
+
+      const next = toState(response);
+      // Claim on resolution, not on start — see the note on `epoch` above.
       epoch++;
       set({ state: next });
       return next;
