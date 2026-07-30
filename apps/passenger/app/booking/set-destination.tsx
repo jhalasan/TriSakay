@@ -6,7 +6,7 @@ import { Button, EmptyState, ListRow, OsmMap, TextField, colors } from '@trisaka
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { searchDestinations } from '../../src/mocks/destinations';
 import type { LocationPoint } from '../../src/types/booking';
-import { styles } from './set-destination.styles';
+import { styles } from '../../src/styles/booking/set-destination.styles';
 
 export default function SetDestinationScreen() {
   const router = useRouter();

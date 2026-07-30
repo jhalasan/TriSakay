@@ -1,7 +1,7 @@
 import { Text, View } from 'react-native';
 import { Badge, Card, ListRow } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
-import { styles } from './payment-methods.styles';
+import { styles } from '../../src/styles/profile/payment-methods.styles';
 
 export default function PaymentMethodsScreen() {
   return (

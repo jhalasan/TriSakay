@@ -8,7 +8,7 @@ import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { formatCurrency } from '../../src/utils/currency';
 import { wait } from '../../src/mocks/delay';
 import type { PaymentMethod } from '../../src/types/booking';
-import { styles } from './payment.styles';
+import { styles } from '../../src/styles/booking/payment.styles';
 
 const PAYMENT_OPTIONS: { value: PaymentMethod; title: string; subtitle: string }[] = [
   { value: 'gcash', title: 'GCash Wallet', subtitle: 'Pay using your GCash balance' },

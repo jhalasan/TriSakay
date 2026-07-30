@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Badge, Button, EmptyState, ListRow } from '@trisakay/ui';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { formatCurrency } from '../../src/utils/currency';
-import { styles } from './history.styles';
+import { styles } from '../../src/styles/tabs/history.styles';
 
 type FilterMode = 'all' | 'done' | 'cancelled';
 

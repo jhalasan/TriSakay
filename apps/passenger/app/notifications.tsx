@@ -2,7 +2,7 @@ import { FlatList, Text, View } from 'react-native';
 import { EmptyState } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
-import { styles } from './notifications.styles';
+import { styles } from '../src/styles/notifications.styles';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });

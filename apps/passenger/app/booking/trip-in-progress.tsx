@@ -4,7 +4,7 @@ import { Text, View } from 'react-native';
 import { Avatar, Badge, OsmMap } from '@trisakay/ui';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { randomBetween, wait } from '../../src/mocks/delay';
-import { styles } from './trip-in-progress.styles';
+import { styles } from '../../src/styles/booking/trip-in-progress.styles';
 
 export default function TripInProgressScreen() {
   const router = useRouter();

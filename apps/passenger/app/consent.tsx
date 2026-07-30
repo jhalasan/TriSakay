@@ -5,7 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Checkbox } from '@trisakay/ui';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION } from '@trisakay/services';
 import { useConsentStore } from '../src/store/useConsentStore';
-import { styles } from './consent.styles';
+import { styles } from '../src/styles/consent.styles';
 
 /** Placeholder. Final legal copy is being drafted separately and replaces this verbatim. */
 const POLICY_BODY = [

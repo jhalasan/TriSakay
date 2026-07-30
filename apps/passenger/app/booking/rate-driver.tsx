@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-na
 import { Avatar, Button, StarRating, Textarea } from '@trisakay/ui';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { wait } from '../../src/mocks/delay';
-import { styles } from './rate-driver.styles';
+import { styles } from '../../src/styles/booking/rate-driver.styles';
 
 export default function RateDriverScreen() {
   const router = useRouter();

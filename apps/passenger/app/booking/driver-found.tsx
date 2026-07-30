@@ -5,7 +5,7 @@ import { Button, EmptyState, OsmMap, motion } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { randomBetween, wait } from '../../src/mocks/delay';
-import { styles } from './driver-found.styles';
+import { styles } from '../../src/styles/booking/driver-found.styles';
 
 export default function DriverFoundScreen() {
   const router = useRouter();

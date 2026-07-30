@@ -4,7 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Toggle, colors } from '@trisakay/ui';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
-import { styles } from './settings.styles';
+import { styles } from '../../src/styles/tabs/settings.styles';
 
 const LANGUAGES = ['English', 'Filipino'];
 

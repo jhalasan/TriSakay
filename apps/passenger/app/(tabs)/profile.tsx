@@ -4,7 +4,7 @@ import { Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Button, Card, ListRow, TextField } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { styles } from './profile.styles';
+import { styles } from '../../src/styles/tabs/profile.styles';
 
 export default function ProfileScreen() {
   const router = useRouter();

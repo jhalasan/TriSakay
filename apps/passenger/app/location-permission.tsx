@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Modal, Text, View } from 'react-native';
 import { Button, colors } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
-import { styles } from './location-permission.styles';
+import { styles } from '../src/styles/location-permission.styles';
 
 export default function LocationPermissionScreen() {
   const router = useRouter();

@@ -6,7 +6,7 @@ import { Button, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/validation';
-import { styles } from './register.styles';
+import { styles } from '../../src/styles/auth/register.styles';
 
 interface FormState {
   name: string;

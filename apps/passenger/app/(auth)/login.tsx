@@ -4,7 +4,7 @@ import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } 
 import { Button, TextField } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isValidEmail, isValidPassword } from '../../src/utils/validation';
-import { styles } from './login.styles';
+import { styles } from '../../src/styles/auth/login.styles';
 
 export default function LoginScreen() {
   const router = useRouter();

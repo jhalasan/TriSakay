@@ -15,7 +15,7 @@ import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { estimateFare } from '../../src/mocks/fareCalculator';
 import { formatCurrency } from '../../src/utils/currency';
-import { styles } from './confirm.styles';
+import { styles } from '../../src/styles/booking/confirm.styles';
 
 export default function ConfirmScreen() {
   const router = useRouter();

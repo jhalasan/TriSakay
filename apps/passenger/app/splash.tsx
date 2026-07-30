@@ -5,7 +5,7 @@ import { colors } from '@trisakay/ui';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { wait } from '../src/mocks/delay';
-import { styles } from './splash.styles';
+import { styles } from '../src/styles/splash.styles';
 
 function waitUntilHydrated(): Promise<void> {
   if (!useAuthStore.getState().isHydrating) return Promise.resolve();

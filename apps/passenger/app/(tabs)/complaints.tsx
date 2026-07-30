@@ -6,7 +6,7 @@ import { Button, Card, EmptyState, ListRow, Textarea, TextField, colors } from '
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { isNonEmpty } from '../../src/utils/validation';
 import { wait } from '../../src/mocks/delay';
-import { styles } from './complaints.styles';
+import { styles } from '../../src/styles/tabs/complaints.styles';
 
 export default function ComplaintsScreen() {
   const rides = useHistoryStore((state) => state.rides);

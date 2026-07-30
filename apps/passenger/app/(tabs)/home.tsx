@@ -9,7 +9,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
 import type { LocationPoint } from '../../src/types/booking';
-import { styles } from './home.styles';
+import { styles } from '../../src/styles/tabs/home.styles';
 
 /** Saved places come from the rider's account. Empty until the backend lands. */
 const SHORTCUTS: { icon: keyof typeof Ionicons.glyphMap; point: LocationPoint }[] = [];

@@ -7,7 +7,7 @@ import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { pickRandomDriver } from '../../src/mocks/drivers';
 import { randomBetween, wait } from '../../src/mocks/delay';
-import { styles } from './finding-driver.styles';
+import { styles } from '../../src/styles/booking/finding-driver.styles';
 
 export default function FindingDriverScreen() {
   const router = useRouter();

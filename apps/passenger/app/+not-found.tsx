@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 import { Button, EmptyState } from '@trisakay/ui';
-import { styles } from './+not-found.styles';
+import { styles } from '../src/styles/not-found.styles';
 
 export default function NotFoundScreen() {
   const router = useRouter();
