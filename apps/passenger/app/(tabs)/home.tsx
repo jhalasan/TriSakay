@@ -1,5 +1,7 @@
+import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, EmptyState, GradientSurface, OsmMap, colors } from '@trisakay/ui';
@@ -8,6 +10,7 @@ import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
+import { reverseGeocode } from '../../src/utils/geocode';
 import type { LocationPoint } from '../../src/types/booking';
 import { styles } from '../../src/styles/tabs/home.styles';
 
@@ -18,13 +21,42 @@ export default function HomeScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const pickup = useBookingStore((state) => state.pickup);
+  const setPickup = useBookingStore((state) => state.setPickup);
   const setDropoff = useBookingStore((state) => state.setDropoff);
   const unreadCount = useNotificationsStore((state) => state.items.filter((n) => !n.read).length);
   const { isGranted } = useLocationPermission();
+  const [locating, setLocating] = useState(false);
+  // Guards against firing a second GPS fix while one is in flight (e.g. a
+  // fast remount from tab-switching) — a duplicate fix would race the first
+  // and could overwrite a pin the rider has since dragged.
+  const hasRequestedFix = useRef(false);
+
+  useEffect(() => {
+    if (!isGranted || pickup || hasRequestedFix.current) return;
+    hasRequestedFix.current = true;
+    setLocating(true);
+    Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced })
+      .then((position) =>
+        reverseGeocode(position.coords.latitude, position.coords.longitude),
+      )
+      .then((point) => setPickup(point))
+      .catch(() => {
+        // No GPS fix available — the rider can still drop the pin by hand
+        // once the map renders at its default center.
+      })
+      .finally(() => setLocating(false));
+  }, [isGranted, pickup, setPickup]);
 
   function handleShortcutPress(point: LocationPoint) {
     setDropoff(point);
     router.push('/booking/confirm');
+  }
+
+  function handlePickupDrag(point: { latitude: number; longitude: number }) {
+    setLocating(true);
+    reverseGeocode(point.latitude, point.longitude)
+      .then((resolved) => setPickup(resolved))
+      .finally(() => setLocating(false));
   }
 
   return (
@@ -58,12 +90,14 @@ export default function HomeScreen() {
       <View style={styles.mapWrap}>
         <OsmMap
           variant="pin"
-          caption="Map · your location"
+          caption={locating ? 'Finding your location…' : 'Drag the pin to set pickup'}
           height={280}
           latitude={pickup?.latitude}
           longitude={pickup?.longitude}
           zoom={16}
           interactive
+          marker={pickup ? { latitude: pickup.latitude, longitude: pickup.longitude, draggable: true } : null}
+          onMarkerMove={handlePickupDrag}
         />
       </View>
 

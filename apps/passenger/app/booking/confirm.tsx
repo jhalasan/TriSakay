@@ -1,7 +1,9 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { haversineDistanceKm } from '@trisakay/utils';
 import {
+  Badge,
   Button,
   Card,
   OsmMap,
@@ -12,13 +14,14 @@ import {
 import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
+import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
-import { estimateFare } from '../../src/mocks/fareCalculator';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/booking/confirm.styles';
 
 export default function ConfirmScreen() {
   const router = useRouter();
+  const user = useAuthStore((state) => state.user);
   const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
   const seats = useBookingStore((state) => state.seats);
@@ -29,11 +32,50 @@ export default function ConfirmScreen() {
   const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const { isGranted } = useLocationPermission();
+  const [fareError, setFareError] = useState<string | null>(null);
+  // null while unresolved — the discount line only ever renders once we
+  // actually know the passenger's status, never a guess.
+  const [discountApproved, setDiscountApproved] = useState<boolean | null>(null);
+  const [discountRatePercent, setDiscountRatePercent] = useState<number | null>(null);
 
   useEffect(() => {
-    setFare(estimateFare(seats));
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [seats]);
+    if (!user?.id) return;
+    let cancelled = false;
+    import('@trisakay/services').then(({ getMyDiscount, getFareDiscountRate }) => {
+      getMyDiscount().then((result) => {
+        if (!cancelled) setDiscountApproved(result.data?.status === 'approved');
+      });
+      getFareDiscountRate().then((result) => {
+        if (!cancelled) setDiscountRatePercent(result.discountRatePercent);
+      });
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!pickup || !dropoff) {
+      setFare(null);
+      return;
+    }
+
+    let cancelled = false;
+    const distanceKm = haversineDistanceKm(pickup, dropoff);
+
+    setFareError(null);
+    import('@trisakay/services').then(({ estimateFare }) =>
+      estimateFare({ distanceKm, seats, passengerId: user?.id }).then((result) => {
+        if (cancelled) return;
+        setFare(result.fare);
+        if (result.error) setFareError(result.error);
+      }),
+    );
+
+    return () => {
+      cancelled = true;
+    };
+  }, [pickup, dropoff, seats, user?.id, setFare]);
 
   /**
    * Both ends of the trip in one frame. Falls back to the service-area centre
@@ -104,11 +146,28 @@ export default function ConfirmScreen() {
         </View>
 
         <Card variant="raised" style={styles.fareCard}>
-          <Text style={styles.fareLabel}>Estimated fare</Text>
+          <View style={styles.fareLabelRow}>
+            <Text style={styles.fareLabel}>Estimated fare</Text>
+            {discountApproved && (
+              <Badge label={`${discountRatePercent ?? 20}% discount applied`} tone="green" />
+            )}
+          </View>
           <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
           <Text style={styles.fareNote}>
-            {fare === null ? 'Fare is quoted once the service is connected' : 'Final fare is confirmed at drop-off'}
+            {fareError
+              ? 'Could not reach the fare service.'
+              : fare === null
+                ? 'Estimating fare…'
+                : 'Final fare is confirmed at drop-off'}
           </Text>
+          {discountApproved === false && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => router.push('/profile/apply-discount')}
+            >
+              <Text style={styles.discountLink}>Senior, PWD, or student? Apply for a fare discount</Text>
+            </Pressable>
+          )}
         </Card>
 
         <View>

@@ -64,6 +64,11 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.xl,
     borderRadius: radius.lg,
   },
+  fareLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   fareLabel: {
     ...typography.label,
     color: colors.accentBluePressed,
@@ -76,6 +81,12 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkSoft,
     textAlign: 'center',
+  },
+  discountLink: {
+    ...typography.caption,
+    color: colors.accentBluePressed,
+    textDecorationLine: 'underline',
+    marginTop: spacing.xs,
   },
   footer: {
     padding: spacing.lg,

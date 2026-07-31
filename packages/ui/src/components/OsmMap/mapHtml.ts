@@ -55,6 +55,19 @@ export interface MapHtmlOptions {
   interactive?: boolean;
   /** Pixels of the map's bottom edge covered by a native overlay. Lifts attribution. */
   bottomInset?: number;
+  /**
+   * Initial marker position only — moving it after mount (a drag, or a fresher
+   * GPS fix) must not remount the WebView and re-fetch every tile, so callers
+   * intentionally leave this out of whatever memoizes the HTML string once the
+   * map exists. Use `draggable` to let the rider fine-tune the pin by hand.
+   */
+  marker?: { latitude: number; longitude: number; draggable?: boolean } | null;
+  /**
+   * Tapping the map drops (or, once one exists, relocates) the marker there —
+   * for a destination-picking map. Off by default: a rider's pickup pin (home)
+   * should only move by explicit drag, not by an incidental tap while panning.
+   */
+  tapToPlace?: boolean;
 }
 
 /** Messages the page posts back over the WebView bridge. */
@@ -63,7 +76,9 @@ export type MapMessage =
   | { type: 'error'; reason: string }
   /** The rider moved the map off its home view. Fires once until recentred. */
   | { type: 'moved' }
-  | { type: 'recentered' };
+  | { type: 'recentered' }
+  /** The rider dropped the draggable marker at a new spot, by drag or by tap. */
+  | { type: 'marker-moved'; latitude: number; longitude: number };
 
 const finite = (value: number, fallback: number) =>
   Number.isFinite(value) ? Number(value) : fallback;
@@ -75,6 +90,8 @@ export function buildMapHtml({
   attributionLeft = false,
   interactive = false,
   bottomInset = 0,
+  marker = null,
+  tapToPlace = false,
 }: MapHtmlOptions): string {
   // Nothing interpolated below may be non-numeric — these values land inside a
   // <script> block.
@@ -83,6 +100,9 @@ export function buildMapHtml({
   const z = Math.min(19, Math.max(3, Math.round(finite(zoom, DEFAULT_ZOOM))));
   const attributionPosition = attributionLeft ? 'bottomleft' : 'bottomright';
   const attributionBottom = 6 + Math.max(0, finite(bottomInset, 0));
+  const markerLat = marker ? finite(marker.latitude, lat) : lat;
+  const markerLng = marker ? finite(marker.longitude, lng) : lng;
+  const markerDraggable = Boolean(marker?.draggable);
 
   // Anchored on the city centre rather than this screen's centre, so every
   // interactive map roams the same, predictable box.
@@ -176,6 +196,41 @@ export function buildMapHtml({
       post({ type: 'ready' });
     });
     layer.addTo(map);
+
+    var pin = null;
+    var HAS_MARKER = ${marker ? 'true' : 'false'};
+    var pinIcon = L.divIcon({
+      className: '',
+      html: '<div style="width:26px;height:26px;border-radius:13px 13px 13px 0;background:${colors.accentBlue};transform:rotate(45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
+      iconSize: [26, 26],
+      iconAnchor: [13, 26],
+    });
+    if (HAS_MARKER) {
+      pin = L.marker([${markerLat}, ${markerLng}], {
+        icon: pinIcon,
+        draggable: ${markerDraggable ? 'true' : 'false'},
+      }).addTo(map);
+      pin.on('dragend', function () {
+        var pos = pin.getLatLng();
+        post({ type: 'marker-moved', latitude: pos.lat, longitude: pos.lng });
+      });
+    }
+
+    var TAP_TO_PLACE = ${tapToPlace ? 'true' : 'false'};
+    if (TAP_TO_PLACE) {
+      map.on('click', function (e) {
+        if (pin) {
+          pin.setLatLng(e.latlng);
+        } else {
+          pin = L.marker(e.latlng, { icon: pinIcon, draggable: true }).addTo(map);
+          pin.on('dragend', function () {
+            var pos = pin.getLatLng();
+            post({ type: 'marker-moved', latitude: pos.lat, longitude: pos.lng });
+          });
+        }
+        post({ type: 'marker-moved', latitude: e.latlng.lat, longitude: e.latlng.lng });
+      });
+    }
 
     if (INTERACTIVE) {
       var movedPosted = false;

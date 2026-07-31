@@ -71,6 +71,7 @@ export default function ProfileScreen() {
 
         <Card style={styles.navGroup}>
           <ListRow title="Payment methods" onPress={() => router.push('/profile/payment-methods')} chevron />
+          <ListRow title="Fare discount" onPress={() => router.push('/profile/apply-discount')} chevron />
           <ListRow
             title="Settings"
             onPress={() => router.push('/(tabs)/settings')}

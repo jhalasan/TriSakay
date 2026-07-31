@@ -50,6 +50,17 @@ export interface OsmMapProps {
    * — the screen owns this number because only it knows what it renders on top.
    */
   bottomInset?: number;
+  /**
+   * Renders a pin at these coordinates. `draggable` lets the rider fine-tune
+   * it by hand — drag position is reported via `onMarkerMove`, not fed back
+   * into this prop's own `latitude`/`longitude` for the `source` memo below,
+   * so a drag (or a fresher GPS fix) never remounts the WebView and re-fetches
+   * every tile.
+   */
+  marker?: { latitude: number; longitude: number; draggable?: boolean } | null;
+  onMarkerMove?: (point: { latitude: number; longitude: number }) => void;
+  /** Tapping the map drops (or relocates) the marker there. See `mapHtml.ts`'s doc for why this defaults off. */
+  tapToPlace?: boolean;
   onReady?: () => void;
 }
 
@@ -65,6 +76,9 @@ export function OsmMap({
   attributionLeft = false,
   interactive = false,
   bottomInset = 0,
+  marker = null,
+  onMarkerMove,
+  tapToPlace = false,
   onReady,
 }: OsmMapProps) {
   const [state, setState] = useState<MapState>('loading');
@@ -73,7 +87,6 @@ export function OsmMap({
   const recenterOpacity = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const webViewRef = useRef<WebView>(null);
-
   /**
    * Memoized: a fresh object literal each render remounts the WebView and
    * re-fetches every tile. Several screens re-render from store subscriptions
@@ -82,13 +95,30 @@ export function OsmMap({
    *
    * Every dependency here is constant for a given screen. `hasMoved` is
    * deliberately NOT one — showing the recenter button must never rebuild the
-   * page and throw away the tiles the rider just panned to.
+   * page and throw away the tiles the rider just panned to. `marker`'s own
+   * coordinates are excluded the same way: once a drag or a tap moves it,
+   * Leaflet has already updated the pin on-screen without any React
+   * involvement, so re-embedding that same position in the HTML would only
+   * force a needless reload. The callback still reads the *current* `marker`
+   * value (via closure, not a stale snapshot) whenever it reruns for another
+   * reason — e.g. `latitude`/`longitude` changing because the rider picked a
+   * different search result — so that remount still places the pin correctly.
    */
   const source = useMemo(
     () => ({
-      html: buildMapHtml({ latitude, longitude, zoom, attributionLeft, interactive, bottomInset }),
+      html: buildMapHtml({
+        latitude,
+        longitude,
+        zoom,
+        attributionLeft,
+        interactive,
+        bottomInset,
+        marker,
+        tapToPlace,
+      }),
     }),
-    [latitude, longitude, zoom, attributionLeft, interactive, bottomInset],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- marker's coordinates are deliberately excluded; see the comment above
+    [latitude, longitude, zoom, attributionLeft, interactive, bottomInset, Boolean(marker), marker?.draggable, tapToPlace],
   );
 
   const settle = useCallback(() => {
@@ -149,9 +179,11 @@ export function OsmMap({
         showRecenter(true);
       } else if (message.type === 'recentered') {
         showRecenter(false);
+      } else if (message.type === 'marker-moved') {
+        onMarkerMove?.({ latitude: message.latitude, longitude: message.longitude });
       }
     },
-    [settle, fail, showRecenter],
+    [settle, fail, showRecenter, onMarkerMove],
   );
 
   const handleRecenter = useCallback(() => {

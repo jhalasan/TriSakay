@@ -41,14 +41,25 @@ export function MapPlaceholder({ variant = 'plain', caption, height = 220 }: Map
 
         {variant === 'route' && (
           <>
-            <Path
-              d="M 20% 80% Q 45% 20%, 80% 30%"
-              stroke={colors.accentBlue}
-              strokeWidth={3}
-              strokeDasharray="1, 10"
-              strokeLinecap="round"
-              fill="none"
-            />
+            {/*
+              A nested <Svg> with its own 0–100 viewBox, scaled independently
+              per axis (preserveAspectRatio="none") to land on the same
+              percentage points as the circles below — because the Path's `d`
+              attribute cannot itself contain '%'. Android's native SVG path
+              parser (unlike iOS/web) rejects that outright rather than just
+              ignoring it, which is what actually crashed here.
+            */}
+            <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+              <Path
+                d="M 20 80 Q 45 20, 80 30"
+                stroke={colors.accentBlue}
+                strokeWidth={3}
+                strokeDasharray="1, 10"
+                strokeLinecap="round"
+                fill="none"
+                vectorEffect="non-scaling-stroke"
+              />
+            </Svg>
             <Circle cx="20%" cy="80%" r={6} fill={colors.accentGreen} />
             <Circle cx="80%" cy="30%" r={6} fill={colors.accentBlue} />
           </>

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@trisakay/ui';
 import { styles } from './ScreenHeader.styles';
 
@@ -11,11 +12,18 @@ export interface ScreenHeaderProps {
   right?: React.ReactNode;
 }
 
+/**
+ * Screens that use this component sit directly in the root Stack, which
+ * renders with `headerShown: false` and no safe-area wrapper of its own (see
+ * `app/_layout.tsx`) — so the inset has to be applied here, once, rather than
+ * trusted to every screen that renders this header.
+ */
 export function ScreenHeader({ title, onBack, showBack = true, right }: ScreenHeaderProps) {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
 
   return (
-    <View style={styles.row}>
+    <View style={[styles.row, { paddingTop: styles.row.paddingVertical + insets.top }]}>
       {showBack && (
         <Pressable
           accessibilityRole="button"
