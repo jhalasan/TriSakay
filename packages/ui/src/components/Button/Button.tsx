@@ -1,6 +1,7 @@
 import { useRef } from 'react';
-import { ActivityIndicator, Animated, Pressable, Text, View, type PressableProps } from 'react-native';
-import { colors, motion } from '../../theme';
+import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View, type PressableProps } from 'react-native';
+import { colors, elevation, motion, radius } from '../../theme';
+import { GradientSurface } from '../GradientSurface';
 import { styles } from './Button.styles';
 
 export type ButtonVariant = 'solid' | 'outline' | 'ghost';
@@ -84,11 +85,17 @@ export function Button({
         }}
         style={({ pressed }) => {
           const s = surfaceFor(tone, variant, pressed);
+          // The primary solid CTA carries its fill as a gradient (rendered
+          // as a child below) instead of a flat backgroundColor — this is
+          // the one signature surface, deliberately not spread to every
+          // button so it stays a highlight rather than becoming noise.
+          const usesGradientFill = tone === 'primary' && variant === 'solid' && !pressed;
           return [
             styles.base,
             size === 'md' ? styles.md : styles.sm,
             fullWidth && styles.fullWidth,
-            { backgroundColor: s.backgroundColor, borderColor: s.borderColor },
+            variant === 'solid' && !isDisabled && elevation.button,
+            { backgroundColor: usesGradientFill ? 'transparent' : s.backgroundColor, borderColor: s.borderColor },
             isDisabled && styles.disabled,
           ];
         }}
@@ -96,17 +103,27 @@ export function Button({
       >
         {({ pressed }) => {
           const s = surfaceFor(tone, variant, pressed);
+          const usesGradientFill = tone === 'primary' && variant === 'solid' && !pressed;
           return (
-            <View style={styles.content}>
-              {loading ? (
-                <ActivityIndicator color={s.textColor} style={styles.iconSlot} />
-              ) : (
-                icon && <View style={styles.iconSlot}>{icon}</View>
+            <>
+              {usesGradientFill && (
+                <GradientSurface
+                  token="button"
+                  direction="diagonal"
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: radius.md }]}
+                />
               )}
-              <Text style={[size === 'md' ? styles.labelMd : styles.labelSm, { color: s.textColor }]}>
-                {label}
-              </Text>
-            </View>
+              <View style={styles.content}>
+                {loading ? (
+                  <ActivityIndicator color={s.textColor} style={styles.iconSlot} />
+                ) : (
+                  icon && <View style={styles.iconSlot}>{icon}</View>
+                )}
+                <Text style={[size === 'md' ? styles.labelMd : styles.labelSm, { color: s.textColor }]}>
+                  {label}
+                </Text>
+              </View>
+            </>
           );
         }}
       </Pressable>

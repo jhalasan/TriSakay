@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -51,6 +51,7 @@ export const styles = StyleSheet.create({
   optionRowSelected: {
     borderColor: colors.accentBlue,
     backgroundColor: colors.accentBlueSoft,
+    ...elevation.card,
   },
   radioOuter: {
     width: 24,

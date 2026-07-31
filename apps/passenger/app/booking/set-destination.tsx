@@ -45,17 +45,19 @@ export default function SetDestinationScreen() {
       </View>
 
       <View style={styles.mapWrap}>
-        <OsmMap
-          variant="pin"
-          caption="Map · drop pin"
-          height={160}
-          latitude={selected?.latitude}
-          longitude={selected?.longitude}
-          zoom={selected ? 16 : 14}
-          // Sits between the search field and the results list, in no scroller
-          // of its own — nothing to compete with for the drag.
-          interactive
-        />
+        <View style={styles.mapInner}>
+          <OsmMap
+            variant="pin"
+            caption="Map · drop pin"
+            height={160}
+            latitude={selected?.latitude}
+            longitude={selected?.longitude}
+            zoom={selected ? 16 : 14}
+            // Sits between the search field and the results list, in no scroller
+            // of its own — nothing to compete with for the drag.
+            interactive
+          />
+        </View>
       </View>
 
       <Text style={styles.resultsLabel}>Search results</Text>

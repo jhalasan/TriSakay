@@ -14,7 +14,7 @@ export interface DriverInfoCardProps {
  */
 export function DriverInfoCard({ driver }: DriverInfoCardProps) {
   return (
-    <Card style={styles.card}>
+    <Card variant="raised" style={styles.card}>
       <View style={styles.topRow}>
         <Avatar name={driver.name} size="lg" />
         <View style={styles.textSlot}>

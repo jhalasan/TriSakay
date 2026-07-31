@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -17,17 +17,26 @@ export const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: radius.sm,
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong, // icon-only control
+    backgroundColor: colors.panel,
     alignItems: 'center',
     justifyContent: 'center',
+    ...elevation.card,
   },
   searchField: {
     flex: 1,
   },
+  // Shadow and clipping split across two views: overflow:'hidden' would
+  // clip the shadow itself if it lived on the same view that carries it.
   mapWrap: {
     marginHorizontal: spacing.lg,
     marginBottom: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.panel,
+    ...elevation.card,
+  },
+  mapInner: {
+    borderRadius: radius.md,
+    overflow: 'hidden',
   },
   resultsLabel: {
     ...typography.label,

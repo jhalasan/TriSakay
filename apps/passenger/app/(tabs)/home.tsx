@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, EmptyState, OsmMap, colors } from '@trisakay/ui';
+import { Button, EmptyState, GradientSurface, OsmMap, colors } from '@trisakay/ui';
 import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -42,6 +42,7 @@ export default function HomeScreen() {
           <Text style={styles.greetingName} numberOfLines={1}>
             {user?.name ?? 'Rider'}
           </Text>
+          <GradientSurface token="brand" direction="diagonal" style={styles.greetingAccent} />
         </View>
         <Pressable
           accessibilityRole="button"

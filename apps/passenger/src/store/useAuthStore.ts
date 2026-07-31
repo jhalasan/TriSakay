@@ -14,6 +14,7 @@ function toAppUser(profile: PublicUser): User {
     name: profile.full_name,
     email: profile.email,
     phone: profile.contact_no ?? undefined,
+    avatarUrl: profile.avatar_url ?? undefined,
   };
 }
 
@@ -35,6 +36,8 @@ interface AuthState {
   register: (name: string, email: string, phone: string, password: string) => Promise<'signed_in' | 'check_email' | 'error'>;
   logout: () => Promise<void>;
   clearError: () => void;
+  /** Re-fetches the profile row and refreshes `user` in place — for updates (e.g. avatar upload) made outside the auth-event flow. */
+  refreshProfile: () => Promise<void>;
 }
 
 export const useAuthStore = create<AuthState>()((set) => {
@@ -121,5 +124,10 @@ export const useAuthStore = create<AuthState>()((set) => {
     },
 
     clearError: () => set({ error: null }),
+
+    refreshProfile: async () => {
+      const profile = await authService.getCurrentUserProfile().catch(() => null);
+      if (profile) set({ user: toAppUser(profile) });
+    },
   };
 });

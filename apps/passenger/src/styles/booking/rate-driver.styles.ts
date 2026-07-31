@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -11,6 +11,12 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: spacing.xl,
     paddingVertical: spacing.xxl,
+  },
+  /** Driver summary gets the same raised weight as the rest of the flow. */
+  driverCard: {
+    alignItems: 'center',
+    paddingHorizontal: spacing.xxl,
+    borderRadius: radius.lg,
   },
   name: {
     ...typography.h1,

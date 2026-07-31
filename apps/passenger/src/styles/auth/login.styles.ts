@@ -1,25 +1,55 @@
 import { StyleSheet } from 'react-native';
-import { colors, fontFamily, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, fontFamily, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
-  scrollContent: {
-    flexGrow: 1,
+  screen: {
+    flex: 1,
+  },
+  /** Fixed top band, outside the scroller — the badge below overlaps its bottom edge. */
+  heroBand: {
+    height: 156,
+  },
+  motif: {
+    position: 'absolute',
+    top: -60,
+    right: -60,
+  },
+  /** Pulled up over the hero/body boundary so the mark reads as a floating badge. */
+  badgeWrap: {
+    alignItems: 'center',
+    marginTop: -48,
+    marginBottom: spacing.lg,
+  },
+  markBadge: {
+    width: 96,
+    height: 96,
+    borderRadius: radius.lg,
+    backgroundColor: colors.white,
+    alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    paddingVertical: spacing.xxxl,
+    ...elevation.card,
   },
   mark: {
-    width: 64,
-    height: 76,
-    marginBottom: spacing.xl,
+    width: 56,
+    height: 66,
+  },
+  keyboardView: {
+    flex: 1,
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingHorizontal: spacing.xl,
+    paddingBottom: spacing.xxxl,
   },
   title: {
     ...typography.display,
     color: colors.ink,
+    textAlign: 'center',
   },
   subtitle: {
     ...typography.body,
     color: colors.inkSoft,
+    textAlign: 'center',
     marginTop: spacing.xs,
     marginBottom: spacing.xxl,
   },

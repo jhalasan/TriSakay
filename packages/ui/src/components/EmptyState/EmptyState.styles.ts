@@ -8,6 +8,12 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.xxl,
     paddingHorizontal: spacing.xl,
     gap: spacing.sm,
+    overflow: 'hidden',
+  },
+  motifSlot: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   iconSlot: {
     marginBottom: spacing.sm,

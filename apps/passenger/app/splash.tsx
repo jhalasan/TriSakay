@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Text, View } from 'react-native';
-import { colors } from '@trisakay/ui';
+import { BrandMotif, GradientSurface } from '@trisakay/ui';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { wait } from '../src/mocks/delay';
@@ -97,15 +97,20 @@ export default function SplashScreen() {
   }, [router]);
 
   return (
-    <View style={styles.container}>
-      <Image
-        source={require('../../../assets/brand/trisakay-lockup.png')}
-        style={styles.logo}
-        resizeMode="contain"
-        accessibilityLabel="TriSakay"
-      />
-      <Text style={styles.subtitle}>Book a tricycle, hassle-free</Text>
-      <ActivityIndicator color={colors.accentBlue} style={styles.loader} />
-    </View>
+    <GradientSurface token="hero" direction="vertical" style={styles.gradient}>
+      <View style={styles.container}>
+        <BrandMotif size={360} color="#FFFFFF" opacity={0.08} style={styles.motif} />
+        <View style={styles.badge}>
+          <Image
+            source={require('../../../assets/brand/trisakay-lockup.png')}
+            style={styles.logo}
+            resizeMode="contain"
+            accessibilityLabel="TriSakay"
+          />
+        </View>
+        <Text style={styles.subtitle}>Book a tricycle, hassle-free</Text>
+        <ActivityIndicator color="#FFFFFF" style={styles.loader} />
+      </View>
+    </GradientSurface>
   );
 }

@@ -75,3 +75,12 @@ export async function updateProfile({ fullName }: { fullName: string }): Promise
   const { error } = await getSupabaseClient().from('users').update({ full_name: fullName }).eq('id', userId);
   return { error: error?.message ?? null };
 }
+
+export async function updateAvatarUrl(avatarUrl: string): Promise<{ error: string | null }> {
+  const { data: sessionData } = await getSupabaseClient().auth.getSession();
+  const userId = sessionData.session?.user.id;
+  if (!userId) return { error: 'Not signed in' };
+
+  const { error } = await getSupabaseClient().from('users').update({ avatar_url: avatarUrl }).eq('id', userId);
+  return { error: error?.message ?? null };
+}

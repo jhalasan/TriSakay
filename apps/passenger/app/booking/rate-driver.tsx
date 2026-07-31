@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { Avatar, Button, StarRating, Textarea } from '@trisakay/ui';
+import { Avatar, Button, Card, StarRating, Textarea } from '@trisakay/ui';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { wait } from '../../src/mocks/delay';
 import { styles } from '../../src/styles/booking/rate-driver.styles';
@@ -26,9 +26,11 @@ export default function RateDriverScreen() {
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Avatar name={driver?.name} size="xl" />
-        <Text style={styles.name}>{driver?.name ?? 'Your driver'}</Text>
-        <Text style={styles.subtitle}>How was your ride?</Text>
+        <Card variant="raised" style={styles.driverCard}>
+          <Avatar name={driver?.name} size="xl" />
+          <Text style={styles.name}>{driver?.name ?? 'Your driver'}</Text>
+          <Text style={styles.subtitle}>How was your ride?</Text>
+        </Card>
 
         <View style={styles.starsRow}>
           <StarRating value={rating} onChange={setRating} size={34} />

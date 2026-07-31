@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { Animated, Text, View } from 'react-native';
-import { Button, EmptyState, OsmMap, motion } from '@trisakay/ui';
+import { Button, EmptyState, GradientSurface, OsmMap, motion } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { randomBetween, wait } from '../../src/mocks/delay';
@@ -83,6 +83,7 @@ export default function DriverFoundScreen() {
           },
         ]}
       >
+        <GradientSurface token="brand" direction="diagonal" style={styles.sheetAccent} />
         <DriverInfoCard driver={driver} />
         <Button label="Cancel ride" variant="outline" tone="neutral" fullWidth onPress={handleCancel} />
         <Text style={styles.caption}>No in-app call or message — coordination is in person.</Text>

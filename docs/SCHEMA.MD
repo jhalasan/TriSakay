@@ -12,16 +12,32 @@
 --  * Driver live location is OVERWRITTEN, never appended — no GPS trail
 --    is persisted (NFR-2.5, privacy-by-design).
 --  * No real money is disbursed. transactions record fare COLLECTION only.
+--
+-- THIS FILE IS A REFERENCE DOCUMENT, NOT THE APPLIED PATH. The live
+-- database is advanced via Supabase MCP migrations (apply_migration),
+-- not by re-running this file. Before trusting anything below, check
+-- list_tables / list_migrations against the live project — this doc has
+-- drifted from (and briefly regressed against) the applied schema before.
+--
+-- Auth leaked-password protection (HaveIBeenPwned check) is a PROJECT
+-- AUTH SETTING, not something this schema file can express or enforce —
+-- it must be enabled directly in the Supabase Auth dashboard/config.
+-- Tracked here only so it isn't forgotten: as of last check it was OFF.
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
 -- 0. EXTENSIONS
 -- ---------------------------------------------------------------------
 create extension if not exists "pgcrypto";   -- gen_random_uuid()
-create extension if not exists "postgis";    -- optional: geographic ops
--- If PostGIS is unavailable, plain numeric lat/lng columns below still work.
--- The matching heuristic uses trigonometry in the Edge Function, so PostGIS
--- is a convenience for radius queries, not a hard requirement.
+-- PostGIS is deliberately NOT installed. No geometry column exists
+-- anywhere in this schema — every location is a plain numeric(9,6)
+-- lat/lng pair, and the matching heuristic uses trigonometry inside the
+-- match-ride-request Edge Function, not PostGIS operators. Installing it
+-- was tried once and reverted: it self-installs into the public schema
+-- and drags in public.spatial_ref_sys (a PostGIS system table) with RLS
+-- disabled, tripping a CRITICAL security advisory for zero functional
+-- benefit. If radius/geo queries are ever genuinely needed, install
+-- PostGIS into its own dedicated schema (not public) rather than here.
 
 
 -- ---------------------------------------------------------------------
@@ -127,7 +143,8 @@ create type notification_type as enum (
   'ride_status',
   'verification_status',
   'complaint_status',
-  'payment_status'
+  'payment_status',
+  'discount_status'    -- FR-3.10-3.15 / UC48 fare-discount review outcome
 );
 
 
@@ -472,6 +489,22 @@ create table public.complaints (
 );
 
 
+-- 3.1b complaint_attachments --------------------------------------------
+-- FR-4.7: complaint records AND any submitted evidence are handled per
+-- RA 10173. Evidence (photos, screenshots, etc.) had nowhere to live —
+-- this table fills that gap, mirroring the driver_documents /
+-- passenger_discounts storage_path pattern rather than inventing a new one.
+create table public.complaint_attachments (
+  id            uuid primary key default gen_random_uuid(),
+  complaint_id  uuid not null references public.complaints(id) on delete cascade,
+  storage_path  text not null,          -- Supabase Storage object path
+  uploaded_by   uuid not null references public.users(id) on delete restrict,
+  created_at    timestamptz not null default now()
+);
+
+create index idx_complaint_attachments_complaint on public.complaint_attachments (complaint_id);
+
+
 -- 3.2 account_actions -------------------------------------------------
 -- Audit trail for UC36 (flag) and UC39 (suspend/deactivate).
 -- Every status change on public.users must leave a row here.
@@ -591,15 +624,21 @@ create trigger trg_complaints_touch     before update on public.complaints      
 
 
 -- 4.2 auto-create public.users row on signup --------------------------
+-- LOAD-BEARING: contact_no MUST be inserted here from raw_user_meta_data.
+-- apps/passenger/app/(auth)/register.tsx sends phone as signup metadata
+-- via packages/services/src/auth/index.ts; dropping this column silently
+-- breaks passenger registration. (Regressed once already, 2026-07-30 ->
+-- 2026-07-31 — do not remove it again.)
 create or replace function public.handle_new_auth_user()
 returns trigger language plpgsql security definer set search_path = public as $$
 begin
-  insert into public.users (id, full_name, email, role)
+  insert into public.users (id, full_name, email, role, contact_no)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', 'Unnamed User'),
     new.email,
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger')
+    coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger'),
+    new.raw_user_meta_data->>'phone'
   );
   return new;
 end $$;
@@ -661,7 +700,7 @@ end $$;
 create or replace function public.is_cluster_authorized(
   p_tricycle_cluster tricycle_cluster,
   p_barangay_cluster tricycle_cluster
-) returns boolean language sql immutable as $$
+) returns boolean language sql immutable set search_path = public as $
   select
     p_tricycle_cluster is not null
     and p_barangay_cluster is not null
@@ -672,7 +711,7 @@ create or replace function public.is_cluster_authorized(
 $$;
 
 comment on function public.is_cluster_authorized is
-  'Within the single-barangay Dadiangas West pilot (Melting Pot cluster), this always returns true for any colored tricycle — the constraint only binds once the system extends to other barangays, per confirmed scope.';
+  'Within the single-barangay Dadiangas West pilot (Melting Pot cluster), this always returns true for any colored tricycle — the constraint only binds once the system extends to other barangays, per confirmed scope. Called by the match-ride-request Edge Function as the hard pre-filter (FR-2.5) — it is not wired to any DB constraint or trigger, so it will show as unused if you grep for callers inside this file.';
 
 
 -- 4.4 seat capacity enforcement ---------------------------------------
@@ -708,6 +747,65 @@ create trigger trg_ride_requests_seat_cap
   for each row execute function public.enforce_trip_seat_capacity();
 
 
+-- 4.4b trip max_seats may not exceed the assigned tricycle's capacity ---
+-- enforce_trip_seat_capacity() only checks live ride_requests against
+-- trips.max_seats; nothing previously stopped max_seats itself from
+-- exceeding the unit's actual seat_capacity (e.g. claiming 6 seats on a
+-- 3-seat tricycle).
+create or replace function public.enforce_trip_seats_within_tricycle()
+returns trigger language plpgsql as $$
+declare
+  cap smallint;
+begin
+  select seat_capacity into cap from public.tricycles where id = new.tricycle_id;
+
+  if cap is not null and new.max_seats > cap then
+    raise exception 'Trip max_seats (%) exceeds tricycle % seat_capacity (%)',
+      new.max_seats, new.tricycle_id, cap;
+  end if;
+
+  return new;
+end $$;
+
+create trigger trg_trips_seats_within_tricycle
+  before insert or update on public.trips
+  for each row execute function public.enforce_trip_seats_within_tricycle();
+
+
+-- 4.4c driver may not go available until verified (FR-1.6) ---------------
+-- "Driver barred from ride-matching until verified" was stated in
+-- CONTEXT.MD but nothing enforced it. Requires the driver's own
+-- verification AND an active, verified tricycle assigned to them.
+create or replace function public.enforce_driver_verified_before_available()
+returns trigger language plpgsql as $$
+declare
+  has_verified_active_unit boolean;
+begin
+  if new.is_available and not old.is_available then
+    if new.verification_status <> 'approved' then
+      raise exception 'Driver % cannot go available: driver verification is not approved', new.user_id;
+    end if;
+
+    select exists(
+      select 1 from public.tricycles
+      where driver_id = new.user_id
+        and is_active
+        and verification_status = 'approved'
+    ) into has_verified_active_unit;
+
+    if not has_verified_active_unit then
+      raise exception 'Driver % cannot go available: no active, verified tricycle assigned', new.user_id;
+    end if;
+  end if;
+
+  return new;
+end $$;
+
+create trigger trg_driver_verified_before_available
+  before update on public.driver_profiles
+  for each row execute function public.enforce_driver_verified_before_available();
+
+
 -- 4.5 rating aggregate maintenance ------------------------------------
 create or replace function public.refresh_driver_rating()
 returns trigger language plpgsql as $$
@@ -731,11 +829,13 @@ create trigger trg_ratings_refresh
   for each row execute function public.refresh_driver_rating();
 
 
--- 4.6 rating may only be submitted for one's own completed ride -------
+-- 4.6 rating may only be submitted for one's own completed ride,
+-- and must name the driver who actually drove that trip -----------------
 create or replace function public.validate_rating()
 returns trigger language plpgsql as $$
 declare
   rr public.ride_requests%rowtype;
+  trip_driver uuid;
 begin
   select * into rr from public.ride_requests where id = new.ride_request_id;
 
@@ -744,6 +844,11 @@ begin
   end if;
   if rr.status <> 'completed' then
     raise exception 'Cannot rate a ride that is not completed';
+  end if;
+
+  select driver_id into trip_driver from public.trips where id = rr.trip_id;
+  if trip_driver is null or trip_driver <> new.driver_id then
+    raise exception 'Rating must name the driver who actually drove this trip';
   end if;
 
   return new;
@@ -821,7 +926,12 @@ create index idx_notifications_unread      on public.notifications (user_id, is_
 
 -- 6.1 driver earnings — DERIVED, not stored.
 -- Reinforces that no payout balance is held anywhere in the system.
-create or replace view public.v_driver_earnings as
+-- security_invoker = true: without it, views default to running as their
+-- OWNER (definer semantics), silently bypassing the caller's RLS policies
+-- — flagged as a security-advisor ERROR. With it, the view respects
+-- whatever RLS the querying role is actually subject to.
+create view public.v_driver_earnings
+with (security_invoker = true) as
 select
   t.driver_id,
   date_trunc('day', rr.completed_at) as earning_date,
@@ -837,7 +947,8 @@ comment on view public.v_driver_earnings is
 
 
 -- 6.2 drivers whose rating fell below threshold (UC44) -----------------
-create or replace view public.v_flagged_low_ratings as
+create view public.v_flagged_low_ratings
+with (security_invoker = true) as
 select
   dp.user_id as driver_id,
   u.full_name,
@@ -855,24 +966,28 @@ where dp.rating_count >= 5              -- avoid flagging on tiny samples
 -- ---------------------------------------------------------------------
 -- RLS is the real enforcement layer for RBAC. UI button-hiding is UX only.
 
-create or replace function public.current_role()
+-- Named app_current_role(), not current_role() — the latter shadows the
+-- Postgres built-in of the same name, forcing quoted/qualified calls
+-- everywhere and inviting resolution bugs. (Security advisor also flags
+-- unpinned search_path on SECURITY DEFINER functions; pinned below.)
+create or replace function public.app_current_role()
 returns user_role language sql stable security definer set search_path = public as $$
   select role from public.users where id = auth.uid();
 $$;
 
 create or replace function public.is_pso()
-returns boolean language sql stable as $$
-  select public.current_role() in ('pso_staff','pso_supervisor','admin');
+returns boolean language sql stable set search_path = public as $$
+  select public.app_current_role() in ('pso_staff','pso_supervisor','admin');
 $$;
 
 create or replace function public.is_supervisor()
-returns boolean language sql stable as $$
-  select public.current_role() in ('pso_supervisor','admin');
+returns boolean language sql stable set search_path = public as $$
+  select public.app_current_role() in ('pso_supervisor','admin');
 $$;
 
 create or replace function public.is_admin()
-returns boolean language sql stable as $$
-  select public.current_role() = 'admin';
+returns boolean language sql stable set search_path = public as $$
+  select public.app_current_role() = 'admin';
 $$;
 
 alter table public.users            enable row level security;
@@ -886,6 +1001,7 @@ alter table public.ride_requests    enable row level security;
 alter table public.transactions     enable row level security;
 alter table public.ratings          enable row level security;
 alter table public.complaints       enable row level security;
+alter table public.complaint_attachments enable row level security;
 alter table public.account_actions  enable row level security;
 alter table public.fare_config      enable row level security;
 alter table public.system_settings  enable row level security;
@@ -898,7 +1014,7 @@ create policy users_select_self on public.users
 
 create policy users_update_self on public.users
   for update using (id = auth.uid())
-  with check (id = auth.uid() and role = public.current_role());  -- cannot self-promote
+  with check (id = auth.uid() and role = public.app_current_role());  -- cannot self-promote
 
 create policy users_admin_manage on public.users
   for all using (public.is_admin()) with check (public.is_admin());
@@ -959,13 +1075,29 @@ create policy trips_driver_rw on public.trips
 -- 7.5 ride_requests ---------------------------------------------------
 -- Passenger sees own; driver sees pending (request board) + own trip's;
 -- PSO sees all.
-create policy rr_passenger_rw on public.ride_requests
-  for all using (passenger_id = auth.uid())
-  with check (passenger_id = auth.uid());
+--
+-- Split (not `for all`): a blanket passenger UPDATE would let a passenger
+-- write their own final_fare, status, or discount_percent directly,
+-- defeating FR-3.3 ("final fare locked at trip completion"). Passengers
+-- may only insert/select their own rows, and may only update a still-
+-- pending request of their own to cancel it — every other status
+-- transition and every fare/discount field is driver- or system-owned.
+create policy rr_passenger_insert on public.ride_requests
+  for insert with check (passenger_id = auth.uid());
+
+create policy rr_passenger_select on public.ride_requests
+  for select using (passenger_id = auth.uid());
+
+create policy rr_passenger_cancel on public.ride_requests
+  for update using (passenger_id = auth.uid() and status = 'pending')
+  with check (
+    passenger_id = auth.uid()
+    and status = 'cancelled'
+  );
 
 create policy rr_driver_read on public.ride_requests
   for select using (
-    public.current_role() = 'driver'
+    public.app_current_role() = 'driver'
     and (
       status = 'pending'
       or trip_id in (select id from public.trips where driver_id = auth.uid())
@@ -975,7 +1107,7 @@ create policy rr_driver_read on public.ride_requests
 create policy rr_driver_update on public.ride_requests
   for update using (
     trip_id in (select id from public.trips where driver_id = auth.uid())
-    or (status = 'pending' and public.current_role() = 'driver')
+    or (status = 'pending' and public.app_current_role() = 'driver')
   );
 
 create policy rr_pso_read on public.ride_requests
@@ -1027,6 +1159,26 @@ create policy complaints_read on public.complaints
 
 create policy complaints_triage_staff on public.complaints
   for update using (public.is_pso()) with check (public.is_pso());
+
+-- 7.8b complaint_attachments --------------------------------------------
+-- Mirrors complaints_read: whoever can see the complaint can see its
+-- evidence. Only the complaint's own submitted_by may attach evidence
+-- (not against_user_id — the accused shouldn't be able to plant evidence
+-- under the complainant's complaint).
+create policy complaint_attachments_insert on public.complaint_attachments
+  for insert with check (
+    uploaded_by = auth.uid()
+    and complaint_id in (select id from public.complaints where submitted_by = auth.uid())
+  );
+
+create policy complaint_attachments_read on public.complaint_attachments
+  for select using (
+    complaint_id in (
+      select id from public.complaints
+      where submitted_by = auth.uid() or against_user_id = auth.uid()
+    )
+    or public.is_pso()
+  );
 
 -- 7.9 account_actions -------------------------------------------------
 -- Insert-only audit log. Staff may flag; only supervisors may suspend.

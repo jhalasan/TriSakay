@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Alert, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { Button, TextField, colors } from '@trisakay/ui';
+import * as ImagePicker from 'expo-image-picker';
+import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { BrandMotif, Button, GradientSurface, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/validation';
@@ -13,11 +14,13 @@ interface FormState {
   email: string;
   phone: string;
   password: string;
+  confirmPassword: string;
 }
 
 export default function RegisterScreen() {
   const router = useRouter();
   const register = useAuthStore((state) => state.register);
+  const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const authError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
   // See login.tsx: registration that returns an immediate session leaves this
@@ -25,12 +28,38 @@ export default function RegisterScreen() {
   // busy until the gate routes away rather than inviting a second submit.
   const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
 
-  const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '', password: '' });
+  const [form, setForm] = useState<FormState>({
+    name: '',
+    email: '',
+    phone: '',
+    password: '',
+    confirmPassword: '',
+  });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [avatarUri, setAvatarUri] = useState<string | null>(null);
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
+  }
+
+  async function handlePickAvatar() {
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Allow photo library access to set a profile picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+
+    if (!result.canceled && result.assets[0]) {
+      setAvatarUri(result.assets[0].uri);
+    }
   }
 
   async function handleRegister() {
@@ -39,12 +68,33 @@ export default function RegisterScreen() {
     if (!isValidEmail(form.email)) nextErrors.email = 'Enter a valid email address.';
     if (!isNonEmpty(form.phone)) nextErrors.phone = 'Enter a contact number.';
     if (!isValidPassword(form.password)) nextErrors.password = 'Password must be at least 6 characters.';
+    if (form.confirmPassword !== form.password) nextErrors.confirmPassword = 'Passwords do not match.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
     clearError();
     setSubmitting(true);
     const outcome = await register(form.name, form.email, form.phone, form.password);
+
+    // Upload only when signUp returned an active session — Storage RLS
+    // requires auth.uid(), which isn't available yet on the check_email
+    // path (email confirmation pending). Those riders can add a photo
+    // later from Profile once they've logged in.
+    if (outcome === 'signed_in' && avatarUri) {
+      const services = await import('@trisakay/services');
+      const session = await services.getSession();
+      if (session) {
+        const { publicUrl } = await services.uploadAvatar({ userId: session.user.id, uri: avatarUri });
+        // Store's `user` was already populated by the sign-up auth event,
+        // before this upload finished — refetch so avatarUrl isn't stale
+        // until the next full profile fetch (e.g. next app launch).
+        if (publicUrl) {
+          await services.updateAvatarUrl(publicUrl);
+          await refreshProfile();
+        }
+      }
+    }
+
     setSubmitting(false);
 
     if (outcome === 'check_email') {
@@ -59,12 +109,39 @@ export default function RegisterScreen() {
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader title="Create account" />
+      <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
+        <BrandMotif size={140} color="#FFFFFF" opacity={0.1} style={styles.motif} />
+        <View style={styles.markBadge}>
+          <Image
+            source={require('../../../../assets/brand/trisakay-mark.png')}
+            style={styles.mark}
+            resizeMode="contain"
+            accessibilityLabel="TriSakay"
+          />
+        </View>
+      </GradientSurface>
       <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
         <View>
-          <View style={styles.avatarUpload}>
-            <Ionicons name="camera-outline" size={26} color={colors.inkSoft} />
-          </View>
-          <Text style={styles.avatarUploadLabel}>Add a profile photo (optional)</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={avatarUri ? 'Change profile photo' : 'Add a profile photo'}
+            style={styles.avatarWrap}
+            onPress={handlePickAvatar}
+          >
+            <View style={[styles.avatarUpload, avatarUri && styles.avatarUploadFilled]}>
+              {avatarUri ? (
+                <Image source={{ uri: avatarUri }} style={styles.avatarImage} resizeMode="cover" />
+              ) : (
+                <Ionicons name="camera-outline" size={26} color={colors.inkSoft} />
+              )}
+            </View>
+            <View style={styles.avatarEditBadge}>
+              <Ionicons name={avatarUri ? 'pencil' : 'add'} size={14} color={colors.white} />
+            </View>
+          </Pressable>
+          <Text style={styles.avatarUploadLabel}>
+            {avatarUri ? 'Tap to change photo' : 'Add a profile photo (optional)'}
+          </Text>
         </View>
 
         <View style={styles.fields}>
@@ -99,6 +176,14 @@ export default function RegisterScreen() {
             value={form.password}
             onChangeText={(v) => update('password', v)}
             error={errors.password}
+            secureTextEntry
+          />
+          <TextField
+            label="Confirm password"
+            placeholder="••••••••"
+            value={form.confirmPassword}
+            onChangeText={(v) => update('confirmPassword', v)}
+            error={errors.confirmPassword}
             secureTextEntry
           />
         </View>

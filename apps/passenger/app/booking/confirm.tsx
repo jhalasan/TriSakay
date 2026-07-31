@@ -80,7 +80,7 @@ export default function ConfirmScreen() {
           interactive
         />
 
-        <Card style={styles.routeCard}>
+        <Card variant="raised" style={styles.routeCard}>
           <View style={styles.routeRow}>
             <View style={[styles.routeDot, { backgroundColor: colors.accentGreen }]} />
             <View style={styles.routeTextSlot}>
@@ -103,7 +103,7 @@ export default function ConfirmScreen() {
           <Stepper value={seats} onChange={setSeats} min={1} max={4} />
         </View>
 
-        <Card style={styles.fareCard}>
+        <Card variant="raised" style={styles.fareCard}>
           <Text style={styles.fareLabel}>Estimated fare</Text>
           <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
           <Text style={styles.fareNote}>

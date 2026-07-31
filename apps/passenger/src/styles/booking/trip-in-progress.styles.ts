@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -21,6 +21,9 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     borderRadius: radius.lg,
     padding: spacing.md,
+    // A floating panel over the map — matches the raised weight carried
+    // through finding-driver/driver-found for the same flow.
+    ...elevation.sheet,
   },
   textSlot: {
     flex: 1,

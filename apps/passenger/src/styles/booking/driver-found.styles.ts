@@ -10,13 +10,26 @@ export const styles = StyleSheet.create({
   },
   sheet: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
+    paddingTop: spacing.md,
     paddingBottom: spacing.xl,
     gap: spacing.md,
     backgroundColor: colors.panel,
     borderTopLeftRadius: radius.lg,
     borderTopRightRadius: radius.lg,
     ...elevation.sheet,
+  },
+  /**
+   * A brand-gradient handle bar rather than a plain grey one — the same
+   * small threading device carried through finding-driver → driver-found →
+   * trip-in-progress. Sized as a handle (not full-bleed), so it never
+   * competes with the sheet's own rounded-corner radius/shadow.
+   */
+  sheetAccent: {
+    width: 40,
+    height: 4,
+    borderRadius: radius.pill,
+    alignSelf: 'center',
+    marginBottom: spacing.sm,
   },
   caption: {
     ...typography.caption,

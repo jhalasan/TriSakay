@@ -46,7 +46,7 @@ export default function ProfileScreen() {
         </View>
 
         <View style={styles.identity}>
-          <Avatar name={name} size="xl" />
+          <Avatar name={name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="xl" />
           {isEditing ? (
             <View style={styles.editFieldWrap}>
               <TextField value={name} onChangeText={setName} autoCapitalize="words" />

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -32,15 +32,21 @@ export const styles = StyleSheet.create({
     ...typography.h1,
     color: colors.ink,
   },
+  /** Small brand accent under the greeting — the one decorative touch in an otherwise plain header. */
+  greetingAccent: {
+    width: 32,
+    height: 4,
+    borderRadius: radius.pill,
+    marginTop: spacing.xs,
+  },
   bellButton: {
     width: 48,
     height: 48,
     borderRadius: radius.md,
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong, // icon-only control
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.panel,
+    ...elevation.card,
   },
   bellDot: {
     position: 'absolute',
@@ -72,13 +78,12 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.line,
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
     backgroundColor: colors.panel,
     minHeight: 68,
+    ...elevation.card,
   },
   shortcutIcon: {
     width: 40,

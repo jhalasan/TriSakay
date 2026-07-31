@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, View } from 'react-native';
-import { motion } from '@trisakay/ui';
+import { Animated, Easing, StyleSheet, View } from 'react-native';
+import { GradientSurface, motion } from '@trisakay/ui';
 import { styles } from './PulseBeacon.styles';
 
 export interface PulseBeaconProps {
@@ -58,15 +58,25 @@ export function PulseBeacon({ size = 72, rings = 3, children }: PulseBeaconProps
             {
               width: size,
               height: size,
+              borderRadius: size / 2,
               opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
               transform: [
                 { scale: value.interpolate({ inputRange: [0, 1], outputRange: [1, 3] }) },
               ],
             },
           ]}
-        />
+        >
+          <GradientSurface token="brand" direction="diagonal" style={{ flex: 1, borderRadius: size / 2 }} />
+        </Animated.View>
       ))}
-      <View style={[styles.core, { width: size, height: size }]}>{children}</View>
+      <View style={[styles.core, { width: size, height: size, borderRadius: size / 2 }]}>
+        <GradientSurface
+          token="brand"
+          direction="diagonal"
+          style={{ ...StyleSheet.absoluteFillObject, borderRadius: size / 2 }}
+        />
+        {children}
+      </View>
     </View>
   );
 }

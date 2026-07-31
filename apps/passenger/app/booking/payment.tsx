@@ -54,7 +54,7 @@ export default function PaymentScreen() {
     <View style={styles.container}>
       <ScreenHeader title="Payment" showBack={false} />
       <View style={styles.content}>
-        <Card style={styles.amountCard}>
+        <Card variant="raised" style={styles.amountCard}>
           <Text style={styles.amountLabel}>Amount due</Text>
           <Text style={styles.amountValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
           {dropoff && <Text style={styles.amountNote}>Trip to {dropoff.label}</Text>}
