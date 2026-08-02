@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
-import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
 import type { DiscountCategory, PassengerDiscount } from '@trisakay/services';
 import { Badge, Button, Card, SegmentedControl, Spinner, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { styles } from '../../src/styles/profile/apply-discount.styles';
 
@@ -34,6 +35,8 @@ export default function ApplyDiscountScreen() {
       getMyDiscount().then((result) => setExisting(result.data)),
     );
   }
+
+  const { refreshing, onRefresh } = usePullToRefresh(refresh);
 
   useEffect(() => {
     let cancelled = false;
@@ -112,7 +115,13 @@ export default function ApplyDiscountScreen() {
   return (
     <View style={styles.container}>
       <ScreenHeader title="Fare discount" />
-      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+      <ScrollView
+        contentContainerStyle={styles.content}
+        keyboardShouldPersistTaps="handled"
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBluePressed} />
+        }
+      >
         <Text style={styles.intro}>
           Senior citizens, PWDs, and students may apply for a fare discount. Upload a photo of your
           valid ID — a PSO Supervisor reviews it before the discount takes effect.
