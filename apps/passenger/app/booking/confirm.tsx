@@ -31,7 +31,6 @@ export default function ConfirmScreen() {
   const setFare = useBookingStore((state) => state.setFare);
   const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
-  const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setRideRequestId = useBookingStore((state) => state.setRideRequestId);
   const { isGranted } = useLocationPermission();
   const [fareError, setFareError] = useState<string | null>(null);
