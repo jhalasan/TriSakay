@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
@@ -16,9 +16,18 @@ export default function FindingDriverScreen() {
   const reset = useBookingStore((state) => state.reset);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  // Guards against a second, redundant exit: reset() clears rideRequestId,
+  // which re-fires this effect (deps: [rideRequestId]) before the component
+  // finishes unmounting from the first navigate-away.
+  const hasExitedRef = useRef(false);
 
   useEffect(() => {
+    if (hasExitedRef.current) return;
+
     if (!rideRequestId) {
+      hasExitedRef.current = true;
+      reset();
       router.replace('/(tabs)/home');
       return;
     }
@@ -28,15 +37,21 @@ export default function FindingDriverScreen() {
 
     import('@trisakay/services').then(({ subscribeToRideRequestStatus }) => {
       if (cancelled) return;
-      unsubscribe = subscribeToRideRequestStatus(rideRequestId, (row) => {
-        if (row.status === 'assigned') {
-          setTripStatus('matched');
-          router.replace('/booking/driver-found');
-        } else if (row.status === 'cancelled') {
-          reset();
-          router.replace('/(tabs)/home');
-        }
-      });
+      unsubscribe = subscribeToRideRequestStatus(
+        rideRequestId,
+        (row) => {
+          if (row.status === 'assigned') {
+            hasExitedRef.current = true;
+            setTripStatus('matched');
+            router.replace('/booking/driver-found');
+          } else if (row.status === 'cancelled') {
+            hasExitedRef.current = true;
+            reset();
+            router.replace('/(tabs)/home');
+          }
+        },
+        (message) => setSubscriptionError(message),
+      );
     });
 
     return () => {
@@ -62,6 +77,7 @@ export default function FindingDriverScreen() {
       return;
     }
 
+    hasExitedRef.current = true;
     reset();
     router.replace('/(tabs)/home');
   }
@@ -90,6 +106,7 @@ export default function FindingDriverScreen() {
         <Text style={styles.subtitle}>
           {dropoff ? `Looking for a tricycle to ${dropoff.label}` : 'Looking for a tricycle nearby'}
         </Text>
+        {subscriptionError && <Text style={styles.cancelError}>{subscriptionError}</Text>}
         <View style={styles.cancelButton}>
           <Button
             label="Cancel request"

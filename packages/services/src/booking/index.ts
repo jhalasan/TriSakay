@@ -69,16 +69,27 @@ export async function cancelRideRequest(rideRequestId: string, reason: string): 
     .maybeSingle();
 
   if (error) return { error: error.message };
-  if (!data) return { error: 'Could not cancel — this ride may already be assigned.' };
+  if (!data) return { error: 'Could not cancel — this ride may already be assigned or no longer active.' };
   return { error: null };
 }
 
 export type RideRequestStatusUpdate = Pick<RideRequestRow, 'id' | 'status'>;
 
-/** First Realtime subscription in this codebase — one row, one channel, torn down by the returned unsubscribe. */
+/**
+ * First Realtime subscription in this codebase — one row, one channel, torn down by the returned unsubscribe.
+ *
+ * A `postgres_changes` subscription only forwards *future* events, so an
+ * UPDATE that lands in the gap before the channel finishes joining (or
+ * during a reconnect after a dropped socket) would otherwise be missed
+ * forever. To close that gap, once the channel reports `'SUBSCRIBED'` we
+ * run a one-off reconcile query and feed its result through the same
+ * `onChange` callback — safe to always do, since the caller's own
+ * status-branching logic already no-ops on a still-`'pending'` row.
+ */
 export function subscribeToRideRequestStatus(
   rideRequestId: string,
   onChange: (row: RideRequestStatusUpdate) => void,
+  onError?: (message: string) => void,
 ): () => void {
   const client = getSupabaseClient();
   const channel = client
@@ -88,7 +99,20 @@ export function subscribeToRideRequestStatus(
       { event: 'UPDATE', schema: 'public', table: 'ride_requests', filter: `id=eq.${rideRequestId}` },
       (payload: { new: RideRequestStatusUpdate }) => onChange(payload.new),
     )
-    .subscribe();
+    .subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        client
+          .from('ride_requests')
+          .select('id, status')
+          .eq('id', rideRequestId)
+          .maybeSingle()
+          .then(({ data }: { data: RideRequestStatusUpdate | null }) => {
+            if (data) onChange(data);
+          });
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        onError?.('Lost connection while waiting for a driver. Please check your connection.');
+      }
+    });
 
   return () => {
     client.removeChannel(channel);

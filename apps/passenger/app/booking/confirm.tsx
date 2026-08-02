@@ -31,6 +31,7 @@ export default function ConfirmScreen() {
   const setFare = useBookingStore((state) => state.setFare);
   const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
+  const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setRideRequestId = useBookingStore((state) => state.setRideRequestId);
   const { isGranted } = useLocationPermission();
   const [fareError, setFareError] = useState<string | null>(null);
@@ -40,6 +41,11 @@ export default function ConfirmScreen() {
   // actually know the passenger's status, never a guess.
   const [discountApproved, setDiscountApproved] = useState<boolean | null>(null);
   const [discountRatePercent, setDiscountRatePercent] = useState<number | null>(null);
+  // True once we definitively know whether the passenger has an approved
+  // discount AND (if so) what rate applies — gates the request button so we
+  // never persist a guessed discount_percent.
+  const discountInfoReady =
+    discountApproved !== null && (discountApproved === false || discountRatePercent !== null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -105,6 +111,11 @@ export default function ConfirmScreen() {
   }
 
   async function handleRequestRide() {
+    // A pending request already exists — this shouldn't be reachable in the
+    // normal flow once router.replace() is used below, but guards against
+    // any other path that could re-invoke this handler (e.g. a stray tap
+    // queued before navigation actually replaces this screen).
+    if (rideRequestId) return;
     if (!pickup || !dropoff || fare === null || !user?.id) return;
 
     setIsRequesting(true);
@@ -121,7 +132,7 @@ export default function ConfirmScreen() {
       estimatedFare: fare,
       preferredMethod: paymentMethod,
       discountApplied: discountApproved === true,
-      discountPercent: discountApproved === true ? (discountRatePercent ?? 20) : null,
+      discountPercent: discountApproved === true ? discountRatePercent : null,
     });
 
     setIsRequesting(false);
@@ -133,7 +144,7 @@ export default function ConfirmScreen() {
 
     setRideRequestId(data.id);
     setTripStatus('searching');
-    router.push('/booking/finding-driver');
+    router.replace('/booking/finding-driver');
   }
 
   return (
@@ -218,7 +229,7 @@ export default function ConfirmScreen() {
           label="Request ride"
           fullWidth
           loading={isRequesting}
-          disabled={!isGranted || fare === null || fareError !== null || isRequesting}
+          disabled={!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady}
           // Only while disabled — an enabled button must not announce a reason
           // that no longer applies.
           accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}

@@ -134,7 +134,7 @@ test('cancelRideRequest reports a plain error when RLS rejects the update (alrea
   );
 
   const { error } = await cancelRideRequest('rr1', 'Cancelled by passenger');
-  assert.equal(error, 'Could not cancel — this ride may already be assigned.');
+  assert.equal(error, 'Could not cancel — this ride may already be assigned or no longer active.');
 });
 
 test('cancelRideRequest surfaces a genuine Postgres error', async () => {
@@ -159,7 +159,7 @@ test('cancelRideRequest surfaces a genuine Postgres error', async () => {
 test('subscribeToRideRequestStatus filters on the row id and forwards status updates', async () => {
   let capturedArgs: any = null;
   let capturedHandler: ((payload: unknown) => void) | null = null;
-  let subscribeCalled = false;
+  let capturedStatusCallback: ((status: string) => void) | null = null;
   let removedChannel: unknown = null;
   const fakeChannel = {
     on: (_event: string, filterArgs: unknown, handler: (payload: unknown) => void) => {
@@ -167,8 +167,8 @@ test('subscribeToRideRequestStatus filters on the row id and forwards status upd
       capturedHandler = handler;
       return fakeChannel;
     },
-    subscribe: () => {
-      subscribeCalled = true;
+    subscribe: (statusCallback?: (status: string) => void) => {
+      capturedStatusCallback = statusCallback ?? null;
       return fakeChannel;
     },
   };
@@ -182,6 +182,13 @@ test('subscribeToRideRequestStatus filters on the row id and forwards status upd
       removeChannel: (channel: unknown) => {
         removedChannel = channel;
       },
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: null, error: null }),
+          }),
+        }),
+      }),
     })
   );
 
@@ -191,11 +198,111 @@ test('subscribeToRideRequestStatus filters on the row id and forwards status upd
   assert.equal(capturedArgs.filter, 'id=eq.rr1');
   assert.equal(capturedArgs.event, 'UPDATE');
   assert.equal(capturedArgs.table, 'ride_requests');
-  assert.ok(subscribeCalled);
+  assert.ok(capturedStatusCallback);
 
   capturedHandler!({ new: { id: 'rr1', status: 'assigned' } });
   assert.deepEqual(received, [{ id: 'rr1', status: 'assigned' }]);
 
   unsubscribe();
   assert.equal(removedChannel, fakeChannel);
+});
+
+interface FakeStatusChannel {
+  on: () => FakeStatusChannel;
+  subscribe: (statusCallback?: (status: string) => void) => FakeStatusChannel;
+}
+
+test('subscribeToRideRequestStatus reconciles once the channel reports SUBSCRIBED', async () => {
+  const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
+  let capturedTable: string | null = null;
+  let capturedSelect: string | null = null;
+  let capturedEqArgs: [string, unknown] | null = null;
+  const fakeChannel: FakeStatusChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      captured.statusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      from: (table: string) => {
+        capturedTable = table;
+        return {
+          select: (columns: string) => {
+            capturedSelect = columns;
+            return {
+              eq: (column: string, value: unknown) => {
+                capturedEqArgs = [column, value];
+                return {
+                  maybeSingle: async () => ({ data: { id: 'rr1', status: 'assigned' }, error: null }),
+                };
+              },
+            };
+          },
+        };
+      },
+    })
+  );
+
+  const received: unknown[] = [];
+  subscribeToRideRequestStatus('rr1', (row) => received.push(row));
+
+  const statusCallback = captured.statusCallback;
+  assert.ok(statusCallback);
+  statusCallback('SUBSCRIBED');
+
+  // The reconcile query is async — flush microtasks.
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(capturedTable, 'ride_requests');
+  assert.equal(capturedSelect, 'id, status');
+  assert.deepEqual(capturedEqArgs, ['id', 'rr1']);
+  assert.deepEqual(received, [{ id: 'rr1', status: 'assigned' }]);
+});
+
+test('subscribeToRideRequestStatus calls onError when the channel errors out or times out', async () => {
+  const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
+  const fakeChannel: FakeStatusChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      captured.statusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: null, error: null }),
+          }),
+        }),
+      }),
+    })
+  );
+
+  const errors: string[] = [];
+  subscribeToRideRequestStatus(
+    'rr1',
+    () => {},
+    (message) => errors.push(message),
+  );
+
+  const statusCallback = captured.statusCallback;
+  assert.ok(statusCallback);
+  statusCallback('CHANNEL_ERROR');
+  statusCallback('TIMED_OUT');
+
+  assert.deepEqual(errors, [
+    'Lost connection while waiting for a driver. Please check your connection.',
+    'Lost connection while waiting for a driver. Please check your connection.',
+  ]);
 });
