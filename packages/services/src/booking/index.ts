@@ -44,3 +44,31 @@ export async function createRideRequest(input: CreateRideRequestInput): Promise<
 
   return { data: data ?? null, error: error?.message ?? null };
 }
+
+export interface CancelRideRequestResult {
+  error: string | null;
+}
+
+/**
+ * Only succeeds while the row is still `pending` — enforced server-side by
+ * the `rr_passenger_cancel` RLS policy, not re-checked here. A row RLS
+ * silently excludes (e.g. already assigned) comes back as `data: null` with
+ * no Postgres error, so that case is surfaced as a plain message rather than
+ * reported as success.
+ */
+export async function cancelRideRequest(rideRequestId: string, reason: string): Promise<CancelRideRequestResult> {
+  const { data, error } = await getSupabaseClient()
+    .from('ride_requests')
+    .update({
+      status: 'cancelled',
+      cancelled_at: new Date().toISOString(),
+      cancel_reason: reason,
+    })
+    .eq('id', rideRequestId)
+    .select()
+    .maybeSingle();
+
+  if (error) return { error: error.message };
+  if (!data) return { error: 'Could not cancel — this ride may already be assigned.' };
+  return { error: null };
+}

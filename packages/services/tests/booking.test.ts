@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -82,4 +82,76 @@ test('createRideRequest surfaces the Postgres error message', async () => {
 
   assert.equal(data, null);
   assert.equal(error, 'insert failed');
+});
+
+test('cancelRideRequest updates status to cancelled and returns no error on success', async () => {
+  let capturedUpdate: any = null;
+  let capturedId: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        assert.equal(table, 'ride_requests');
+        return {
+          update: (row: unknown) => {
+            capturedUpdate = row;
+            return {
+              eq: (column: string, value: unknown) => {
+                assert.equal(column, 'id');
+                capturedId = value;
+                return {
+                  select: () => ({
+                    maybeSingle: async () => ({ data: { id: value, status: 'cancelled' }, error: null }),
+                  }),
+                };
+              },
+            };
+          },
+        };
+      },
+    })
+  );
+
+  const { error } = await cancelRideRequest('rr1', 'Cancelled by passenger');
+  assert.equal(error, null);
+  assert.equal(capturedId, 'rr1');
+  assert.equal(capturedUpdate.status, 'cancelled');
+  assert.equal(capturedUpdate.cancel_reason, 'Cancelled by passenger');
+});
+
+test('cancelRideRequest reports a plain error when RLS rejects the update (already assigned)', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: () => ({
+        update: () => ({
+          eq: () => ({
+            select: () => ({
+              maybeSingle: async () => ({ data: null, error: null }),
+            }),
+          }),
+        }),
+      }),
+    })
+  );
+
+  const { error } = await cancelRideRequest('rr1', 'Cancelled by passenger');
+  assert.equal(error, 'Could not cancel — this ride may already be assigned.');
+});
+
+test('cancelRideRequest surfaces a genuine Postgres error', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: () => ({
+        update: () => ({
+          eq: () => ({
+            select: () => ({
+              maybeSingle: async () => ({ data: null, error: { message: 'network error' } }),
+            }),
+          }),
+        }),
+      }),
+    })
+  );
+
+  const { error } = await cancelRideRequest('rr1', 'Cancelled by passenger');
+  assert.equal(error, 'network error');
 });
