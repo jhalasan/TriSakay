@@ -523,8 +523,8 @@ In the store body, add:
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd apps/passenger && npx tsc --noEmit`
-Expected: no new errors.
+Run from the repo root: `npm run typecheck` (this runs `tsc -b` across the whole workspace graph — `apps/passenger` alone cannot typecheck standalone since its dependencies are project references, not built `dist/` output; `npx tsc --noEmit` inside `apps/passenger` produces a wall of unrelated TS6305 "not built from source" errors and is not a valid check here).
+Expected: no errors (verified clean on this exact command at task start).
 
 - [ ] **Step 4: Commit**
 
@@ -633,8 +633,8 @@ In `apps/passenger/app/booking/confirm.tsx`:
 
 - [ ] **Step 3: Typecheck**
 
-Run: `cd apps/passenger && npx tsc --noEmit`
-Expected: no new errors.
+Run from the repo root: `npm run typecheck` (this runs `tsc -b` across the whole workspace graph — `apps/passenger` alone cannot typecheck standalone since its dependencies are project references, not built `dist/` output; `npx tsc --noEmit` inside `apps/passenger` produces a wall of unrelated TS6305 "not built from source" errors and is not a valid check here).
+Expected: no errors (verified clean on this exact command at task start).
 
 - [ ] **Step 4: Manual verification against the live Supabase project**
 
