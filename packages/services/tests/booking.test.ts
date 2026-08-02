@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -154,4 +154,48 @@ test('cancelRideRequest surfaces a genuine Postgres error', async () => {
 
   const { error } = await cancelRideRequest('rr1', 'Cancelled by passenger');
   assert.equal(error, 'network error');
+});
+
+test('subscribeToRideRequestStatus filters on the row id and forwards status updates', async () => {
+  let capturedArgs: any = null;
+  let capturedHandler: ((payload: unknown) => void) | null = null;
+  let subscribeCalled = false;
+  let removedChannel: unknown = null;
+  const fakeChannel = {
+    on: (_event: string, filterArgs: unknown, handler: (payload: unknown) => void) => {
+      capturedArgs = filterArgs;
+      capturedHandler = handler;
+      return fakeChannel;
+    },
+    subscribe: () => {
+      subscribeCalled = true;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: (name: string) => {
+        assert.equal(name, 'ride_request_status_rr1');
+        return fakeChannel;
+      },
+      removeChannel: (channel: unknown) => {
+        removedChannel = channel;
+      },
+    })
+  );
+
+  const received: unknown[] = [];
+  const unsubscribe = subscribeToRideRequestStatus('rr1', (row) => received.push(row));
+
+  assert.equal(capturedArgs.filter, 'id=eq.rr1');
+  assert.equal(capturedArgs.event, 'UPDATE');
+  assert.equal(capturedArgs.table, 'ride_requests');
+  assert.ok(subscribeCalled);
+
+  capturedHandler!({ new: { id: 'rr1', status: 'assigned' } });
+  assert.deepEqual(received, [{ id: 'rr1', status: 'assigned' }]);
+
+  unsubscribe();
+  assert.equal(removedChannel, fakeChannel);
 });

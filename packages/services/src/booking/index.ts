@@ -72,3 +72,25 @@ export async function cancelRideRequest(rideRequestId: string, reason: string): 
   if (!data) return { error: 'Could not cancel — this ride may already be assigned.' };
   return { error: null };
 }
+
+export type RideRequestStatusUpdate = Pick<RideRequestRow, 'id' | 'status'>;
+
+/** First Realtime subscription in this codebase — one row, one channel, torn down by the returned unsubscribe. */
+export function subscribeToRideRequestStatus(
+  rideRequestId: string,
+  onChange: (row: RideRequestStatusUpdate) => void,
+): () => void {
+  const client = getSupabaseClient();
+  const channel = client
+    .channel(`ride_request_status_${rideRequestId}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'ride_requests', filter: `id=eq.${rideRequestId}` },
+      (payload: { new: RideRequestStatusUpdate }) => onChange(payload.new),
+    )
+    .subscribe();
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
