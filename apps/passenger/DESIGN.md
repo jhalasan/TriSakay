@@ -129,7 +129,7 @@ Three conventions hold the result together:
 - **Every list has an empty state**, and it says what will appear there, not merely that nothing is there.
 - **Partial records degrade to nothing, not to fragments.** A history row missing one endpoint drops the whole route line rather than rendering "→ SM City", which reads as a bug instead of as missing data.
 
-Flows still run end to end so the UI stays walkable for design review: login accepts what you type, and `pickRandomDriver()` returns an unpopulated record so the ride sequence reaches Payment and Rate driver. Rides completed in a session are appended to history, so the list fills as you use the app.
+Flows still run end to end so the UI stays walkable for design review: login accepts what you type, and a requested ride now genuinely waits on a real `ride_requests` row rather than a simulated match — the ride sequence past "Finding a driver" isn't reachable in dev until a driver-side flow exists to assign one. Rides completed in a session are appended to history, so the list fills as you use the app.
 
 ## Known provisional decisions
 

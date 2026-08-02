@@ -1,40 +1,67 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { Button, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
-import { pickRandomDriver } from '../../src/mocks/drivers';
-import { randomBetween, wait } from '../../src/mocks/delay';
 import { styles } from '../../src/styles/booking/finding-driver.styles';
 
 export default function FindingDriverScreen() {
   const router = useRouter();
   const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
-  const setDriver = useBookingStore((state) => state.setDriver);
+  const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const reset = useBookingStore((state) => state.reset);
+  const [isCancelling, setIsCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
 
   useEffect(() => {
-    let cancelled = false;
+    if (!rideRequestId) {
+      router.replace('/(tabs)/home');
+      return;
+    }
 
-    (async () => {
-      await wait(randomBetween(2500, 4000));
+    let cancelled = false;
+    let unsubscribe: (() => void) | null = null;
+
+    import('@trisakay/services').then(({ subscribeToRideRequestStatus }) => {
       if (cancelled) return;
-      setDriver(pickRandomDriver());
-      setTripStatus('matched');
-      router.replace('/booking/driver-found');
-    })();
+      unsubscribe = subscribeToRideRequestStatus(rideRequestId, (row) => {
+        if (row.status === 'assigned') {
+          setTripStatus('matched');
+          router.replace('/booking/driver-found');
+        } else if (row.status === 'cancelled') {
+          reset();
+          router.replace('/(tabs)/home');
+        }
+      });
+    });
 
     return () => {
       cancelled = true;
+      unsubscribe?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [rideRequestId]);
 
-  function handleCancel() {
+  async function handleCancel() {
+    if (!rideRequestId) return;
+
+    setIsCancelling(true);
+    setCancelError(null);
+
+    const { cancelRideRequest } = await import('@trisakay/services');
+    const { error } = await cancelRideRequest(rideRequestId, 'Cancelled by passenger');
+
+    setIsCancelling(false);
+
+    if (error) {
+      setCancelError(error);
+      return;
+    }
+
     reset();
     router.replace('/(tabs)/home');
   }
@@ -64,8 +91,17 @@ export default function FindingDriverScreen() {
           {dropoff ? `Looking for a tricycle to ${dropoff.label}` : 'Looking for a tricycle nearby'}
         </Text>
         <View style={styles.cancelButton}>
-          <Button label="Cancel request" variant="outline" tone="neutral" fullWidth onPress={handleCancel} />
+          <Button
+            label="Cancel request"
+            variant="outline"
+            tone="neutral"
+            fullWidth
+            loading={isCancelling}
+            disabled={isCancelling}
+            onPress={handleCancel}
+          />
         </View>
+        {cancelError && <Text style={styles.cancelError}>{cancelError}</Text>}
       </View>
     </View>
   );
