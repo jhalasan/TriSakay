@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus, acceptRideRequest } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -305,4 +305,235 @@ test('subscribeToRideRequestStatus calls onError when the channel errors out or 
     'Lost connection while waiting for a driver. Please check your connection.',
     'Lost connection while waiting for a driver. Please check your connection.',
   ]);
+});
+
+test('acceptRideRequest reuses an existing active trip and assigns the ride request', async () => {
+  const capturedTripLookup: { column: string; value: unknown }[] = [];
+  let capturedUpdate: any = null;
+  const capturedUpdateFilters: { column: string; value: unknown }[] = [];
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return {
+            select: () => ({
+              eq: (column: string, value: unknown) => {
+                capturedTripLookup.push({ column, value });
+                return {
+                  eq: (column2: string, value2: unknown) => {
+                    capturedTripLookup.push({ column: column2, value: value2 });
+                    return {
+                      maybeSingle: async () => ({ data: { id: 'trip1' }, error: null }),
+                    };
+                  },
+                };
+              },
+            }),
+          };
+        }
+        if (table === 'ride_requests') {
+          return {
+            update: (row: unknown) => {
+              capturedUpdate = row;
+              return {
+                eq: (column: string, value: unknown) => {
+                  capturedUpdateFilters.push({ column, value });
+                  return {
+                    eq: (column2: string, value2: unknown) => {
+                      capturedUpdateFilters.push({ column: column2, value: value2 });
+                      return {
+                        select: () => ({
+                          maybeSingle: async () => ({ data: { id: 'rr1' }, error: null }),
+                        }),
+                      };
+                    },
+                  };
+                },
+              };
+            },
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await acceptRideRequest('driver1', 'rr1');
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedTripLookup, [
+    { column: 'driver_id', value: 'driver1' },
+    { column: 'status', value: 'active' },
+  ]);
+  assert.equal(capturedUpdate.trip_id, 'trip1');
+  assert.equal(capturedUpdate.status, 'assigned');
+  assert.ok(capturedUpdate.assigned_at);
+  assert.deepEqual(capturedUpdateFilters, [
+    { column: 'id', value: 'rr1' },
+    { column: 'status', value: 'pending' },
+  ]);
+});
+
+test("acceptRideRequest creates a trip from the driver's active tricycle when none exists", async () => {
+  const capturedTricycleLookup: { column: string; value: unknown }[] = [];
+  let capturedTripInsert: any = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  maybeSingle: async () => ({ data: null, error: null }),
+                }),
+              }),
+            }),
+            insert: (row: unknown) => {
+              capturedTripInsert = row;
+              return {
+                select: () => ({
+                  single: async () => ({ data: { id: 'trip2' }, error: null }),
+                }),
+              };
+            },
+          };
+        }
+        if (table === 'tricycles') {
+          return {
+            select: () => ({
+              eq: (column: string, value: unknown) => {
+                capturedTricycleLookup.push({ column, value });
+                return {
+                  eq: (column2: string, value2: unknown) => {
+                    capturedTricycleLookup.push({ column: column2, value: value2 });
+                    return {
+                      eq: (column3: string, value3: unknown) => {
+                        capturedTricycleLookup.push({ column: column3, value: value3 });
+                        return {
+                          maybeSingle: async () => ({ data: { id: 'tri1', seat_capacity: 3 }, error: null }),
+                        };
+                      },
+                    };
+                  },
+                };
+              },
+            }),
+          };
+        }
+        if (table === 'ride_requests') {
+          return {
+            update: () => ({
+              eq: () => ({
+                eq: () => ({
+                  select: () => ({
+                    maybeSingle: async () => ({ data: { id: 'rr1' }, error: null }),
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await acceptRideRequest('driver1', 'rr1');
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedTricycleLookup, [
+    { column: 'driver_id', value: 'driver1' },
+    { column: 'is_active', value: true },
+    { column: 'verification_status', value: 'approved' },
+  ]);
+  assert.equal(capturedTripInsert.driver_id, 'driver1');
+  assert.equal(capturedTripInsert.tricycle_id, 'tri1');
+  assert.equal(capturedTripInsert.max_seats, 3);
+  assert.equal(capturedTripInsert.status, 'active');
+});
+
+test('acceptRideRequest reports a clear error when the driver has no active tricycle', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return {
+            select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }),
+          };
+        }
+        if (table === 'tricycles') {
+          return {
+            select: () => ({
+              eq: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await acceptRideRequest('driver1', 'rr1');
+  assert.equal(error, 'No active tricycle assigned yet — finish vehicle verification first.');
+});
+
+test('acceptRideRequest reports a clear error when another driver already accepted the request', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return {
+            select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: 'trip1' }, error: null }) }) }) }),
+          };
+        }
+        if (table === 'ride_requests') {
+          return {
+            update: () => ({
+              eq: () => ({
+                eq: () => ({
+                  select: () => ({ maybeSingle: async () => ({ data: null, error: null }) }),
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await acceptRideRequest('driver1', 'rr1');
+  assert.equal(error, 'This ride was just accepted by another driver.');
+});
+
+test('acceptRideRequest surfaces a Postgres error from the assignment update', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return {
+            select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: 'trip1' }, error: null }) }) }) }),
+          };
+        }
+        if (table === 'ride_requests') {
+          return {
+            update: () => ({
+              eq: () => ({
+                eq: () => ({
+                  select: () => ({ maybeSingle: async () => ({ data: null, error: { message: 'network error' } }) }),
+                }),
+              }),
+            }),
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await acceptRideRequest('driver1', 'rr1');
+  assert.equal(error, 'network error');
 });

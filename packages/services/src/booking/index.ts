@@ -73,6 +73,76 @@ export async function cancelRideRequest(rideRequestId: string, reason: string): 
   return { error: null };
 }
 
+export interface AcceptRideRequestResult {
+  error: string | null;
+}
+
+/**
+ * Finds (or creates) the driver's active trip, then assigns the ride request
+ * to it. The final update is guarded by `status = 'pending'` so a driver who
+ * loses a race against another driver gets a clear error instead of silently
+ * overwriting someone else's assignment.
+ */
+export async function acceptRideRequest(driverId: string, rideRequestId: string): Promise<AcceptRideRequestResult> {
+  const client = getSupabaseClient();
+
+  const { data: existingTrip, error: tripLookupError } = await client
+    .from('trips')
+    .select('id')
+    .eq('driver_id', driverId)
+    .eq('status', 'active')
+    .maybeSingle();
+
+  if (tripLookupError) return { error: tripLookupError.message };
+
+  let tripId: string | undefined = existingTrip?.id;
+
+  if (!tripId) {
+    const { data: tricycle, error: tricycleError } = await client
+      .from('tricycles')
+      .select('id, seat_capacity')
+      .eq('driver_id', driverId)
+      .eq('is_active', true)
+      .eq('verification_status', 'approved')
+      .maybeSingle();
+
+    if (tricycleError) return { error: tricycleError.message };
+    if (!tricycle) return { error: 'No active tricycle assigned yet — finish vehicle verification first.' };
+
+    const { data: newTrip, error: createTripError } = await client
+      .from('trips')
+      .insert({
+        driver_id: driverId,
+        tricycle_id: tricycle.id,
+        max_seats: tricycle.seat_capacity,
+        status: 'active',
+        started_at: new Date().toISOString(),
+      })
+      .select('id')
+      .single();
+
+    if (createTripError) return { error: createTripError.message };
+    tripId = newTrip.id;
+  }
+
+  const { data: assigned, error: assignError } = await client
+    .from('ride_requests')
+    .update({
+      trip_id: tripId,
+      status: 'assigned',
+      assigned_at: new Date().toISOString(),
+    })
+    .eq('id', rideRequestId)
+    .eq('status', 'pending')
+    .select('id')
+    .maybeSingle();
+
+  if (assignError) return { error: assignError.message };
+  if (!assigned) return { error: 'This ride was just accepted by another driver.' };
+
+  return { error: null };
+}
+
 export type RideRequestStatusUpdate = Pick<RideRequestRow, 'id' | 'status'>;
 
 /**
