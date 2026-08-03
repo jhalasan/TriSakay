@@ -108,6 +108,9 @@ function RootLayoutNav() {
           }}
         >
           <Stack.Screen name="index" />
+          <Stack.Screen name="consent" />
+          <Stack.Screen name="location-permission" options={{ presentation: 'transparentModal', animation: 'fade' }} />
+          <Stack.Screen name="logout" options={{ presentation: 'transparentModal', animation: 'fade' }} />
         </Stack>
       </SafeAreaProvider>
     </GestureHandlerRootView>
