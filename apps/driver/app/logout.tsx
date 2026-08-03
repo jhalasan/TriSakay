@@ -10,7 +10,7 @@ export default function LogoutScreen() {
 
   async function handleConfirm() {
     await logout();
-    useRequestsStore.getState().stopSimulatingArrivals();
+    useRequestsStore.getState().unsubscribe();
     useDriverStore.getState().setAvailable(false);
     router.dismiss();
   }
