@@ -88,6 +88,12 @@ export const styles = StyleSheet.create({
     textDecorationLine: 'underline',
     marginTop: spacing.xs,
   },
+  requestError: {
+    ...typography.caption,
+    color: colors.danger,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
   footer: {
     padding: spacing.lg,
     paddingBottom: spacing.xl,

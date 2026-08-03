@@ -10,6 +10,7 @@ interface BookingState {
   fare: number | null;
   paymentMethod: PaymentMethod;
   driver: Driver | null;
+  rideRequestId: string | null;
   tripStatus: TripStatus;
   setPickup: (point: LocationPoint) => void;
   setDropoff: (point: LocationPoint) => void;
@@ -17,6 +18,7 @@ interface BookingState {
   setFare: (fare: number | null) => void;
   setPaymentMethod: (method: PaymentMethod) => void;
   setDriver: (driver: Driver) => void;
+  setRideRequestId: (id: string | null) => void;
   setTripStatus: (status: TripStatus) => void;
   reset: () => void;
 }
@@ -28,6 +30,7 @@ const initialState = {
   fare: null as number | null,
   paymentMethod: 'cash' as PaymentMethod,
   driver: null as Driver | null,
+  rideRequestId: null as string | null,
   tripStatus: 'idle' as TripStatus,
 };
 
@@ -39,6 +42,7 @@ export const useBookingStore = create<BookingState>()((set) => ({
   setFare: (fare) => set({ fare }),
   setPaymentMethod: (method) => set({ paymentMethod: method }),
   setDriver: (driver) => set({ driver }),
+  setRideRequestId: (id) => set({ rideRequestId: id }),
   setTripStatus: (status) => set({ tripStatus: status }),
   reset: () => set({ ...initialState }),
 }));

@@ -28,6 +28,11 @@ export interface FakeClientConfig {
    * green while the query returned other users' rows.
    */
   onConsentSelect?: (column: string, value: unknown) => void;
+  /** Full override for `.from(table)` — when set, bypasses the built-in users/consents tables entirely. */
+  from?: (table: string) => unknown;
+  /** Full override for `.channel(name)` — used by Realtime-subscription tests. */
+  channel?: (name: string) => unknown;
+  removeChannel?: (channel: unknown) => void;
 }
 
 export function createFakeSupabaseClient(config: FakeClientConfig = {}): SupabaseClient<Database> {
@@ -82,7 +87,15 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     },
   };
 
-  const from = (table: string) => (table === 'user_consents' ? consentsTable : usersTable);
+  const from = (table: string) => {
+    if (config.from) return config.from(table);
+    return table === 'user_consents' ? consentsTable : usersTable;
+  };
 
-  return { auth, from } as unknown as SupabaseClient<Database>;
+  return {
+    auth,
+    from,
+    channel: config.channel ?? (() => { throw new Error('channel not configured on fake client'); }),
+    removeChannel: config.removeChannel ?? (() => {}),
+  } as unknown as SupabaseClient<Database>;
 }

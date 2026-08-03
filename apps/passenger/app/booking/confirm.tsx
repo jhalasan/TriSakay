@@ -31,12 +31,21 @@ export default function ConfirmScreen() {
   const setFare = useBookingStore((state) => state.setFare);
   const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
+  const rideRequestId = useBookingStore((state) => state.rideRequestId);
+  const setRideRequestId = useBookingStore((state) => state.setRideRequestId);
   const { isGranted } = useLocationPermission();
   const [fareError, setFareError] = useState<string | null>(null);
+  const [isRequesting, setIsRequesting] = useState(false);
+  const [requestError, setRequestError] = useState<string | null>(null);
   // null while unresolved — the discount line only ever renders once we
   // actually know the passenger's status, never a guess.
   const [discountApproved, setDiscountApproved] = useState<boolean | null>(null);
   const [discountRatePercent, setDiscountRatePercent] = useState<number | null>(null);
+  // True once we definitively know whether the passenger has an approved
+  // discount AND (if so) what rate applies — gates the request button so we
+  // never persist a guessed discount_percent.
+  const discountInfoReady =
+    discountApproved !== null && (discountApproved === false || discountRatePercent !== null);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -101,9 +110,41 @@ export default function ConfirmScreen() {
     );
   }
 
-  function handleRequestRide() {
+  async function handleRequestRide() {
+    // A pending request already exists — this shouldn't be reachable in the
+    // normal flow once router.replace() is used below, but guards against
+    // any other path that could re-invoke this handler (e.g. a stray tap
+    // queued before navigation actually replaces this screen).
+    if (rideRequestId) return;
+    if (!pickup || !dropoff || fare === null || !user?.id) return;
+
+    setIsRequesting(true);
+    setRequestError(null);
+
+    const { createRideRequest } = await import('@trisakay/services');
+    const distanceKm = haversineDistanceKm(pickup, dropoff);
+    const { data, error } = await createRideRequest({
+      passengerId: user.id,
+      pickup: { latitude: pickup.latitude, longitude: pickup.longitude, label: pickup.label },
+      dropoff: { latitude: dropoff.latitude, longitude: dropoff.longitude, label: dropoff.label },
+      seats,
+      distanceKm,
+      estimatedFare: fare,
+      preferredMethod: paymentMethod,
+      discountApplied: discountApproved === true,
+      discountPercent: discountApproved === true ? discountRatePercent : null,
+    });
+
+    setIsRequesting(false);
+
+    if (error || !data) {
+      setRequestError(error ?? 'Could not request a ride. Please try again.');
+      return;
+    }
+
+    setRideRequestId(data.id);
     setTripStatus('searching');
-    router.push('/booking/finding-driver');
+    router.replace('/booking/finding-driver');
   }
 
   return (
@@ -187,12 +228,14 @@ export default function ConfirmScreen() {
         <Button
           label="Request ride"
           fullWidth
-          disabled={!isGranted}
+          loading={isRequesting}
+          disabled={!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady}
           // Only while disabled — an enabled button must not announce a reason
           // that no longer applies.
           accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
           onPress={handleRequestRide}
         />
+        {requestError && <Text style={styles.requestError}>{requestError}</Text>}
         <LocationRequiredNotice />
       </View>
     </View>

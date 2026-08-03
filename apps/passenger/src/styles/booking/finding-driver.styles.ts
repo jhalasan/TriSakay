@@ -38,4 +38,10 @@ export const styles = StyleSheet.create({
   cancelButton: {
     alignSelf: 'stretch',
   },
+  cancelError: {
+    ...typography.caption,
+    color: colors.danger,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
 });
