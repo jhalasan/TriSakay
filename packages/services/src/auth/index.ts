@@ -9,6 +9,7 @@ export interface SignUpInput {
   email: string;
   phone: string;
   password: string;
+  role?: 'passenger' | 'driver';
 }
 
 export interface SignInInput {
@@ -21,7 +22,7 @@ export interface AuthResult {
   error: string | null;
 }
 
-export async function signUp({ fullName, email, phone, password }: SignUpInput): Promise<AuthResult> {
+export async function signUp({ fullName, email, phone, password, role = 'passenger' }: SignUpInput): Promise<AuthResult> {
   const { data, error } = await getSupabaseClient().auth.signUp({
     email,
     password,
@@ -29,7 +30,7 @@ export async function signUp({ fullName, email, phone, password }: SignUpInput):
       data: {
         full_name: fullName,
         phone,
-        role: 'passenger',
+        role,
       },
     },
   });
