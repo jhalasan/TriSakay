@@ -1,11 +1,13 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Badge, Toggle } from '@trisakay/ui';
+import { Avatar, Badge, Toggle, colors } from '@trisakay/ui';
 import { RequestCard } from '../../src/components/RequestCard';
 import { StatTile } from '../../src/components/StatTile';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
+import { useNotificationsStore } from '../../src/store/useNotificationsStore';
 import { useRequestsStore } from '../../src/store/useRequestsStore';
 import { useTripStore } from '../../src/store/useTripStore';
 import { formatCurrency } from '../../src/utils/currency';
@@ -22,6 +24,8 @@ export default function DashboardScreen() {
   const rating = useDriverStore((state) => state.rating);
   const ratingCount = useDriverStore((state) => state.ratingCount);
   const acceptRate = useDriverStore((state) => state.acceptRate);
+
+  const unreadCount = useNotificationsStore((state) => state.items.filter((item) => !item.read).length);
 
   const pending = useRequestsStore((state) => state.pending);
   const startSimulatingArrivals = useRequestsStore((state) => state.startSimulatingArrivals);
@@ -60,6 +64,15 @@ export default function DashboardScreen() {
               {user?.name ?? 'Driver'}
             </Text>
           </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Notifications"
+            style={styles.bellButton}
+            onPress={() => router.push('/notifications')}
+          >
+            <Ionicons name="notifications-outline" size={22} color={colors.ink} />
+            {unreadCount > 0 && <View style={styles.bellDot} />}
+          </Pressable>
           <Toggle value={isAvailable} onValueChange={handleToggleAvailable} />
         </View>
 

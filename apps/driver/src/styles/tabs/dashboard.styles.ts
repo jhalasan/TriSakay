@@ -12,4 +12,22 @@ export const styles = StyleSheet.create({
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   sectionLabel: { ...typography.label, color: colors.inkSoft, marginTop: spacing.sm },
   offlineNote: { ...typography.caption, color: colors.inkSoft },
+  bellButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bellDot: {
+    position: 'absolute',
+    top: 8,
+    right: 8,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    backgroundColor: colors.danger,
+    borderWidth: 2,
+    borderColor: colors.panel,
+  },
 });
