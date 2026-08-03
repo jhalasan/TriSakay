@@ -6,4 +6,5 @@ export const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg },
   title: { ...typography.h1, color: colors.ink },
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.md },
+  error: { ...typography.caption, color: colors.danger, paddingHorizontal: spacing.lg },
 });
