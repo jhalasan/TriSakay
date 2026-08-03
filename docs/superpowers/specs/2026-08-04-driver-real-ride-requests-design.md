@@ -85,13 +85,16 @@ a request still hands off to the existing mocked `useTripStore.startTrip`.
   interface RequestsState {
     pending: PendingRequest[];
     error: string | null;
-    subscribe: (driverId: string) => void;
+    subscribe: () => void;
     unsubscribe: () => void;
     accept: (id: string, driverId: string) => Promise<PendingRequest | undefined>;
     decline: (id: string) => void;
   }
   ```
-- `subscribe(driverId)` calls `subscribeToPendingRideRequests`, mapping each
+  (`subscribe` takes no driver id — the naive query isn't scoped per-driver, every
+  online driver sees the same pending list. Only `accept` needs the driver's id,
+  to find-or-create their own trip.)
+- `subscribe()` calls `subscribeToPendingRideRequests`, mapping each
   `RideRequestRow` to the existing `PendingRequest` shape (`pickupLabel:
   row.pickup_label`, `dropoffLabel: row.dest_label`, `fare:
   row.estimated_fare`, etc.), filtering out any id present in a session-only
@@ -113,7 +116,7 @@ a request still hands off to the existing mocked `useTripStore.startTrip`.
 
 ## Screens
 
-- `dashboard.tsx`: `handleToggleAvailable` calls `subscribe(user.id)` /
+- `dashboard.tsx`: `handleToggleAvailable` calls `subscribe()` /
   `unsubscribe()` instead of the old simulate methods. `handleAccept` becomes
   `async`, awaits `accept(id, user.id)`, and only navigates to `/trip/active`
   when a request comes back; otherwise the store's `error` renders as inline
