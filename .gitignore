@@ -42,3 +42,6 @@ yarn-error.*
 
 # Superpowers subagent-driven-development scratch workspace
 /.superpowers/
+
+# Claude Code isolated worktrees (EnterWorktree tool scratch state)
+/.claude/worktrees/
