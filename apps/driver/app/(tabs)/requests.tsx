@@ -25,9 +25,9 @@ export default function RequestsScreen() {
       return;
     }
     if (!user) return;
-    const request = await accept(id, user.id);
-    if (request) {
-      startTrip(request);
+    const accepted = await accept(id, user.id);
+    if (accepted) {
+      startTrip(accepted, accepted.tripId);
       router.push('/trip/active');
     }
   }

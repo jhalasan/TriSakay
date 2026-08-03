@@ -22,4 +22,5 @@ export const styles = StyleSheet.create({
   cashCaption: { ...typography.caption, color: colors.inkSoft },
   actions: { flexDirection: 'row', gap: spacing.md, marginTop: 'auto', paddingTop: spacing.lg },
   actionButton: { flex: 1 },
+  error: { ...typography.caption, color: colors.danger },
 });

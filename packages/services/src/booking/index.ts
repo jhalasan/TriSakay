@@ -75,6 +75,7 @@ export async function cancelRideRequest(rideRequestId: string, reason: string): 
 
 export interface AcceptRideRequestResult {
   error: string | null;
+  tripId?: string;
 }
 
 /**
@@ -93,7 +94,7 @@ export async function acceptRideRequest(driverId: string, rideRequestId: string)
     .eq('status', 'active')
     .maybeSingle();
 
-  if (tripLookupError) return { error: tripLookupError.message };
+  if (tripLookupError) return { error: "Couldn't check your active trips. Please try again." };
 
   let tripId: string | undefined = existingTrip?.id;
 
@@ -106,7 +107,7 @@ export async function acceptRideRequest(driverId: string, rideRequestId: string)
       .eq('verification_status', 'approved')
       .maybeSingle();
 
-    if (tricycleError) return { error: tricycleError.message };
+    if (tricycleError) return { error: "Couldn't check your vehicle assignment. Please try again." };
     if (!tricycle) return { error: 'No active tricycle assigned yet — finish vehicle verification first.' };
 
     const { data: newTrip, error: createTripError } = await client
@@ -121,7 +122,7 @@ export async function acceptRideRequest(driverId: string, rideRequestId: string)
       .select('id')
       .single();
 
-    if (createTripError) return { error: createTripError.message };
+    if (createTripError) return { error: "Couldn't start a new trip. Please try again." };
     tripId = newTrip.id;
   }
 
@@ -137,10 +138,10 @@ export async function acceptRideRequest(driverId: string, rideRequestId: string)
     .select('id')
     .maybeSingle();
 
-  if (assignError) return { error: assignError.message };
+  if (assignError) return { error: "Couldn't assign this ride. Please try again." };
   if (!assigned) return { error: 'This ride was just accepted by another driver.' };
 
-  return { error: null };
+  return { error: null, tripId };
 }
 
 export type RideRequestStatusUpdate = Pick<RideRequestRow, 'id' | 'status'>;
@@ -207,11 +208,17 @@ export function subscribeToPendingRideRequests(
   const client = getSupabaseClient();
 
   async function refetch() {
-    const { data } = await client
+    const { data, error } = await client
       .from('ride_requests')
       .select('*')
       .eq('status', 'pending')
       .order('requested_at', { ascending: true });
+
+    if (error) {
+      onError?.(error.message);
+      return;
+    }
+
     onData(data ?? []);
   }
 
@@ -231,4 +238,60 @@ export function subscribeToPendingRideRequests(
   return () => {
     client.removeChannel(channel);
   };
+}
+
+export interface CompleteTripResult {
+  error: string | null;
+}
+
+/**
+ * Closes out a trip: marks it completed and marks its ride request completed.
+ * Every trip created by acceptRideRequest currently holds exactly one ride
+ * request — both driver screens block a second accept while a trip is active
+ * — so this always closes the whole trip; pooling multiple requests onto one
+ * trip is not yet supported end-to-end.
+ */
+export async function completeTrip(tripId: string, rideRequestId: string): Promise<CompleteTripResult> {
+  const client = getSupabaseClient();
+  const now = new Date().toISOString();
+
+  const { error: tripError } = await client
+    .from('trips')
+    .update({ status: 'completed', completed_at: now })
+    .eq('id', tripId);
+
+  if (tripError) return { error: "Couldn't close out the trip. Please try again." };
+
+  const { error: rideError } = await client
+    .from('ride_requests')
+    .update({ status: 'completed', completed_at: now })
+    .eq('id', rideRequestId);
+
+  if (rideError) return { error: "Couldn't close out the trip. Please try again." };
+
+  return { error: null };
+}
+
+export interface CancelTripResult {
+  error: string | null;
+}
+
+export async function cancelTrip(tripId: string, rideRequestId: string, reason: string): Promise<CancelTripResult> {
+  const client = getSupabaseClient();
+
+  const { error: tripError } = await client
+    .from('trips')
+    .update({ status: 'cancelled' })
+    .eq('id', tripId);
+
+  if (tripError) return { error: "Couldn't cancel the trip. Please try again." };
+
+  const { error: rideError } = await client
+    .from('ride_requests')
+    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancel_reason: reason })
+    .eq('id', rideRequestId);
+
+  if (rideError) return { error: "Couldn't cancel the trip. Please try again." };
+
+  return { error: null };
 }

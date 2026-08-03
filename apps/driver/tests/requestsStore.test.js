@@ -138,6 +138,7 @@ test('accept(id, driverId) removes the accepted request and resolves it on succe
   const accepted = await useRequestsStore.getState().accept('rr1', 'driver1');
 
   assert.equal(accepted.id, 'rr1');
+  assert.equal(accepted.tripId, 'trip1');
   assert.equal(useRequestsStore.getState().pending.length, 0);
   assert.equal(useRequestsStore.getState().error, null);
 });

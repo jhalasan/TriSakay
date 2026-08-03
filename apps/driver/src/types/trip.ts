@@ -2,6 +2,7 @@ import type { PaymentMethod } from './request';
 
 export interface ActiveTrip {
   id: string;
+  tripId: string;
   passengerName: string | null;
   seats: number;
   paymentMethod: PaymentMethod;

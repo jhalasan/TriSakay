@@ -51,9 +51,9 @@ export default function DashboardScreen() {
       return;
     }
     if (!user) return;
-    const request = await accept(id, user.id);
-    if (request) {
-      startTrip(request);
+    const accepted = await accept(id, user.id);
+    if (accepted) {
+      startTrip(accepted, accepted.tripId);
       router.push('/trip/active');
     }
   }
@@ -98,9 +98,10 @@ export default function DashboardScreen() {
           <View>
             <Text style={styles.sectionLabel}>Incoming request</Text>
             <RequestCard request={incoming} onAccept={() => handleAccept(incoming.id)} onDecline={() => decline(incoming.id)} />
-            {requestError && <Text style={styles.error}>{requestError}</Text>}
           </View>
         )}
+
+        {requestError && <Text style={styles.error}>{requestError}</Text>}
 
         {isAvailable && !incoming && (
           <Text style={styles.offlineNote}>Listening for ride requests…</Text>

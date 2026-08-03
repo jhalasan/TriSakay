@@ -13,6 +13,7 @@ import { styles } from '../../src/styles/trip/active.styles';
 export default function ActiveTripScreen() {
   const router = useRouter();
   const trip = useTripStore((state) => state.current);
+  const tripError = useTripStore((state) => state.error);
   const confirmCash = useTripStore((state) => state.confirmCash);
   const complete = useTripStore((state) => state.complete);
   const cancel = useTripStore((state) => state.cancel);
@@ -29,8 +30,8 @@ export default function ActiveTripScreen() {
   const isCash = trip.paymentMethod === 'cash';
   const canComplete = !isCash || trip.cashConfirmed;
 
-  function handleComplete() {
-    const closed = complete();
+  async function handleComplete() {
+    const closed = await complete();
     if (!closed) return;
     const fare = closed.fare ?? 0;
     addTrip({ id: closed.id, passengerName: closed.passengerName, date: new Date().toISOString(), fare: closed.fare, status: 'done' });
@@ -39,8 +40,8 @@ export default function ActiveTripScreen() {
     router.replace('/(tabs)/dashboard');
   }
 
-  function handleConfirmCancel() {
-    const closed = cancel();
+  async function handleConfirmCancel() {
+    const closed = await cancel('Cancelled by driver');
     setCancelling(false);
     if (!closed) return;
     addTrip({ id: closed.id, passengerName: closed.passengerName, date: new Date().toISOString(), fare: closed.fare, status: 'cancelled' });
@@ -80,6 +81,8 @@ export default function ActiveTripScreen() {
             <Text style={styles.cashCaption}>CASH TRIPS ONLY — GCASH IS AUTO-CONFIRMED BY THE PAYMENT WEBHOOK</Text>
           )}
         </View>
+
+        {tripError && <Text style={styles.error}>{tripError}</Text>}
 
         <View style={styles.actions}>
           <View style={styles.actionButton}>

@@ -9,3 +9,7 @@ export interface PendingRequest {
   fare: number | null;
   createdAt: string;
 }
+
+export interface AcceptedRequest extends PendingRequest {
+  tripId: string;
+}

@@ -1,14 +1,14 @@
 import { create } from 'zustand';
 import { acceptRideRequest, subscribeToPendingRideRequests } from '@trisakay/services/src/booking/index.ts';
 import type { RideRequestRow } from '@trisakay/services/src/booking/index.ts';
-import type { PendingRequest } from '../types/request.ts';
+import type { PendingRequest, AcceptedRequest } from '../types/request.ts';
 
 interface RequestsState {
   pending: PendingRequest[];
   error: string | null;
   subscribe: () => void;
   unsubscribe: () => void;
-  accept: (id: string, driverId: string) => Promise<PendingRequest | undefined>;
+  accept: (id: string, driverId: string) => Promise<AcceptedRequest | undefined>;
   decline: (id: string) => void;
 }
 
@@ -37,7 +37,7 @@ export const useRequestsStore = create<RequestsState>()((set, get) => ({
 
     stopRealtime = subscribeToPendingRideRequests(
       (rows) => {
-        set({ pending: rows.filter((row) => !dismissedIds.has(row.id)).map(toPendingRequest) });
+        set({ pending: rows.filter((row) => !dismissedIds.has(row.id)).map(toPendingRequest), error: null });
       },
       (message) => set({ error: message }),
     );
@@ -54,14 +54,14 @@ export const useRequestsStore = create<RequestsState>()((set, get) => ({
     const request = get().pending.find((item) => item.id === id);
     if (!request) return undefined;
 
-    const { error } = await acceptRideRequest(driverId, id);
-    if (error) {
-      set({ error });
+    const { error, tripId } = await acceptRideRequest(driverId, id);
+    if (error || !tripId) {
+      set({ error: error ?? "Couldn't assign this ride. Please try again." });
       return undefined;
     }
 
     set((state) => ({ pending: state.pending.filter((item) => item.id !== id), error: null }));
-    return request;
+    return { ...request, tripId };
   },
 
   decline: (id) => {

@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeTrip, cancelTrip } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -359,7 +359,8 @@ test('acceptRideRequest reuses an existing active trip and assigns the ride requ
     })
   );
 
-  const { error } = await acceptRideRequest('driver1', 'rr1');
+  const result = await acceptRideRequest('driver1', 'rr1');
+  const { error } = result;
 
   assert.equal(error, null);
   assert.deepEqual(capturedTripLookup, [
@@ -373,6 +374,7 @@ test('acceptRideRequest reuses an existing active trip and assigns the ride requ
     { column: 'id', value: 'rr1' },
     { column: 'status', value: 'pending' },
   ]);
+  assert.equal(result.tripId, 'trip1');
 });
 
 test("acceptRideRequest creates a trip from the driver's active tricycle when none exists", async () => {
@@ -441,7 +443,8 @@ test("acceptRideRequest creates a trip from the driver's active tricycle when no
     })
   );
 
-  const { error } = await acceptRideRequest('driver1', 'rr1');
+  const result = await acceptRideRequest('driver1', 'rr1');
+  const { error } = result;
 
   assert.equal(error, null);
   assert.deepEqual(capturedTricycleLookup, [
@@ -453,6 +456,7 @@ test("acceptRideRequest creates a trip from the driver's active tricycle when no
   assert.equal(capturedTripInsert.tricycle_id, 'tri1');
   assert.equal(capturedTripInsert.max_seats, 3);
   assert.equal(capturedTripInsert.status, 'active');
+  assert.equal(result.tripId, 'trip2');
 });
 
 test('acceptRideRequest reports a clear error when the driver has no active tricycle', async () => {
@@ -535,7 +539,7 @@ test('acceptRideRequest surfaces a Postgres error from the assignment update', a
   );
 
   const { error } = await acceptRideRequest('driver1', 'rr1');
-  assert.equal(error, 'network error');
+  assert.equal(error, "Couldn't assign this ride. Please try again.");
 });
 
 test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED and on every change event', async () => {
@@ -671,4 +675,180 @@ test('subscribeToPendingRideRequests unsubscribe removes the channel', async () 
   unsubscribe();
 
   assert.equal(removedChannel, fakeChannel);
+});
+
+test('subscribeToPendingRideRequests forwards a refetch query error via onError instead of treating it as an empty list', async () => {
+  let capturedStatusCallback: ((status: string) => void) | null = null;
+  const fakeChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      capturedStatusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      from: () => ({
+        select: () => ({ eq: () => ({ order: async () => ({ data: null, error: { message: 'query failed' } }) }) }),
+      }),
+    })
+  );
+
+  const receivedData: unknown[] = [];
+  const receivedErrors: string[] = [];
+  subscribeToPendingRideRequests(
+    (rows) => receivedData.push(rows),
+    (message) => receivedErrors.push(message),
+  );
+
+  capturedStatusCallback!('SUBSCRIBED');
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(receivedData, []);
+  assert.deepEqual(receivedErrors, ['query failed']);
+});
+
+test('completeTrip marks the trip and ride request completed', async () => {
+  let capturedTripUpdate: any = null;
+  let capturedTripId: unknown = null;
+  let capturedRideUpdate: any = null;
+  let capturedRideId: unknown = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return {
+            update: (row: unknown) => {
+              capturedTripUpdate = row;
+              return {
+                eq: (column: string, value: unknown) => {
+                  assert.equal(column, 'id');
+                  capturedTripId = value;
+                  return Promise.resolve({ error: null });
+                },
+              };
+            },
+          };
+        }
+        if (table === 'ride_requests') {
+          return {
+            update: (row: unknown) => {
+              capturedRideUpdate = row;
+              return {
+                eq: (column: string, value: unknown) => {
+                  assert.equal(column, 'id');
+                  capturedRideId = value;
+                  return Promise.resolve({ error: null });
+                },
+              };
+            },
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await completeTrip('trip1', 'rr1');
+
+  assert.equal(error, null);
+  assert.equal(capturedTripUpdate.status, 'completed');
+  assert.ok(capturedTripUpdate.completed_at);
+  assert.equal(capturedTripId, 'trip1');
+  assert.equal(capturedRideUpdate.status, 'completed');
+  assert.ok(capturedRideUpdate.completed_at);
+  assert.equal(capturedRideId, 'rr1');
+});
+
+test('completeTrip surfaces a friendly error when the trip update fails', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return { update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }) };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await completeTrip('trip1', 'rr1');
+  assert.equal(error, "Couldn't close out the trip. Please try again.");
+});
+
+test('completeTrip surfaces a friendly error when the ride request update fails', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return { update: () => ({ eq: () => Promise.resolve({ error: null }) }) };
+        }
+        if (table === 'ride_requests') {
+          return { update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }) };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await completeTrip('trip1', 'rr1');
+  assert.equal(error, "Couldn't close out the trip. Please try again.");
+});
+
+test('cancelTrip marks the trip cancelled and the ride request cancelled with a reason', async () => {
+  let capturedTripUpdate: any = null;
+  let capturedRideUpdate: any = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return {
+            update: (row: unknown) => {
+              capturedTripUpdate = row;
+              return { eq: () => Promise.resolve({ error: null }) };
+            },
+          };
+        }
+        if (table === 'ride_requests') {
+          return {
+            update: (row: unknown) => {
+              capturedRideUpdate = row;
+              return { eq: () => Promise.resolve({ error: null }) };
+            },
+          };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await cancelTrip('trip1', 'rr1', 'Passenger no-show');
+
+  assert.equal(error, null);
+  assert.equal(capturedTripUpdate.status, 'cancelled');
+  assert.equal(capturedRideUpdate.status, 'cancelled');
+  assert.equal(capturedRideUpdate.cancel_reason, 'Passenger no-show');
+  assert.ok(capturedRideUpdate.cancelled_at);
+});
+
+test('cancelTrip surfaces a friendly error when the trip update fails', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        if (table === 'trips') {
+          return { update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }) };
+        }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await cancelTrip('trip1', 'rr1', 'Passenger no-show');
+  assert.equal(error, "Couldn't cancel the trip. Please try again.");
 });
