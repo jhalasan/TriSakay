@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus, acceptRideRequest } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -536,4 +536,139 @@ test('acceptRideRequest surfaces a Postgres error from the assignment update', a
 
   const { error } = await acceptRideRequest('driver1', 'rr1');
   assert.equal(error, 'network error');
+});
+
+test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED and on every change event', async () => {
+  let capturedChannelName: string | null = null;
+  let capturedOnArgs: any = null;
+  let capturedChangeHandler: (() => void) | null = null;
+  let capturedStatusCallback: ((status: string) => void) | null = null;
+  let capturedOrderArgs: [string, unknown] | null = null;
+  let call = 0;
+
+  const fakeChannel = {
+    on: (event: string, filterArgs: unknown, handler: () => void) => {
+      assert.equal(event, 'postgres_changes');
+      capturedOnArgs = filterArgs;
+      capturedChangeHandler = handler;
+      return fakeChannel;
+    },
+    subscribe: (statusCallback?: (status: string) => void) => {
+      capturedStatusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: (name: string) => {
+        capturedChannelName = name;
+        return fakeChannel;
+      },
+      removeChannel: () => {},
+      from: (table: string) => {
+        assert.equal(table, 'ride_requests');
+        return {
+          select: (columns: string) => {
+            assert.equal(columns, '*');
+            return {
+              eq: (column: string, value: unknown) => {
+                assert.equal(column, 'status');
+                assert.equal(value, 'pending');
+                return {
+                  order: async (orderColumn: string, opts: unknown) => {
+                    capturedOrderArgs = [orderColumn, opts];
+                    call += 1;
+                    return { data: [{ id: `rr${call}` }], error: null };
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+    })
+  );
+
+  const received: unknown[] = [];
+  const unsubscribe = subscribeToPendingRideRequests((rows) => received.push(rows));
+
+  assert.equal(capturedChannelName, 'pending_ride_requests');
+  assert.equal(capturedOnArgs.event, '*');
+  assert.equal(capturedOnArgs.schema, 'public');
+  assert.equal(capturedOnArgs.table, 'ride_requests');
+  assert.ok(capturedStatusCallback);
+
+  capturedStatusCallback!('SUBSCRIBED');
+  await Promise.resolve();
+  await Promise.resolve();
+
+  capturedChangeHandler!();
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(capturedOrderArgs, ['requested_at', { ascending: true }]);
+  assert.deepEqual(received, [[{ id: 'rr1' }], [{ id: 'rr2' }]]);
+
+  unsubscribe();
+});
+
+test('subscribeToPendingRideRequests forwards channel errors', async () => {
+  let capturedStatusCallback: ((status: string) => void) | null = null;
+  const fakeChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      capturedStatusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      from: () => ({
+        select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }),
+      }),
+    })
+  );
+
+  const errors: string[] = [];
+  subscribeToPendingRideRequests(
+    () => {},
+    (message) => errors.push(message),
+  );
+
+  capturedStatusCallback!('CHANNEL_ERROR');
+  capturedStatusCallback!('TIMED_OUT');
+
+  assert.deepEqual(errors, [
+    'Lost connection while listening for ride requests. Please check your connection.',
+    'Lost connection while listening for ride requests. Please check your connection.',
+  ]);
+});
+
+test('subscribeToPendingRideRequests unsubscribe removes the channel', async () => {
+  const fakeChannel = {
+    on: () => fakeChannel,
+    subscribe: () => fakeChannel,
+  };
+  let removedChannel: unknown = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: (channel: unknown) => {
+        removedChannel = channel;
+      },
+      from: () => ({
+        select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }),
+      }),
+    })
+  );
+
+  const unsubscribe = subscribeToPendingRideRequests(() => {});
+  unsubscribe();
+
+  assert.equal(removedChannel, fakeChannel);
 });

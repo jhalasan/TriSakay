@@ -188,3 +188,47 @@ export function subscribeToRideRequestStatus(
     client.removeChannel(channel);
   };
 }
+
+/**
+ * Naive request-board feed: every pending ride request, no bearing/detour/
+ * cluster filtering — that heuristic lives in the not-yet-built
+ * `match-ride-request` Edge Function (docs/DRIVER_TODO.MD open item #1).
+ *
+ * Refetches the full pending list on every change event instead of patching
+ * from the payload, since RLS can silently drop a row from this driver's view
+ * mid-stream (e.g. once another driver claims it) — the same category of gap
+ * `subscribeToRideRequestStatus` above works around with its post-SUBSCRIBED
+ * reconcile query.
+ */
+export function subscribeToPendingRideRequests(
+  onData: (rows: RideRequestRow[]) => void,
+  onError?: (message: string) => void,
+): () => void {
+  const client = getSupabaseClient();
+
+  async function refetch() {
+    const { data } = await client
+      .from('ride_requests')
+      .select('*')
+      .eq('status', 'pending')
+      .order('requested_at', { ascending: true });
+    onData(data ?? []);
+  }
+
+  const channel = client
+    .channel('pending_ride_requests')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, () => {
+      void refetch();
+    })
+    .subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        void refetch();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        onError?.('Lost connection while listening for ride requests. Please check your connection.');
+      }
+    });
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
