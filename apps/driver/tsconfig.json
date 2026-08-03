@@ -4,8 +4,7 @@
     "composite": true,
     "jsx": "react-jsx",
     "allowJs": true,
-    "baseUrl": ".",
-    "allowImportingTsExtensions": true
+    "baseUrl": "."
   },
   "include": ["./**/*"],
   "references": [
