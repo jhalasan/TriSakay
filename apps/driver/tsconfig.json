@@ -4,10 +4,14 @@
     "composite": true,
     "jsx": "react-jsx",
     "allowJs": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    "allowImportingTsExtensions": true
   },
   "include": ["./**/*"],
   "references": [
-    { "path": "../../packages/shared" }
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/services" },
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/utils" }
   ]
 }

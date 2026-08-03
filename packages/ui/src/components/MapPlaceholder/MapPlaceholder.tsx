@@ -8,7 +8,7 @@ import { styles } from './MapPlaceholder.styles';
  * caption + a marker/route variant) so it can be swapped for an
  * OpenStreetMap-backed component later without touching call sites.
  */
-export type MapPlaceholderVariant = 'pin' | 'route' | 'plain';
+export type MapPlaceholderVariant = 'pin' | 'route' | 'plain' | 'chart';
 
 export interface MapPlaceholderProps {
   variant?: MapPlaceholderVariant;
@@ -63,6 +63,21 @@ export function MapPlaceholder({ variant = 'plain', caption, height = 220 }: Map
             <Circle cx="20%" cy="80%" r={6} fill={colors.accentGreen} />
             <Circle cx="80%" cy="30%" r={6} fill={colors.accentBlue} />
           </>
+        )}
+
+        {variant === 'chart' && (
+          <Svg width="100%" height="100%" viewBox="0 0 100 100" preserveAspectRatio="none">
+            <Path
+              d="M 5 82 L 25 62 L 45 70 L 65 38 L 88 18"
+              stroke={colors.accentBlue}
+              strokeWidth={3}
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+              vectorEffect="non-scaling-stroke"
+            />
+            <Circle cx="88%" cy="18%" r={4} fill={colors.accentBlue} />
+          </Svg>
         )}
       </Svg>
 

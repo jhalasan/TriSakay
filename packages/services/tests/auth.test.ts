@@ -38,6 +38,38 @@ test('signUp sends full name, phone, and default role as signup metadata', async
   });
 });
 
+test('signUp defaults role to passenger when omitted', async () => {
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signUp: async (args) => {
+        capturedArgs = args;
+        return { data: { session: null }, error: null };
+      },
+    })
+  );
+
+  await signUp({ fullName: 'Juan', email: 'juan@example.com', phone: '0900', password: 'secret1' });
+
+  assert.equal(capturedArgs.options.data.role, 'passenger');
+});
+
+test('signUp passes role through when provided', async () => {
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signUp: async (args) => {
+        capturedArgs = args;
+        return { data: { session: null }, error: null };
+      },
+    })
+  );
+
+  await signUp({ fullName: 'Ana', email: 'ana@example.com', phone: '0911', password: 'secret1', role: 'driver' });
+
+  assert.equal(capturedArgs.options.data.role, 'driver');
+});
+
 test('signUp returns the error message when Supabase rejects the signup', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
