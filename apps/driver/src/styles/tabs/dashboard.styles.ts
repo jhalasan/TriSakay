@@ -12,6 +12,7 @@ export const styles = StyleSheet.create({
   statGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md },
   sectionLabel: { ...typography.label, color: colors.inkSoft, marginTop: spacing.sm },
   offlineNote: { ...typography.caption, color: colors.inkSoft },
+  error: { ...typography.caption, color: colors.danger },
   bellButton: {
     width: 44,
     height: 44,

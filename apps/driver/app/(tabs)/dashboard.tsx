@@ -28,8 +28,9 @@ export default function DashboardScreen() {
   const unreadCount = useNotificationsStore((state) => state.items.filter((item) => !item.read).length);
 
   const pending = useRequestsStore((state) => state.pending);
-  const startSimulatingArrivals = useRequestsStore((state) => state.startSimulatingArrivals);
-  const stopSimulatingArrivals = useRequestsStore((state) => state.stopSimulatingArrivals);
+  const requestError = useRequestsStore((state) => state.error);
+  const subscribe = useRequestsStore((state) => state.subscribe);
+  const unsubscribe = useRequestsStore((state) => state.unsubscribe);
   const accept = useRequestsStore((state) => state.accept);
   const decline = useRequestsStore((state) => state.decline);
 
@@ -38,18 +39,19 @@ export default function DashboardScreen() {
   function handleToggleAvailable(next: boolean) {
     setAvailable(next);
     if (next) {
-      startSimulatingArrivals();
+      subscribe();
     } else {
-      stopSimulatingArrivals();
+      unsubscribe();
     }
   }
 
-  function handleAccept(id: string) {
+  async function handleAccept(id: string) {
     if (useTripStore.getState().current) {
       router.push('/trip/active');
       return;
     }
-    const request = accept(id);
+    if (!user) return;
+    const request = await accept(id, user.id);
     if (request) {
       startTrip(request);
       router.push('/trip/active');
@@ -96,6 +98,7 @@ export default function DashboardScreen() {
           <View>
             <Text style={styles.sectionLabel}>Incoming request</Text>
             <RequestCard request={incoming} onAccept={() => handleAccept(incoming.id)} onDecline={() => decline(incoming.id)} />
+            {requestError && <Text style={styles.error}>{requestError}</Text>}
           </View>
         )}
 
