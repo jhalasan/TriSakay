@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Badge, Button, ConfirmModal, OsmMap, Toggle } from '@trisakay/ui';
@@ -23,8 +23,7 @@ export default function ActiveTripScreen() {
   const [cancelling, setCancelling] = useState(false);
 
   if (!trip) {
-    router.replace('/(tabs)/dashboard');
-    return null;
+    return <Redirect href="/(tabs)/dashboard" />;
   }
 
   const isCash = trip.paymentMethod === 'cash';

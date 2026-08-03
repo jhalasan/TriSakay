@@ -11,4 +11,5 @@ export const styles = StyleSheet.create({
   subjectRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   subject: { ...typography.bodyStrong, color: colors.ink },
   formGap: { gap: spacing.md },
+  newToggleText: { ...typography.body, color: colors.accentBlue },
 });

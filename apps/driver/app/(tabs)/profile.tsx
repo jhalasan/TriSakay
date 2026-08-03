@@ -30,6 +30,7 @@ export default function ProfileScreen() {
       Alert.alert('Could not save', error);
       return;
     }
+    await useAuthStore.getState().refreshProfile();
     setIsEditing(false);
   }
 

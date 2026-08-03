@@ -2,23 +2,17 @@ import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { Badge, Button, Card, EmptyState, Textarea, TextField, type BadgeTone } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
+import { useComplaintsStore, type ComplaintStatus } from '../src/store/useComplaintsStore';
 import { isNonEmpty } from '../src/utils/validation';
 import { wait } from '../src/mocks/delay';
 import { styles } from '../src/styles/complaints.styles';
-
-type ComplaintStatus = 'open' | 'review' | 'closed';
-
-interface ComplaintRow {
-  id: string;
-  subject: string;
-  status: ComplaintStatus;
-}
 
 const STATUS_LABEL: Record<ComplaintStatus, string> = { open: 'Open', review: 'Review', closed: 'Closed' };
 const STATUS_TONE: Record<ComplaintStatus, BadgeTone> = { open: 'blue', review: 'neutral', closed: 'green' };
 
 export default function ComplaintsScreen() {
-  const [complaints, setComplaints] = useState<ComplaintRow[]>([]);
+  const complaints = useComplaintsStore((state) => state.complaints);
+  const addComplaint = useComplaintsStore((state) => state.addComplaint);
   const [composing, setComposing] = useState(false);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -30,7 +24,7 @@ export default function ComplaintsScreen() {
     if (!canSubmit) return;
     setSubmitting(true);
     await wait(600);
-    setComplaints((prev) => [{ id: `c-${prev.length + 1}`, subject, status: 'open' }, ...prev]);
+    addComplaint({ id: `c-${complaints.length + 1}`, subject, status: 'open' });
     setSubject('');
     setMessage('');
     setSubmitting(false);
@@ -42,7 +36,7 @@ export default function ComplaintsScreen() {
       <ScreenHeader
         title="Complaints"
         right={
-          <Text onPress={() => setComposing((prev) => !prev)} style={{ color: '#002E60' }}>
+          <Text onPress={() => setComposing((prev) => !prev)} style={styles.newToggleText}>
             {composing ? 'Cancel' : 'New'}
           </Text>
         }

@@ -57,6 +57,27 @@ test('complete on an empty trip returns null', async () => {
   assert.equal(useTripStore.getState().complete(), null);
 });
 
+test('cancel clears current and returns the trip that was active', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+
+  useTripStore.setState({
+    current: { id: 'req-9', passengerName: null, seats: 2, paymentMethod: 'cash', fare: 45, cashConfirmed: true, startedAt: 'now' },
+  });
+
+  const cancelled = useTripStore.getState().cancel();
+
+  assert.equal(cancelled.id, 'req-9');
+  assert.equal(useTripStore.getState().current, null);
+});
+
+test('cancel on an empty trip returns null', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+
+  useTripStore.setState({ current: null });
+
+  assert.equal(useTripStore.getState().cancel(), null);
+});
+
 test('useEarningsStore.creditTrip accumulates totalTracked', async () => {
   const { useEarningsStore } = await import('../src/store/useEarningsStore.ts');
 

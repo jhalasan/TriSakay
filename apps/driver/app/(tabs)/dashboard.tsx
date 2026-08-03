@@ -45,6 +45,10 @@ export default function DashboardScreen() {
   }
 
   function handleAccept(id: string) {
+    if (useTripStore.getState().current) {
+      router.push('/trip/active');
+      return;
+    }
     const request = accept(id);
     if (request) {
       startTrip(request);
