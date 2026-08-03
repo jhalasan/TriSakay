@@ -28,6 +28,25 @@
     },
     "web": {
       "favicon": "../../assets/favicon.png"
-    }
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "TriSakay needs your location to match you with nearby drivers and estimate pickup accurately.",
+          "locationAlwaysAndWhenInUsePermission": false,
+          "locationAlwaysPermission": false
+        }
+      ],
+      "expo-font",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "TriSakay needs access to your photos so you can upload verification documents.",
+          "cameraPermission": "TriSakay needs access to your camera so you can upload verification documents."
+        }
+      ]
+    ]
   }
 }

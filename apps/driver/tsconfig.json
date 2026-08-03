@@ -8,6 +8,9 @@
   },
   "include": ["./**/*"],
   "references": [
-    { "path": "../../packages/shared" }
+    { "path": "../../packages/shared" },
+    { "path": "../../packages/services" },
+    { "path": "../../packages/ui" },
+    { "path": "../../packages/utils" }
   ]
 }
