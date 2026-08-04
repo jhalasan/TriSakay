@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { getSession, updateAvatarUrl, uploadAvatar } from '@trisakay/services';
 import { BrandMotif, Button, GradientSurface, TextField, colors } from '@trisakay/ui';
@@ -81,21 +82,37 @@ export default function RegisterScreen() {
     // requires auth.uid(), which isn't available yet on the check_email
     // path (email confirmation pending). Those riders can add a photo
     // later from Profile once they've logged in.
+    let avatarError: string | null = null;
     if (outcome === 'signed_in' && avatarUri) {
       const session = await getSession();
       if (session) {
-        const { publicUrl } = await uploadAvatar({ userId: session.user.id, uri: avatarUri });
-        // Store's `user` was already populated by the sign-up auth event,
-        // before this upload finished — refetch so avatarUrl isn't stale
-        // until the next full profile fetch (e.g. next app launch).
-        if (publicUrl) {
-          await updateAvatarUrl(publicUrl);
-          await refreshProfile();
+        try {
+          // `fetch(uri).arrayBuffer()` on a local picker URI is unreliable on
+          // RN (silently empty on some Android setups) — reading through
+          // `File` is the platform-native path for local file bytes.
+          const bytes = await new File(avatarUri).arrayBuffer();
+          const { publicUrl, error } = await uploadAvatar({ userId: session.user.id, data: bytes });
+          if (publicUrl) {
+            const { error: profileError } = await updateAvatarUrl(publicUrl);
+            avatarError = profileError;
+            // Store's `user` was already populated by the sign-up auth event,
+            // before this upload finished — refetch so avatarUrl isn't stale
+            // until the next full profile fetch (e.g. next app launch).
+            if (!profileError) await refreshProfile();
+          } else {
+            avatarError = error;
+          }
+        } catch (err) {
+          avatarError = err instanceof Error ? err.message : 'Could not read the selected photo.';
         }
       }
     }
 
     setSubmitting(false);
+
+    if (avatarError) {
+      Alert.alert('Account created', `Your account is ready, but the profile photo didn't upload: ${avatarError}. You can add it later from Profile.`);
+    }
 
     if (outcome === 'check_email') {
       Alert.alert(

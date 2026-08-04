@@ -24,6 +24,23 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
+  /** Non-clipping wrapper — the edit badge sits just outside the avatar circle's own bounds. */
+  avatarWrap: {
+    position: 'relative',
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: -2,
+    right: -2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.accentBlue,
+    borderWidth: 2,
+    borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   name: {
     ...typography.h2,
     color: colors.ink,
