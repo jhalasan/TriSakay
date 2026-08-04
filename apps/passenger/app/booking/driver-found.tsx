@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { Animated, Text, View } from 'react-native';
-import { Button, EmptyState, GradientSurface, OsmMap, motion } from '@trisakay/ui';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button, EmptyState, GradientSurface, OsmMap, motion, spacing } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { randomBetween, wait } from '../../src/mocks/delay';
@@ -9,6 +10,7 @@ import { styles } from '../../src/styles/booking/driver-found.styles';
 
 export default function DriverFoundScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const driver = useBookingStore((state) => state.driver);
   const pickup = useBookingStore((state) => state.pickup);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
@@ -60,7 +62,7 @@ export default function DriverFoundScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.mapWrap}>
+      <View style={styles.mapFill}>
         <OsmMap
           variant="route"
           caption="Map · driver en route"
@@ -69,12 +71,14 @@ export default function DriverFoundScreen() {
           longitude={pickup?.longitude}
           zoom={15}
           interactive
+          edgeToEdge
         />
       </View>
 
       <Animated.View
         style={[
           styles.sheet,
+          { paddingBottom: spacing.xl + insets.bottom },
           {
             opacity: settle,
             transform: [

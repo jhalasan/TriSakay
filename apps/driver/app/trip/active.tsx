@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { Redirect, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Badge, Button, Card, ConfirmModal, OsmMap, Toggle } from '@trisakay/ui';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar, Badge, Button, Card, ConfirmModal, MapOverlaySheet, OsmMap, Toggle } from '@trisakay/ui';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useEarningsStore } from '../../src/store/useEarningsStore';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
@@ -12,6 +12,7 @@ import { styles } from '../../src/styles/trip/active.styles';
 
 export default function ActiveTripScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const trip = useTripStore((state) => state.current);
   const tripError = useTripStore((state) => state.error);
   const confirmCash = useTripStore((state) => state.confirmCash);
@@ -50,14 +51,21 @@ export default function ActiveTripScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.mapWrap}>
-        <OsmMap variant="route" caption="Map · trip route" height="100%" interactive={false} />
+      <View style={styles.mapFill}>
+        <OsmMap
+          variant="route"
+          caption="Map · trip route"
+          height="100%"
+          interactive={false}
+          edgeToEdge
+          bottomInset={260}
+        />
       </View>
       <View style={styles.statusBadgeWrap}>
         <Badge label="In progress" tone="blue" dot />
       </View>
 
-      <View style={styles.content}>
+      <MapOverlaySheet bottomInset={insets.bottom} style={styles.content}>
         <View style={styles.passengerRow}>
           <Avatar name={trip.passengerName ?? undefined} size="lg" />
           <View>
@@ -92,7 +100,7 @@ export default function ActiveTripScreen() {
             <Button label="Complete trip" fullWidth disabled={!canComplete} onPress={handleComplete} />
           </View>
         </View>
-      </View>
+      </MapOverlaySheet>
 
       <ConfirmModal
         visible={cancelling}

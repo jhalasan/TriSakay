@@ -64,6 +64,8 @@ export interface OsmMapProps {
   /** Draws a suggested route line and frames it. See mapHtml's `route` option. */
   route?: { latitude: number; longitude: number }[] | null;
   onReady?: () => void;
+  /** Squares off the container corners for maps that run to the screen edges, instead of the default rounded-card look. */
+  edgeToEdge?: boolean;
 }
 
 type MapState = 'loading' | 'ready' | 'error';
@@ -83,6 +85,7 @@ export function OsmMap({
   tapToPlace = false,
   route = null,
   onReady,
+  edgeToEdge = false,
 }: OsmMapProps) {
   const [state, setState] = useState<MapState>('loading');
   const [hasMoved, setHasMoved] = useState(false);
@@ -195,7 +198,7 @@ export function OsmMap({
   }, []);
 
   return (
-    <View style={[styles.container, { height }]}>
+    <View style={[styles.container, { height }, edgeToEdge && styles.edgeToEdge]}>
       <WebView
         ref={webViewRef}
         style={styles.webview}

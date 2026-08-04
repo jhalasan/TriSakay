@@ -1,57 +1,52 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  /** Explicit flex: a ScrollView between fixed siblings otherwise sizes to content. */
-  scrollArea: {
-    flex: 1,
+  /**
+   * Absolute-fill on purpose: this must ignore the SafeAreaView's own top/
+   * bottom inset padding so the map itself runs edge-to-edge including
+   * behind the status bar — only the floating controls above it respect
+   * the inset, via their normal in-flow position.
+   */
+  mapFill: {
+    ...StyleSheet.absoluteFillObject,
   },
-  scrollContent: {
-    paddingBottom: spacing.lg,
+  topFloating: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+    gap: spacing.sm,
   },
-  topBar: {
+  /**
+   * A solid card rather than bare text over the map: floating text directly
+   * on OSM tiles was illegible against light basemap areas regardless of
+   * text-shadow tricks. Avatar, search, and bell share one row so the panel
+   * reads as a single "control tower" rather than stacked pieces.
+   */
+  headerCard: {
+    padding: spacing.sm,
+  },
+  headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
-    gap: spacing.md,
+    gap: spacing.sm,
   },
-  greetingSlot: {
+  headerSearchBar: {
     flex: 1,
-    gap: 2,
-  },
-  greetingLabel: {
-    ...typography.caption,
-    color: colors.inkSoft,
-  },
-  greetingName: {
-    ...typography.h1,
-    color: colors.ink,
-  },
-  /** Small brand accent under the greeting — the one decorative touch in an otherwise plain header. */
-  greetingAccent: {
-    width: 32,
-    height: 4,
-    borderRadius: radius.pill,
-    marginTop: spacing.xs,
   },
   bellButton: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.md,
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.panel,
-    ...elevation.card,
   },
   bellDot: {
     position: 'absolute',
-    top: 10,
-    right: 10,
+    top: 6,
+    right: 6,
     width: 10,
     height: 10,
     borderRadius: 5,
@@ -59,20 +54,13 @@ export const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.panel,
   },
-  mapWrap: {
-    marginHorizontal: spacing.lg,
-    marginBottom: spacing.xl,
-  },
   sectionLabel: {
     ...typography.label,
     color: colors.inkSoft,
-    paddingHorizontal: spacing.lg,
     marginBottom: spacing.md,
   },
   shortcuts: {
-    paddingHorizontal: spacing.lg,
     gap: spacing.md,
-    marginBottom: spacing.xl,
   },
   shortcutRow: {
     flexDirection: 'row',
@@ -81,9 +69,8 @@ export const styles = StyleSheet.create({
     borderRadius: radius.md,
     paddingHorizontal: spacing.lg,
     paddingVertical: spacing.md,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.fill,
     minHeight: 68,
-    ...elevation.card,
   },
   shortcutIcon: {
     width: 40,
@@ -104,10 +91,5 @@ export const styles = StyleSheet.create({
   shortcutAddress: {
     ...typography.caption,
     color: colors.inkSoft,
-  },
-  ctaWrap: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.lg,
   },
 });

@@ -2,14 +2,16 @@ import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { cancelRideRequest, subscribeToRideRequestStatus } from '@trisakay/services';
-import { Button, OsmMap, colors } from '@trisakay/ui';
+import { Button, MapOverlaySheet, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { styles } from '../../src/styles/booking/finding-driver.styles';
 
 export default function FindingDriverScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
@@ -93,6 +95,7 @@ export default function FindingDriverScreen() {
           zoom={16}
           // Full-screen with only a sheet below it — no scroller to compete with.
           interactive
+          edgeToEdge
         />
         <View style={styles.beaconWrap} pointerEvents="none">
           <PulseBeacon size={80}>
@@ -101,7 +104,7 @@ export default function FindingDriverScreen() {
         </View>
       </View>
 
-      <View style={styles.sheet}>
+      <MapOverlaySheet bottomInset={insets.bottom}>
         <Text style={styles.title}>Finding a driver</Text>
         <Text style={styles.subtitle}>
           {dropoff ? `Looking for a tricycle to ${dropoff.label}` : 'Looking for a tricycle nearby'}
@@ -119,7 +122,7 @@ export default function FindingDriverScreen() {
           />
         </View>
         {cancelError && <Text style={styles.cancelError}>{cancelError}</Text>}
-      </View>
+      </MapOverlaySheet>
     </View>
   );
 }

@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, EmptyState, ListRow, OsmMap, TextField, colors } from '@trisakay/ui';
+import { FlatList, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Button, EmptyState, ListRow, MapOverlaySheet, MapSearchBar, OsmMap, TextField, colors } from '@trisakay/ui';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { reverseGeocode, searchPlaces } from '../../src/utils/geocode';
 import type { LocationPoint } from '../../src/types/booking';
@@ -14,6 +14,7 @@ const SEARCH_DEBOUNCE_MS = 450;
 
 export default function SetDestinationScreen() {
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const setDropoff = useBookingStore((state) => state.setDropoff);
 
   const [query, setQuery] = useState('');
@@ -65,82 +66,72 @@ export default function SetDestinationScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.searchRow}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Go back"
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <Ionicons name="chevron-back" size={20} color={colors.ink} />
-        </Pressable>
-        <View style={styles.searchField}>
+      <View style={styles.mapFill}>
+        <OsmMap
+          variant="pin"
+          caption={resolvingPin ? 'Locating pin…' : 'Tap or drag the pin to drop a destination'}
+          height="100%"
+          latitude={selected?.latitude}
+          longitude={selected?.longitude}
+          zoom={selected ? 16 : 14}
+          // No scroller above it to compete with for the drag — the results
+          // list below lives in its own bounded, separately-scrolling sheet.
+          interactive
+          edgeToEdge
+          tapToPlace
+          marker={selected ? { latitude: selected.latitude, longitude: selected.longitude, draggable: true } : null}
+          onMarkerMove={handleMapPoint}
+        />
+      </View>
+
+      <View style={styles.topFloating}>
+        <MapSearchBar onBack={() => router.back()}>
           <TextField
             placeholder="Search for a destination"
             value={query}
             onChangeText={setQuery}
             autoFocus
           />
-        </View>
+        </MapSearchBar>
       </View>
 
-      <View style={styles.mapWrap}>
-        <View style={styles.mapInner}>
-          <OsmMap
-            variant="pin"
-            caption={resolvingPin ? 'Locating pin…' : 'Tap or drag the pin to drop a destination'}
-            height={320}
-            latitude={selected?.latitude}
-            longitude={selected?.longitude}
-            zoom={selected ? 16 : 14}
-            // Sits between the search field and the results list, in no scroller
-            // of its own — nothing to compete with for the drag.
-            interactive
-            tapToPlace
-            marker={selected ? { latitude: selected.latitude, longitude: selected.longitude, draggable: true } : null}
-            onMarkerMove={handleMapPoint}
-          />
-        </View>
-      </View>
-
-      <Text style={styles.resultsLabel}>Search results</Text>
-      <FlatList
-        style={styles.resultsList}
-        data={pinDropped && selected ? [selected, ...results] : results}
-        keyExtractor={(item, index) => `${item.label}-${index}`}
-        renderItem={({ item }) => (
-          <ListRow
-            title={item.label}
-            subtitle={item.address}
-            leading={
-              <View style={[styles.resultIcon, selected?.address === item.address && styles.resultIconSelected]}>
-                <Ionicons
-                  name="location-outline"
-                  size={18}
-                  color={selected?.address === item.address ? colors.accentBluePressed : colors.inkSoft}
-                />
-              </View>
-            }
-            onPress={() => handleSelectResult(item)}
-          />
-        )}
-        ListEmptyComponent={
-          <EmptyState
-            title={searching ? 'Searching…' : query ? 'No matches' : 'Search for a destination'}
-            message={
-              searching
-                ? 'Looking for places nearby.'
-                : query
-                  ? 'Try a different search term, or drop a pin on the map instead.'
-                  : 'Type a place name, or tap the map to drop a pin.'
-            }
-          />
-        }
-      />
-
-      <View style={styles.footer}>
+      <MapOverlaySheet maxHeight={360} bottomInset={insets.bottom}>
+        <Text style={styles.resultsLabel}>Search results</Text>
+        <FlatList
+          style={styles.resultsList}
+          data={pinDropped && selected ? [selected, ...results] : results}
+          keyExtractor={(item, index) => `${item.label}-${index}`}
+          renderItem={({ item }) => (
+            <ListRow
+              title={item.label}
+              subtitle={item.address}
+              leading={
+                <View style={[styles.resultIcon, selected?.address === item.address && styles.resultIconSelected]}>
+                  <Ionicons
+                    name="location-outline"
+                    size={18}
+                    color={selected?.address === item.address ? colors.accentBluePressed : colors.inkSoft}
+                  />
+                </View>
+              }
+              onPress={() => handleSelectResult(item)}
+            />
+          )}
+          ListEmptyComponent={
+            <EmptyState
+              title={searching ? 'Searching…' : query ? 'No matches' : 'Search for a destination'}
+              message={
+                searching
+                  ? 'Looking for places nearby.'
+                  : query
+                    ? 'Try a different search term, or drop a pin on the map instead.'
+                    : 'Type a place name, or tap the map to drop a pin.'
+              }
+            />
+          }
+        />
         <Button label="Confirm destination" fullWidth disabled={!selected} onPress={handleConfirm} />
-      </View>
+      </MapOverlaySheet>
     </SafeAreaView>
   );
 }

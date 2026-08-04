@@ -5,13 +5,17 @@ export const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  mapWrap: {
-    flex: 1,
+  mapFill: {
+    ...StyleSheet.absoluteFillObject,
   },
+  /** Floats over the bottom of the full-bleed map instead of sitting below it in normal flow — paddingBottom is finished off at the call site with the safe-area inset. */
   sheet: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
-    paddingBottom: spacing.xl,
     gap: spacing.md,
     backgroundColor: colors.panel,
     borderTopLeftRadius: radius.lg,

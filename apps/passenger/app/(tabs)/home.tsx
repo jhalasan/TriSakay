@@ -3,8 +3,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, EmptyState, GradientSurface, OsmMap, colors } from '@trisakay/ui';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar, Card, EmptyState, MapOverlaySheet, MapSearchBar, OsmMap, colors } from '@trisakay/ui';
 import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -25,6 +25,7 @@ export default function HomeScreen() {
   const setDropoff = useBookingStore((state) => state.setDropoff);
   const unreadCount = useNotificationsStore((state) => state.items.filter((n) => !n.read).length);
   const { isGranted } = useLocationPermission();
+  const insets = useSafeAreaInsets();
   const [locating, setLocating] = useState(false);
   // Guards against firing a second GPS fix while one is in flight (e.g. a
   // fast remount from tab-switching) — a duplicate fix would race the first
@@ -61,47 +62,54 @@ export default function HomeScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      {/*
-        The top bar and map sit OUTSIDE the ScrollView on purpose. The map is
-        draggable, and a draggable map inside a scroller competes for the same
-        vertical gesture — on Android the map wins and the page stops scrolling.
-        Pinning it removes the conflict at the source instead of arbitrating it,
-        and keeps the map visible while the rider reads the list below.
-      */}
-      <View style={styles.topBar}>
-        <View style={styles.greetingSlot}>
-          <Text style={styles.greetingLabel}>Good day</Text>
-          <Text style={styles.greetingName} numberOfLines={1}>
-            {user?.name ?? 'Rider'}
-          </Text>
-          <GradientSurface token="brand" direction="diagonal" style={styles.greetingAccent} />
-        </View>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel="Notifications"
-          style={styles.bellButton}
-          onPress={() => router.push('/notifications')}
-        >
-          <Ionicons name="notifications-outline" size={22} color={colors.ink} />
-          {unreadCount > 0 && <View style={styles.bellDot} />}
-        </Pressable>
-      </View>
-
-      <View style={styles.mapWrap}>
+      <View style={styles.mapFill}>
         <OsmMap
           variant="pin"
           caption={locating ? 'Finding your location…' : 'Drag the pin to set pickup'}
-          height={280}
+          height="100%"
           latitude={pickup?.latitude}
           longitude={pickup?.longitude}
           zoom={16}
           interactive
+          edgeToEdge
           marker={pickup ? { latitude: pickup.latitude, longitude: pickup.longitude, draggable: true } : null}
           onMarkerMove={handlePickupDrag}
         />
       </View>
 
-      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
+      <View style={styles.topFloating}>
+        <Card variant="raised" style={styles.headerCard}>
+          <View style={styles.headerRow}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Profile"
+              onPress={() => router.push('/(tabs)/profile')}
+            >
+              <Avatar name={user?.name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="md" />
+            </Pressable>
+            <MapSearchBar
+              variant="flat"
+              style={styles.headerSearchBar}
+              label="Where to?"
+              disabled={!isGranted}
+              onPress={() => (isGranted ? router.push('/booking/set-destination') : router.push('/location-permission'))}
+              accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
+            />
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Notifications"
+              style={styles.bellButton}
+              onPress={() => router.push('/notifications')}
+            >
+              <Ionicons name="notifications-outline" size={20} color={colors.ink} />
+              {unreadCount > 0 && <View style={styles.bellDot} />}
+            </Pressable>
+          </View>
+        </Card>
+        {!isGranted && <LocationRequiredNotice />}
+      </View>
+
+      <MapOverlaySheet maxHeight={320} bottomInset={insets.bottom}>
         <Text style={styles.sectionLabel}>Saved places</Text>
         {SHORTCUTS.length === 0 ? (
           <EmptyState
@@ -109,7 +117,7 @@ export default function HomeScreen() {
             message="Places you save will appear here for one-tap booking."
           />
         ) : (
-          <View style={styles.shortcuts}>
+          <ScrollView contentContainerStyle={styles.shortcuts}>
             {SHORTCUTS.map((shortcut) => (
               <Pressable
                 key={shortcut.point.label}
@@ -129,23 +137,9 @@ export default function HomeScreen() {
                 <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
               </Pressable>
             ))}
-          </View>
+          </ScrollView>
         )}
-      </ScrollView>
-
-      {/* Pinned so the primary action stays reachable no matter what scrolls. */}
-      <View style={styles.ctaWrap}>
-        <Button
-          label="Where to?"
-          fullWidth
-          disabled={!isGranted}
-          // Only while disabled — an enabled button must not announce a reason
-          // that no longer applies.
-          accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
-          onPress={() => router.push('/booking/set-destination')}
-        />
-        <LocationRequiredNotice />
-      </View>
+      </MapOverlaySheet>
     </SafeAreaView>
   );
 }

@@ -16,6 +16,10 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.fill,
     borderRadius: radius.md,
   },
+  /** Square corners for full-bleed maps that run to the screen edges — a rounded corner there reads as an accidental gap, not a card. */
+  edgeToEdge: {
+    borderRadius: 0,
+  },
   webview: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.fill,
