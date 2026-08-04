@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { updateProfile } from '@trisakay/services';
 import { Avatar, Button, Card, ListRow, TextField } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { styles } from '../../src/styles/tabs/profile.styles';
@@ -20,7 +21,6 @@ export default function ProfileScreen() {
       return;
     }
     setSaving(true);
-    const { updateProfile } = await import('@trisakay/services');
     const { error } = await updateProfile({ fullName: name });
     setSaving(false);
     if (error) {
