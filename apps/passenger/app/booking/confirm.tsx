@@ -168,8 +168,8 @@ export default function ConfirmScreen() {
           variant="route"
           caption="Route preview"
           height={180}
-          // Midpoint of the trip, so both ends are plausibly in frame until the
-          // route line and fit-bounds arrive in the next step.
+          // Midpoint of the trip — only the initial center while the route is
+          // still loading; once it arrives the map fits the route bounds instead.
           latitude={midpoint?.latitude}
           longitude={midpoint?.longitude}
           zoom={14}

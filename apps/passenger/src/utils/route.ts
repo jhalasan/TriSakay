@@ -22,6 +22,9 @@ interface GeoPoint {
 const OSRM_BASE_URL = 'https://router.project-osrm.org';
 const ROUTE_USER_AGENT = 'TriSakayPassenger/1.0 (+mailto:nexasystems6@gmail.com)';
 
+/** A hung OSRM demo server must not strand the fare — abort and fall back. */
+const ROUTE_TIMEOUT_MS = 8000;
+
 interface OsrmResponse {
   code?: string;
   routes?: { distance?: number; geometry?: { coordinates?: [number, number][] } }[];
@@ -52,9 +55,12 @@ export async function fetchRouteEstimate(pickup: GeoPoint, dropoff: GeoPoint): P
   // OSRM takes lon,lat — the reverse of the {latitude,longitude} used everywhere else.
   const coords = `${pickup.longitude},${pickup.latitude};${dropoff.longitude},${dropoff.latitude}`;
   const url = `${OSRM_BASE_URL}/route/v1/driving/${coords}?overview=full&geometries=geojson`;
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), ROUTE_TIMEOUT_MS);
   try {
     const response = await fetch(url, {
       headers: { 'User-Agent': ROUTE_USER_AGENT, Accept: 'application/json' },
+      signal: controller.signal,
     });
     if (!response.ok) return straightLine(pickup, dropoff);
     const data = (await response.json()) as OsrmResponse;
@@ -70,5 +76,7 @@ export async function fetchRouteEstimate(pickup: GeoPoint, dropoff: GeoPoint): P
     };
   } catch {
     return straightLine(pickup, dropoff);
+  } finally {
+    clearTimeout(timer);
   }
 }

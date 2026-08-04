@@ -1,3 +1,7 @@
+// Subpath import, not the '../../theme' barrel: the barrel re-exports RN-dependent
+// modules (typography/motion/gradients/elevation) that would break `node --test`
+// loading this file directly; '#theme/colors' maps to the RN-free colors.ts (see
+// packages/ui/package.json "imports").
 import { colors } from '#theme/colors';
 
 /**
@@ -294,7 +298,12 @@ ${routeScript}
     // Leaflet measures its container on init. Android frequently reports a
     // zero-height viewport on the first frame, which leaves the map initialised
     // with no tiles and no recovery — this is the classic "grey box" failure.
-    setTimeout(function () { map.invalidateSize(); }, 0);
+    setTimeout(function () {
+      map.invalidateSize();
+      if (typeof routeLine !== 'undefined' && ROUTE.length >= 2) {
+        map.fitBounds(routeLine.getBounds(), { paddingTopLeft: [24, 24], paddingBottomRight: [24, 24 + ${attributionBottom}] });
+      }
+    }, 0);
   } catch (e) {
     post({ type: 'error', reason: String((e && e.message) || e) });
   }

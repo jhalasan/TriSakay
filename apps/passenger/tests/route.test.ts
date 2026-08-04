@@ -59,3 +59,14 @@ test('falls back when OSRM code is not Ok (no route found)', async () => {
     assert.equal(result.source, 'straight');
   } finally { restore(); }
 });
+
+test('falls back to a straight line when the request aborts (hung OSRM server)', async () => {
+  const restore = mockFetch((async () => {
+    throw Object.assign(new Error('Aborted'), { name: 'AbortError' });
+  }) as unknown as typeof globalThis.fetch);
+  try {
+    const result = await fetchRouteEstimate(PICKUP, DROPOFF);
+    assert.equal(result.source, 'straight');
+    assert.equal(result.distanceKm, haversineDistanceKm(PICKUP, DROPOFF));
+  } finally { restore(); }
+});
