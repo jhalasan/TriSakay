@@ -2,8 +2,13 @@ import { StyleSheet } from 'react-native';
 import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
-  heroBand: { height: 110 },
+  heroBand: {
+    height: 110,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   motif: { position: 'absolute', top: -40, right: -40 },
+  /** Badge container — the mark image sits inside this, not stretched to fill it. */
   markBadge: {
     width: 72,
     height: 72,
@@ -11,13 +16,16 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    alignSelf: 'center',
-    marginTop: -36,
     ...elevation.card,
   },
   mark: { width: 42, height: 50 },
+  stepWrap: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.xs },
+  stepLabel: { ...typography.label, color: colors.inkSoft },
+  stepTrack: { flexDirection: 'row', gap: spacing.xs },
+  stepSegment: { flex: 1, height: 4, borderRadius: radius.pill, backgroundColor: colors.line },
+  stepSegmentActive: { backgroundColor: colors.accentBlue },
   scrollContent: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.md },
-  fields: { gap: spacing.lg, marginTop: spacing.lg, marginBottom: spacing.md },
+  stepIntro: { ...typography.body, color: colors.inkSoft },
   authError: { ...typography.caption, color: colors.danger },
   legalText: { ...typography.caption, color: colors.inkSoft, textAlign: 'center', marginTop: spacing.lg },
 });
