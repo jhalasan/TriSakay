@@ -546,7 +546,12 @@ test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED an
   let capturedChannelName: string | null = null;
   let capturedOnArgs: any = null;
   let capturedChangeHandler: (() => void) | null = null;
-  let capturedStatusCallback: ((status: string) => void) | null = null;
+  // Wrapped in an object, not a bare `let`: a closure-assigned `let` gets
+  // control-flow-narrowed back to its `null` initializer at the call site
+  // below (TS can't see the fake's subscribe() ran), so `assert.ok` would
+  // narrow it to `never`. Reading an object property keeps the declared
+  // union type — same pattern as the SUBSCRIBED-reconcile test above.
+  const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
   let capturedOrderArgs: [string, unknown] | null = null;
   let call = 0;
 
@@ -558,7 +563,7 @@ test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED an
       return fakeChannel;
     },
     subscribe: (statusCallback?: (status: string) => void) => {
-      capturedStatusCallback = statusCallback ?? null;
+      captured.statusCallback = statusCallback ?? null;
       return fakeChannel;
     },
   };
@@ -601,9 +606,10 @@ test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED an
   assert.equal(capturedOnArgs.event, '*');
   assert.equal(capturedOnArgs.schema, 'public');
   assert.equal(capturedOnArgs.table, 'ride_requests');
-  assert.ok(capturedStatusCallback);
+  const statusCallback = captured.statusCallback;
+  assert.ok(statusCallback);
 
-  capturedStatusCallback!('SUBSCRIBED');
+  statusCallback('SUBSCRIBED');
   await Promise.resolve();
   await Promise.resolve();
 
