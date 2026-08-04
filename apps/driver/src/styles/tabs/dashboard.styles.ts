@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
@@ -14,18 +14,20 @@ export const styles = StyleSheet.create({
   offlineNote: { ...typography.caption, color: colors.inkSoft },
   error: { ...typography.caption, color: colors.danger },
   bellButton: {
-    width: 44,
-    height: 44,
-    borderRadius: 12,
+    width: 48,
+    height: 48,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.panel,
+    ...elevation.card,
   },
   bellDot: {
     position: 'absolute',
-    top: 8,
-    right: 8,
-    width: 9,
-    height: 9,
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
     borderRadius: 5,
     backgroundColor: colors.danger,
     borderWidth: 2,

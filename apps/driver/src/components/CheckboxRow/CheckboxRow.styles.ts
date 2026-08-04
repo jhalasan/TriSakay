@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   row: {
@@ -15,11 +15,12 @@ export const styles = StyleSheet.create({
     color: colors.ink,
   },
   box: {
-    width: 22,
-    height: 22,
-    borderRadius: 5,
+    width: 24,
+    height: 24,
+    borderRadius: radius.sm,
     borderWidth: 1.5,
     borderColor: colors.lineStrong,
+    backgroundColor: colors.panel,
     alignItems: 'center',
     justifyContent: 'center',
   },

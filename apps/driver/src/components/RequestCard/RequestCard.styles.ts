@@ -1,13 +1,8 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   card: {
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.md,
-    backgroundColor: colors.panel,
-    padding: spacing.lg,
     gap: spacing.md,
   },
   topRow: {

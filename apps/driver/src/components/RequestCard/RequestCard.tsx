@@ -1,5 +1,5 @@
 import { Text, View } from 'react-native';
-import { Avatar, Badge, Button } from '@trisakay/ui';
+import { Avatar, Badge, Button, Card } from '@trisakay/ui';
 import type { PendingRequest } from '../../types/request';
 import { styles } from './RequestCard.styles';
 
@@ -17,7 +17,7 @@ export function RequestCard({ request, onAccept, onDecline }: RequestCardProps) 
       : 'New ride request';
 
   return (
-    <View style={styles.card}>
+    <Card style={styles.card}>
       <View style={styles.topRow}>
         <Avatar size="md" />
         <Text style={styles.route} numberOfLines={1}>
@@ -33,6 +33,6 @@ export function RequestCard({ request, onAccept, onDecline }: RequestCardProps) 
           <Button label="Accept" size="sm" fullWidth onPress={onAccept} />
         </View>
       </View>
-    </View>
+    </Card>
   );
 }

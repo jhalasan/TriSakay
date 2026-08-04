@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Redirect, useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Badge, Button, ConfirmModal, OsmMap, Toggle } from '@trisakay/ui';
+import { Avatar, Badge, Button, Card, ConfirmModal, OsmMap, Toggle } from '@trisakay/ui';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useEarningsStore } from '../../src/store/useEarningsStore';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
@@ -68,7 +68,7 @@ export default function ActiveTripScreen() {
           </View>
         </View>
 
-        <View style={styles.cashCard}>
+        <Card style={styles.cashCard}>
           {isCash ? (
             <>
               <View style={styles.cashRow}>
@@ -80,7 +80,7 @@ export default function ActiveTripScreen() {
           ) : (
             <Text style={styles.cashCaption}>CASH TRIPS ONLY — GCASH IS AUTO-CONFIRMED BY THE PAYMENT WEBHOOK</Text>
           )}
-        </View>
+        </Card>
 
         {tripError && <Text style={styles.error}>{tripError}</Text>}
 

@@ -1,6 +1,6 @@
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Badge, Button, EmptyState, MapPlaceholder } from '@trisakay/ui';
+import { Badge, Button, Card, EmptyState, MapPlaceholder } from '@trisakay/ui';
 import { useEarningsStore } from '../../src/store/useEarningsStore';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/tabs/earnings.styles';
@@ -19,10 +19,10 @@ export default function EarningsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.title}>Earnings</Text>
 
-        <View style={styles.totalCard}>
+        <Card style={styles.totalCard}>
           <Text style={styles.totalLabel}>Total earnings (tracked)</Text>
           <Text style={styles.totalValue}>{formatCurrency(totalTracked)}</Text>
-        </View>
+        </Card>
 
         <MapPlaceholder variant="chart" caption="Earnings chart" height={160} />
 
@@ -32,7 +32,10 @@ export default function EarningsScreen() {
         ) : (
           settlementLog.map((entry) => (
             <View key={entry.id} style={styles.logRow}>
-              <Text style={styles.logAmount}>{formatCurrency(entry.amount)}</Text>
+              <View style={styles.logTextSlot}>
+                <Text style={styles.logAmount}>{formatCurrency(entry.amount)}</Text>
+                <Text style={styles.logDate}>{formatDate(entry.loggedAt)}</Text>
+              </View>
               <Badge label="Logged" tone="neutral" />
             </View>
           ))

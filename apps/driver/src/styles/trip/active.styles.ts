@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { colors, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
@@ -10,12 +10,7 @@ export const styles = StyleSheet.create({
   passengerName: { ...typography.bodyStrong, color: colors.ink },
   seatsLabel: { ...typography.caption, color: colors.inkSoft },
   cashCard: {
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.md,
-    padding: spacing.lg,
     gap: spacing.sm,
-    backgroundColor: colors.panel,
   },
   cashRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   cashLabel: { ...typography.bodyStrong, color: colors.ink },

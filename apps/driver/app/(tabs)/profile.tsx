@@ -71,6 +71,7 @@ export default function ProfileScreen() {
 
         <Card style={styles.navGroup}>
           <ListRow title="Documents & tricycle info" onPress={() => router.push('/profile/documents')} chevron />
+          <ListRow title="Complaints" onPress={() => router.push('/complaints')} chevron />
           <ListRow title="Settings" onPress={() => router.push('/profile/settings')} chevron divider={false} />
         </Card>
       </ScrollView>
