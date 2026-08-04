@@ -1,16 +1,25 @@
 import { create } from 'zustand';
 import { DOCUMENT_TYPES, type DocumentStatus, type DocumentType } from '../types/document';
 
-interface DocumentsState {
-  statuses: Record<DocumentType, DocumentStatus>;
-  submit: (type: DocumentType) => void;
+export interface DocumentEntry {
+  status: DocumentStatus;
+  uri: string | null;
 }
 
-const initialStatuses = Object.fromEntries(
-  DOCUMENT_TYPES.map((type) => [type, 'unsubmitted' as DocumentStatus])
-) as Record<DocumentType, DocumentStatus>;
+interface DocumentsState {
+  documents: Record<DocumentType, DocumentEntry>;
+  submit: (type: DocumentType, uri: string) => void;
+  remove: (type: DocumentType) => void;
+}
+
+const initialDocuments = Object.fromEntries(
+  DOCUMENT_TYPES.map((type) => [type, { status: 'unsubmitted' as DocumentStatus, uri: null }])
+) as Record<DocumentType, DocumentEntry>;
 
 export const useDocumentsStore = create<DocumentsState>()((set) => ({
-  statuses: initialStatuses,
-  submit: (type) => set((state) => ({ statuses: { ...state.statuses, [type]: 'pending' } })),
+  documents: initialDocuments,
+  submit: (type, uri) =>
+    set((state) => ({ documents: { ...state.documents, [type]: { status: 'pending', uri } } })),
+  remove: (type) =>
+    set((state) => ({ documents: { ...state.documents, [type]: { status: 'unsubmitted', uri: null } } })),
 }));

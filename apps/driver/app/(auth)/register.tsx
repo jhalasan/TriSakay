@@ -29,15 +29,16 @@ export default function RegisterScreen() {
   const authError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
   const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
-  const statuses = useDocumentsStore((state) => state.statuses);
+  const documents = useDocumentsStore((state) => state.documents);
   const submitDocument = useDocumentsStore((state) => state.submit);
+  const removeDocument = useDocumentsStore((state) => state.remove);
 
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
 
-  const allDocumentsUploaded = DOCUMENT_TYPES.every((type) => statuses[type] !== 'unsubmitted');
+  const allDocumentsUploaded = DOCUMENT_TYPES.every((type) => documents[type].status !== 'unsubmitted');
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -55,18 +56,25 @@ export default function RegisterScreen() {
     setStep(2);
   }
 
-  async function handleCreateAccount() {
+  async function handleSubmit() {
     clearError();
     setSubmitting(true);
     const outcome = await register(form.name, form.email, form.phone, form.password);
     setSubmitting(false);
 
+    if (outcome === 'error') return;
+
+    const reviewNote =
+      "Your documents are under review. We'll send you a text message or email once your account is approved to go online.";
+
     if (outcome === 'check_email') {
       Alert.alert(
         'Check your email',
-        `We sent a confirmation link to ${form.email}. Confirm it, then log in.`,
+        `We sent a confirmation link to ${form.email}. Confirm it, then log in.\n\n${reviewNote}`,
         [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
       );
+    } else {
+      Alert.alert('Documents submitted', reviewNote);
     }
   }
 
@@ -151,16 +159,18 @@ export default function RegisterScreen() {
             <DocumentUploadRow
               key={type}
               label={DOCUMENT_LABEL[type]}
-              status={statuses[type]}
-              onUpload={() => submitDocument(type)}
+              status={documents[type].status}
+              uri={documents[type].uri}
+              onUpload={(uri) => submitDocument(type, uri)}
+              onRemove={() => removeDocument(type)}
             />
           ))}
 
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
           <Button
-            label="Create account"
-            onPress={handleCreateAccount}
+            label="Register"
+            onPress={handleSubmit}
             loading={submitting || awaitingGate}
             disabled={!allDocumentsUploaded}
             fullWidth

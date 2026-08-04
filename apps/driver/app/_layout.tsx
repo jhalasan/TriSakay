@@ -14,6 +14,7 @@ import { colors, fontFamily } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
+import { useVerificationStore, type VerificationGateStatus } from '../src/store/useVerificationStore';
 
 export const unstable_settings = { initialRouteName: 'index' };
 
@@ -24,7 +25,11 @@ function useRootSegment(): string | undefined {
 
 const LOCATION_PROMPT_ROUTES: readonly string[] = ['(tabs)', 'trip', 'profile', 'complaints', 'notifications'];
 
-function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateStatus) {
+function useProtectedRoute(
+  isAuthenticated: boolean,
+  consentStatus: ConsentGateStatus,
+  verificationStatus: VerificationGateStatus
+) {
   const root = useRootSegment();
   const router = useRouter();
 
@@ -32,8 +37,14 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
     const isSplashOrRoot = root === undefined || root === 'splash';
     if (isSplashOrRoot) return;
 
+    // Logout must stay reachable regardless of gate state, or the confirm
+    // modal opened from a blocked screen (consent, verification-pending)
+    // would get bounced back before the driver could confirm it.
+    if (root === 'logout') return;
+
     const inAuthGroup = root === '(auth)';
     const onConsent = root === 'consent';
+    const onVerification = root === 'verification-pending';
 
     if (!isAuthenticated) {
       if (!inAuthGroup) router.replace('/(auth)/login');
@@ -44,15 +55,38 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
 
     if (consentStatus === 'required') {
       if (!onConsent) router.replace('/consent');
-    } else if (inAuthGroup || onConsent) {
+      return;
+    }
+
+    // Consent is accepted from here on — a driver still can't reach the app
+    // until PSO has approved their verification in person (FR-1.5-1.6).
+    if (verificationStatus === 'unknown' || verificationStatus === 'checking') return;
+
+    if (verificationStatus !== 'approved') {
+      if (!onVerification) router.replace('/verification-pending');
+      return;
+    }
+
+    if (inAuthGroup || onConsent || onVerification) {
       router.replace('/(tabs)/dashboard');
     }
-  }, [isAuthenticated, consentStatus, root, router]);
+  }, [isAuthenticated, consentStatus, verificationStatus, root, router]);
 }
 
 function useConsentSync(sessionUserId: string | null) {
   const check = useConsentStore((state) => state.check);
   const reset = useConsentStore((state) => state.reset);
+
+  useEffect(() => {
+    reset();
+    if (sessionUserId === null) return;
+    void check();
+  }, [sessionUserId, check, reset]);
+}
+
+function useVerificationSync(sessionUserId: string | null) {
+  const check = useVerificationStore((state) => state.check);
+  const reset = useVerificationStore((state) => state.reset);
 
   useEffect(() => {
     reset();
@@ -93,8 +127,10 @@ function RootLayoutNav() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
   const consentStatus = useConsentStore((state) => state.status);
+  const verificationStatus = useVerificationStore((state) => state.status);
   useConsentSync(sessionUserId);
-  useProtectedRoute(isAuthenticated, consentStatus);
+  useVerificationSync(sessionUserId);
+  useProtectedRoute(isAuthenticated, consentStatus, verificationStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 
   return (
@@ -109,6 +145,7 @@ function RootLayoutNav() {
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="consent" />
+          <Stack.Screen name="verification-pending" />
           <Stack.Screen name="location-permission" options={{ presentation: 'transparentModal', animation: 'fade' }} />
           <Stack.Screen name="logout" options={{ presentation: 'transparentModal', animation: 'fade' }} />
         </Stack>

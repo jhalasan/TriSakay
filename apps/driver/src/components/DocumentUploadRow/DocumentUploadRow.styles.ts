@@ -30,4 +30,25 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkSoft,
   },
+  preview: {
+    height: 96,
+    borderRadius: radius.md,
+    overflow: 'hidden',
+    backgroundColor: colors.fill,
+  },
+  previewImage: {
+    width: '100%',
+    height: '100%',
+  },
+  removeButton: {
+    position: 'absolute',
+    top: spacing.xs,
+    right: spacing.xs,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.overlay,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

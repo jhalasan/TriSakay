@@ -3,6 +3,7 @@ export * from './auth';
 export * from './booking';
 export * from './consents';
 export * from './discount';
+export * from './driver-profile';
 export * from './fare';
 export * from './notifications';
 export * from './location';

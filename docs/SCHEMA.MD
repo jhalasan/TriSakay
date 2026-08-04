@@ -629,17 +629,32 @@ create trigger trg_complaints_touch     before update on public.complaints      
 -- via packages/services/src/auth/index.ts; dropping this column silently
 -- breaks passenger registration. (Regressed once already, 2026-07-30 ->
 -- 2026-07-31 — do not remove it again.)
+-- A driver additionally gets a driver_profiles row (verification_status
+-- defaults to 'unsubmitted') so the app can gate entry on PSO approval
+-- (FR-1.5-1.6) from the moment they sign up, not after some later step.
+-- There is deliberately no equivalent client-side insert: driver_profiles
+-- has no RLS insert policy (see 7.2), so this trigger is the only path
+-- that can create the row.
 create or replace function public.handle_new_auth_user()
 returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  new_role public.user_role;
 begin
+  new_role := coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger');
+
   insert into public.users (id, full_name, email, role, contact_no)
   values (
     new.id,
     coalesce(new.raw_user_meta_data->>'full_name', 'Unnamed User'),
     new.email,
-    coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger'),
+    new_role,
     new.raw_user_meta_data->>'phone'
   );
+
+  if new_role = 'driver' then
+    insert into public.driver_profiles (user_id) values (new.id);
+  end if;
+
   return new;
 end $$;
 

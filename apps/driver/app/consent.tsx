@@ -85,6 +85,14 @@ export default function ConsentScreen() {
         />
         {error ? <Text style={styles.error}>{error}</Text> : null}
         <Button label="Accept & Continue" fullWidth disabled={!checked} loading={submitting} onPress={handleAccept} />
+        <Button
+          label="Not you? Log out"
+          variant="ghost"
+          tone="neutral"
+          size="sm"
+          fullWidth
+          onPress={() => router.push('/logout')}
+        />
       </View>
     </SafeAreaView>
   );
