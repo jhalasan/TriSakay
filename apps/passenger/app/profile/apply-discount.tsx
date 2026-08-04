@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Image, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
+import { applyForDiscount, getMyDiscount } from '@trisakay/services';
 import type { DiscountCategory, PassengerDiscount } from '@trisakay/services';
 import { Badge, Button, Card, SegmentedControl, Spinner, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
@@ -31,9 +32,7 @@ export default function ApplyDiscountScreen() {
   const [formError, setFormError] = useState<string | null>(null);
 
   function refresh() {
-    return import('@trisakay/services').then(({ getMyDiscount }) =>
-      getMyDiscount().then((result) => setExisting(result.data)),
-    );
+    return getMyDiscount().then((result) => setExisting(result.data));
   }
 
   const { refreshing, onRefresh } = usePullToRefresh(refresh);
@@ -67,7 +66,6 @@ export default function ApplyDiscountScreen() {
     }
     setFormError(null);
     setSubmitting(true);
-    const { applyForDiscount } = await import('@trisakay/services');
     const { error } = await applyForDiscount({ userId: user.id, category, uri: photoUri });
     if (error) {
       setSubmitting(false);

@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { getSession, updateAvatarUrl, uploadAvatar } from '@trisakay/services';
 import { BrandMotif, Button, GradientSurface, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -81,15 +82,14 @@ export default function RegisterScreen() {
     // path (email confirmation pending). Those riders can add a photo
     // later from Profile once they've logged in.
     if (outcome === 'signed_in' && avatarUri) {
-      const services = await import('@trisakay/services');
-      const session = await services.getSession();
+      const session = await getSession();
       if (session) {
-        const { publicUrl } = await services.uploadAvatar({ userId: session.user.id, uri: avatarUri });
+        const { publicUrl } = await uploadAvatar({ userId: session.user.id, uri: avatarUri });
         // Store's `user` was already populated by the sign-up auth event,
         // before this upload finished — refetch so avatarUrl isn't stale
         // until the next full profile fetch (e.g. next app launch).
         if (publicUrl) {
-          await services.updateAvatarUrl(publicUrl);
+          await updateAvatarUrl(publicUrl);
           await refreshProfile();
         }
       }

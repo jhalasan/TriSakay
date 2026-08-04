@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { createRideRequest, estimateFare, getFareDiscountRate, getMyDiscount } from '@trisakay/services';
 import { haversineDistanceKm } from '@trisakay/utils';
 import {
   Badge,
@@ -50,13 +51,11 @@ export default function ConfirmScreen() {
   useEffect(() => {
     if (!user?.id) return;
     let cancelled = false;
-    import('@trisakay/services').then(({ getMyDiscount, getFareDiscountRate }) => {
-      getMyDiscount().then((result) => {
-        if (!cancelled) setDiscountApproved(result.data?.status === 'approved');
-      });
-      getFareDiscountRate().then((result) => {
-        if (!cancelled) setDiscountRatePercent(result.discountRatePercent);
-      });
+    getMyDiscount().then((result) => {
+      if (!cancelled) setDiscountApproved(result.data?.status === 'approved');
+    });
+    getFareDiscountRate().then((result) => {
+      if (!cancelled) setDiscountRatePercent(result.discountRatePercent);
     });
     return () => {
       cancelled = true;
@@ -73,13 +72,11 @@ export default function ConfirmScreen() {
     const distanceKm = haversineDistanceKm(pickup, dropoff);
 
     setFareError(null);
-    import('@trisakay/services').then(({ estimateFare }) =>
-      estimateFare({ distanceKm, seats, passengerId: user?.id }).then((result) => {
-        if (cancelled) return;
-        setFare(result.fare);
-        if (result.error) setFareError(result.error);
-      }),
-    );
+    estimateFare({ distanceKm, seats, passengerId: user?.id }).then((result) => {
+      if (cancelled) return;
+      setFare(result.fare);
+      if (result.error) setFareError(result.error);
+    });
 
     return () => {
       cancelled = true;
@@ -121,7 +118,6 @@ export default function ConfirmScreen() {
     setIsRequesting(true);
     setRequestError(null);
 
-    const { createRideRequest } = await import('@trisakay/services');
     const distanceKm = haversineDistanceKm(pickup, dropoff);
     const { data, error } = await createRideRequest({
       passengerId: user.id,

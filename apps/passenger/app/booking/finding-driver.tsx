@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
+import { cancelRideRequest, subscribeToRideRequestStatus } from '@trisakay/services';
 import { Button, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -35,24 +36,24 @@ export default function FindingDriverScreen() {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
 
-    import('@trisakay/services').then(({ subscribeToRideRequestStatus }) => {
-      if (cancelled) return;
-      unsubscribe = subscribeToRideRequestStatus(
-        rideRequestId,
-        (row) => {
-          if (row.status === 'assigned') {
-            hasExitedRef.current = true;
-            setTripStatus('matched');
-            router.replace('/booking/driver-found');
-          } else if (row.status === 'cancelled') {
-            hasExitedRef.current = true;
-            reset();
-            router.replace('/(tabs)/home');
-          }
-        },
-        (message) => setSubscriptionError(message),
-      );
-    });
+    unsubscribe = subscribeToRideRequestStatus(
+      rideRequestId,
+      (row) => {
+        if (cancelled) return;
+        if (row.status === 'assigned') {
+          hasExitedRef.current = true;
+          setTripStatus('matched');
+          router.replace('/booking/driver-found');
+        } else if (row.status === 'cancelled') {
+          hasExitedRef.current = true;
+          reset();
+          router.replace('/(tabs)/home');
+        }
+      },
+      (message) => {
+        if (!cancelled) setSubscriptionError(message);
+      },
+    );
 
     return () => {
       cancelled = true;
@@ -67,7 +68,6 @@ export default function FindingDriverScreen() {
     setIsCancelling(true);
     setCancelError(null);
 
-    const { cancelRideRequest } = await import('@trisakay/services');
     const { error } = await cancelRideRequest(rideRequestId, 'Cancelled by passenger');
 
     setIsCancelling(false);
