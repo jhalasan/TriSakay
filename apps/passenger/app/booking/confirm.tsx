@@ -18,6 +18,7 @@ import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { formatCurrency } from '../../src/utils/currency';
+import { fetchRouteEstimate, type RouteEstimate } from '../../src/utils/route';
 import { styles } from '../../src/styles/booking/confirm.styles';
 
 export default function ConfirmScreen() {
@@ -42,6 +43,7 @@ export default function ConfirmScreen() {
   // actually know the passenger's status, never a guess.
   const [discountApproved, setDiscountApproved] = useState<boolean | null>(null);
   const [discountRatePercent, setDiscountRatePercent] = useState<number | null>(null);
+  const [route, setRoute] = useState<RouteEstimate | null>(null);
   // True once we definitively know whether the passenger has an approved
   // discount AND (if so) what rate applies — gates the request button so we
   // never persist a guessed discount_percent.
@@ -62,17 +64,32 @@ export default function ConfirmScreen() {
     };
   }, [user?.id]);
 
+  // Fetch the suggested route (line + road distance) whenever the trip's
+  // endpoints change. fetchRouteEstimate never throws — it degrades to a
+  // straight line + haversine distance when OSRM is unreachable.
   useEffect(() => {
     if (!pickup || !dropoff) {
+      setRoute(null);
+      return;
+    }
+    let cancelled = false;
+    fetchRouteEstimate(pickup, dropoff).then((result) => {
+      if (!cancelled) setRoute(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pickup, dropoff]);
+
+  useEffect(() => {
+    if (!pickup || !dropoff || !route) {
       setFare(null);
       return;
     }
 
     let cancelled = false;
-    const distanceKm = haversineDistanceKm(pickup, dropoff);
-
     setFareError(null);
-    estimateFare({ distanceKm, seats, passengerId: user?.id }).then((result) => {
+    estimateFare({ distanceKm: route.distanceKm, seats, passengerId: user?.id }).then((result) => {
       if (cancelled) return;
       setFare(result.fare);
       if (result.error) setFareError(result.error);
@@ -81,7 +98,7 @@ export default function ConfirmScreen() {
     return () => {
       cancelled = true;
     };
-  }, [pickup, dropoff, seats, user?.id, setFare]);
+  }, [pickup, dropoff, route, seats, user?.id, setFare]);
 
   /**
    * Both ends of the trip in one frame. Falls back to the service-area centre
@@ -118,7 +135,7 @@ export default function ConfirmScreen() {
     setIsRequesting(true);
     setRequestError(null);
 
-    const distanceKm = haversineDistanceKm(pickup, dropoff);
+    const distanceKm = route?.distanceKm ?? haversineDistanceKm(pickup, dropoff);
     const { data, error } = await createRideRequest({
       passengerId: user.id,
       pickup: { latitude: pickup.latitude, longitude: pickup.longitude, label: pickup.label },
@@ -157,6 +174,7 @@ export default function ConfirmScreen() {
           longitude={midpoint?.longitude}
           zoom={14}
           interactive
+          route={route?.geometry}
         />
 
         <Card variant="raised" style={styles.routeCard}>
