@@ -1,4 +1,8 @@
-import { colors } from '../../theme';
+// Subpath import, not the '../../theme' barrel: the barrel re-exports RN-dependent
+// modules (typography/motion/gradients/elevation) that would break `node --test`
+// loading this file directly; '#theme/colors' maps to the RN-free colors.ts (see
+// packages/ui/package.json "imports").
+import { colors } from '#theme/colors';
 
 /**
  * TILE SOURCE — READ BEFORE CHANGING
@@ -68,6 +72,13 @@ export interface MapHtmlOptions {
    * should only move by explicit drag, not by an incidental tap while panning.
    */
   tapToPlace?: boolean;
+  /**
+   * An ordered list of points to draw as a route line. When it has >=2 points
+   * the map draws an accent polyline, a green pickup dot and a blue destination
+   * dot, and frames the whole line with fitBounds — superseding center/zoom.
+   * The line is a *suggested* route (estimate), not a committed path.
+   */
+  route?: { latitude: number; longitude: number }[] | null;
 }
 
 /** Messages the page posts back over the WebView bridge. */
@@ -92,6 +103,7 @@ export function buildMapHtml({
   bottomInset = 0,
   marker = null,
   tapToPlace = false,
+  route = null,
 }: MapHtmlOptions): string {
   // Nothing interpolated below may be non-numeric — these values land inside a
   // <script> block.
@@ -103,6 +115,26 @@ export function buildMapHtml({
   const markerLat = marker ? finite(marker.latitude, lat) : lat;
   const markerLng = marker ? finite(marker.longitude, lng) : lng;
   const markerDraggable = Boolean(marker?.draggable);
+  const routePoints = (route ?? [])
+    .map((point) => [finite(point.latitude, NaN), finite(point.longitude, NaN)])
+    .filter(([lat, lng]) => Number.isFinite(lat) && Number.isFinite(lng));
+  const routeJson = JSON.stringify(routePoints);
+  // Built conditionally (not just runtime-gated) so a route-less map's HTML
+  // carries no polyline code at all — callers/tests can tell "no route" apart
+  // from "route with < 2 points" by string content alone.
+  const routeScript =
+    routePoints.length >= 2
+      ? `
+    var ROUTE = ${routeJson};
+    if (ROUTE.length >= 2) {
+      var routeLine = L.polyline(ROUTE, { color: '${colors.accentBlue}', weight: 5, opacity: 0.9 });
+      routeLine.addTo(map);
+      L.circleMarker(ROUTE[0], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentGreen}', fillOpacity: 1 }).addTo(map);
+      L.circleMarker(ROUTE[ROUTE.length - 1], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentBlue}', fillOpacity: 1 }).addTo(map);
+      map.fitBounds(routeLine.getBounds(), { paddingTopLeft: [24, 24], paddingBottomRight: [24, 24 + ${attributionBottom}] });
+    }
+`
+      : '';
 
   // Anchored on the city centre rather than this screen's centre, so every
   // interactive map roams the same, predictable box.
@@ -196,7 +228,7 @@ export function buildMapHtml({
       post({ type: 'ready' });
     });
     layer.addTo(map);
-
+${routeScript}
     var pin = null;
     var HAS_MARKER = ${marker ? 'true' : 'false'};
     var pinIcon = L.divIcon({
@@ -254,7 +286,11 @@ export function buildMapHtml({
         movedPosted = false;
         if (suppressTimer) clearTimeout(suppressTimer);
         suppressTimer = setTimeout(function () { suppress = false; }, ${RECENTER_SETTLE_MS});
-        map.setView(HOME, HOME_ZOOM, { animate: true });
+        if (typeof routeLine !== 'undefined' && ROUTE.length >= 2) {
+          map.fitBounds(routeLine.getBounds(), { paddingTopLeft: [24, 24], paddingBottomRight: [24, 24 + ${attributionBottom}], animate: true });
+        } else {
+          map.setView(HOME, HOME_ZOOM, { animate: true });
+        }
         post({ type: 'recentered' });
       };
     }
@@ -262,7 +298,12 @@ export function buildMapHtml({
     // Leaflet measures its container on init. Android frequently reports a
     // zero-height viewport on the first frame, which leaves the map initialised
     // with no tiles and no recovery — this is the classic "grey box" failure.
-    setTimeout(function () { map.invalidateSize(); }, 0);
+    setTimeout(function () {
+      map.invalidateSize();
+      if (typeof routeLine !== 'undefined' && ROUTE.length >= 2) {
+        map.fitBounds(routeLine.getBounds(), { paddingTopLeft: [24, 24], paddingBottomRight: [24, 24 + ${attributionBottom}] });
+      }
+    }, 0);
   } catch (e) {
     post({ type: 'error', reason: String((e && e.message) || e) });
   }

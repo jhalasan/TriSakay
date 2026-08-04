@@ -61,6 +61,8 @@ export interface OsmMapProps {
   onMarkerMove?: (point: { latitude: number; longitude: number }) => void;
   /** Tapping the map drops (or relocates) the marker there. See `mapHtml.ts`'s doc for why this defaults off. */
   tapToPlace?: boolean;
+  /** Draws a suggested route line and frames it. See mapHtml's `route` option. */
+  route?: { latitude: number; longitude: number }[] | null;
   onReady?: () => void;
 }
 
@@ -79,6 +81,7 @@ export function OsmMap({
   marker = null,
   onMarkerMove,
   tapToPlace = false,
+  route = null,
   onReady,
 }: OsmMapProps) {
   const [state, setState] = useState<MapState>('loading');
@@ -115,10 +118,11 @@ export function OsmMap({
         bottomInset,
         marker,
         tapToPlace,
+        route,
       }),
     }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- marker's coordinates are deliberately excluded; see the comment above
-    [latitude, longitude, zoom, attributionLeft, interactive, bottomInset, Boolean(marker), marker?.draggable, tapToPlace],
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- marker's coordinates are deliberately excluded; see the comment above. `route` is serialized via JSON.stringify so an equal-but-new array reference (a common shape from a fresh fetch/selector) doesn't force a remount — only a change in the actual points does. The route resolving asynchronously after mount therefore causes exactly one remount, same as a lat/lng change.
+    [latitude, longitude, zoom, attributionLeft, interactive, bottomInset, Boolean(marker), marker?.draggable, tapToPlace, JSON.stringify(route ?? null)],
   );
 
   const settle = useCallback(() => {

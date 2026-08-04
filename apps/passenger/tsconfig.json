@@ -4,7 +4,12 @@
     "composite": true,
     "jsx": "react-jsx",
     "allowJs": true,
-    "baseUrl": "."
+    "baseUrl": ".",
+    // node --test runs these .ts test files directly (no bundler), which requires
+    // explicit .ts extensions on relative specifiers for plain Node ESM resolution
+    // to find them. Safe only because this project's effective noEmit is true
+    // (inherited from expo/tsconfig.base) — see mapHtml.test.ts and route.test.ts.
+    "allowImportingTsExtensions": true
   },
   "include": ["./**/*"],
   "references": [
