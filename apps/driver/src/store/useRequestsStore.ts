@@ -6,7 +6,7 @@ import type { PendingRequest, AcceptedRequest } from '../types/request.ts';
 interface RequestsState {
   pending: PendingRequest[];
   error: string | null;
-  subscribe: () => void;
+  subscribe: (driverId: string) => void;
   unsubscribe: () => void;
   accept: (id: string, driverId: string) => Promise<AcceptedRequest | undefined>;
   decline: (id: string) => void;
@@ -31,11 +31,12 @@ export const useRequestsStore = create<RequestsState>()((set, get) => ({
   pending: [],
   error: null,
 
-  subscribe: () => {
+  subscribe: (driverId) => {
     stopRealtime?.();
     dismissedIds = new Set();
 
     stopRealtime = subscribeToPendingRideRequests(
+      driverId,
       (rows) => {
         set({ pending: rows.filter((row) => !dismissedIds.has(row.id)).map(toPendingRequest), error: null });
       },

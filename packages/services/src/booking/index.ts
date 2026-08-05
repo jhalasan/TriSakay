@@ -191,35 +191,40 @@ export function subscribeToRideRequestStatus(
 }
 
 /**
- * Naive request-board feed: every pending ride request, no bearing/detour/
- * cluster filtering — that heuristic lives in the not-yet-built
- * `match-ride-request` Edge Function (docs/DRIVER_TODO.MD open item #1).
+ * Request-board feed, filtered/ranked server-side by the `match-ride-request`
+ * Edge Function (FR-2.5: cluster-authorization hard filter, then a
+ * bearing-tolerance/detour-ratio soft filter once the driver has a known
+ * position — see that function's own header comment for the full heuristic).
  *
- * Refetches the full pending list on every change event instead of patching
- * from the payload, since RLS can silently drop a row from this driver's view
- * mid-stream (e.g. once another driver claims it) — the same category of gap
+ * Refetches (re-invokes the Edge Function) on every change event instead of
+ * patching from the payload, since RLS/the heuristic can silently drop a row
+ * from this driver's view mid-stream (e.g. once another driver claims it, or
+ * the driver's own route no longer matches) — the same category of gap
  * `subscribeToRideRequestStatus` above works around with its post-SUBSCRIBED
  * reconcile query.
  */
 export function subscribeToPendingRideRequests(
+  driverId: string,
   onData: (rows: RideRequestRow[]) => void,
   onError?: (message: string) => void,
 ): () => void {
   const client = getSupabaseClient();
 
   async function refetch() {
-    const { data, error } = await client
-      .from('ride_requests')
-      .select('*')
-      .eq('status', 'pending')
-      .order('requested_at', { ascending: true });
+    const { data, error } = await client.functions.invoke('match-ride-request', { body: { driverId } });
 
     if (error) {
       onError?.(error.message);
       return;
     }
 
-    onData(data ?? []);
+    const result = data as { data: RideRequestRow[] | null; error: string | null };
+    if (result.error) {
+      onError?.(result.error);
+      return;
+    }
+
+    onData(result.data ?? []);
   }
 
   const channel = client

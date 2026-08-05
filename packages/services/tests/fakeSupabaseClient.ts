@@ -33,6 +33,8 @@ export interface FakeClientConfig {
   /** Full override for `.channel(name)` — used by Realtime-subscription tests. */
   channel?: (name: string) => unknown;
   removeChannel?: (channel: unknown) => void;
+  /** Override for `.functions.invoke(name, options)` — used by Edge Function callers. */
+  functionsInvoke?: (name: string, options: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
 }
 
 export function createFakeSupabaseClient(config: FakeClientConfig = {}): SupabaseClient<Database> {
@@ -92,9 +94,14 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     return table === 'user_consents' ? consentsTable : usersTable;
   };
 
+  const functions = {
+    invoke: config.functionsInvoke ?? (async () => { throw new Error('functions.invoke not configured on fake client'); }),
+  };
+
   return {
     auth,
     from,
+    functions,
     channel: config.channel ?? (() => { throw new Error('channel not configured on fake client'); }),
     removeChannel: config.removeChannel ?? (() => {}),
   } as unknown as SupabaseClient<Database>;

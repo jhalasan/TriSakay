@@ -38,8 +38,8 @@ export default function DashboardScreen() {
 
   function handleToggleAvailable(next: boolean) {
     setAvailable(next);
-    if (next) {
-      subscribe();
+    if (next && user) {
+      subscribe(user.id);
     } else {
       unsubscribe();
     }

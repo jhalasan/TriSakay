@@ -542,7 +542,7 @@ test('acceptRideRequest surfaces a Postgres error from the assignment update', a
   assert.equal(error, "Couldn't assign this ride. Please try again.");
 });
 
-test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED and on every change event', async () => {
+test('subscribeToPendingRideRequests invokes match-ride-request with driverId on SUBSCRIBED and on every change event', async () => {
   let capturedChannelName: string | null = null;
   let capturedOnArgs: any = null;
   let capturedChangeHandler: (() => void) | null = null;
@@ -552,7 +552,7 @@ test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED an
   // narrow it to `never`. Reading an object property keeps the declared
   // union type — same pattern as the SUBSCRIBED-reconcile test above.
   const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
-  let capturedOrderArgs: [string, unknown] | null = null;
+  const capturedInvokeArgs: { name: string; options: any }[] = [];
   let call = 0;
 
   const fakeChannel = {
@@ -575,32 +575,16 @@ test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED an
         return fakeChannel;
       },
       removeChannel: () => {},
-      from: (table: string) => {
-        assert.equal(table, 'ride_requests');
-        return {
-          select: (columns: string) => {
-            assert.equal(columns, '*');
-            return {
-              eq: (column: string, value: unknown) => {
-                assert.equal(column, 'status');
-                assert.equal(value, 'pending');
-                return {
-                  order: async (orderColumn: string, opts: unknown) => {
-                    capturedOrderArgs = [orderColumn, opts];
-                    call += 1;
-                    return { data: [{ id: `rr${call}` }], error: null };
-                  },
-                };
-              },
-            };
-          },
-        };
+      functionsInvoke: async (name, options) => {
+        capturedInvokeArgs.push({ name, options });
+        call += 1;
+        return { data: { data: [{ id: `rr${call}` }], error: null }, error: null };
       },
     })
   );
 
   const received: unknown[] = [];
-  const unsubscribe = subscribeToPendingRideRequests((rows) => received.push(rows));
+  const unsubscribe = subscribeToPendingRideRequests('driver1', (rows) => received.push(rows));
 
   assert.equal(capturedChannelName, 'pending_ride_requests');
   assert.equal(capturedOnArgs.event, '*');
@@ -617,7 +601,10 @@ test('subscribeToPendingRideRequests refetches the pending list on SUBSCRIBED an
   await Promise.resolve();
   await Promise.resolve();
 
-  assert.deepEqual(capturedOrderArgs, ['requested_at', { ascending: true }]);
+  assert.deepEqual(capturedInvokeArgs, [
+    { name: 'match-ride-request', options: { body: { driverId: 'driver1' } } },
+    { name: 'match-ride-request', options: { body: { driverId: 'driver1' } } },
+  ]);
   assert.deepEqual(received, [[{ id: 'rr1' }], [{ id: 'rr2' }]]);
 
   unsubscribe();
@@ -637,14 +624,13 @@ test('subscribeToPendingRideRequests forwards channel errors', async () => {
     createFakeSupabaseClient({
       channel: () => fakeChannel,
       removeChannel: () => {},
-      from: () => ({
-        select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }),
-      }),
+      functionsInvoke: async () => ({ data: { data: [], error: null }, error: null }),
     })
   );
 
   const errors: string[] = [];
   subscribeToPendingRideRequests(
+    'driver1',
     () => {},
     (message) => errors.push(message),
   );
@@ -671,19 +657,17 @@ test('subscribeToPendingRideRequests unsubscribe removes the channel', async () 
       removeChannel: (channel: unknown) => {
         removedChannel = channel;
       },
-      from: () => ({
-        select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }),
-      }),
+      functionsInvoke: async () => ({ data: { data: [], error: null }, error: null }),
     })
   );
 
-  const unsubscribe = subscribeToPendingRideRequests(() => {});
+  const unsubscribe = subscribeToPendingRideRequests('driver1', () => {});
   unsubscribe();
 
   assert.equal(removedChannel, fakeChannel);
 });
 
-test('subscribeToPendingRideRequests forwards a refetch query error via onError instead of treating it as an empty list', async () => {
+test('subscribeToPendingRideRequests forwards an Edge Function transport error via onError instead of treating it as an empty list', async () => {
   let capturedStatusCallback: ((status: string) => void) | null = null;
   const fakeChannel = {
     on: () => fakeChannel,
@@ -697,15 +681,14 @@ test('subscribeToPendingRideRequests forwards a refetch query error via onError 
     createFakeSupabaseClient({
       channel: () => fakeChannel,
       removeChannel: () => {},
-      from: () => ({
-        select: () => ({ eq: () => ({ order: async () => ({ data: null, error: { message: 'query failed' } }) }) }),
-      }),
+      functionsInvoke: async () => ({ data: null, error: { message: 'query failed' } }),
     })
   );
 
   const receivedData: unknown[] = [];
   const receivedErrors: string[] = [];
   subscribeToPendingRideRequests(
+    'driver1',
     (rows) => receivedData.push(rows),
     (message) => receivedErrors.push(message),
   );
@@ -716,6 +699,40 @@ test('subscribeToPendingRideRequests forwards a refetch query error via onError 
 
   assert.deepEqual(receivedData, []);
   assert.deepEqual(receivedErrors, ['query failed']);
+});
+
+test('subscribeToPendingRideRequests forwards an in-body error from the Edge Function via onError', async () => {
+  let capturedStatusCallback: ((status: string) => void) | null = null;
+  const fakeChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      capturedStatusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      functionsInvoke: async () => ({ data: { data: null, error: 'driverId must match the authenticated user' }, error: null }),
+    })
+  );
+
+  const receivedData: unknown[] = [];
+  const receivedErrors: string[] = [];
+  subscribeToPendingRideRequests(
+    'driver1',
+    (rows) => receivedData.push(rows),
+    (message) => receivedErrors.push(message),
+  );
+
+  capturedStatusCallback!('SUBSCRIBED');
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.deepEqual(receivedData, []);
+  assert.deepEqual(receivedErrors, ['driverId must match the authenticated user']);
 });
 
 test('completeTrip marks the trip and ride request completed', async () => {

@@ -21,18 +21,20 @@ function makeChannel() {
   };
 }
 
-test('subscribe() populates pending from the reconcile fetch and maps fields correctly', async () => {
+test('subscribe(driverId) populates pending from the reconcile fetch and maps fields correctly', async () => {
   const { useRequestsStore } = await import('../src/store/useRequestsStore.ts');
   const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
 
   const { channel, fireSubscribed } = makeChannel();
+  let capturedInvoke = null;
   __setSupabaseClientForTests({
     channel: () => channel,
     removeChannel: () => {},
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          order: async () => ({
+    functions: {
+      invoke: async (name, options) => {
+        capturedInvoke = { name, options };
+        return {
+          data: {
             data: [
               {
                 id: 'rr1',
@@ -45,17 +47,21 @@ test('subscribe() populates pending from the reconcile fetch and maps fields cor
               },
             ],
             error: null,
-          }),
-        }),
-      }),
-    }),
+          },
+          error: null,
+        };
+      },
+    },
   });
 
   useRequestsStore.setState({ pending: [], error: null });
-  useRequestsStore.getState().subscribe();
+  useRequestsStore.getState().subscribe('driver1');
   fireSubscribed();
   await Promise.resolve();
   await Promise.resolve();
+
+  assert.equal(capturedInvoke.name, 'match-ride-request');
+  assert.deepEqual(capturedInvoke.options, { body: { driverId: 'driver1' } });
 
   assert.deepEqual(useRequestsStore.getState().pending, [
     {
@@ -85,13 +91,13 @@ test('decline(id) removes the request locally and it does not reappear on the ne
   __setSupabaseClientForTests({
     channel: () => channel,
     removeChannel: () => {},
-    from: () => ({
-      select: () => ({ eq: () => ({ order: async () => ({ data: rows, error: null }) }) }),
-    }),
+    functions: {
+      invoke: async () => ({ data: { data: rows, error: null }, error: null }),
+    },
   });
 
   useRequestsStore.setState({ pending: [], error: null });
-  useRequestsStore.getState().subscribe();
+  useRequestsStore.getState().subscribe('driver1');
   fireSubscribed();
   await Promise.resolve();
   await Promise.resolve();
@@ -189,20 +195,19 @@ test('unsubscribe() clears pending and tears down the channel', async () => {
     removeChannel: (ch) => {
       removedChannel = ch;
     },
-    from: () => ({
-      select: () => ({
-        eq: () => ({
-          order: async () => ({
-            data: [{ id: 'rr1', seats_requested: 1, preferred_method: 'cash', pickup_label: null, dest_label: null, estimated_fare: null, requested_at: 'now' }],
-            error: null,
-          }),
-        }),
+    functions: {
+      invoke: async () => ({
+        data: {
+          data: [{ id: 'rr1', seats_requested: 1, preferred_method: 'cash', pickup_label: null, dest_label: null, estimated_fare: null, requested_at: 'now' }],
+          error: null,
+        },
+        error: null,
       }),
-    }),
+    },
   });
 
   useRequestsStore.setState({ pending: [], error: null });
-  useRequestsStore.getState().subscribe();
+  useRequestsStore.getState().subscribe('driver1');
   fireSubscribed();
   await Promise.resolve();
   await Promise.resolve();
