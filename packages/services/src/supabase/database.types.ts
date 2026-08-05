@@ -1,4 +1,4 @@
-﻿export type Json =
+export type Json =
   | string
   | number
   | boolean
@@ -48,6 +48,13 @@ export type Database = {
             columns: ["complaint_id"]
             isOneToOne: false
             referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_actions_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "v_overdue_complaints"
             referencedColumns: ["id"]
           },
           {
@@ -124,6 +131,13 @@ export type Database = {
             referencedColumns: ["id"]
           },
           {
+            foreignKeyName: "complaint_attachments_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "v_overdue_complaints"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "complaint_attachments_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
@@ -137,6 +151,9 @@ export type Database = {
           against_user_id: string | null
           category: Database["public"]["Enums"]["complaint_category"]
           created_at: string
+          dh_directive: string | null
+          dh_reviewed_at: string | null
+          dh_reviewed_by: string | null
           id: string
           mediation_location: string | null
           mediation_meeting_at: string | null
@@ -158,6 +175,9 @@ export type Database = {
           against_user_id?: string | null
           category?: Database["public"]["Enums"]["complaint_category"]
           created_at?: string
+          dh_directive?: string | null
+          dh_reviewed_at?: string | null
+          dh_reviewed_by?: string | null
           id?: string
           mediation_location?: string | null
           mediation_meeting_at?: string | null
@@ -179,6 +199,9 @@ export type Database = {
           against_user_id?: string | null
           category?: Database["public"]["Enums"]["complaint_category"]
           created_at?: string
+          dh_directive?: string | null
+          dh_reviewed_at?: string | null
+          dh_reviewed_by?: string | null
           id?: string
           mediation_location?: string | null
           mediation_meeting_at?: string | null
@@ -200,6 +223,13 @@ export type Database = {
           {
             foreignKeyName: "complaints_against_user_id_fkey"
             columns: ["against_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_dh_reviewed_by_fkey"
+            columns: ["dh_reviewed_by"]
             isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
@@ -306,6 +336,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "tricycles"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_documents_tricycle_id_fkey"
+            columns: ["tricycle_id"]
+            isOneToOne: false
+            referencedRelation: "v_expiring_franchises"
+            referencedColumns: ["tricycle_id"]
           },
         ]
       }
@@ -726,10 +763,10 @@ export type Database = {
           cash_confirmed_at: string | null
           cash_confirmed_by: string | null
           created_at: string
-          gcash_payload: Json | null
-          gcash_reference: string | null
           id: string
           method: Database["public"]["Enums"]["payment_method"]
+          paymongo_payload: Json | null
+          paymongo_session_id: string | null
           ride_request_id: string
           status: Database["public"]["Enums"]["payment_status"]
           updated_at: string
@@ -739,10 +776,10 @@ export type Database = {
           cash_confirmed_at?: string | null
           cash_confirmed_by?: string | null
           created_at?: string
-          gcash_payload?: Json | null
-          gcash_reference?: string | null
           id?: string
           method: Database["public"]["Enums"]["payment_method"]
+          paymongo_payload?: Json | null
+          paymongo_session_id?: string | null
           ride_request_id: string
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
@@ -752,10 +789,10 @@ export type Database = {
           cash_confirmed_at?: string | null
           cash_confirmed_by?: string | null
           created_at?: string
-          gcash_payload?: Json | null
-          gcash_reference?: string | null
           id?: string
           method?: Database["public"]["Enums"]["payment_method"]
+          paymongo_payload?: Json | null
+          paymongo_session_id?: string | null
           ride_request_id?: string
           status?: Database["public"]["Enums"]["payment_status"]
           updated_at?: string
@@ -785,6 +822,8 @@ export type Database = {
           driver_id: string
           id: string
           is_active: boolean
+          mtop_expiry_date: string | null
+          mtop_no: string | null
           plate_no: string
           seat_capacity: number
           updated_at: string
@@ -799,6 +838,8 @@ export type Database = {
           driver_id: string
           id?: string
           is_active?: boolean
+          mtop_expiry_date?: string | null
+          mtop_no?: string | null
           plate_no: string
           seat_capacity?: number
           updated_at?: string
@@ -813,6 +854,8 @@ export type Database = {
           driver_id?: string
           id?: string
           is_active?: boolean
+          mtop_expiry_date?: string | null
+          mtop_no?: string | null
           plate_no?: string
           seat_capacity?: number
           updated_at?: string
@@ -912,6 +955,13 @@ export type Database = {
             referencedRelation: "tricycles"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "trips_tricycle_id_fkey"
+            columns: ["tricycle_id"]
+            isOneToOne: false
+            referencedRelation: "v_expiring_franchises"
+            referencedColumns: ["tricycle_id"]
+          },
         ]
       }
       user_consents: {
@@ -1008,6 +1058,48 @@ export type Database = {
           },
         ]
       }
+      v_expiring_franchises: {
+        Row: {
+          days_until_expiry: number | null
+          driver_id: string | null
+          mtop_expiry_date: string | null
+          mtop_no: string | null
+          plate_no: string | null
+          tricycle_id: string | null
+        }
+        Insert: {
+          days_until_expiry?: never
+          driver_id?: string | null
+          mtop_expiry_date?: string | null
+          mtop_no?: string | null
+          plate_no?: string | null
+          tricycle_id?: string | null
+        }
+        Update: {
+          days_until_expiry?: never
+          driver_id?: string | null
+          mtop_expiry_date?: string | null
+          mtop_no?: string | null
+          plate_no?: string | null
+          tricycle_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "tricycles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "tricycles_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "v_flagged_low_ratings"
+            referencedColumns: ["driver_id"]
+          },
+        ]
+      }
       v_flagged_low_ratings: {
         Row: {
           driver_id: string | null
@@ -1025,12 +1117,58 @@ export type Database = {
           },
         ]
       }
+      v_overdue_complaints: {
+        Row: {
+          against_user_id: string | null
+          business_days_elapsed: number | null
+          category: Database["public"]["Enums"]["complaint_category"] | null
+          created_at: string | null
+          id: string | null
+          status: Database["public"]["Enums"]["complaint_status"] | null
+          submitted_by: string | null
+        }
+        Insert: {
+          against_user_id?: string | null
+          business_days_elapsed?: never
+          category?: Database["public"]["Enums"]["complaint_category"] | null
+          created_at?: string | null
+          id?: string | null
+          status?: Database["public"]["Enums"]["complaint_status"] | null
+          submitted_by?: string | null
+        }
+        Update: {
+          against_user_id?: string | null
+          business_days_elapsed?: never
+          category?: Database["public"]["Enums"]["complaint_category"] | null
+          created_at?: string | null
+          id?: string | null
+          status?: Database["public"]["Enums"]["complaint_status"] | null
+          submitted_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaints_against_user_id_fkey"
+            columns: ["against_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Functions: {
       app_current_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
       }
+      business_days_since: { Args: { p_start: string }; Returns: number }
       compute_fare: {
         Args: {
           p_distance_km: number
@@ -1049,6 +1187,7 @@ export type Database = {
       }
       is_pso: { Args: never; Returns: boolean }
       is_supervisor: { Args: never; Returns: boolean }
+      notify_expiring_franchises: { Args: never; Returns: undefined }
     }
     Enums: {
       account_action_type:
@@ -1084,6 +1223,7 @@ export type Database = {
         | "complaint_status"
         | "payment_status"
         | "discount_status"
+        | "franchise_expiring"
       payment_method: "cash" | "gcash"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       ride_status:
@@ -1265,6 +1405,7 @@ export const Constants = {
         "complaint_status",
         "payment_status",
         "discount_status",
+        "franchise_expiring",
       ],
       payment_method: ["cash", "gcash"],
       payment_status: ["pending", "paid", "failed", "refunded"],

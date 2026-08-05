@@ -18,6 +18,7 @@
 -- not by re-running this file. Before trusting anything below, check
 -- list_tables / list_migrations against the live project — this doc has
 -- drifted from (and briefly regressed against) the applied schema before.
+-- Last reconciled against the live project: 2026-08-05.
 --
 -- Auth leaked-password protection (HaveIBeenPwned check) is a PROJECT
 -- AUTH SETTING, not something this schema file can express or enforce —
@@ -105,6 +106,8 @@ create type ride_status as enum (
 );
 
 create type payment_method as enum ('cash', 'gcash');
+-- 'gcash' is collected via the PayMongo gateway, kept in Test Mode only —
+-- no Live Mode activation for this prototype (see transactions table).
 
 create type payment_status as enum (
   'pending',
@@ -144,7 +147,8 @@ create type notification_type as enum (
   'verification_status',
   'complaint_status',
   'payment_status',
-  'discount_status'    -- FR-3.10-3.15 / UC48 fare-discount review outcome
+  'discount_status',    -- FR-3.10-3.15 / UC48 fare-discount review outcome
+  'franchise_expiring'  -- FR-1.7/FR-7.5 MTOP franchise-expiry notification job
 );
 
 
@@ -222,12 +226,25 @@ create table public.tricycles (
   verification_status verification_status not null default 'unsubmitted',
   verified_by         uuid references public.users(id) on delete set null,
   verified_at         timestamptz,
+
+  -- MTOP franchise record (Ord. 21 s.2024). PSO Supervisor transcribes
+  -- these from the uploaded Franchise/Permit document during verification
+  -- review — the app does not OCR the permit (FR-1.4a). Independent of
+  -- verification_status: a unit can be app-verified yet hold an
+  -- expiring/expired franchise, which is exactly what these fields exist
+  -- to catch (Sec. 11-12: 3-year term, renewal 30 days before expiry).
+  mtop_no             text unique,
+  mtop_expiry_date    date,
+
   is_active           boolean not null default true,
   created_at          timestamptz not null default now(),
   updated_at          timestamptz not null default now(),
 
   constraint tricycle_seat_range check (seat_capacity between 1 and 6)
 );
+
+comment on column public.tricycles.mtop_expiry_date is
+  'Feeds public.v_expiring_franchises and the notify_expiring_franchises() job (Sec. 4.8). NULL until PSO enters it during verification.';
 
 -- A driver may only have ONE active unit at a time.
 create unique index tricycles_one_active_per_driver
@@ -408,9 +425,11 @@ create table public.transactions (
   method            payment_method not null,
   status            payment_status not null default 'pending',
 
-  -- GCash path: set by the gcash-webhook Edge Function only.
-  gcash_reference   text unique,
-  gcash_payload     jsonb,
+  -- GCash-via-PayMongo path: set by the paymongo-webhook Edge Function
+  -- only, after verifying the webhook signature. PayMongo account stays
+  -- in Test Mode only — no Live Mode activation for this prototype.
+  paymongo_session_id text unique,
+  paymongo_payload    jsonb,
 
   -- Cash path: driver must confirm receipt (FR-9.9).
   cash_confirmed_by uuid references public.users(id) on delete set null,
@@ -424,9 +443,10 @@ create table public.transactions (
   constraint txn_cash_needs_confirmation check (
     method <> 'cash' or status <> 'paid' or cash_confirmed_by is not null
   ),
-  -- GCash cannot be marked paid without a gateway reference.
-  constraint txn_gcash_needs_reference check (
-    method <> 'gcash' or status <> 'paid' or gcash_reference is not null
+  -- GCash cannot be marked paid without a PayMongo checkout session id.
+  -- The unique constraint above also gives webhook-retry idempotency.
+  constraint txn_paymongo_needs_reference check (
+    method <> 'gcash' or status <> 'paid' or paymongo_session_id is not null
   )
 );
 
@@ -451,6 +471,12 @@ create table public.ratings (
 -- ---------------------------------------------------------------------
 
 -- 3.1 complaints ------------------------------------------------------
+-- Scope: complaints tied to an app-registered user (submitted_by is
+-- not null) — i.e. complaints arising from TriSakay-mediated rides.
+-- PSO's other real-world intake channels (social media, letters, phone/
+-- Facebook, the Google feedback form — PSO-MTPS-PR-03 Sec. E) are NOT
+-- represented here; those stay on PSO's existing separate process. This
+-- table is not a general-purpose, any-channel complaint system.
 create table public.complaints (
   id                uuid primary key default gen_random_uuid(),
   submitted_by      uuid not null references public.users(id) on delete cascade,
@@ -463,6 +489,15 @@ create table public.complaints (
 
   triaged_by        uuid references public.users(id) on delete set null,
   triaged_at        timestamptz,
+
+  -- Department Head directive (PSO-MTPS-PR-03, Activity 3): DH reviews
+  -- the triaged complaint and instructs staff on next steps (typically
+  -- "contact both parties"). Distinct from triage and from the eventual
+  -- mediation outcome — this is the audit record of the DH's own step
+  -- (FR-4.3a).
+  dh_reviewed_by    uuid references public.users(id) on delete set null,
+  dh_reviewed_at    timestamptz,
+  dh_directive      text,
 
   -- MTFRB mediation meeting (PSO-MTPS-PR-03, Activity 4-5): both parties
   -- are contacted and attend a mediation meeting before final resolution.
@@ -715,7 +750,7 @@ end $$;
 create or replace function public.is_cluster_authorized(
   p_tricycle_cluster tricycle_cluster,
   p_barangay_cluster tricycle_cluster
-) returns boolean language sql immutable set search_path = public as $
+) returns boolean language sql immutable set search_path = public as $$
   select
     p_tricycle_cluster is not null
     and p_barangay_cluster is not null
@@ -893,6 +928,85 @@ create trigger trg_driver_clear_location
   for each row execute function public.clear_location_when_offline();
 
 
+-- 4.8 franchise-expiry notification job ---------------------------------
+-- Daily job: notifies each driver whose MTOP franchise (Ord. 21 s.2024,
+-- Sec. 11-12) is within 30 days of expiry or already expired. Reads from
+-- v_expiring_franchises (Section 6.3). One notification per driver per
+-- day (checked via today's existing rows) so re-running it doesn't spam.
+--
+-- Implemented as a scheduled Postgres function via pg_cron, NOT a new
+-- Edge Function — keeps the Edge Function count at 2 (match-ride-request,
+-- paymongo-webhook) per the "kept minimal" architecture principle.
+-- security definer so it can insert notifications for drivers other than
+-- whichever role runs the cron job.
+--
+-- Enable pg_cron via Supabase Dashboard -> Database -> Extensions, then:
+--   select cron.schedule(
+--     'notify-expiring-franchises', '0 8 * * *',
+--     'select public.notify_expiring_franchises();'
+--   );
+create or replace function public.notify_expiring_franchises()
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.notifications (user_id, type, title, message)
+  select
+    v.driver_id,
+    'franchise_expiring'::notification_type,
+    'Franchise expiring soon',
+    case
+      when v.days_until_expiry < 0 then
+        format('Your MTOP franchise (plate %s) expired on %s. Renew with PSO to keep receiving ride requests.',
+               v.plate_no, v.mtop_expiry_date)
+      else
+        format('Your MTOP franchise (plate %s) expires in %s day(s), on %s. File your renewal with PSO at least 30 days before expiry.',
+               v.plate_no, v.days_until_expiry, v.mtop_expiry_date)
+    end
+  from public.v_expiring_franchises v
+  where not exists (
+    select 1 from public.notifications n
+    where n.user_id = v.driver_id
+      and n.type = 'franchise_expiring'
+      and n.created_at::date = current_date
+  );
+end;
+$$;
+
+comment on function public.notify_expiring_franchises is
+  'Scheduled via pg_cron (see comment above). Reads v_expiring_franchises, writes to notifications (FR-7.5).';
+
+-- SECURITY DEFINER functions are, by default, callable by anon/authenticated
+-- over PostgREST (/rest/v1/rpc/...) since Postgres grants EXECUTE to PUBLIC
+-- on new functions. This one is cron-only — it writes notifications for
+-- arbitrary drivers on behalf of whatever role runs the cron job — so it
+-- must NOT be reachable from the client. Revoked from all client-facing
+-- roles; only the role running pg_cron (which bypasses these grants) can
+-- invoke it.
+revoke execute on function public.notify_expiring_franchises() from public;
+revoke execute on function public.notify_expiring_franchises() from anon;
+revoke execute on function public.notify_expiring_franchises() from authenticated;
+
+
+-- 4.9 business-day counter (for the complaint SLA) ----------------------
+-- Approximate: counts Mon-Fri only, no Philippine public holiday
+-- calendar. Good enough to flag SLA risk; not a legal countdown.
+create or replace function public.business_days_since(p_start timestamptz)
+returns integer
+language sql stable
+set search_path = public
+as $$
+  select count(*)::int
+  from generate_series(p_start::date + 1, current_date, interval '1 day') d
+  where extract(isodow from d) < 6   -- Mon=1 .. Fri=5, Sat=6, Sun=7
+$$;
+
+comment on function public.business_days_since is
+  'Used by v_overdue_complaints for the 3-business-day ARTA target (PSO-MTPS-PR-03 Sec. C, FR-4.8). Known simplification: no holiday calendar.';
+
+
 -- ---------------------------------------------------------------------
 -- 5. INDEXES
 -- ---------------------------------------------------------------------
@@ -907,6 +1021,8 @@ create index idx_driver_location           on public.driver_profiles (current_la
   where is_available;
 
 create index idx_tricycles_driver          on public.tricycles (driver_id);
+create index idx_tricycles_mtop_expiry     on public.tricycles (mtop_expiry_date)
+  where is_active and mtop_expiry_date is not null;
 create index idx_documents_driver          on public.driver_documents (driver_id);
 create index idx_documents_status          on public.driver_documents (status)
   where status = 'pending';
@@ -974,6 +1090,54 @@ join public.users u on u.id = dp.user_id
 cross join lateral (select low_rating_threshold from public.system_settings where is_active limit 1) s
 where dp.rating_count >= 5              -- avoid flagging on tiny samples
   and dp.rating_avg < s.low_rating_threshold;
+
+
+-- 6.3 tricycles within 30 days of MTOP expiry, or already expired -------
+-- Feeds notify_expiring_franchises() (Section 4.8) and the PSO oversight
+-- dashboard (FR-5). security_invoker so a direct query from a driver's
+-- own session still only returns their own tricycle (via tricycles' RLS);
+-- the notification job sees everyone because it runs security definer.
+create or replace view public.v_expiring_franchises
+with (security_invoker = true) as
+select
+  t.id                                as tricycle_id,
+  t.driver_id,
+  t.plate_no,
+  t.mtop_no,
+  t.mtop_expiry_date,
+  (t.mtop_expiry_date - current_date) as days_until_expiry
+from public.tricycles t
+where t.is_active = true
+  and t.mtop_expiry_date is not null
+  and t.mtop_expiry_date <= (current_date + interval '30 days');
+
+comment on view public.v_expiring_franchises is
+  'Ord. 21 s.2024 Sec. 12: renewal must be filed 30 days before expiry. Negative days_until_expiry = already expired.';
+
+
+-- 6.4 complaints past the 3-business-day ARTA target ---------------------
+-- PSO-MTPS-PR-03 Sec. C: "Required No. of Days per ARTA: 3 days" for
+-- this Simple Transaction. Measured from submission to the point a
+-- mediation meeting gets scheduled (Activity 1-4) — not to the MTFRB
+-- meeting itself, since that date depends on MTFRB's own calendar and
+-- isn't something PSO controls per-complaint. Replaces the SOP's manual
+-- daily checklist/logbook tracking (Section H) with a live query.
+create or replace view public.v_overdue_complaints
+with (security_invoker = true) as
+select
+  c.id,
+  c.submitted_by,
+  c.against_user_id,
+  c.category,
+  c.status,
+  c.created_at,
+  public.business_days_since(c.created_at) as business_days_elapsed
+from public.complaints c
+where c.status in ('open', 'under_review')
+  and public.business_days_since(c.created_at) > 3;
+
+comment on view public.v_overdue_complaints is
+  'Feeds the PSO oversight dashboard (FR-5.5). security_invoker so a driver/passenger querying it directly only ever sees their own complaints, via complaints RLS.';
 
 
 -- ---------------------------------------------------------------------
@@ -1150,9 +1314,11 @@ create policy txn_driver_confirm_cash on public.transactions
       where t.driver_id = auth.uid()
     )
   );
--- NOTE: GCash transactions are written ONLY by the gcash-webhook Edge
--- Function using the service_role key, which bypasses RLS. No client-side
--- policy grants insert/update on gcash rows by design (FR-9.2).
+-- NOTE: GCash transactions are written ONLY by the paymongo-webhook Edge
+-- Function using the service_role key, which bypasses RLS, after verifying
+-- the PayMongo webhook signature. No client-side policy grants insert/
+-- update on gcash rows by design (FR-9.2). PayMongo account is kept in
+-- Test Mode only for this prototype.
 
 -- 7.7 ratings ---------------------------------------------------------
 create policy ratings_passenger_insert on public.ratings

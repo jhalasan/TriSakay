@@ -2,14 +2,16 @@
 
 Generated 2026-08-05 from a full-repo review: typecheck clean, 74/74 tests pass (9 passenger, 17 driver, 48 services), working tree clean. Verified against live code, not just prior docs — cross-reference `docs/PASSENGER_TODO.MD`, `docs/DRIVER_TODO.MD`, and `docs/CONTEXT.MD` for the underlying FR/UC numbers. Admin app is included here (the two TODO docs above scope it out).
 
+**Updated 2026-08-05 (later same day)** after `docs/SCHEMA.MD`/`docs/CONTEXT.MD` picked up MTOP franchise tracking (FR-1.4a/1.7/7.5), Department Head complaint review (FR-4.3a), the complaint SLA view (FR-4.8/5.5), and the GCash→PayMongo rename (FR-9). The DB/types side of all of these is already live (`tricycles.mtop_no`/`mtop_expiry_date`, `complaints.dh_reviewed_*`, `v_overdue_complaints`, `v_expiring_franchises`, `notify_expiring_franchises()`, `transactions.paymongo_session_id`/`paymongo_payload`) — nothing in app code consumes any of it yet, confirmed via repo scan. See items marked **(new)** below.
+
 ---
 
 ## P0 — Blocking / structural (nothing above this works right until these land)
 
 - [ ] **Build `match-ride-request` Edge Function** — bearing/detour heuristic + cluster-authorization hard filter (FR-2.5). Every "matching" flow today is a naive full-table query. Blocks real driver discovery, real "driver found" on the passenger side, and mid-trip pickup.
-- [ ] **Build `gcash-webhook` Edge Function** — server-side payment confirmation (FR-9.2). Blocks the entire GCash path; nothing should trust a client-side "paid" state.
+- [ ] **Build `paymongo-webhook` Edge Function** *(renamed from `gcash-webhook`)* — server-side payment confirmation via a signature-verified PayMongo webhook (FR-9.2), writing `transactions.status`/`paymongo_session_id`/`paymongo_payload` (renamed from `gcash_reference`/`gcash_payload` — DB and generated types already use the new names; only the Edge Function itself is unbuilt). Blocks the entire GCash path; nothing should trust a client-side "paid" state.
 - [ ] **Driver availability toggle → real `driver_profiles.is_available` write.** Dashboard shows "Online" but never touches the DB — the driver is invisible server-side no matter what the UI says. Small fix, high correctness impact; land before more matching work sits on top of it.
-- [ ] **Admin Web App — doesn't exist.** `apps/admin/src` is the untouched Vite scaffold (one `<h1>`, no routing, no auth, no screens). Every PSO/Supervisor/Admin-facing feature (FR-1.5, FR-4.3–4.6, FR-5, FR-6, FR-8, FR-10.3–10.4, FR-3.10 review) currently has zero frontend. This is the single largest remaining scope block in the project.
+- [ ] **Admin Web App — doesn't exist.** `apps/admin/src` is the untouched Vite scaffold (one `<h1>`, no routing, no auth, no screens). Every PSO/Supervisor/Admin-facing feature currently has zero frontend — this is the single largest remaining scope block in the project. FR coverage now includes, beyond what was already scoped: FR-1.5 driver/tricycle verification review (**(new)** now also needs MTOP number + expiry input fields per FR-1.4a/wireframe item 6 — `tricycles.mtop_no`/`mtop_expiry_date` exist in the DB with no UI anywhere to fill them), FR-4.3–4.6 complaint handling (**(new)** now a two-step flow: PSO Staff triage, then a distinct Department Head review recording `complaints.dh_directive` per FR-4.3a — no admin/PSO complaint screen of any kind exists yet, driver/passenger apps only have complaint *filing*), FR-5 monitoring/reporting (**(new)** should surface `v_overdue_complaints` per FR-5.5 and ideally `v_expiring_franchises`), FR-6, FR-8, FR-10.3–10.4, FR-3.10 review.
 
 ## P1 — Core ride flow (make the primary user journey real, both apps)
 
@@ -30,7 +32,9 @@ Generated 2026-08-05 from a full-repo review: typecheck clean, 74/74 tests pass 
 - [ ] Driver: trip history → real query.
 - [ ] Driver: earnings → real read from `v_driver_earnings` (keep "tracked/simulated" copy, never "payout").
 - [ ] Driver: own ratings → real read of `driver_profiles.rating_avg`/`rating_count`.
-- [ ] Passenger + Driver: notifications → real `notifications` table read + Realtime subscription (both currently 100% local-store; no `expo-notifications` dependency installed in either app yet — push tokens are a later layer on top of this).
+- [ ] Passenger + Driver: notifications → real `notifications` table read + Realtime subscription (both currently 100% local-store; no `expo-notifications` dependency installed in either app yet — push tokens are a later layer on top of this). `packages/services/src/notifications/index.ts` is currently a one-line stub (`export const notificationsServiceStatus = ...`) with no real send/read logic — build this shared service once, since FR-7.1–7.5 (ride status, verification, complaint, payment, and franchise-expiry notifications) all depend on it.
+- [ ] **(new)** FR-1.6a: on a driver verification decision (approved/rejected), notify the driver via **in-app notification** (depends on the notifications service above) **and email** — no email-sending infrastructure exists anywhere in the repo yet (no Resend/SendGrid/SMTP integration found), so this needs a new Edge Function + provider, not just wiring an existing one.
+- [ ] **(new)** Enable `pg_cron` (Supabase Dashboard → Database → Extensions) and schedule `notify_expiring_franchises()` per the comment in `docs/SCHEMA.MD` §4.8 (`select cron.schedule('notify-expiring-franchises', '0 8 * * *', 'select public.notify_expiring_franchises();')`). Low value until the admin verification-review screen above can actually populate `mtop_no`/`mtop_expiry_date` — otherwise `v_expiring_franchises` stays empty and the job has nothing to notify on.
 - [ ] Passenger: new Payment History screen — doesn't exist at all (`payment-methods.tsx` is static info, not history).
 - [ ] Passenger: Settings persistence (`useSettingsStore` toggles are in-memory) + actual Filipino i18n behind the language cycler (currently just flips a label).
 
