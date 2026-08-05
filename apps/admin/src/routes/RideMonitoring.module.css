@@ -1,0 +1,58 @@
+.layout {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--sp-md);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.mapHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--sp-md);
+}
+
+.caption {
+  margin-top: var(--sp-sm);
+  font-size: 11px;
+  color: var(--ink-faint);
+  line-height: 1.5;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: var(--sp-sm);
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r);
+}
+
+.rowInfo {
+  flex: 1;
+  min-width: 0;
+}
+
+.rowName {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.rowPlate {
+  font-size: 11px;
+  color: var(--ink-faint);
+  font-family: var(--mono);
+}

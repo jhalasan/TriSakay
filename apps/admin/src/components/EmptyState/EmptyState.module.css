@@ -1,0 +1,9 @@
+.wrap {
+  padding: var(--sp-xxl);
+  text-align: center;
+  color: var(--ink-faint);
+  font-size: 12px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+}

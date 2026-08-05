@@ -1,0 +1,44 @@
+.bar {
+  height: var(--topbar-h);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-lg);
+  padding: 0 var(--sp-lg);
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+}
+
+.title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+  white-space: nowrap;
+}
+
+.search {
+  flex: 1;
+  max-width: 320px;
+  height: 30px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--fill);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.search::placeholder {
+  color: var(--ink-faint);
+}
+
+.right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.roleSelect {
+  min-width: 190px;
+}

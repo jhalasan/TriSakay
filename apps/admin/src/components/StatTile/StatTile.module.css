@@ -1,0 +1,28 @@
+.tile {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  padding: var(--sp-lg);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--panel);
+}
+
+.label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+.value {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.hint {
+  font-size: 11px;
+  color: var(--ink-faint);
+}

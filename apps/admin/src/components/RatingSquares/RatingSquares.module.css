@@ -1,0 +1,19 @@
+.row {
+  display: inline-flex;
+  gap: 2px;
+}
+
+.filled,
+.empty {
+  display: inline-block;
+  border: 1px solid var(--line);
+  border-radius: 2px;
+}
+
+.filled {
+  background: var(--fill);
+}
+
+.empty {
+  background: var(--panel);
+}

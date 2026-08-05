@@ -1,0 +1,50 @@
+.layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-md);
+  align-items: start;
+}
+
+@media (max-width: 900px) {
+  .layout {
+    grid-template-columns: 1fr;
+  }
+}
+
+.toggleList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+}
+
+.readonlyGrid {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--sp-sm) var(--sp-md);
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.fareForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+  align-items: flex-start;
+}
+
+.fareForm > :first-child,
+.fareForm > :nth-child(2),
+.fareForm > :nth-child(3) {
+  width: 100%;
+}
+
+.ordinance {
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin: 0;
+}
+
+.savedNote {
+  font-size: 11px;
+  color: var(--success);
+}

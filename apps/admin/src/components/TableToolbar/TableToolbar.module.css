@@ -1,0 +1,25 @@
+.bar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-md);
+}
+
+.left {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+}
+
+.right {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-sm);
+}
+
+.search {
+  min-width: 220px;
+}

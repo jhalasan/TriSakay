@@ -1,0 +1,62 @@
+/**
+ * Design tokens for the TriSakay Admin (PSO) Web App.
+ *
+ * Layout numbers (sidebar width, corner radius) are ported directly from
+ * the low-fidelity wireframe kit. Colors are NOT the wireframe's grayscale —
+ * they mirror packages/ui/src/theme/colors.ts (the Driver/Passenger brand
+ * palette, already WCAG 2.1-verified: text >=4.5:1, control boundaries
+ * >=3:1) so the admin reads as the same product, not a separate skin.
+ *
+ * packages/ui itself is React Native only (View/Text/Pressable) and cannot
+ * be imported into this Vite web app — only its color VALUES are copied
+ * here. If packages/ui/src/theme/colors.ts ever changes, update this file
+ * to match by hand.
+ */
+:root {
+  --bg: #F6F7F9;
+  --panel: #FFFFFF;
+
+  --ink: #14191D;
+  --ink-pressed: #0A0E11;
+  --ink-soft: #5A646B;
+  --ink-faint: #666F75;
+
+  --line: #DCE2E6;
+  --line-strong: #838B91;
+  --line-soft: #EBEFF2;
+  --fill: #EDF1F4;
+  --white: #FFFFFF;
+
+  --primary: #002E60;
+  --primary-pressed: #002043;
+  --primary-soft: #E3EDF7;
+
+  --success: #477434;
+  --success-pressed: #3B602B;
+  --success-soft: #E9F7E3;
+
+  --danger: #B3261E;
+  --danger-pressed: #931E17;
+  --danger-soft: #FBEAE8;
+
+  --overlay: rgba(10, 14, 17, 0.58);
+
+  /* Layout — ported from the wireframe kit exactly */
+  --r: 3px;
+  --sidebar-w: 176px;
+  --topbar-h: 56px;
+
+  /* Spacing scale — mirrors packages/ui/src/theme/spacing.ts */
+  --sp-xs: 4px;
+  --sp-sm: 8px;
+  --sp-md: 12px;
+  --sp-lg: 16px;
+  --sp-xl: 24px;
+  --sp-xxl: 32px;
+  --sp-xxxl: 48px;
+
+  --mono: ui-monospace, Menlo, Consolas, monospace;
+  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+
+  color-scheme: light;
+}
