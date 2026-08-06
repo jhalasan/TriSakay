@@ -18,7 +18,10 @@
 -- not by re-running this file. Before trusting anything below, check
 -- list_tables / list_migrations against the live project — this doc has
 -- drifted from (and briefly regressed against) the applied schema before.
--- Last reconciled against the live project: 2026-08-05.
+-- Last reconciled against the live project: 2026-08-06 (applied migration
+-- provision_driver_profile_on_signup — the driver_profiles auto-creation
+-- in handle_new_auth_user() below was written into this file on 2026-08-05
+-- but not actually applied live until the next day).
 --
 -- Auth leaked-password protection (HaveIBeenPwned check) is a PROJECT
 -- AUTH SETTING, not something this schema file can express or enforce —

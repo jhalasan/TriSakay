@@ -9,9 +9,12 @@ export default function LogoutScreen() {
   const logout = useAuthStore((state) => state.logout);
 
   async function handleConfirm() {
-    await logout();
+    // Must run before logout(): the offline write needs the still-live
+    // session, and going offline is what the enforce/clear-location
+    // triggers key off of server-side.
+    await useDriverStore.getState().setAvailable(false);
     useRequestsStore.getState().unsubscribe();
-    useDriverStore.getState().setAvailable(false);
+    await logout();
     router.dismiss();
   }
 

@@ -1,5 +1,7 @@
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import * as Location from 'expo-location';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Badge, Toggle, colors } from '@trisakay/ui';
@@ -19,11 +21,14 @@ export default function DashboardScreen() {
 
   const isAvailable = useDriverStore((state) => state.isAvailable);
   const setAvailable = useDriverStore((state) => state.setAvailable);
+  const availabilityError = useDriverStore((state) => state.error);
   const todayEarnings = useDriverStore((state) => state.todayEarnings);
   const todayTrips = useDriverStore((state) => state.todayTrips);
   const rating = useDriverStore((state) => state.rating);
   const ratingCount = useDriverStore((state) => state.ratingCount);
   const acceptRate = useDriverStore((state) => state.acceptRate);
+
+  const [togglingAvailability, setTogglingAvailability] = useState(false);
 
   const unreadCount = useNotificationsStore((state) => state.items.filter((item) => !item.read).length);
 
@@ -36,8 +41,25 @@ export default function DashboardScreen() {
 
   const startTrip = useTripStore((state) => state.startTrip);
 
-  function handleToggleAvailable(next: boolean) {
-    setAvailable(next);
+  async function handleToggleAvailable(next: boolean) {
+    setTogglingAvailability(true);
+
+    let coords: { lat: number; lng: number } | undefined;
+    if (next) {
+      try {
+        const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+        coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+      } catch {
+        useDriverStore.setState({ error: 'Could not get your location. Make sure location services are turned on.' });
+        setTogglingAvailability(false);
+        return;
+      }
+    }
+
+    const ok = await setAvailable(next, coords);
+    setTogglingAvailability(false);
+    if (!ok) return;
+
     if (next && user) {
       subscribe(user.id);
     } else {
@@ -79,13 +101,15 @@ export default function DashboardScreen() {
             <Ionicons name="notifications-outline" size={22} color={colors.ink} />
             {unreadCount > 0 && <View style={styles.bellDot} />}
           </Pressable>
-          <Toggle value={isAvailable} onValueChange={handleToggleAvailable} />
+          <Toggle value={isAvailable} onValueChange={handleToggleAvailable} disabled={togglingAvailability} />
         </View>
 
         <View style={styles.statusRow}>
           <Text style={styles.statusLabel}>{isAvailable ? 'You are online' : 'You are offline'}</Text>
           <Badge label={isAvailable ? 'Online' : 'Offline'} tone={isAvailable ? 'green' : 'neutral'} dot />
         </View>
+
+        {availabilityError && <Text style={styles.error}>{availabilityError}</Text>}
 
         <View style={styles.statGrid}>
           <StatTile label="Earnings today" value={formatCurrency(todayEarnings)} />

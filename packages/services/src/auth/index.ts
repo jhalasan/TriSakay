@@ -1,6 +1,6 @@
 import type { Session } from '@supabase/supabase-js';
 import { getSupabaseClient } from '../supabase/client.ts';
-import type { Database } from '../supabase/database.types';
+import type { Database } from '../supabase/database.types.ts';
 
 export type PublicUser = Database['public']['Tables']['users']['Row'];
 

@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../supabase/client.ts';
-import type { Database } from '../supabase/database.types';
+import type { Database } from '../supabase/database.types.ts';
 
 export type VerificationStatus = Database['public']['Enums']['verification_status'];
 

@@ -1,5 +1,5 @@
-import { getSupabaseClient } from '../supabase/client';
-import type { Database } from '../supabase/database.types';
+import { getSupabaseClient } from '../supabase/client.ts';
+import type { Database } from '../supabase/database.types.ts';
 
 export type DiscountCategory = Database['public']['Enums']['discount_category'];
 export type PassengerDiscount = Database['public']['Tables']['passenger_discounts']['Row'];

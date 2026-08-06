@@ -1,5 +1,5 @@
 import { getSupabaseClient } from '../supabase/client.ts';
-import type { Database } from '../supabase/database.types';
+import type { Database } from '../supabase/database.types.ts';
 
 /**
  * Bumping either constant re-opens the consent gate for every user: the check

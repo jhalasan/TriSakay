@@ -1,4 +1,5 @@
 import { create } from 'zustand';
+import { updateDriverAvailability } from '@trisakay/services';
 
 interface DriverState {
   isAvailable: boolean;
@@ -7,8 +8,16 @@ interface DriverState {
   rating: number | null;
   ratingCount: number;
   acceptRate: number | null;
-  setAvailable: (value: boolean) => void;
+  error: string | null;
+  /**
+   * Resolves true only once the write actually succeeded. Callers going
+   * online must resolve `coords` themselves first (expo-location has no
+   * place in a store — see useLocationPermission for why platform calls
+   * stay in screens/hooks, not stores, in this app).
+   */
+  setAvailable: (value: boolean, coords?: { lat: number; lng: number }) => Promise<boolean>;
   recordCompletedTrip: (fare: number) => void;
+  clearError: () => void;
 }
 
 export const useDriverStore = create<DriverState>()((set) => ({
@@ -18,12 +27,26 @@ export const useDriverStore = create<DriverState>()((set) => ({
   rating: null,
   ratingCount: 0,
   acceptRate: null,
+  error: null,
 
-  setAvailable: (value) => set({ isAvailable: value }),
+  setAvailable: async (value, coords) => {
+    set({ error: null });
+
+    const { error } = await updateDriverAvailability(value, coords);
+    if (error) {
+      set({ error });
+      return false;
+    }
+
+    set({ isAvailable: value });
+    return true;
+  },
 
   recordCompletedTrip: (fare) =>
     set((state) => ({
       todayEarnings: state.todayEarnings + fare,
       todayTrips: state.todayTrips + 1,
     })),
+
+  clearError: () => set({ error: null }),
 }));
