@@ -33,6 +33,17 @@ async function hmacSha256Hex(secret: string, message: string): Promise<string> {
     .join('');
 }
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+// `transactions.id` and `transactions.ride_request_id` are both `uuid`
+// columns — a non-UUID reference (malformed payload, or a manual test using
+// an arbitrary string) would otherwise hit Postgres error 22P02 and 500,
+// which makes PayMongo retry indefinitely instead of treating it as an
+// unresolvable, ignorable delivery.
+function isUuid(value: string): boolean {
+  return UUID_RE.test(value);
+}
+
 async function verifySignature(rawBody: string, header: string, secret: string): Promise<boolean> {
   if (header.includes('=') && header.includes(',')) {
     const parts = Object.fromEntries(
@@ -84,8 +95,8 @@ Deno.serve(async (req: Request) => {
       const sessionAttributes = event?.data?.attributes?.data?.attributes;
       const referenceNumber = sessionAttributes?.reference_number;
 
-      if (!referenceNumber) {
-        console.warn('paymongo-webhook: no reference_number in payload', { eventType });
+      if (!referenceNumber || !isUuid(referenceNumber)) {
+        console.warn('paymongo-webhook: no resolvable reference_number in payload', { eventType, referenceNumber });
         return new Response('ok', { status: 200 });
       }
 
@@ -123,17 +134,22 @@ Deno.serve(async (req: Request) => {
 
       let matchColumn: 'id' | 'ride_request_id';
       let matchValue: string;
-      if (typeof referenceNumber === 'string' && referenceNumber) {
+      if (typeof referenceNumber === 'string' && isUuid(referenceNumber)) {
         matchColumn = 'id';
         matchValue = referenceNumber;
-      } else if (typeof externalReferenceNumber === 'string' && externalReferenceNumber) {
+      } else if (typeof externalReferenceNumber === 'string' && isUuid(externalReferenceNumber)) {
         matchColumn = 'id';
         matchValue = externalReferenceNumber;
-      } else if (typeof rideRequestId === 'string' && rideRequestId) {
+      } else if (typeof rideRequestId === 'string' && isUuid(rideRequestId)) {
         matchColumn = 'ride_request_id';
         matchValue = rideRequestId;
       } else {
-        console.warn('paymongo-webhook: no resolvable reference in payment.failed payload', { eventType });
+        console.warn('paymongo-webhook: no resolvable reference in payment.failed payload', {
+          eventType,
+          referenceNumber,
+          externalReferenceNumber,
+          rideRequestId,
+        });
         return new Response('ok', { status: 200 });
       }
 
