@@ -260,6 +260,14 @@ export async function completeTrip(tripId: string, rideRequestId: string): Promi
   const client = getSupabaseClient();
   const now = new Date().toISOString();
 
+  const { data: rideRequest, error: fareError } = await client
+    .from('ride_requests')
+    .select('estimated_fare')
+    .eq('id', rideRequestId)
+    .maybeSingle();
+
+  if (fareError) return { error: "Couldn't close out the trip. Please try again." };
+
   const { error: tripError } = await client
     .from('trips')
     .update({ status: 'completed', completed_at: now })
@@ -269,7 +277,7 @@ export async function completeTrip(tripId: string, rideRequestId: string): Promi
 
   const { error: rideError } = await client
     .from('ride_requests')
-    .update({ status: 'completed', completed_at: now })
+    .update({ status: 'completed', completed_at: now, final_fare: rideRequest?.estimated_fare ?? null })
     .eq('id', rideRequestId);
 
   if (rideError) return { error: "Couldn't close out the trip. Please try again." };

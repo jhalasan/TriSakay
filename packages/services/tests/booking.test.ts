@@ -735,11 +735,12 @@ test('subscribeToPendingRideRequests forwards an in-body error from the Edge Fun
   assert.deepEqual(receivedErrors, ['driverId must match the authenticated user']);
 });
 
-test('completeTrip marks the trip and ride request completed', async () => {
+test('completeTrip marks the trip and ride request completed, locking final_fare from estimated_fare', async () => {
   let capturedTripUpdate: any = null;
   let capturedTripId: unknown = null;
   let capturedRideUpdate: any = null;
   let capturedRideId: unknown = null;
+  let capturedFareSelectId: unknown = null;
 
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
@@ -760,6 +761,18 @@ test('completeTrip marks the trip and ride request completed', async () => {
         }
         if (table === 'ride_requests') {
           return {
+            select: (columns: string) => {
+              assert.equal(columns, 'estimated_fare');
+              return {
+                eq: (column: string, value: unknown) => {
+                  assert.equal(column, 'id');
+                  capturedFareSelectId = value;
+                  return {
+                    maybeSingle: async () => ({ data: { estimated_fare: 42.5 }, error: null }),
+                  };
+                },
+              };
+            },
             update: (row: unknown) => {
               capturedRideUpdate = row;
               return {
@@ -780,11 +793,13 @@ test('completeTrip marks the trip and ride request completed', async () => {
   const { error } = await completeTrip('trip1', 'rr1');
 
   assert.equal(error, null);
+  assert.equal(capturedFareSelectId, 'rr1');
   assert.equal(capturedTripUpdate.status, 'completed');
   assert.ok(capturedTripUpdate.completed_at);
   assert.equal(capturedTripId, 'trip1');
   assert.equal(capturedRideUpdate.status, 'completed');
   assert.ok(capturedRideUpdate.completed_at);
+  assert.equal(capturedRideUpdate.final_fare, 42.5);
   assert.equal(capturedRideId, 'rr1');
 });
 
@@ -792,6 +807,11 @@ test('completeTrip surfaces a friendly error when the trip update fails', async 
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       from: (table) => {
+        if (table === 'ride_requests') {
+          return {
+            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { estimated_fare: 42.5 }, error: null }) }) }),
+          };
+        }
         if (table === 'trips') {
           return { update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }) };
         }
@@ -808,11 +828,32 @@ test('completeTrip surfaces a friendly error when the ride request update fails'
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       from: (table) => {
+        if (table === 'ride_requests') {
+          return {
+            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { estimated_fare: 42.5 }, error: null }) }) }),
+            update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }),
+          };
+        }
         if (table === 'trips') {
           return { update: () => ({ eq: () => Promise.resolve({ error: null }) }) };
         }
+        throw new Error(`unexpected table ${table}`);
+      },
+    })
+  );
+
+  const { error } = await completeTrip('trip1', 'rr1');
+  assert.equal(error, "Couldn't close out the trip. Please try again.");
+});
+
+test('completeTrip surfaces a friendly error when the fare lookup fails', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
         if (table === 'ride_requests') {
-          return { update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }) };
+          return {
+            select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: { message: 'network error' } }) }) }),
+          };
         }
         throw new Error(`unexpected table ${table}`);
       },
