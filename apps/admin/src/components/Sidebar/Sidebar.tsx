@@ -31,7 +31,10 @@ const ADMIN_ITEMS: NavItem[] = [
 export function Sidebar() {
   return (
     <nav className={styles.sidebar} aria-label="Admin navigation">
-      <div className={styles.brand}>TriSakay Admin</div>
+      <div className={styles.brand}>
+        <img src="/brand/trisakay-mark.png" alt="" className={styles.brandMark} />
+        <span className={styles.brandWordmark}>TriSakay Admin</span>
+      </div>
       <ul className={styles.list}>
         {CORE_ITEMS.map((item) => (
           <li key={item.to}>

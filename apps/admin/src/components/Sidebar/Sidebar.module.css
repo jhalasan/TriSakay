@@ -10,11 +10,24 @@
 }
 
 .brand {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
   padding: var(--sp-lg) var(--sp-md);
-  font-weight: 700;
+  border-bottom: 1px solid var(--line);
+}
+
+.brandMark {
+  width: 24px;
+  height: 29px;
+  flex-shrink: 0;
+}
+
+.brandWordmark {
+  font-family: var(--font-brand);
+  font-weight: 600;
   font-size: 13px;
   color: var(--primary);
-  border-bottom: 1px solid var(--line);
 }
 
 .list {
@@ -39,6 +52,7 @@
   text-decoration: none;
   color: var(--ink-soft);
   border-left: 3px solid transparent;
+  border-radius: 0 var(--r-sm) var(--r-sm) 0;
 }
 
 .link:hover {
