@@ -177,6 +177,7 @@ Deno.serve(async (req: Request) => {
     const { error: updateError } = await serviceClient
       .from('transactions')
       .update({
+        status: 'pending',
         paymongo_session_id: session.id,
         paymongo_payload: {
           checkout_url: session.attributes.checkout_url,
