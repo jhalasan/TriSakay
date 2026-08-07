@@ -40,9 +40,20 @@ test('createGcashCheckout surfaces a transport-level error', async () => {
 });
 
 test('createGcashCheckout surfaces an application-level error returned in the payload', async () => {
+  // This is the REAL shape production sees: create-gcash-checkout responds
+  // with a non-2xx status, so the Supabase JS v2 client wraps it in a
+  // FunctionsHttpError with a generic `.message` and stashes the actual
+  // Response on `.context` — the application error only shows up if we
+  // parse that Response's body ourselves.
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      functionsInvoke: async () => ({ data: { checkoutUrl: null, error: 'Already paid' }, error: null }),
+      functionsInvoke: async () => ({
+        data: null,
+        error: {
+          message: 'Edge Function returned a non-2xx status code',
+          context: { json: async () => ({ checkoutUrl: null, error: 'Already paid' }) },
+        },
+      }),
     })
   );
 

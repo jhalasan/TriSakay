@@ -10,6 +10,29 @@ export interface CreateGcashCheckoutResult {
 }
 
 /**
+ * The Supabase JS v2 client turns any non-2xx Edge Function response into a
+ * generic FunctionsHttpError whose `.message` is just "Edge Function
+ * returned a non-2xx status code" — it does not parse the response body.
+ * create-gcash-checkout returns its actual user-facing message in the JSON
+ * body (`{ checkoutUrl: null, error: "..." }`) on non-2xx responses, so we
+ * have to reach into `error.context` (the raw Response) ourselves to get it.
+ */
+async function extractFunctionErrorMessage(error: { message: string; context?: unknown }): Promise<string> {
+  const context = error.context as { json?: () => Promise<unknown> } | undefined;
+  if (context && typeof context.json === 'function') {
+    try {
+      const body = await context.json();
+      if (body && typeof body === 'object' && typeof (body as { error?: unknown }).error === 'string') {
+        return (body as { error: string }).error;
+      }
+    } catch {
+      // fall through to the generic message below
+    }
+  }
+  return error.message;
+}
+
+/**
  * Invokes the create-gcash-checkout Edge Function, which upserts a pending
  * `transactions` row and creates (or reuses) a PayMongo Checkout Session.
  * Never writes to `transactions` directly from the client — there is no
@@ -20,7 +43,7 @@ export async function createGcashCheckout(rideRequestId: string): Promise<Create
     body: { rideRequestId },
   });
 
-  if (error) return { checkoutUrl: null, error: error.message };
+  if (error) return { checkoutUrl: null, error: await extractFunctionErrorMessage(error) };
 
   const result = data as { checkoutUrl: string | null; error: string | null };
   return { checkoutUrl: result.checkoutUrl ?? null, error: result.error };
