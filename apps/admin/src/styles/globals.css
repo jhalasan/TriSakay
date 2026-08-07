@@ -95,6 +95,12 @@ a {
   box-shadow: var(--shadow-card);
 }
 
+/* A DataTable already provides its own raised-surface shadow; nesting it
+   inside a .panel would stack two shadows on the same visual card. */
+.panel .scroll-x {
+  box-shadow: none;
+}
+
 .panel-title {
   font-family: var(--mono);
   font-size: 10px;
