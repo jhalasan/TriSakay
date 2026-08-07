@@ -90,8 +90,9 @@ a {
 .panel {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: var(--r-md);
   padding: var(--sp-lg);
+  box-shadow: var(--shadow-card);
 }
 
 .panel-title {

@@ -37,7 +37,7 @@
   gap: var(--sp-sm);
   padding: var(--sp-sm);
   border: 1px solid var(--line-soft);
-  border-radius: var(--r);
+  border-radius: var(--r-md);
 }
 
 .rowInfo {

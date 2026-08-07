@@ -1,7 +1,8 @@
 .wrap {
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: var(--r-md);
   background: var(--panel);
+  box-shadow: var(--shadow-card);
 }
 
 .table {

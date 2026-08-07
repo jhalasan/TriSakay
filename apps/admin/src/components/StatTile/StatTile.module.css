@@ -4,8 +4,9 @@
   gap: var(--sp-sm);
   padding: var(--sp-lg);
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: var(--r-md);
   background: var(--panel);
+  box-shadow: var(--shadow-card);
 }
 
 .label {
@@ -17,6 +18,7 @@
 }
 
 .value {
+  font-family: var(--font-brand);
   font-size: 26px;
   font-weight: 700;
   color: var(--ink);
