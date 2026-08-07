@@ -107,6 +107,10 @@ export default function PaymentScreen() {
         }
       },
       (message) => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+          timeoutRef.current = null;
+        }
         setGcashError(message);
         setGcashPhase('failed');
       },
