@@ -9,7 +9,7 @@
 }
 
 .badge {
-  background: var(--white);
+  background: var(--panel);
   border-radius: var(--r-lg);
   padding: var(--sp-lg) var(--sp-xl);
   box-shadow: var(--shadow-card);
