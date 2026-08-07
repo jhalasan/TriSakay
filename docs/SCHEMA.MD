@@ -1425,6 +1425,9 @@ alter publication supabase_realtime add table public.ride_requests;
 alter publication supabase_realtime add table public.trips;
 alter publication supabase_realtime add table public.notifications;
 alter publication supabase_realtime add table public.driver_profiles;
+-- Needed for the passenger app's GCash payment-status subscription
+-- (subscribeToTransactionStatus) to receive paid/failed updates.
+alter publication supabase_realtime add table public.transactions;
 
 -- =====================================================================
 -- END OF SCHEMA
