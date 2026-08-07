@@ -1,33 +1,49 @@
 .page {
   min-height: 100vh;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  background: var(--bg);
+  background: var(--gradient-hero);
   padding: var(--sp-xl);
+}
+
+.badge {
+  background: var(--white);
+  border-radius: var(--r-lg);
+  padding: var(--sp-lg) var(--sp-xl);
+  box-shadow: var(--shadow-card);
+  margin-bottom: var(--sp-xl);
+}
+
+.logo {
+  display: block;
+  width: 180px;
+  height: auto;
 }
 
 .card {
   width: 340px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: var(--r);
+  border-radius: var(--r-lg);
   padding: var(--sp-xl);
   display: flex;
   flex-direction: column;
   gap: var(--sp-md);
-  box-shadow: 0 12px 32px rgba(10, 14, 17, 0.12);
+  box-shadow: var(--shadow-card);
 }
 
 .brandRow {
   display: flex;
-  align-items: center;
-  gap: var(--sp-md);
+  flex-direction: column;
+  gap: 2px;
   margin-bottom: var(--sp-sm);
 }
 
 .brandTitle {
-  font-size: 15px;
+  font-family: var(--font-brand);
+  font-size: 18px;
   font-weight: 700;
   color: var(--ink);
 }
@@ -42,6 +58,6 @@
   color: var(--danger);
   background: var(--danger-soft);
   border: 1px solid var(--danger);
-  border-radius: var(--r);
+  border-radius: var(--r-sm);
   padding: var(--sp-sm);
 }

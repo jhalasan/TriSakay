@@ -2,7 +2,6 @@ import { useState, type FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/Button';
-import { Avatar } from '../components/Avatar';
 import { useSessionStore } from '../store/useSessionStore';
 import styles from './Login.module.css';
 
@@ -32,13 +31,14 @@ export function Login() {
 
   return (
     <div className={styles.page}>
+      <div className={styles.badge}>
+        <img src="/brand/trisakay-lockup.png" alt="TriSakay" className={styles.logo} />
+      </div>
+
       <form className={styles.card} onSubmit={handleSubmit}>
         <div className={styles.brandRow}>
-          <Avatar fullName="TriSakay Admin" size={44} />
-          <div>
-            <div className={styles.brandTitle}>TriSakay Admin</div>
-            <div className={styles.brandSub}>PSO Staff / Supervisor / Administrator</div>
-          </div>
+          <div className={styles.brandTitle}>Log in</div>
+          <div className={styles.brandSub}>PSO Staff / Supervisor / Administrator</div>
         </div>
 
         <TextField
