@@ -73,6 +73,11 @@ export default function PaymentScreen() {
   }
 
   async function handlePayNowGcash() {
+    // Defensive: tear down any stale subscription from a prior attempt
+    // before starting a new one, even if a previous cleanup path missed it.
+    unsubscribeRef.current?.();
+    unsubscribeRef.current = null;
+
     if (!rideRequestId) {
       setGcashError('Missing ride details — please go back and try again.');
       setGcashPhase('failed');
@@ -107,6 +112,8 @@ export default function PaymentScreen() {
         }
       },
       (message) => {
+        unsubscribeRef.current?.();
+        unsubscribeRef.current = null;
         if (timeoutRef.current) {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
@@ -148,6 +155,14 @@ export default function PaymentScreen() {
     setGcashPhase('idle');
     setGcashError(null);
     setPaymentMethod('cash');
+    // Known accepted gap: this leaves the 'pending'/'failed' GCash
+    // transactions row for this ride unresolved (there's no client-facing
+    // write policy for GCash rows — docs/SCHEMA.MD §7.6 — so we can't mark
+    // it void from here). Harmless for correctness since it can never read
+    // 'paid', just confusing in PSO/admin transaction views alongside the
+    // separately-recorded cash payment; a real fix needs either an
+    // Edge-Function-mediated void endpoint or a cleanup job, both out of
+    // scope here.
   }
 
   const gcashBusy = gcashPhase === 'opening' || gcashPhase === 'waiting';
