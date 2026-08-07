@@ -4,7 +4,7 @@
   justify-content: center;
   gap: 6px;
   border: 1px solid transparent;
-  border-radius: var(--r);
+  border-radius: var(--r-md);
   font-family: var(--sans);
   font-weight: 500;
   cursor: pointer;
@@ -34,6 +34,10 @@
 
 .fullWidth {
   width: 100%;
+}
+
+.solid {
+  box-shadow: var(--shadow-button);
 }
 
 /* solid */
