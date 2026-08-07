@@ -1,11 +1,13 @@
 /**
  * Design tokens for the TriSakay Admin (PSO) Web App.
  *
- * Layout numbers (sidebar width, corner radius) are ported directly from
- * the low-fidelity wireframe kit. Colors are NOT the wireframe's grayscale —
- * they mirror packages/ui/src/theme/colors.ts (the Driver/Passenger brand
- * palette, already WCAG 2.1-verified: text >=4.5:1, control boundaries
- * >=3:1) so the admin reads as the same product, not a separate skin.
+ * The sidebar width and topbar height are ported directly from the
+ * low-fidelity wireframe kit. Corner radius is NOT from the wireframe kit —
+ * like colors, it mirrors packages/ui/src/theme/radius.ts. Colors are NOT
+ * the wireframe's grayscale — they mirror packages/ui/src/theme/colors.ts
+ * (the Driver/Passenger brand palette, already WCAG 2.1-verified: text
+ * >=4.5:1, control boundaries >=3:1) so the admin reads as the same
+ * product, not a separate skin.
  *
  * packages/ui itself is React Native only (View/Text/Pressable) and cannot
  * be imported into this Vite web app — only its color VALUES are copied
@@ -45,10 +47,9 @@
   --sidebar-w: 176px;
   --topbar-h: 56px;
 
-  /* Radius scale — mirrors packages/ui/src/theme/radius.ts. --r (above)
-     is the old flat wireframe radius; it is removed once every consumer
-     below has migrated to one of these tiers (see docs/superpowers/plans
-     for the migration task list). */
+  /* Radius scale — mirrors packages/ui/src/theme/radius.ts. The old flat
+     wireframe radius token (--r) has been fully migrated away and removed;
+     every consumer now uses one of the tiers below. */
   --r-sm: 8px;
   --r-md: 12px;
   --r-lg: 20px;
