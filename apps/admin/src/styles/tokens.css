@@ -46,6 +46,27 @@
   --sidebar-w: 176px;
   --topbar-h: 56px;
 
+  /* Radius scale — mirrors packages/ui/src/theme/radius.ts. --r (above)
+     is the old flat wireframe radius; it is removed once every consumer
+     below has migrated to one of these tiers (see docs/superpowers/plans
+     for the migration task list). */
+  --r-sm: 8px;
+  --r-md: 12px;
+  --r-lg: 20px;
+  --r-pill: 999px;
+
+  /* Elevation — navy-tinted shadows, mirrors packages/ui/src/theme/elevation.ts.
+     Shadow color is the brand navy (#002E60) rather than near-black, same
+     reasoning as the mobile app: a colored shadow reads as premium and ties
+     every raised surface back to the brand mark. */
+  --shadow-card: 0 3px 8px rgba(0, 46, 96, 0.10);
+  --shadow-button: 0 4px 10px rgba(0, 46, 96, 0.22);
+  --shadow-sheet: 0 -6px 24px rgba(0, 46, 96, 0.16);
+
+  /* Hero gradient — Login page background only, mirrors the `hero` token
+     in packages/ui/src/theme/gradients.ts. Never used on data screens. */
+  --gradient-hero: linear-gradient(180deg, var(--primary) 0%, #001A38 100%);
+
   /* Spacing scale — mirrors packages/ui/src/theme/spacing.ts */
   --sp-xs: 4px;
   --sp-sm: 8px;
@@ -57,6 +78,7 @@
 
   --mono: ui-monospace, Menlo, Consolas, monospace;
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
+  --font-brand: 'Poppins', var(--sans);
 
   color-scheme: light;
 }
