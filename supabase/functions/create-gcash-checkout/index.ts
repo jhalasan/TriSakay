@@ -174,6 +174,10 @@ Deno.serve(async (req: Request) => {
 
     if (errorMessage || !session) return json({ checkoutUrl: null, error: errorMessage ?? 'PayMongo session creation failed' }, 502);
 
+    // Guard against a race where the webhook already marked this row 'paid'
+    // while this invocation was still mid-flight (it read the row before the
+    // webhook landed). Never clobber a paid row back to 'pending' — but still
+    // allow resetting a 'failed' row, which is the intentional reuse path above.
     const { error: updateError } = await serviceClient
       .from('transactions')
       .update({
@@ -185,7 +189,8 @@ Deno.serve(async (req: Request) => {
           expires_at: Math.floor(Date.now() / 1000) + 30 * 60,
         },
       })
-      .eq('id', transactionId);
+      .eq('id', transactionId)
+      .neq('status', 'paid');
 
     if (updateError) return json({ checkoutUrl: null, error: updateError.message }, 500);
 
