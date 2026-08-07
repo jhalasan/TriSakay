@@ -42,7 +42,12 @@ async function verifySignature(rawBody: string, header: string, secret: string):
       }),
     );
     const timestamp = parts.t;
-    const candidate = parts.te ?? parts.li;
+    // Use `||`, not `??`: PayMongo's structured header format populates
+    // whichever of `te`/`li` applies (test vs. live) and sets the other to an
+    // EMPTY STRING rather than omitting it. `??` only falls through on
+    // null/undefined, so it would return '' for the empty key instead of
+    // falling through to the populated one, failing verification closed.
+    const candidate = parts.te || parts.li;
     if (!timestamp || !candidate) return false;
     const expected = await hmacSha256Hex(secret, `${timestamp}.${rawBody}`);
     return timingSafeEqual(expected, candidate);
@@ -72,17 +77,18 @@ Deno.serve(async (req: Request) => {
 
     const event = JSON.parse(rawBody);
     const eventType = event?.data?.attributes?.type;
-    const sessionAttributes = event?.data?.attributes?.data?.attributes;
-    const referenceNumber = sessionAttributes?.reference_number;
-
-    if (!referenceNumber) {
-      console.warn('paymongo-webhook: no reference_number in payload', { eventType });
-      return new Response('ok', { status: 200 });
-    }
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
     if (eventType === 'checkout_session.payment.paid') {
+      const sessionAttributes = event?.data?.attributes?.data?.attributes;
+      const referenceNumber = sessionAttributes?.reference_number;
+
+      if (!referenceNumber) {
+        console.warn('paymongo-webhook: no reference_number in payload', { eventType });
+        return new Response('ok', { status: 200 });
+      }
+
       const { data, error } = await supabase
         .from('transactions')
         .update({ status: 'paid', paymongo_payload: event })
@@ -102,10 +108,39 @@ Deno.serve(async (req: Request) => {
     }
 
     if (eventType === 'payment.failed') {
+      // Best-effort guess at the `payment.failed` payload shape — the wrapped
+      // resource here is a PAYMENT object, not a checkout session, so it's
+      // not confirmed whether/where PayMongo nests a reference number. Try
+      // the checkout-session-style path first (in case PayMongo mirrors it),
+      // then a plausible alternate field name, then the ride_request_id
+      // metadata PayMongo echoes back on checkout sessions. CONFIRM this
+      // against a real test delivery in the deployment/testing task — see
+      // docs/superpowers/specs/2026-08-07-paymongo-webhook-design.md.
+      const failedAttributes = event?.data?.attributes?.data?.attributes;
+      const referenceNumber: string | undefined = failedAttributes?.reference_number;
+      const externalReferenceNumber: string | undefined = failedAttributes?.external_reference_number;
+      const rideRequestId: string | undefined = failedAttributes?.metadata?.ride_request_id;
+
+      let matchColumn: 'id' | 'ride_request_id';
+      let matchValue: string;
+      if (typeof referenceNumber === 'string' && referenceNumber) {
+        matchColumn = 'id';
+        matchValue = referenceNumber;
+      } else if (typeof externalReferenceNumber === 'string' && externalReferenceNumber) {
+        matchColumn = 'id';
+        matchValue = externalReferenceNumber;
+      } else if (typeof rideRequestId === 'string' && rideRequestId) {
+        matchColumn = 'ride_request_id';
+        matchValue = rideRequestId;
+      } else {
+        console.warn('paymongo-webhook: no resolvable reference in payment.failed payload', { eventType });
+        return new Response('ok', { status: 200 });
+      }
+
       const { error } = await supabase
         .from('transactions')
         .update({ status: 'failed', paymongo_payload: event })
-        .eq('id', referenceNumber)
+        .eq(matchColumn, matchValue)
         .eq('status', 'pending');
 
       if (error) {
