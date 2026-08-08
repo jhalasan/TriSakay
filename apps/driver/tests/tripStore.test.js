@@ -6,6 +6,8 @@ function fakeClientWithSuccess() {
     channel: () => { throw new Error('channel not needed for this test'); },
     removeChannel: () => {},
     from: () => ({
+      // completeTrip() reads estimated_fare before writing final_fare.
+      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { estimated_fare: 45 }, error: null }) }) }),
       update: () => ({ eq: () => Promise.resolve({ error: null }) }),
     }),
   };
@@ -73,7 +75,10 @@ test('complete() sets error and keeps current when the backend call fails', asyn
   __setSupabaseClientForTests({
     channel: () => { throw new Error('channel not needed for this test'); },
     removeChannel: () => {},
-    from: () => ({ update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }) }),
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { estimated_fare: 45 }, error: null }) }) }),
+      update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }),
+    }),
   });
 
   useTripStore.setState({

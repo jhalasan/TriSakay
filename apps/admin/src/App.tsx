@@ -14,10 +14,21 @@ import { SystemSettings } from './routes/SystemSettings';
 import { useSessionStore } from './store/useSessionStore';
 import { isAdmin } from './lib/rbac';
 
-/** Frontend-only auth gate this pass — real Supabase session check is docs/ADMIN_TODO.MD F1. */
+/** Real Supabase session check — a page load/refresh must not flash-redirect to /login while the session is still being restored. */
 function RequireAuth({ children }: { children: ReactNode }) {
   const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
+  const isHydrating = useSessionStore((state) => state.isHydrating);
+  if (isHydrating) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+/** Signed-in PSO users hitting /login directly (e.g. a stale bookmark) go straight to the dashboard instead of re-authenticating. */
+function RedirectIfAuthed({ children }: { children: ReactNode }) {
+  const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
+  const isHydrating = useSessionStore((state) => state.isHydrating);
+  if (isHydrating) return null;
+  if (isAuthenticated) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -32,7 +43,14 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/login" element={<Login />} />
+        <Route
+          path="/login"
+          element={
+            <RedirectIfAuthed>
+              <Login />
+            </RedirectIfAuthed>
+          }
+        />
 
         <Route
           element={
