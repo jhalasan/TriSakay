@@ -8,6 +8,11 @@ export const styles = StyleSheet.create({
   mapFill: {
     ...StyleSheet.absoluteFillObject,
   },
+  statusBadgeWrap: {
+    position: 'absolute',
+    top: spacing.xl,
+    right: spacing.lg,
+  },
   /** Floats over the bottom of the full-bleed map instead of sitting below it in normal flow — paddingBottom is finished off at the call site with the safe-area inset. */
   sheet: {
     position: 'absolute',
@@ -22,12 +27,7 @@ export const styles = StyleSheet.create({
     borderTopRightRadius: radius.lg,
     ...elevation.sheet,
   },
-  /**
-   * A brand-gradient handle bar rather than a plain grey one — the same
-   * small threading device carried through finding-driver → driver-found →
-   * trip-in-progress. Sized as a handle (not full-bleed), so it never
-   * competes with the sheet's own rounded-corner radius/shadow.
-   */
+  /** A brand-gradient handle bar rather than a plain grey one — the same small threading device carried through finding-driver → trip. */
   sheetAccent: {
     width: 40,
     height: 4,
@@ -38,6 +38,11 @@ export const styles = StyleSheet.create({
   caption: {
     ...typography.caption,
     color: colors.inkSoft,
+    textAlign: 'center',
+  },
+  error: {
+    ...typography.caption,
+    color: colors.danger,
     textAlign: 'center',
   },
   emptyWrap: {

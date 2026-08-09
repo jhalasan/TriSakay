@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { cancelRideRequest, subscribeToRideRequestStatus } from '@trisakay/services';
+import { cancelRideRequest, getTripDriverInfo, subscribeToRideRequestStatus } from '@trisakay/services';
 import { Button, MapOverlaySheet, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -16,6 +16,7 @@ export default function FindingDriverScreen() {
   const dropoff = useBookingStore((state) => state.dropoff);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
+  const setDriver = useBookingStore((state) => state.setDriver);
   const reset = useBookingStore((state) => state.reset);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -44,8 +45,18 @@ export default function FindingDriverScreen() {
         if (cancelled) return;
         if (row.status === 'assigned') {
           hasExitedRef.current = true;
-          setTripStatus('matched');
-          router.replace('/booking/driver-found');
+          getTripDriverInfo(row.id).then(({ data }) => {
+            if (cancelled) return;
+            setDriver({
+              id: data?.driverId ?? row.id,
+              name: data?.driverName ?? '',
+              plateNumber: data?.plateNo ?? '',
+              rating: data?.ratingAvg ?? null,
+              etaMinutes: null,
+            });
+            setTripStatus('matched');
+            router.replace('/booking/trip');
+          });
         } else if (row.status === 'cancelled') {
           hasExitedRef.current = true;
           reset();

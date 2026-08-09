@@ -1,22 +1,28 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Animated, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, EmptyState, GradientSurface, OsmMap, motion, spacing } from '@trisakay/ui';
+import { subscribeToRideRequestStatus } from '@trisakay/services';
+import { Badge, Button, EmptyState, GradientSurface, OsmMap, motion, spacing } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useBookingStore } from '../../src/store/useBookingStore';
-import { randomBetween, wait } from '../../src/mocks/delay';
-import { styles } from '../../src/styles/booking/driver-found.styles';
+import { styles } from '../../src/styles/booking/trip.styles';
 
-export default function DriverFoundScreen() {
+export default function TripScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const driver = useBookingStore((state) => state.driver);
   const pickup = useBookingStore((state) => state.pickup);
+  const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const reset = useBookingStore((state) => state.reset);
+  const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  // Same exit-guard pattern as finding-driver.tsx: reset() clears
+  // rideRequestId, which would otherwise re-fire this effect a second time
+  // before the component finishes unmounting from the first navigate-away.
+  const hasExitedRef = useRef(false);
 
-  /** Second half of the ride-status moment: the match settles in from below. */
+  /** Same settle-in entrance used when this screen previously arrived from finding-driver. */
   const settle = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -29,25 +35,42 @@ export default function DriverFoundScreen() {
   }, [settle]);
 
   useEffect(() => {
+    if (hasExitedRef.current) return;
+
+    if (!rideRequestId) {
+      hasExitedRef.current = true;
+      reset();
+      router.replace('/(tabs)/home');
+      return;
+    }
+
     let cancelled = false;
 
-    (async () => {
-      await wait(randomBetween(4000, 6000));
-      if (cancelled) return;
-      setTripStatus('in_progress');
-      router.replace('/booking/trip-in-progress');
-    })();
+    const unsubscribe = subscribeToRideRequestStatus(
+      rideRequestId,
+      (row) => {
+        if (cancelled) return;
+        if (row.status === 'completed') {
+          hasExitedRef.current = true;
+          setTripStatus('awaiting_payment');
+          router.replace('/booking/payment');
+        } else if (row.status === 'cancelled') {
+          hasExitedRef.current = true;
+          reset();
+          router.replace('/(tabs)/home');
+        }
+      },
+      (message) => {
+        if (!cancelled) setSubscriptionError(message);
+      },
+    );
 
     return () => {
       cancelled = true;
+      unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
-  function handleCancel() {
-    reset();
-    router.replace('/(tabs)/home');
-  }
+  }, [rideRequestId]);
 
   if (!driver) {
     return (
@@ -65,7 +88,7 @@ export default function DriverFoundScreen() {
       <View style={styles.mapFill}>
         <OsmMap
           variant="route"
-          caption="Map · driver en route"
+          caption="Map · trip route"
           height="100%"
           latitude={pickup?.latitude}
           longitude={pickup?.longitude}
@@ -73,6 +96,10 @@ export default function DriverFoundScreen() {
           interactive
           edgeToEdge
         />
+      </View>
+
+      <View style={styles.statusBadgeWrap}>
+        <Badge label="Driver assigned" tone="blue" dot />
       </View>
 
       <Animated.View
@@ -89,7 +116,7 @@ export default function DriverFoundScreen() {
       >
         <GradientSurface token="brand" direction="diagonal" style={styles.sheetAccent} />
         <DriverInfoCard driver={driver} />
-        <Button label="Cancel ride" variant="outline" tone="neutral" fullWidth onPress={handleCancel} />
+        {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
         <Text style={styles.caption}>No in-app call or message — coordination is in person.</Text>
       </Animated.View>
     </View>
