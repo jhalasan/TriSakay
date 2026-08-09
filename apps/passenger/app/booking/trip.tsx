@@ -49,7 +49,7 @@ export default function TripScreen() {
     const unsubscribe = subscribeToRideRequestStatus(
       rideRequestId,
       (row) => {
-        if (cancelled) return;
+        if (cancelled || hasExitedRef.current) return;
         if (row.status === 'completed') {
           hasExitedRef.current = true;
           setTripStatus('awaiting_payment');

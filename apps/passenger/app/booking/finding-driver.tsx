@@ -3,7 +3,12 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { cancelRideRequest, getTripDriverInfo, subscribeToRideRequestStatus } from '@trisakay/services';
+import {
+  cancelRideRequest,
+  getTripDriverInfo,
+  subscribeToRideRequestStatus,
+  type TripDriverInfo,
+} from '@trisakay/services';
 import { Button, MapOverlaySheet, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -39,24 +44,28 @@ export default function FindingDriverScreen() {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
 
+    const applyDriverAndAdvance = (data?: TripDriverInfo | null) => {
+      if (cancelled) return;
+      setDriver({
+        id: data?.driverId ?? '',
+        name: data?.driverName ?? '',
+        plateNumber: data?.plateNo ?? '',
+        rating: data?.ratingAvg ?? null,
+        etaMinutes: null,
+      });
+      setTripStatus('matched');
+      router.replace('/booking/trip');
+    };
+
     unsubscribe = subscribeToRideRequestStatus(
       rideRequestId,
       (row) => {
-        if (cancelled) return;
+        if (cancelled || hasExitedRef.current) return;
         if (row.status === 'assigned') {
           hasExitedRef.current = true;
-          getTripDriverInfo(row.id).then(({ data }) => {
-            if (cancelled) return;
-            setDriver({
-              id: data?.driverId ?? row.id,
-              name: data?.driverName ?? '',
-              plateNumber: data?.plateNo ?? '',
-              rating: data?.ratingAvg ?? null,
-              etaMinutes: null,
-            });
-            setTripStatus('matched');
-            router.replace('/booking/trip');
-          });
+          getTripDriverInfo(row.id)
+            .then(({ data }) => applyDriverAndAdvance(data))
+            .catch(() => applyDriverAndAdvance());
         } else if (row.status === 'cancelled') {
           hasExitedRef.current = true;
           reset();
