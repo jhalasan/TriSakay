@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeTrip, cancelTrip } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeTrip, cancelTrip, getTripDriverInfo } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -915,4 +915,66 @@ test('cancelTrip surfaces a friendly error when the trip update fails', async ()
 
   const { error } = await cancelTrip('trip1', 'rr1', 'Passenger no-show');
   assert.equal(error, "Couldn't cancel the trip. Please try again.");
+});
+
+test('getTripDriverInfo maps the RPC row into TripDriverInfo', async () => {
+  let capturedFn: string | null = null;
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn, args) => {
+        capturedFn = fn;
+        capturedArgs = args;
+        return {
+          data: [{
+            driver_id: 'driver1',
+            driver_name: 'Juan Dela Cruz',
+            avatar_url: 'https://example.com/a.jpg',
+            plate_no: 'ABC-123',
+            rating_avg: 4.8,
+            rating_count: 12,
+          }],
+          error: null,
+        };
+      },
+    })
+  );
+
+  const { data, error } = await getTripDriverInfo('rr1');
+
+  assert.equal(error, null);
+  assert.equal(capturedFn, 'get_trip_driver_info');
+  assert.deepEqual(capturedArgs, { p_ride_request_id: 'rr1' });
+  assert.deepEqual(data, {
+    driverId: 'driver1',
+    driverName: 'Juan Dela Cruz',
+    avatarUrl: 'https://example.com/a.jpg',
+    plateNo: 'ABC-123',
+    ratingAvg: 4.8,
+    ratingCount: 12,
+  });
+});
+
+test('getTripDriverInfo surfaces an RPC error', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: null, error: { message: 'network error' } }),
+    })
+  );
+
+  const { data, error } = await getTripDriverInfo('rr1');
+  assert.equal(data, null);
+  assert.equal(error, 'network error');
+});
+
+test('getTripDriverInfo returns null data with no error on an empty result set', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: [], error: null }),
+    })
+  );
+
+  const { data, error } = await getTripDriverInfo('rr1');
+  assert.equal(data, null);
+  assert.equal(error, null);
 });

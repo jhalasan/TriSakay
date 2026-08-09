@@ -35,6 +35,8 @@ export interface FakeClientConfig {
   removeChannel?: (channel: unknown) => void;
   /** Override for `.functions.invoke(name, options)` — used by Edge Function callers. */
   functionsInvoke?: (name: string, options: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+  /** Override for `.rpc(fn, args)` — used by RPC-based service functions (e.g. get_trip_driver_info). */
+  rpc?: (fn: string, args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
 }
 
 export function createFakeSupabaseClient(config: FakeClientConfig = {}): SupabaseClient<Database> {
@@ -102,6 +104,7 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     auth,
     from,
     functions,
+    rpc: config.rpc ?? (() => { throw new Error('rpc not configured on fake client'); }),
     channel: config.channel ?? (() => { throw new Error('channel not configured on fake client'); }),
     removeChannel: config.removeChannel ?? (() => {}),
   } as unknown as SupabaseClient<Database>;

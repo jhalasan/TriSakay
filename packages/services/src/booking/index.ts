@@ -308,3 +308,47 @@ export async function cancelTrip(tripId: string, rideRequestId: string, reason: 
 
   return { error: null };
 }
+
+export interface TripDriverInfo {
+  driverId: string;
+  driverName: string | null;
+  avatarUrl: string | null;
+  plateNo: string | null;
+  ratingAvg: number | null;
+  ratingCount: number;
+}
+
+export interface GetTripDriverInfoResult {
+  data: TripDriverInfo | null;
+  error: string | null;
+}
+
+/**
+ * Calls the `get_trip_driver_info` RPC (security definer — the passenger has
+ * no direct read access to `trips`/`driver_profiles`/`tricycles`/other users'
+ * `users` rows, so this is the only path to the assigned driver's info).
+ * An empty result set (ride not found/owned/assigned yet) is a normal state,
+ * returned as `{ data: null, error: null }`, not surfaced as an error.
+ */
+export async function getTripDriverInfo(rideRequestId: string): Promise<GetTripDriverInfoResult> {
+  const { data, error } = await getSupabaseClient().rpc('get_trip_driver_info', {
+    p_ride_request_id: rideRequestId,
+  });
+
+  if (error) return { data: null, error: error.message };
+
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { data: null, error: null };
+
+  return {
+    data: {
+      driverId: row.driver_id,
+      driverName: row.driver_name,
+      avatarUrl: row.avatar_url,
+      plateNo: row.plate_no,
+      ratingAvg: row.rating_avg,
+      ratingCount: row.rating_count,
+    },
+    error: null,
+  };
+}
