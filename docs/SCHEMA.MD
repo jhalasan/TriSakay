@@ -288,7 +288,8 @@ create table public.passenger_discounts (
   id            uuid primary key default gen_random_uuid(),
   passenger_id  uuid not null references public.users(id) on delete cascade,
   category      discount_category not null,
-  id_photo_path text not null,          -- Supabase Storage object path
+  id_photo_front_path text not null,    -- Supabase Storage object path (front of ID)
+  id_photo_back_path  text not null,    -- Supabase Storage object path (back of ID)
   status        verification_status not null default 'pending',
   reviewed_by   uuid references public.users(id) on delete set null,
   reviewed_at   timestamptz,

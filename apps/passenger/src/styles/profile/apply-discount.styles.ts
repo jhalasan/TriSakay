@@ -37,9 +37,17 @@ export const styles = StyleSheet.create({
   sectionLabel: {
     ...typography.label,
     color: colors.inkSoft,
+    marginBottom: spacing.xs,
+  },
+  photoRow: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  photoSlot: {
+    flex: 1,
   },
   photoUpload: {
-    height: 160,
+    height: 140,
     borderRadius: radius.md,
     borderWidth: 1,
     borderColor: colors.line,

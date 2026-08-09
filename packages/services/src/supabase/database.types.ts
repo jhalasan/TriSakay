@@ -507,7 +507,8 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["discount_category"]
           id: string
-          id_photo_path: string
+          id_photo_back_path: string
+          id_photo_front_path: string
           passenger_id: string
           remarks: string | null
           reviewed_at: string | null
@@ -518,7 +519,8 @@ export type Database = {
         Insert: {
           category: Database["public"]["Enums"]["discount_category"]
           id?: string
-          id_photo_path: string
+          id_photo_back_path: string
+          id_photo_front_path: string
           passenger_id: string
           remarks?: string | null
           reviewed_at?: string | null
@@ -529,7 +531,8 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["discount_category"]
           id?: string
-          id_photo_path?: string
+          id_photo_back_path?: string
+          id_photo_front_path?: string
           passenger_id?: string
           remarks?: string | null
           reviewed_at?: string | null
