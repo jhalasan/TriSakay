@@ -1180,6 +1180,17 @@ export type Database = {
         }
         Returns: number
       }
+      get_trip_driver_info: {
+        Args: { p_ride_request_id: string }
+        Returns: {
+          avatar_url: string
+          driver_id: string
+          driver_name: string
+          plate_no: string
+          rating_avg: number
+          rating_count: number
+        }[]
+      }
       is_admin: { Args: never; Returns: boolean }
       is_cluster_authorized: {
         Args: {

@@ -768,6 +768,47 @@ comment on function public.is_cluster_authorized is
   'Within the single-barangay Dadiangas West pilot (Melting Pot cluster), this always returns true for any colored tricycle — the constraint only binds once the system extends to other barangays, per confirmed scope. Called by the match-ride-request Edge Function as the hard pre-filter (FR-2.5) — it is not wired to any DB constraint or trigger, so it will show as unused if you grep for callers inside this file.';
 
 
+-- 4.3c trip driver info (passenger-visible) -----------------------------
+-- Passengers have no direct SELECT on trips/driver_profiles/tricycles/other
+-- users' users rows (see §7.1-7.4) — this security-definer function is the
+-- only path to a matched driver's public info, self-authorized via
+-- passenger_id = auth.uid() rather than broadening those tables' RLS.
+create or replace function public.get_trip_driver_info(p_ride_request_id uuid)
+returns table (
+  driver_id    uuid,
+  driver_name  text,
+  avatar_url   text,
+  plate_no     text,
+  rating_avg   numeric,
+  rating_count int
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_trip_id uuid;
+begin
+  select trip_id into v_trip_id
+  from public.ride_requests
+  where id = p_ride_request_id
+    and passenger_id = auth.uid();
+
+  if v_trip_id is null then
+    return;
+  end if;
+
+  return query
+  select u.id, u.full_name, u.avatar_url, t.plate_no, dp.rating_avg, dp.rating_count
+  from public.trips tr
+  join public.users u on u.id = tr.driver_id
+  join public.driver_profiles dp on dp.user_id = tr.driver_id
+  left join public.tricycles t on t.id = tr.tricycle_id
+  where tr.id = v_trip_id;
+end $$;
+
+
 -- 4.4 seat capacity enforcement ---------------------------------------
 -- Total seats across a trip's live requests must not exceed max_seats.
 create or replace function public.enforce_trip_seat_capacity()
