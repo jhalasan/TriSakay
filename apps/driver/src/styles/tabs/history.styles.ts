@@ -8,4 +8,5 @@ export const styles = StyleSheet.create({
   listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl },
   trailingSlot: { alignItems: 'flex-end', gap: spacing.xs },
   fareText: { ...typography.bodyStrong, color: colors.ink },
+  error: { ...typography.caption, color: colors.danger, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
 });

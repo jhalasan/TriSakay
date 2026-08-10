@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeTrip, cancelTrip, getTripDriverInfo } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeTrip, cancelTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -847,6 +847,119 @@ test('subscribeToPendingRideRequests forwards an in-body error from the Edge Fun
 
   assert.deepEqual(receivedData, []);
   assert.deepEqual(receivedErrors, ['driverId must match the authenticated user']);
+});
+
+test('getTripPassengerInfo maps the RPC row into TripPassengerInfo', async () => {
+  let capturedFn: string | null = null;
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn, args) => {
+        capturedFn = fn;
+        capturedArgs = args;
+        return {
+          data: [{
+            passenger_id: 'p1',
+            passenger_name: 'Maria Clara',
+            avatar_url: 'https://example.com/p1.jpg',
+          }],
+          error: null,
+        };
+      },
+    })
+  );
+
+  const { data, error } = await getTripPassengerInfo('rr1');
+
+  assert.equal(error, null);
+  assert.equal(capturedFn, 'get_trip_passenger_info');
+  assert.deepEqual(capturedArgs, { p_ride_request_id: 'rr1' });
+  assert.deepEqual(data, {
+    passengerId: 'p1',
+    passengerName: 'Maria Clara',
+    avatarUrl: 'https://example.com/p1.jpg',
+  });
+});
+
+test('getTripPassengerInfo surfaces an RPC error', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: null, error: { message: 'network error' } }),
+    })
+  );
+
+  const { data, error } = await getTripPassengerInfo('rr1');
+  assert.equal(data, null);
+  assert.equal(error, 'network error');
+});
+
+test('getTripPassengerInfo returns null data with no error on an empty result set (not this driver\'s trip)', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: [], error: null }),
+    })
+  );
+
+  const { data, error } = await getTripPassengerInfo('rr1');
+  assert.equal(data, null);
+  assert.equal(error, null);
+});
+
+test('listDriverTripHistory maps RPC rows and picks the right date per status', async () => {
+  let capturedFn: string | null = null;
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn, args) => {
+        capturedFn = fn;
+        capturedArgs = args;
+        return {
+          data: [
+            { ride_request_id: 'rr1', passenger_name: 'Maria Clara', status: 'completed', fare: 45, completed_at: '2026-08-10T00:00:00.000Z', cancelled_at: null, requested_at: '2026-08-09T23:00:00.000Z' },
+            { ride_request_id: 'rr2', passenger_name: null, status: 'cancelled', fare: null, completed_at: null, cancelled_at: '2026-08-08T00:00:00.000Z', requested_at: '2026-08-07T23:00:00.000Z' },
+          ],
+          error: null,
+        };
+      },
+    })
+  );
+
+  const { data, error } = await listDriverTripHistory(20);
+
+  assert.equal(error, null);
+  assert.equal(capturedFn, 'get_driver_trip_history');
+  assert.deepEqual(capturedArgs, { p_limit: 20 });
+  assert.deepEqual(data, [
+    { rideRequestId: 'rr1', passengerName: 'Maria Clara', status: 'completed', fare: 45, date: '2026-08-10T00:00:00.000Z' },
+    { rideRequestId: 'rr2', passengerName: null, status: 'cancelled', fare: null, date: '2026-08-08T00:00:00.000Z' },
+  ]);
+});
+
+test('listDriverTripHistory defaults the limit to 50', async () => {
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (_fn, args) => {
+        capturedArgs = args;
+        return { data: [], error: null };
+      },
+    })
+  );
+
+  await listDriverTripHistory();
+  assert.deepEqual(capturedArgs, { p_limit: 50 });
+});
+
+test('listDriverTripHistory surfaces an RPC error with an empty list', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: null, error: { message: 'network error' } }),
+    })
+  );
+
+  const { data, error } = await listDriverTripHistory();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'network error');
 });
 
 test('completeTrip marks the trip and ride request completed, locking final_fare from estimated_fare', async () => {

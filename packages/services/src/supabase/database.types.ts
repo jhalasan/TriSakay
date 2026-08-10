@@ -1180,6 +1180,18 @@ export type Database = {
         }
         Returns: number
       }
+      get_driver_trip_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          cancelled_at: string
+          completed_at: string
+          fare: number
+          passenger_name: string
+          requested_at: string
+          ride_request_id: string
+          status: Database["public"]["Enums"]["ride_status"]
+        }[]
+      }
       get_trip_driver_info: {
         Args: { p_ride_request_id: string }
         Returns: {
@@ -1189,6 +1201,14 @@ export type Database = {
           plate_no: string
           rating_avg: number
           rating_count: number
+        }[]
+      }
+      get_trip_passenger_info: {
+        Args: { p_ride_request_id: string }
+        Returns: {
+          avatar_url: string
+          passenger_id: string
+          passenger_name: string
         }[]
       }
       is_admin: { Args: never; Returns: boolean }

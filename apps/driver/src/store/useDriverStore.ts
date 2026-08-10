@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getDriverAvailability, updateDriverAvailability } from '@trisakay/services';
+import { getDriverAvailability, getDriverRatingSummary, updateDriverAvailability } from '@trisakay/services';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 
 interface DriverState {
@@ -24,12 +24,15 @@ interface DriverState {
    * the backend still considers the driver available and matchable.
    */
   checkAvailability: () => Promise<void>;
+  /** Re-syncs rating/ratingCount from driver_profiles — called on app boot/login, same reasoning as checkAvailability. */
+  checkRating: () => Promise<void>;
   recordCompletedTrip: (fare: number) => void;
   clearError: () => void;
 }
 
 export const useDriverStore = create<DriverState>()((set) => {
   let checkEpoch = 0;
+  let ratingCheckEpoch = 0;
 
   return {
     isAvailable: false,
@@ -68,6 +71,22 @@ export const useDriverStore = create<DriverState>()((set) => {
         // false here would wrongly flip an online driver's UI offline on
         // a transient network blip instead of just leaving it stale until
         // the next check.
+      }
+    },
+
+    checkRating: async () => {
+      const epoch = ++ratingCheckEpoch;
+      try {
+        const { ratingAvg, ratingCount, error } = await withTimeout(
+          getDriverRatingSummary(),
+          REQUEST_TIMEOUT_MS,
+          'Rating check timed out'
+        );
+        if (epoch !== ratingCheckEpoch || error) return;
+        set({ rating: ratingAvg, ratingCount });
+      } catch {
+        // Leave rating/ratingCount untouched on failure/timeout — same
+        // reasoning as checkAvailability's catch above.
       }
     },
 

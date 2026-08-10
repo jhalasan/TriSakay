@@ -15,6 +15,7 @@ import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { useDriverStore } from '../src/store/useDriverStore';
+import { useNotificationsStore } from '../src/store/useNotificationsStore';
 import { useRequestsStore } from '../src/store/useRequestsStore';
 import { useVerificationStore, type VerificationGateStatus } from '../src/store/useVerificationStore';
 
@@ -112,6 +113,36 @@ function useAvailabilitySync(sessionUserId: string | null) {
   }, [sessionUserId, checkAvailability]);
 }
 
+function useRatingSync(sessionUserId: string | null) {
+  const checkRating = useDriverStore((state) => state.checkRating);
+
+  useEffect(() => {
+    if (sessionUserId === null) {
+      useDriverStore.setState({ rating: null, ratingCount: 0 });
+      return;
+    }
+    void checkRating();
+  }, [sessionUserId, checkRating]);
+}
+
+/**
+ * Kept subscribed for the whole session, not just while the Notifications
+ * screen is mounted — Dashboard's bell icon shows the unread count too, so
+ * items need to arrive live regardless of which screen the driver is on.
+ */
+function useNotificationsSync(sessionUserId: string | null) {
+  const subscribe = useNotificationsStore((state) => state.subscribe);
+  const unsubscribe = useNotificationsStore((state) => state.unsubscribe);
+
+  useEffect(() => {
+    if (sessionUserId === null) {
+      unsubscribe();
+      return;
+    }
+    subscribe(sessionUserId);
+  }, [sessionUserId, subscribe, unsubscribe]);
+}
+
 function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateStatus) {
   const root = useRootSegment();
   const router = useRouter();
@@ -148,6 +179,8 @@ function RootLayoutNav() {
   useConsentSync(sessionUserId);
   useVerificationSync(sessionUserId);
   useAvailabilitySync(sessionUserId);
+  useRatingSync(sessionUserId);
+  useNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus, verificationStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 

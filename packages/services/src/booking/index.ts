@@ -414,3 +414,78 @@ export async function getTripDriverInfo(rideRequestId: string): Promise<GetTripD
     error: null,
   };
 }
+
+export interface DriverTripHistoryItem {
+  rideRequestId: string;
+  passengerName: string | null;
+  status: 'completed' | 'cancelled';
+  fare: number | null;
+  date: string;
+}
+
+export interface ListDriverTripHistoryResult {
+  data: DriverTripHistoryItem[];
+  error: string | null;
+}
+
+/**
+ * Calls the `get_driver_trip_history` RPC (security definer — a driver has
+ * no direct RLS read on other users' `users` rows, so bulk passenger names
+ * need the same server-side join trick as getTripPassengerInfo above, just
+ * for a list instead of one row). The function itself scopes results to
+ * `auth.uid()`'s own trips and only 'completed'/'cancelled' ride requests.
+ */
+export async function listDriverTripHistory(limit = 50): Promise<ListDriverTripHistoryResult> {
+  const { data, error } = await getSupabaseClient().rpc('get_driver_trip_history', { p_limit: limit });
+
+  if (error) return { data: [], error: error.message };
+
+  const rows = (data ?? []).map((row) => ({
+    rideRequestId: row.ride_request_id,
+    passengerName: row.passenger_name,
+    status: row.status as 'completed' | 'cancelled',
+    fare: row.fare,
+    date: row.completed_at ?? row.cancelled_at ?? row.requested_at,
+  }));
+
+  return { data: rows, error: null };
+}
+
+export interface TripPassengerInfo {
+  passengerId: string;
+  passengerName: string | null;
+  avatarUrl: string | null;
+}
+
+export interface GetTripPassengerInfoResult {
+  data: TripPassengerInfo | null;
+  error: string | null;
+}
+
+/**
+ * Calls the `get_trip_passenger_info` RPC (security definer — a driver has
+ * no direct RLS read on another user's `users` row, so this is the only
+ * path to the matched passenger's info). Mirrors getTripDriverInfo above,
+ * just reversed: the function itself checks that the caller is the trip's
+ * assigned driver before returning anything. An empty result set (ride not
+ * found/not this driver's trip) is a normal state, not an error.
+ */
+export async function getTripPassengerInfo(rideRequestId: string): Promise<GetTripPassengerInfoResult> {
+  const { data, error } = await getSupabaseClient().rpc('get_trip_passenger_info', {
+    p_ride_request_id: rideRequestId,
+  });
+
+  if (error) return { data: null, error: error.message };
+
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { data: null, error: null };
+
+  return {
+    data: {
+      passengerId: row.passenger_id,
+      passengerName: row.passenger_name,
+      avatarUrl: row.avatar_url,
+    },
+    error: null,
+  };
+}

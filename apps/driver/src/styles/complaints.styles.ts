@@ -12,4 +12,5 @@ export const styles = StyleSheet.create({
   subject: { ...typography.bodyStrong, color: colors.ink },
   formGap: { gap: spacing.md },
   newToggleText: { ...typography.body, color: colors.accentBlue },
+  error: { ...typography.caption, color: colors.danger },
 });

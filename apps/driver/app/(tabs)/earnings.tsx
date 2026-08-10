@@ -1,4 +1,5 @@
-import { ScrollView, Text, View } from 'react-native';
+import { useEffect } from 'react';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge, Button, Card, EmptyState, MapPlaceholder } from '@trisakay/ui';
 import { useEarningsStore } from '../../src/store/useEarningsStore';
@@ -11,18 +12,30 @@ function formatDate(iso: string) {
 
 export default function EarningsScreen() {
   const totalTracked = useEarningsStore((state) => state.totalTracked);
+  const loading = useEarningsStore((state) => state.loading);
+  const earningsError = useEarningsStore((state) => state.error);
+  const load = useEarningsStore((state) => state.load);
   const settlementLog = useEarningsStore((state) => state.settlementLog);
   const notifyPsoForSettlement = useEarningsStore((state) => state.notifyPsoForSettlement);
 
+  useEffect(() => {
+    void load();
+  }, [load]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
+      >
         <Text style={styles.title}>Earnings</Text>
 
         <Card style={styles.totalCard}>
           <Text style={styles.totalLabel}>Total earnings (tracked)</Text>
           <Text style={styles.totalValue}>{formatCurrency(totalTracked)}</Text>
         </Card>
+
+        {earningsError && <Text style={styles.error}>{earningsError}</Text>}
 
         <MapPlaceholder variant="chart" caption="Earnings chart" height={160} />
 

@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
+import { File } from 'expo-file-system';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { submitDriverDocuments, type DriverDocumentInput } from '@trisakay/services';
 import { BrandMotif, Button, GradientSurface, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { DocumentUploadRow } from '../../src/components/DocumentUploadRow';
@@ -56,26 +58,58 @@ export default function RegisterScreen() {
     setStep(2);
   }
 
+  async function uploadPickedDocuments(userId: string) {
+    const inputs: DriverDocumentInput[] = [];
+    for (const type of DOCUMENT_TYPES) {
+      const uri = documents[type].uri;
+      if (!uri) continue;
+      // Same reasoning as uploadAvatar's callers: fetch(uri).arrayBuffer() on
+      // a local picker URI is unreliable on RN, File is the reliable path.
+      const data = await new File(uri).arrayBuffer();
+      inputs.push({ type, data });
+    }
+    return submitDriverDocuments(userId, inputs);
+  }
+
   async function handleSubmit() {
     clearError();
     setSubmitting(true);
-    const outcome = await register(form.name, form.email, form.phone, form.password);
-    setSubmitting(false);
+    const { outcome, userId } = await register(form.name, form.email, form.phone, form.password);
 
-    if (outcome === 'error') return;
+    if (outcome === 'error') {
+      setSubmitting(false);
+      return;
+    }
 
     const reviewNote =
       "Your documents are under review. We'll send you a text message or email once your account is approved to go online.";
 
     if (outcome === 'check_email') {
+      // No live session yet — RLS requires an authenticated driver to
+      // upload, so documents can't be submitted until the driver confirms
+      // their email and logs in. Copy reflects that honestly rather than
+      // implying the upload above already happened.
+      setSubmitting(false);
       Alert.alert(
         'Check your email',
-        `We sent a confirmation link to ${form.email}. Confirm it, then log in.\n\n${reviewNote}`,
+        `We sent a confirmation link to ${form.email}. Confirm it, then log in and upload your documents from there.`,
         [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
       );
-    } else {
-      Alert.alert('Documents submitted', reviewNote);
+      return;
     }
+
+    const { error: uploadError } = await uploadPickedDocuments(userId!);
+    setSubmitting(false);
+
+    if (uploadError) {
+      Alert.alert(
+        'Registered, but documents failed to upload',
+        `${uploadError}\n\nPlease try registering again so your documents are on file for review.`
+      );
+      return;
+    }
+
+    Alert.alert('Documents submitted', reviewNote);
   }
 
   return (

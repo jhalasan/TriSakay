@@ -24,7 +24,12 @@ interface AuthState {
   isHydrating: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, phone: string, password: string) => Promise<'signed_in' | 'check_email' | 'error'>;
+  register: (
+    name: string,
+    email: string,
+    phone: string,
+    password: string
+  ) => Promise<{ outcome: 'signed_in' | 'check_email' | 'error'; userId: string | null }>;
   logout: () => Promise<void>;
   clearError: () => void;
   refreshProfile: () => Promise<void>;
@@ -82,9 +87,11 @@ export const useAuthStore = create<AuthState>()((set) => {
       });
       if (error) {
         set({ error });
-        return 'error';
+        return { outcome: 'error', userId: null };
       }
-      return session ? 'signed_in' : 'check_email';
+      return session
+        ? { outcome: 'signed_in', userId: session.user.id }
+        : { outcome: 'check_email', userId: null };
     },
 
     logout: async () => {

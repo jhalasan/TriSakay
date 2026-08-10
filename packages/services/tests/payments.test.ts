@@ -2,7 +2,73 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createGcashCheckout, subscribeToTransactionStatus } from '../src/payments/index.ts';
+import { confirmCashPayment, createGcashCheckout, subscribeToTransactionStatus } from '../src/payments/index.ts';
+
+test('confirmCashPayment updates the cash transaction to paid with cash_confirmed_by/at', async () => {
+  let capturedUpdate: any = null;
+  const capturedFilters: { column: string; value: unknown }[] = [];
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        assert.equal(table, 'transactions');
+        return {
+          update: (row: unknown) => {
+            capturedUpdate = row;
+            return {
+              eq: (column: string, value: unknown) => {
+                capturedFilters.push({ column, value });
+                return {
+                  eq: (column2: string, value2: unknown) => {
+                    capturedFilters.push({ column: column2, value: value2 });
+                    return { select: () => ({ maybeSingle: async () => ({ data: { id: 'txn1' }, error: null }) }) };
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+    })
+  );
+
+  const { error } = await confirmCashPayment('rr1', 'driver1');
+
+  assert.equal(error, null);
+  assert.equal(capturedUpdate.status, 'paid');
+  assert.equal(capturedUpdate.cash_confirmed_by, 'driver1');
+  assert.ok(capturedUpdate.cash_confirmed_at);
+  assert.deepEqual(capturedFilters, [
+    { column: 'ride_request_id', value: 'rr1' },
+    { column: 'method', value: 'cash' },
+  ]);
+});
+
+test('confirmCashPayment reports a clear error when no cash transaction row exists yet', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: () => ({
+        update: () => ({ eq: () => ({ eq: () => ({ select: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }) }),
+      }),
+    })
+  );
+
+  const { error } = await confirmCashPayment('rr1', 'driver1');
+  assert.equal(error, 'No cash payment found for this ride yet. Please try again in a moment.');
+});
+
+test('confirmCashPayment surfaces a friendly error on a Postgres failure', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: () => ({
+        update: () => ({ eq: () => ({ eq: () => ({ select: () => ({ maybeSingle: async () => ({ data: null, error: { message: 'network error' } }) }) }) }) }),
+      }),
+    })
+  );
+
+  const { error } = await confirmCashPayment('rr1', 'driver1');
+  assert.equal(error, "Couldn't confirm cash payment. Please try again.");
+});
 
 test('createGcashCheckout invokes the Edge Function with rideRequestId and returns checkoutUrl', async () => {
   let capturedName: string | null = null;

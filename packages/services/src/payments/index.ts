@@ -49,6 +49,33 @@ export async function createGcashCheckout(rideRequestId: string): Promise<Create
   return { checkoutUrl: result.checkoutUrl ?? null, error: result.error };
 }
 
+export interface ConfirmCashPaymentResult {
+  error: string | null;
+}
+
+/**
+ * Marks a cash ride's transaction 'paid', driver-confirmed. The pending row
+ * itself is provisioned server-side by a trigger the moment the ride is
+ * assigned (`trg_provision_cash_transaction`, docs/SCHEMA.MD §7.6) — this
+ * only ever UPDATEs, matching the `txn_driver_confirm_cash` RLS policy,
+ * which grants the assigned driver update-only access to their own cash row.
+ * A missing row (the provisioning trigger didn't fire, or this isn't a cash
+ * ride) is reported as a plain error rather than silently succeeding.
+ */
+export async function confirmCashPayment(rideRequestId: string, driverId: string): Promise<ConfirmCashPaymentResult> {
+  const { data, error } = await getSupabaseClient()
+    .from('transactions')
+    .update({ status: 'paid', cash_confirmed_by: driverId, cash_confirmed_at: new Date().toISOString() })
+    .eq('ride_request_id', rideRequestId)
+    .eq('method', 'cash')
+    .select('id')
+    .maybeSingle();
+
+  if (error) return { error: "Couldn't confirm cash payment. Please try again." };
+  if (!data) return { error: 'No cash payment found for this ride yet. Please try again in a moment.' };
+  return { error: null };
+}
+
 /**
  * Realtime subscription on a single transaction row, same shape as
  * subscribeToRideRequestStatus in booking/index.ts: a postgres_changes

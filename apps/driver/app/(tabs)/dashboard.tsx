@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getTripPassengerInfo } from '@trisakay/services';
 import { Avatar, Badge, Toggle, colors } from '@trisakay/ui';
 import { RequestCard } from '../../src/components/RequestCard';
 import { StatTile } from '../../src/components/StatTile';
@@ -84,6 +85,14 @@ export default function DashboardScreen() {
     if (accepted) {
       startTrip(accepted, accepted.tripId);
       router.push('/trip/active');
+
+      // Non-blocking — the trip screen renders immediately with a null
+      // name/photo (Avatar already handles that) and fills in once this
+      // resolves, same pattern as the passenger app's finding-driver.tsx.
+      const { data } = await getTripPassengerInfo(accepted.id).catch(() => ({ data: null }));
+      if (data) {
+        useTripStore.getState().setPassengerInfo(data.passengerName, data.avatarUrl);
+      }
     }
   }
 

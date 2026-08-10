@@ -66,7 +66,8 @@ Generated 2026-08-05 from a full-repo review: typecheck clean, 74/74 tests pass 
 
 ## P5 — Deployment readiness
 
-- [ ] `eas.json` for Passenger + Driver (Android internal distribution + iOS TestFlight) — doesn't exist for either app yet; can likely be done once and shared.
+- [x] `eas.json` for Driver — done (`apps/driver/eas.json`, `development` + `preview` profiles). See `docs/DRIVER_TODO.MD` #18 for exact profile shape and what's still manual (`eas init`/`eas login` for the real `projectId`).
+- [ ] `eas.json` for Passenger — still doesn't exist; same shape as driver's, not done this pass (kept out of scope).
 - [ ] Admin app deployment to Vercel — moot until the admin app (P0) exists.
 
 ## P6 — Housekeeping (low risk, no user-facing impact, fix opportunistically)
