@@ -51,8 +51,13 @@ export default function PaymentScreen() {
     if (paymentMethod !== 'cash') return;
 
     if (!rideRequestId) {
-      setPaymentError('Missing ride details — please go back and try again.');
-      setPaymentPhase('failed');
+      function markMissingRideDetails() {
+        setPaymentError('Missing ride details — please go back and try again.');
+        setPaymentPhase('failed');
+      }
+
+      markMissingRideDetails();
+      cashWaitRestartRef.current = markMissingRideDetails;
       return;
     }
 
@@ -150,7 +155,7 @@ export default function PaymentScreen() {
         } else if (row.status === 'failed') {
           unsubscribeRef.current?.();
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          setPaymentError('Payment failed. You can retry or pay cash instead.');
+          setPaymentError('Payment failed. You can retry.');
           setPaymentPhase('failed');
         }
       },
@@ -168,7 +173,7 @@ export default function PaymentScreen() {
 
     timeoutRef.current = setTimeout(() => {
       unsubscribeRef.current?.();
-      setPaymentError("We couldn't confirm your payment yet. You can retry or pay cash instead.");
+      setPaymentError("We couldn't confirm your payment yet. You can retry.");
       setPaymentPhase('failed');
     }, GCASH_WAIT_TIMEOUT_MS);
 
