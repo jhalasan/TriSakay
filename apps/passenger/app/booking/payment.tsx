@@ -8,7 +8,6 @@ import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { formatCurrency } from '../../src/utils/currency';
-import { wait } from '../../src/mocks/delay';
 import type { PaymentMethod } from '../../src/types/booking';
 import { styles } from '../../src/styles/booking/payment.styles';
 
@@ -18,8 +17,9 @@ const PAYMENT_OPTIONS: { value: PaymentMethod; title: string; subtitle: string }
 ];
 
 const GCASH_WAIT_TIMEOUT_MS = 120_000;
+const CASH_WAIT_TIMEOUT_MS = 30_000;
 
-type GcashPhase = 'idle' | 'opening' | 'waiting' | 'failed';
+type PaymentPhase = 'idle' | 'opening' | 'waiting' | 'failed';
 
 export default function PaymentScreen() {
   const router = useRouter();
@@ -33,11 +33,11 @@ export default function PaymentScreen() {
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const addRide = useHistoryStore((state) => state.addRide);
 
-  const [paying, setPaying] = useState(false);
-  const [gcashPhase, setGcashPhase] = useState<GcashPhase>('idle');
-  const [gcashError, setGcashError] = useState<string | null>(null);
+  const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>('idle');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cashWaitRestartRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
     return () => {
@@ -45,6 +45,46 @@ export default function PaymentScreen() {
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
+
+  useEffect(() => {
+    if (paymentMethod !== 'cash' || !rideRequestId) return;
+
+    function startCashWait() {
+      setPaymentPhase('waiting');
+      setPaymentError(null);
+
+      unsubscribeRef.current?.();
+      unsubscribeRef.current = subscribeToTransactionStatus(
+        rideRequestId!,
+        (row) => {
+          if (row.status === 'paid') {
+            unsubscribeRef.current?.();
+            if (timeoutRef.current) clearTimeout(timeoutRef.current);
+            finishSuccessfulPayment();
+          }
+        },
+        (message) => {
+          unsubscribeRef.current?.();
+          unsubscribeRef.current = null;
+          if (timeoutRef.current) {
+            clearTimeout(timeoutRef.current);
+            timeoutRef.current = null;
+          }
+          setPaymentError(message);
+          setPaymentPhase('failed');
+        },
+      );
+
+      timeoutRef.current = setTimeout(() => {
+        unsubscribeRef.current?.();
+        setPaymentError('Still waiting for the driver to confirm cash received.');
+        setPaymentPhase('failed');
+      }, CASH_WAIT_TIMEOUT_MS);
+    }
+
+    startCashWait();
+    cashWaitRestartRef.current = startCashWait;
+  }, [paymentMethod, rideRequestId]);
 
   function finishSuccessfulPayment() {
     setTripStatus('paid');
@@ -65,13 +105,6 @@ export default function PaymentScreen() {
     router.replace('/booking/rate-driver');
   }
 
-  async function handlePayNowCash() {
-    setPaying(true);
-    await wait(800);
-    setPaying(false);
-    finishSuccessfulPayment();
-  }
-
   async function handlePayNowGcash() {
     // Defensive: tear down any stale subscription from a prior attempt
     // before starting a new one, even if a previous cleanup path missed it.
@@ -79,23 +112,23 @@ export default function PaymentScreen() {
     unsubscribeRef.current = null;
 
     if (!rideRequestId) {
-      setGcashError('Missing ride details — please go back and try again.');
-      setGcashPhase('failed');
+      setPaymentError('Missing ride details — please go back and try again.');
+      setPaymentPhase('failed');
       return;
     }
 
-    setGcashPhase('opening');
-    setGcashError(null);
+    setPaymentPhase('opening');
+    setPaymentError(null);
 
     const { checkoutUrl, error } = await createGcashCheckout(rideRequestId);
 
     if (error || !checkoutUrl) {
-      setGcashError(error ?? 'Could not start GCash checkout.');
-      setGcashPhase('failed');
+      setPaymentError(error ?? 'Could not start GCash checkout.');
+      setPaymentPhase('failed');
       return;
     }
 
-    setGcashPhase('waiting');
+    setPaymentPhase('waiting');
 
     unsubscribeRef.current = subscribeToTransactionStatus(
       rideRequestId,
@@ -107,8 +140,8 @@ export default function PaymentScreen() {
         } else if (row.status === 'failed') {
           unsubscribeRef.current?.();
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          setGcashError('Payment failed. You can retry or pay cash instead.');
-          setGcashPhase('failed');
+          setPaymentError('Payment failed. You can retry or pay cash instead.');
+          setPaymentPhase('failed');
         }
       },
       (message) => {
@@ -118,15 +151,15 @@ export default function PaymentScreen() {
           clearTimeout(timeoutRef.current);
           timeoutRef.current = null;
         }
-        setGcashError(message);
-        setGcashPhase('failed');
+        setPaymentError(message);
+        setPaymentPhase('failed');
       },
     );
 
     timeoutRef.current = setTimeout(() => {
       unsubscribeRef.current?.();
-      setGcashError("We couldn't confirm your payment yet. You can retry or pay cash instead.");
-      setGcashPhase('failed');
+      setPaymentError("We couldn't confirm your payment yet. You can retry or pay cash instead.");
+      setPaymentPhase('failed');
     }, GCASH_WAIT_TIMEOUT_MS);
 
     // Never trusted for anything — the Realtime subscription above is the
@@ -136,24 +169,26 @@ export default function PaymentScreen() {
   }
 
   async function handlePayNow() {
-    if (paymentMethod === 'gcash') {
-      await handlePayNowGcash();
-    } else {
-      await handlePayNowCash();
-    }
+    await handlePayNowGcash();
   }
 
   function handleRetryGcash() {
-    setGcashPhase('idle');
-    setGcashError(null);
+    setPaymentPhase('idle');
+    setPaymentError(null);
     void handlePayNowGcash();
+  }
+
+  function handleCheckAgainCash() {
+    unsubscribeRef.current?.();
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    cashWaitRestartRef.current?.();
   }
 
   function handleFallbackToCash() {
     unsubscribeRef.current?.();
     if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setGcashPhase('idle');
-    setGcashError(null);
+    setPaymentPhase('idle');
+    setPaymentError(null);
     setPaymentMethod('cash');
     // Known accepted gap: this leaves the 'pending'/'failed' GCash
     // transactions row for this ride unresolved (there's no client-facing
@@ -165,7 +200,7 @@ export default function PaymentScreen() {
     // scope here.
   }
 
-  const gcashBusy = gcashPhase === 'opening' || gcashPhase === 'waiting';
+  const gcashBusy = paymentPhase === 'opening' || paymentPhase === 'waiting';
 
   return (
     <View style={styles.container}>
@@ -203,29 +238,41 @@ export default function PaymentScreen() {
           })}
         </View>
 
-        {gcashPhase === 'waiting' && (
-          <Text style={styles.gcashStatusText}>Waiting for PayMongo to confirm your payment…</Text>
+        {paymentPhase === 'waiting' && (
+          <Text style={styles.gcashStatusText}>
+            {paymentMethod === 'cash'
+              ? 'Waiting for the driver to confirm cash received…'
+              : 'Waiting for PayMongo to confirm your payment…'}
+          </Text>
         )}
-        {gcashPhase === 'failed' && gcashError && (
+        {paymentPhase === 'failed' && paymentError && (
           <View style={styles.gcashErrorBox}>
-            <Text style={styles.gcashErrorText}>{gcashError}</Text>
+            <Text style={styles.gcashErrorText}>{paymentError}</Text>
             <View style={styles.gcashErrorActions}>
-              <Button label="Retry GCash" onPress={handleRetryGcash} />
-              <Button label="Pay cash instead" variant="outline" onPress={handleFallbackToCash} />
+              {paymentMethod === 'cash' ? (
+                <Button label="Check again" onPress={handleCheckAgainCash} />
+              ) : (
+                <>
+                  <Button label="Retry GCash" onPress={handleRetryGcash} />
+                  <Button label="Pay cash instead" variant="outline" onPress={handleFallbackToCash} />
+                </>
+              )}
             </View>
           </View>
         )}
       </View>
 
-      <View style={styles.footer}>
-        <Button
-          label={gcashPhase === 'opening' ? 'Opening PayMongo…' : 'Pay now'}
-          fullWidth
-          loading={paying || gcashPhase === 'opening'}
-          disabled={gcashPhase === 'waiting' || gcashPhase === 'failed'}
-          onPress={handlePayNow}
-        />
-      </View>
+      {paymentMethod === 'gcash' && (
+        <View style={styles.footer}>
+          <Button
+            label={paymentPhase === 'opening' ? 'Opening PayMongo…' : 'Pay now'}
+            fullWidth
+            loading={paymentPhase === 'opening'}
+            disabled={paymentPhase === 'waiting' || paymentPhase === 'failed'}
+            onPress={handlePayNow}
+          />
+        </View>
+      )}
     </View>
   );
 }
