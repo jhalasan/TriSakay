@@ -53,19 +53,23 @@ export async function submitRating({
   stars,
   comment,
 }: SubmitRatingInput): Promise<SubmitRatingResult> {
-  const userId = await getSignedInUserId();
-  if (!userId) return { error: 'Not signed in' };
+  try {
+    const userId = await getSignedInUserId();
+    if (!userId) return { error: 'Not signed in' };
 
-  const { error } = await getSupabaseClient()
-    .from('ratings')
-    .insert({
-      ride_request_id: rideRequestId,
-      passenger_id: userId,
-      driver_id: driverId,
-      stars,
-      comment: comment?.trim() || null,
-    });
+    const { error } = await getSupabaseClient()
+      .from('ratings')
+      .insert({
+        ride_request_id: rideRequestId,
+        passenger_id: userId,
+        driver_id: driverId,
+        stars,
+        comment: comment?.trim() || null,
+      });
 
-  if (error) return { error: toFriendlyMessage(error) };
-  return { error: null };
+    if (error) return { error: toFriendlyMessage(error) };
+    return { error: null };
+  } catch {
+    return { error: 'Something went wrong — please try again.' };
+  }
 }

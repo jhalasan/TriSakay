@@ -41,7 +41,7 @@ export const styles = StyleSheet.create({
   },
   errorText: {
     ...typography.body,
-    color: colors.ink,
+    color: colors.danger,
     textAlign: 'center',
     marginTop: spacing.md,
   },

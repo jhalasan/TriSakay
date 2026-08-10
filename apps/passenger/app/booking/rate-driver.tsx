@@ -24,6 +24,16 @@ export default function RateDriverScreen() {
     router.replace('/(tabs)/home');
   }
 
+  function handleRatingChange(value: number) {
+    setSubmitError(null);
+    setRating(value);
+  }
+
+  function handleCommentChange(value: string) {
+    setSubmitError(null);
+    setComment(value);
+  }
+
   async function handleSubmit() {
     setSubmitting(true);
     setSubmitError(null);
@@ -57,7 +67,7 @@ export default function RateDriverScreen() {
         {canRate ? (
           <>
             <View style={styles.starsRow}>
-              <StarRating value={rating} onChange={setRating} size={34} />
+              <StarRating value={rating} onChange={handleRatingChange} size={34} />
             </View>
 
             <View style={styles.commentWrap}>
@@ -65,7 +75,7 @@ export default function RateDriverScreen() {
                 label="Comment (optional)"
                 placeholder="Tell us about your trip"
                 value={comment}
-                onChangeText={setComment}
+                onChangeText={handleCommentChange}
               />
             </View>
 
@@ -80,6 +90,12 @@ export default function RateDriverScreen() {
                 onPress={handleSubmit}
               />
             </View>
+
+            {submitError && (
+              <View style={styles.submitWrap}>
+                <Button label="Skip for now" variant="outline" fullWidth onPress={finish} />
+              </View>
+            )}
           </>
         ) : (
           <>
