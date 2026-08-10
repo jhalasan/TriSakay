@@ -38,6 +38,7 @@ export default function PaymentScreen() {
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cashWaitRestartRef = useRef<(() => void) | null>(null);
+  const settledRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -47,7 +48,13 @@ export default function PaymentScreen() {
   }, []);
 
   useEffect(() => {
-    if (paymentMethod !== 'cash' || !rideRequestId) return;
+    if (paymentMethod !== 'cash') return;
+
+    if (!rideRequestId) {
+      setPaymentError('Missing ride details — please go back and try again.');
+      setPaymentPhase('failed');
+      return;
+    }
 
     function startCashWait() {
       setPaymentPhase('waiting');
@@ -87,6 +94,9 @@ export default function PaymentScreen() {
   }, [paymentMethod, rideRequestId]);
 
   function finishSuccessfulPayment() {
+    if (settledRef.current) return;
+    settledRef.current = true;
+
     setTripStatus('paid');
 
     if (driver && dropoff) {
@@ -184,22 +194,6 @@ export default function PaymentScreen() {
     cashWaitRestartRef.current?.();
   }
 
-  function handleFallbackToCash() {
-    unsubscribeRef.current?.();
-    if (timeoutRef.current) clearTimeout(timeoutRef.current);
-    setPaymentPhase('idle');
-    setPaymentError(null);
-    setPaymentMethod('cash');
-    // Known accepted gap: this leaves the 'pending'/'failed' GCash
-    // transactions row for this ride unresolved (there's no client-facing
-    // write policy for GCash rows — docs/SCHEMA.MD §7.6 — so we can't mark
-    // it void from here). Harmless for correctness since it can never read
-    // 'paid', just confusing in PSO/admin transaction views alongside the
-    // separately-recorded cash payment; a real fix needs either an
-    // Edge-Function-mediated void endpoint or a cleanup job, both out of
-    // scope here.
-  }
-
   const gcashBusy = paymentPhase === 'opening' || paymentPhase === 'waiting';
 
   return (
@@ -252,10 +246,7 @@ export default function PaymentScreen() {
               {paymentMethod === 'cash' ? (
                 <Button label="Check again" onPress={handleCheckAgainCash} />
               ) : (
-                <>
-                  <Button label="Retry GCash" onPress={handleRetryGcash} />
-                  <Button label="Pay cash instead" variant="outline" onPress={handleFallbackToCash} />
-                </>
+                <Button label="Retry GCash" onPress={handleRetryGcash} />
               )}
             </View>
           </View>
