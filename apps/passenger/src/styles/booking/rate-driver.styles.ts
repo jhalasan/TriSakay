@@ -39,4 +39,18 @@ export const styles = StyleSheet.create({
     alignSelf: 'stretch',
     marginTop: spacing.xl,
   },
+  errorText: {
+    ...typography.body,
+    color: colors.ink,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  fallbackNote: {
+    ...typography.body,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    marginTop: spacing.lg,
+    marginBottom: spacing.xl,
+    paddingHorizontal: spacing.md,
+  },
 });
