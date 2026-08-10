@@ -8,6 +8,7 @@ interface FakeConfig {
   userRow?: Record<string, unknown> | null;
   /** Captures the callback useSessionStore registers, so a test can fire a simulated auth event directly. */
   captureAuthStateCallback?: (cb: (session: unknown) => void) => void;
+  onSignOut?: () => void;
 }
 
 function fakeClient(config: FakeConfig) {
@@ -25,7 +26,9 @@ function fakeClient(config: FakeConfig) {
           ? { data: { session: null }, error: { message: config.signInError } }
           : { data: { session: config.session ?? null }, error: null },
       getSession: async () => ({ data: { session: config.session ?? null } }),
-      signOut: async () => {},
+      signOut: async () => {
+        config.onSignOut?.();
+      },
       onAuthStateChange: (cb: (event: string, session: unknown) => void) => {
         config.captureAuthStateCallback?.((session) => cb('SIGNED_IN', session));
         return { data: { subscription: { unsubscribe: () => {} } } };
@@ -99,4 +102,27 @@ test('the onAuthStateChange listener alone hydrates the session on load (no sepa
   assert.equal(useSessionStore.getState().isHydrating, false);
   assert.equal(useSessionStore.getState().isAuthenticated, true);
   assert.equal(useSessionStore.getState().user?.role, 'pso_supervisor');
+});
+
+test('hydration signs the Supabase session back out when it belongs to a non-admin account, same as signIn() does', async () => {
+  let signOutCalled = false;
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u2' } },
+      userRow: DRIVER_ROW,
+      onSignOut: () => {
+        signOutCalled = true;
+      },
+    })
+  );
+  useSessionStore.setState({ user: null, isAuthenticated: false, isHydrating: true, error: null });
+
+  capturedAuthStateCallback!({ user: { id: 'u2' } });
+
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.equal(signOutCalled, true, 'a session hydration rejects must not be left alive in Supabase storage');
+  assert.equal(useSessionStore.getState().isAuthenticated, false);
+  assert.equal(useSessionStore.getState().user, null);
+  assert.equal(useSessionStore.getState().isHydrating, false);
 });

@@ -52,3 +52,23 @@ export async function updateDriverAvailability(
   if (error) return { error: toFriendlyMessage(error.message) };
   return { error: null };
 }
+
+/**
+ * Reads the driver's current `is_available` straight from the backend.
+ * Callers use this to re-sync client state on app boot/login — nothing
+ * keeps the client's in-memory availability flag correct across app
+ * restarts otherwise, since it's a plain local default.
+ */
+export async function getDriverAvailability(): Promise<{ isAvailable: boolean; error: string | null }> {
+  const userId = await getSignedInUserId();
+  if (!userId) return { isAvailable: false, error: 'Not signed in' };
+
+  const { data, error } = await getSupabaseClient()
+    .from('driver_profiles')
+    .select('is_available')
+    .eq('user_id', userId)
+    .maybeSingle();
+
+  if (error) return { isAvailable: false, error: error.message };
+  return { isAvailable: data?.is_available ?? false, error: null };
+}

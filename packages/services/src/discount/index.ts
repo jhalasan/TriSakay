@@ -53,7 +53,13 @@ export async function applyForDiscount({
     if (front.error) return { error: front.error.message };
 
     const back = await uploadIdPhoto(userId, category, backUri, 'back', contentType);
-    if (back.error) return { error: back.error.message };
+    if (back.error) {
+      // Best-effort — the front photo already landed in Storage and nothing
+      // will ever reference it if we stop here. Its own failure is swallowed
+      // on purpose: it must never mask the real error below.
+      await getSupabaseClient().storage.from('discount-ids').remove([front.path]).catch(() => {});
+      return { error: back.error.message };
+    }
 
     const { error: insertError } = await getSupabaseClient()
       .from('passenger_discounts')
@@ -65,6 +71,7 @@ export async function applyForDiscount({
       });
 
     if (insertError) {
+      await getSupabaseClient().storage.from('discount-ids').remove([front.path, back.path]).catch(() => {});
       return {
         error: insertError.code === '23505'
           ? 'You already have a discount application pending or approved.'

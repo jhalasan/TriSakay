@@ -45,6 +45,68 @@ export async function createRideRequest(input: CreateRideRequestInput): Promise<
   return { data: data ?? null, error: error?.message ?? null };
 }
 
+export interface ActiveRideRequest {
+  id: string;
+  status: Database['public']['Enums']['ride_status'];
+  pickupLabel: string | null;
+  pickupLat: number;
+  pickupLng: number;
+  destLabel: string | null;
+  destLat: number;
+  destLng: number;
+  seats: number;
+  estimatedFare: number | null;
+  preferredMethod: Database['public']['Enums']['payment_method'];
+}
+
+export interface GetActiveRideResult {
+  data: ActiveRideRequest | null;
+  error: string | null;
+}
+
+/**
+ * Finds the passenger's own most recent `pending`/`assigned` ride request,
+ * if any — used to re-hydrate `useBookingStore` on app boot. Without this,
+ * a passenger whose app restarts mid-ride (backgrounded, crashed, force-quit)
+ * would land on a blank booking store and could start an entirely new
+ * booking while the backend still has their old ride active. Deliberately
+ * stops at `assigned`, not `completed` — payment/rating recovery across a
+ * restart is a separate, already-tracked gap (both are still mock/local on
+ * this screen), not part of what this function exists to fix.
+ */
+export async function getActiveRideForPassenger(passengerId: string): Promise<GetActiveRideResult> {
+  const { data, error } = await getSupabaseClient()
+    .from('ride_requests')
+    .select(
+      'id, status, pickup_label, pickup_lat, pickup_lng, dest_label, dest_lat, dest_lng, seats_requested, estimated_fare, preferred_method'
+    )
+    .eq('passenger_id', passengerId)
+    .in('status', ['pending', 'assigned'])
+    .order('requested_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+
+  if (error) return { data: null, error: error.message };
+  if (!data) return { data: null, error: null };
+
+  return {
+    data: {
+      id: data.id,
+      status: data.status,
+      pickupLabel: data.pickup_label,
+      pickupLat: data.pickup_lat,
+      pickupLng: data.pickup_lng,
+      destLabel: data.dest_label,
+      destLat: data.dest_lat,
+      destLng: data.dest_lng,
+      seats: data.seats_requested,
+      estimatedFare: data.estimated_fare,
+      preferredMethod: data.preferred_method,
+    },
+    error: null,
+  };
+}
+
 export interface CancelRideRequestResult {
   error: string | null;
 }

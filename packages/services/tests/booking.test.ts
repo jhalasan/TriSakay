@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeTrip, cancelTrip, getTripDriverInfo } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeTrip, cancelTrip, getTripDriverInfo } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -153,6 +153,120 @@ test('cancelRideRequest surfaces a genuine Postgres error', async () => {
   );
 
   const { error } = await cancelRideRequest('rr1', 'Cancelled by passenger');
+  assert.equal(error, 'network error');
+});
+
+test("getActiveRideForPassenger finds the passenger's most recent pending/assigned ride", async () => {
+  const capturedEqArgs: [string, unknown][] = [];
+  let capturedIn: [string, unknown[]] | null = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        assert.equal(table, 'ride_requests');
+        return {
+          select: () => ({
+            eq: (column: string, value: unknown) => {
+              capturedEqArgs.push([column, value]);
+              return {
+                in: (column2: string, values: unknown[]) => {
+                  capturedIn = [column2, values];
+                  return {
+                    order: () => ({
+                      limit: () => ({
+                        maybeSingle: async () => ({
+                          data: {
+                            id: 'rr1',
+                            status: 'assigned',
+                            pickup_label: 'Home',
+                            pickup_lat: 6.11,
+                            pickup_lng: 125.17,
+                            dest_label: 'Mall',
+                            dest_lat: 6.12,
+                            dest_lng: 125.18,
+                            seats_requested: 2,
+                            estimated_fare: 25,
+                            preferred_method: 'gcash',
+                          },
+                          error: null,
+                        }),
+                      }),
+                    }),
+                  };
+                },
+              };
+            },
+          }),
+        };
+      },
+    })
+  );
+
+  const { data, error } = await getActiveRideForPassenger('p1');
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedEqArgs, [['passenger_id', 'p1']]);
+  assert.deepEqual(capturedIn, ['status', ['pending', 'assigned']]);
+  assert.deepEqual(data, {
+    id: 'rr1',
+    status: 'assigned',
+    pickupLabel: 'Home',
+    pickupLat: 6.11,
+    pickupLng: 125.17,
+    destLabel: 'Mall',
+    destLat: 6.12,
+    destLng: 125.18,
+    seats: 2,
+    estimatedFare: 25,
+    preferredMethod: 'gcash',
+  });
+});
+
+test('getActiveRideForPassenger returns null data with no error when there is no active ride', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            in: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({ data: null, error: null }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    })
+  );
+
+  const { data, error } = await getActiveRideForPassenger('p1');
+  assert.equal(data, null);
+  assert.equal(error, null);
+});
+
+test('getActiveRideForPassenger surfaces a Postgres error', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            in: () => ({
+              order: () => ({
+                limit: () => ({
+                  maybeSingle: async () => ({ data: null, error: { message: 'network error' } }),
+                }),
+              }),
+            }),
+          }),
+        }),
+      }),
+    })
+  );
+
+  const { data, error } = await getActiveRideForPassenger('p1');
+  assert.equal(data, null);
   assert.equal(error, 'network error');
 });
 

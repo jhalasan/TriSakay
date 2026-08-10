@@ -60,7 +60,18 @@ export const useSessionStore = create<SessionState>()((set) => {
     if (claimed !== epoch) return;
 
     const user = profile ? toSessionUser(profile) : null;
-    set({ user, isAuthenticated: user !== null, isHydrating: false });
+    if (!user) {
+      // Mirrors signIn()'s handling of the same "no usable profile" case
+      // (fetch failed, or the account isn't an admin-portal role) — without
+      // this, a session that hydration rejects stays alive in Supabase's own
+      // storage even though the UI has already moved on to showing signed-out.
+      await authService.signOut().catch(() => {});
+      if (claimed !== epoch) return;
+      set({ user: null, isAuthenticated: false, isHydrating: false });
+      return;
+    }
+
+    set({ user, isAuthenticated: true, isHydrating: false });
   }
 
   // supabase-js fires an INITIAL_SESSION event on subscribe, so this alone

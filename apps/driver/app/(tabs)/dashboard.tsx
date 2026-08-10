@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -41,6 +41,20 @@ export default function DashboardScreen() {
 
   const startTrip = useTripStore((state) => state.startTrip);
 
+  // Tied to isAvailable itself (not the toggle handler) so a driver who was
+  // online before an app restart gets resubscribed here too, once
+  // useAvailabilitySync (app/_layout.tsx) re-syncs isAvailable on boot —
+  // otherwise the request board would stay silent even though the backend
+  // still considers them available and matchable.
+  useEffect(() => {
+    if (!user) return;
+    if (isAvailable) {
+      subscribe(user.id);
+    } else {
+      unsubscribe();
+    }
+  }, [isAvailable, user, subscribe, unsubscribe]);
+
   async function handleToggleAvailable(next: boolean) {
     setTogglingAvailability(true);
 
@@ -56,15 +70,8 @@ export default function DashboardScreen() {
       }
     }
 
-    const ok = await setAvailable(next, coords);
+    await setAvailable(next, coords);
     setTogglingAvailability(false);
-    if (!ok) return;
-
-    if (next && user) {
-      subscribe(user.id);
-    } else {
-      unsubscribe();
-    }
   }
 
   async function handleAccept(id: string) {

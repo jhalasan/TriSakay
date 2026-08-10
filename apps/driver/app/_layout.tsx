@@ -14,6 +14,8 @@ import { colors, fontFamily } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
+import { useDriverStore } from '../src/store/useDriverStore';
+import { useRequestsStore } from '../src/store/useRequestsStore';
 import { useVerificationStore, type VerificationGateStatus } from '../src/store/useVerificationStore';
 
 export const unstable_settings = { initialRouteName: 'index' };
@@ -95,6 +97,21 @@ function useVerificationSync(sessionUserId: string | null) {
   }, [sessionUserId, check, reset]);
 }
 
+function useAvailabilitySync(sessionUserId: string | null) {
+  const checkAvailability = useDriverStore((state) => state.checkAvailability);
+
+  useEffect(() => {
+    if (sessionUserId === null) {
+      // Covers a session ending without going through app/logout.tsx (e.g.
+      // token expiry) — that screen already handles the normal path itself.
+      useDriverStore.setState({ isAvailable: false });
+      useRequestsStore.getState().unsubscribe();
+      return;
+    }
+    void checkAvailability();
+  }, [sessionUserId, checkAvailability]);
+}
+
 function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateStatus) {
   const root = useRootSegment();
   const router = useRouter();
@@ -130,6 +147,7 @@ function RootLayoutNav() {
   const verificationStatus = useVerificationStore((state) => state.status);
   useConsentSync(sessionUserId);
   useVerificationSync(sessionUserId);
+  useAvailabilitySync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus, verificationStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 

@@ -71,6 +71,11 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
     const isSplashOrRoot = root === undefined || root === 'splash';
     if (isSplashOrRoot) return;
 
+    // Logout must stay reachable regardless of gate state, or the confirm
+    // modal opened from a blocked screen would get bounced back before the
+    // rider could confirm it (mirrors the same fix in apps/driver's layout).
+    if (root === 'logout') return;
+
     const inAuthGroup = root === '(auth)';
     const onConsent = root === 'consent';
 
