@@ -8,20 +8,30 @@ Cross-reference: `docs/CONTEXT.MD` §7 (Passenger App feature list) and FR-11 (c
 
 ## Where things actually stand
 
+*(Updated 2026-08-10 — the section below originally described the state as of 2026-07-31, before build-order items 1–6 and 11 landed; it had drifted well behind the table further down this file.)*
+
 **✅ Real, backend-wired:**
 - Registration & Login (`app/(auth)/register.tsx`, `login.tsx`) — real Supabase sign-up/sign-in via `packages/services/src/auth`. Missing: password reset (`login.tsx`'s "Forgot password?" is an `Alert.alert` stub).
 - ToS / Privacy consent gate (`app/consent.tsx`) — versioned, auditable, writes to `user_consents` via `packages/services/src/consents`. Legal copy itself is still 3 hardcoded "Placeholder —" paragraphs.
 - Location permission (`app/location-permission.tsx`, `src/hooks/useLocationPermission.ts`) — full granted/denied/blocked flow, re-prompts every foreground.
 - Logout (`app/logout.tsx`).
 - Profile name edit (`app/(tabs)/profile.tsx` → `updateProfile({fullName})`).
+- GPS pickup capture + destination search (`app/(tabs)/home.tsx`, `app/booking/set-destination.tsx`, `src/utils/geocode.ts`) — real device GPS + reverse geocode, real Nominatim forward-geocode search.
+- Fare estimation (`app/booking/confirm.tsx`, `packages/services/src/fare`) — real `compute_fare` RPC, discount-aware.
+- Ride request + Realtime status (`packages/services/src/booking`, `app/booking/finding-driver.tsx`) — real `ride_requests` insert/cancel, live status subscription.
+- Trip tracking + real driver info (`app/booking/trip.tsx`, `get_trip_driver_info` RPC) — real name/plate/rating via a security-definer RPC, driven by `ride_requests.status`.
+- Payment, both methods (`app/booking/payment.tsx`) — GCash via `create-gcash-checkout` + PayMongo + webhook; cash via driver-confirmed `transactions.status='paid'` (FR-9.9), both gated on a real Realtime subscription, never a client-side declaration of success.
+- Fare-discount application (FR-3.10–3.15) (`app/profile/apply-discount.tsx`, `packages/services/src/discount`) — real ID-photo upload + `passenger_discounts` claim workflow.
 
 **🟡 Partial (UI real, data fake or missing):**
-- Ride status tracking, driver info, ride history, settings — see the per-screen table in the exploration notes; all are either `setTimeout` simulations or empty in-memory Zustand stores.
+- Ride history (`app/(tabs)/history.tsx`) — reads `useHistoryStore`, still seeded empty, nothing fetched from `ride_requests`/`transactions`.
+- Settings (`app/(tabs)/settings.tsx`) — toggles and the language cycler are in-memory only, no persistence or real i18n.
+- Notifications (`app/notifications.tsx`) — still mock-seeded; `packages/services/src/notifications/index.ts` is still a one-line stub (the driver app's `apps/driver/app/notifications.tsx` + real service is a working template to port from).
+- Complaint submission (`app/(tabs)/complaints.tsx`) — free-text form only, `wait(600)` fake submit, no `complaints` insert.
+- Rate driver (`app/booking/rate-driver.tsx`) — UI real, `wait(500)` fake submit, no `ratings` insert.
 
 **❌ No code at all:**
-- GPS pickup capture, destination search, fare estimation, ride request insert, payment (both methods), payment history screen, rate-driver insert, complaint insert, notifications, and the entire fare-discount feature (FR-3.10–3.15).
-
-Root cause for most of the above: `apps/passenger/src/mocks/` (destinations, drivers, notifications, rideHistory, fareCalculator) are deliberately emptied seams, not real mocks — they're where backend wiring plugs in. `packages/services/src/{booking,location,notifications}/index.ts` are each a single-line status-string stub.
+- Payment history screen (`profile/payment-methods.tsx` is a static info page, not history) and password reset (both apps' "Forgot password?" are `Alert.alert` stubs).
 
 Two spec divergences to resolve, not silently pick a side on:
 - **Map library:** CONTEXT §3 specifies MapLibre; the actual implementation (`packages/ui/src/components/OsmMap`) is Leaflet inside a `react-native-webview`, using OSMF's free tile service — which the component's own `mapHtml.ts` documents as dev/low-volume only, not production-safe.
