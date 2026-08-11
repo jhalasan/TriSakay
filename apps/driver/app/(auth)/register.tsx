@@ -98,7 +98,16 @@ export default function RegisterScreen() {
       return;
     }
 
-    const { error: uploadError } = await uploadPickedDocuments(userId!);
+    let uploadError: string | null;
+    try {
+      ({ error: uploadError } = await uploadPickedDocuments(userId!));
+    } catch {
+      // A stale/expired picker URI throws on read rather than returning a
+      // Supabase error — without this catch, setSubmitting(false) below
+      // never runs and the button spins forever even though the account
+      // was already created.
+      uploadError = 'Could not read one of your selected files.';
+    }
     setSubmitting(false);
 
     if (uploadError) {

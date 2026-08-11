@@ -16,7 +16,7 @@ interface NotificationsState {
   markAllRead: () => Promise<void>;
 }
 
-export const useNotificationsStore = create<NotificationsState>()((set) => ({
+export const useNotificationsStore = create<NotificationsState>()((set, get) => ({
   items: [],
   error: null,
 
@@ -38,9 +38,13 @@ export const useNotificationsStore = create<NotificationsState>()((set) => ({
   markAllRead: async () => {
     // Optimistic — the Realtime subscription reconciles right behind this
     // anyway, so the visual flip doesn't need to wait on the round-trip.
-    set((state) => ({ items: state.items.map((item) => ({ ...item, read: true })) }));
+    // But if the write fails, nothing changed server-side (no Realtime event
+    // fires to correct it), so the previous snapshot is restored below —
+    // otherwise the badge would stay silently wrong until the next restart.
+    const previousItems = get().items;
+    set({ items: previousItems.map((item) => ({ ...item, read: true })) });
 
     const { error } = await markAllNotificationsRead();
-    if (error) set({ error });
+    if (error) set({ items: previousItems, error });
   },
 }));

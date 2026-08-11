@@ -184,8 +184,31 @@ export async function acceptRideRequest(driverId: string, rideRequestId: string)
       .select('id')
       .single();
 
-    if (createTripError) return { error: "Couldn't start a new trip. Please try again." };
-    tripId = newTrip.id;
+    if (createTripError) {
+      // 23505 = unique_violation on trips_one_active_per_driver: a concurrent
+      // accept (double-tap, or Dashboard + Requests tab racing) already
+      // created this driver's active trip between the lookup above and this
+      // insert. That other call is the one that "won" — use its trip instead
+      // of failing outright, so a double-tap still results in one accepted
+      // ride rather than a stuck error.
+      if (createTripError.code === '23505') {
+        const { data: raceWinnerTrip, error: raceLookupError } = await client
+          .from('trips')
+          .select('id')
+          .eq('driver_id', driverId)
+          .eq('status', 'active')
+          .maybeSingle();
+
+        if (raceLookupError || !raceWinnerTrip) {
+          return { error: "Couldn't start a new trip. Please try again." };
+        }
+        tripId = raceWinnerTrip.id;
+      } else {
+        return { error: "Couldn't start a new trip. Please try again." };
+      }
+    } else {
+      tripId = newTrip.id;
+    }
   }
 
   const { data: assigned, error: assignError } = await client
@@ -252,6 +275,9 @@ export function subscribeToRideRequestStatus(
   };
 }
 
+/** Collapses a burst of change events (one per passenger action, system-wide) into a single Edge Function call. */
+const PENDING_REQUESTS_REFETCH_DEBOUNCE_MS = 500;
+
 /**
  * Request-board feed, filtered/ranked server-side by the `match-ride-request`
  * Edge Function (FR-2.5: cluster-authorization hard filter, then a
@@ -263,7 +289,10 @@ export function subscribeToRideRequestStatus(
  * from this driver's view mid-stream (e.g. once another driver claims it, or
  * the driver's own route no longer matches) — the same category of gap
  * `subscribeToRideRequestStatus` above works around with its post-SUBSCRIBED
- * reconcile query.
+ * reconcile query. The subscription is unfiltered (every row in the table,
+ * not just this driver's matches), so change-triggered refetches are
+ * debounced — the initial post-SUBSCRIBED refetch is not, callers expect
+ * the first page of results right away.
  */
 export function subscribeToPendingRideRequests(
   driverId: string,
@@ -271,10 +300,13 @@ export function subscribeToPendingRideRequests(
   onError?: (message: string) => void,
 ): () => void {
   const client = getSupabaseClient();
+  let cancelled = false;
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function refetch() {
     const { data, error } = await client.functions.invoke('match-ride-request', { body: { driverId } });
 
+    if (cancelled) return;
     if (error) {
       onError?.(error.message);
       return;
@@ -289,20 +321,30 @@ export function subscribeToPendingRideRequests(
     onData(result.data ?? []);
   }
 
+  function scheduleRefetch() {
+    if (debounceTimer) clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      debounceTimer = null;
+      void refetch();
+    }, PENDING_REQUESTS_REFETCH_DEBOUNCE_MS);
+  }
+
   const channel = client
     .channel('pending_ride_requests')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, () => {
-      void refetch();
+      scheduleRefetch();
     })
     .subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
         void refetch();
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        onError?.('Lost connection while listening for ride requests. Please check your connection.');
+        if (!cancelled) onError?.('Lost connection while listening for ride requests. Please check your connection.');
       }
     });
 
   return () => {
+    cancelled = true;
+    if (debounceTimer) clearTimeout(debounceTimer);
     client.removeChannel(channel);
   };
 }
@@ -312,38 +354,25 @@ export interface CompleteTripResult {
 }
 
 /**
- * Closes out a trip: marks it completed and marks its ride request completed.
+ * Closes out a trip via the complete_trip RPC: marks it completed and marks
+ * its ride request completed, both in one transaction. Replaces the old
+ * two-independent-UPDATE version — that could partially apply on a dropped
+ * connection, and neither UPDATE checked whether it actually matched a row,
+ * so an RLS-filtered no-op (e.g. a stale tripId from a different driver)
+ * used to report success while leaving the DB untouched.
+ *
  * Every trip created by acceptRideRequest currently holds exactly one ride
  * request — both driver screens block a second accept while a trip is active
  * — so this always closes the whole trip; pooling multiple requests onto one
  * trip is not yet supported end-to-end.
  */
 export async function completeTrip(tripId: string, rideRequestId: string): Promise<CompleteTripResult> {
-  const client = getSupabaseClient();
-  const now = new Date().toISOString();
+  const { error } = await getSupabaseClient().rpc('complete_trip', {
+    p_trip_id: tripId,
+    p_ride_request_id: rideRequestId,
+  });
 
-  const { data: rideRequest, error: fareError } = await client
-    .from('ride_requests')
-    .select('estimated_fare')
-    .eq('id', rideRequestId)
-    .maybeSingle();
-
-  if (fareError) return { error: "Couldn't close out the trip. Please try again." };
-
-  const { error: tripError } = await client
-    .from('trips')
-    .update({ status: 'completed', completed_at: now })
-    .eq('id', tripId);
-
-  if (tripError) return { error: "Couldn't close out the trip. Please try again." };
-
-  const { error: rideError } = await client
-    .from('ride_requests')
-    .update({ status: 'completed', completed_at: now, final_fare: rideRequest?.estimated_fare ?? null })
-    .eq('id', rideRequestId);
-
-  if (rideError) return { error: "Couldn't close out the trip. Please try again." };
-
+  if (error) return { error: "Couldn't close out the trip. Please try again." };
   return { error: null };
 }
 
@@ -351,24 +380,69 @@ export interface CancelTripResult {
   error: string | null;
 }
 
+/** Cancels a trip via the cancel_trip RPC — same transactional guarantee as completeTrip above. */
 export async function cancelTrip(tripId: string, rideRequestId: string, reason: string): Promise<CancelTripResult> {
-  const client = getSupabaseClient();
+  const { error } = await getSupabaseClient().rpc('cancel_trip', {
+    p_trip_id: tripId,
+    p_ride_request_id: rideRequestId,
+    p_reason: reason,
+  });
 
-  const { error: tripError } = await client
-    .from('trips')
-    .update({ status: 'cancelled' })
-    .eq('id', tripId);
-
-  if (tripError) return { error: "Couldn't cancel the trip. Please try again." };
-
-  const { error: rideError } = await client
-    .from('ride_requests')
-    .update({ status: 'cancelled', cancelled_at: new Date().toISOString(), cancel_reason: reason })
-    .eq('id', rideRequestId);
-
-  if (rideError) return { error: "Couldn't cancel the trip. Please try again." };
+  if (error) return { error: "Couldn't cancel the trip. Please try again." };
 
   return { error: null };
+}
+
+export interface ActiveTripForDriver {
+  tripId: string;
+  rideRequestId: string;
+  seats: number;
+  paymentMethod: Database['public']['Enums']['payment_method'];
+  fare: number | null;
+  startedAt: string;
+  passengerName: string | null;
+  passengerAvatarUrl: string | null;
+  cashConfirmed: boolean;
+}
+
+export interface GetActiveTripForDriverResult {
+  data: ActiveTripForDriver | null;
+  error: string | null;
+}
+
+/**
+ * Rehydrates a driver's in-progress trip on app boot. Without this, an app
+ * restart mid-trip (killed by the OS, force-quit) leaves the client with no
+ * memory of the trip while the backend still has it `active` — the driver
+ * could never complete/cancel it from the UI, and acceptRideRequest's
+ * active-trip check would keep blocking them from accepting anything new.
+ * Calls the get_active_trip_for_driver RPC (security definer — same
+ * passenger-name/avatar join trick as getTripPassengerInfo, scoped to
+ * auth.uid() internally like listDriverTripHistory). No active trip is a
+ * normal state, returned as `{ data: null, error: null }`, not an error.
+ */
+export async function getActiveTripForDriver(): Promise<GetActiveTripForDriverResult> {
+  const { data, error } = await getSupabaseClient().rpc('get_active_trip_for_driver');
+
+  if (error) return { data: null, error: error.message };
+
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { data: null, error: null };
+
+  return {
+    data: {
+      tripId: row.trip_id,
+      rideRequestId: row.ride_request_id,
+      seats: row.seats_requested,
+      paymentMethod: row.preferred_method,
+      fare: row.estimated_fare,
+      startedAt: row.started_at,
+      passengerName: row.passenger_name,
+      passengerAvatarUrl: row.avatar_url,
+      cashConfirmed: row.cash_confirmed,
+    },
+    error: null,
+  };
 }
 
 export interface TripDriverInfo {

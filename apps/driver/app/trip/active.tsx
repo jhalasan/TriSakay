@@ -21,14 +21,16 @@ export default function ActiveTripScreen() {
   const recordCompletedTrip = useDriverStore((state) => state.recordCompletedTrip);
 
   const [cancelling, setCancelling] = useState(false);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [confirmingCash, setConfirmingCash] = useState(false);
+  const [completing, setCompleting] = useState(false);
 
   if (!trip) {
     return <Redirect href="/(tabs)/dashboard" />;
   }
 
   const isCash = trip.paymentMethod === 'cash';
-  const canComplete = !isCash || trip.cashConfirmed;
+  const canComplete = (!isCash || trip.cashConfirmed) && !completing;
 
   async function handleConfirmCash() {
     if (!user) return;
@@ -38,8 +40,13 @@ export default function ActiveTripScreen() {
   }
 
   async function handleComplete() {
+    if (completing) return;
+    setCompleting(true);
     const closed = await complete();
-    if (!closed) return;
+    if (!closed) {
+      setCompleting(false);
+      return;
+    }
     const fare = closed.fare ?? 0;
     // Trip history and total earnings both now read fresh from the backend
     // on their own tabs (get_driver_trip_history / v_driver_earnings) — no
@@ -50,7 +57,10 @@ export default function ActiveTripScreen() {
   }
 
   async function handleConfirmCancel() {
+    if (confirmingCancel) return;
+    setConfirmingCancel(true);
     const closed = await cancel('Cancelled by driver');
+    setConfirmingCancel(false);
     setCancelling(false);
     if (!closed) return;
     router.replace('/(tabs)/dashboard');
@@ -112,7 +122,7 @@ export default function ActiveTripScreen() {
             <Button label="Cancel" variant="outline" tone="danger" fullWidth onPress={() => setCancelling(true)} />
           </View>
           <View style={styles.actionButton}>
-            <Button label="Complete trip" fullWidth disabled={!canComplete} onPress={handleComplete} />
+            <Button label="Complete trip" fullWidth disabled={!canComplete} loading={completing} onPress={handleComplete} />
           </View>
         </View>
       </MapOverlaySheet>
@@ -124,6 +134,7 @@ export default function ActiveTripScreen() {
         cancelLabel="Keep trip"
         confirmLabel="Cancel trip"
         destructive
+        confirmLoading={confirmingCancel}
         onCancel={() => setCancelling(false)}
         onConfirm={handleConfirmCancel}
       />

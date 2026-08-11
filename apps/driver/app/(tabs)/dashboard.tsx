@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getTripPassengerInfo } from '@trisakay/services';
 import { Avatar, Badge, Toggle, colors } from '@trisakay/ui';
 import { RequestCard } from '../../src/components/RequestCard';
 import { StatTile } from '../../src/components/StatTile';
+import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
@@ -37,10 +37,10 @@ export default function DashboardScreen() {
   const requestError = useRequestsStore((state) => state.error);
   const subscribe = useRequestsStore((state) => state.subscribe);
   const unsubscribe = useRequestsStore((state) => state.unsubscribe);
-  const accept = useRequestsStore((state) => state.accept);
   const decline = useRequestsStore((state) => state.decline);
 
-  const startTrip = useTripStore((state) => state.startTrip);
+  const handleAccept = useAcceptRideRequest();
+  const activeTrip = useTripStore((state) => state.current);
 
   // Tied to isAvailable itself (not the toggle handler) so a driver who was
   // online before an app restart gets resubscribed here too, once
@@ -75,25 +75,12 @@ export default function DashboardScreen() {
     setTogglingAvailability(false);
   }
 
-  async function handleAccept(id: string) {
-    if (useTripStore.getState().current) {
-      router.push('/trip/active');
-      return;
-    }
-    if (!user) return;
-    const accepted = await accept(id, user.id);
-    if (accepted) {
-      startTrip(accepted, accepted.tripId);
-      router.push('/trip/active');
-
-      // Non-blocking — the trip screen renders immediately with a null
-      // name/photo (Avatar already handles that) and fills in once this
-      // resolves, same pattern as the passenger app's finding-driver.tsx.
-      const { data } = await getTripPassengerInfo(accepted.id).catch(() => ({ data: null }));
-      if (data) {
-        useTripStore.getState().setPassengerInfo(data.passengerName, data.avatarUrl);
-      }
-    }
+  // Covers a trip rehydrated from the backend on app restart (useTripSync in
+  // _layout.tsx) — without this, that trip existed only in the store with no
+  // way to actually reach it from the UI, which was the whole point of the
+  // rehydration fix (see get_active_trip_for_driver's usage in useTripStore).
+  if (activeTrip) {
+    return <Redirect href="/trip/active" />;
   }
 
   const incoming = pending[0];

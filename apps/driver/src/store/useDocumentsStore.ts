@@ -18,8 +18,12 @@ const initialDocuments = Object.fromEntries(
 
 export const useDocumentsStore = create<DocumentsState>()((set) => ({
   documents: initialDocuments,
+  // 'selected', not 'pending' — picking a file just stages it locally. It
+  // isn't actually uploaded until handleSubmit calls submitDriverDocuments
+  // during registration, so 'pending' (awaiting PSO review) would be a lie
+  // told before the file has even left the device.
   submit: (type, uri) =>
-    set((state) => ({ documents: { ...state.documents, [type]: { status: 'pending', uri } } })),
+    set((state) => ({ documents: { ...state.documents, [type]: { status: 'selected', uri } } })),
   remove: (type) =>
     set((state) => ({ documents: { ...state.documents, [type]: { status: 'unsubmitted', uri: null } } })),
 }));

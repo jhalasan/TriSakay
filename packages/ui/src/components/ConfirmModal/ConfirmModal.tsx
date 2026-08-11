@@ -9,6 +9,8 @@ export interface ConfirmModalProps {
   confirmLabel: string;
   cancelLabel?: string;
   destructive?: boolean;
+  /** Shows a spinner and disables both buttons while the confirm action is in flight — prevents a double-tap re-firing onConfirm before the modal closes. */
+  confirmLoading?: boolean;
   onConfirm: () => void;
   onCancel: () => void;
 }
@@ -20,6 +22,7 @@ export function ConfirmModal({
   confirmLabel,
   cancelLabel = 'Cancel',
   destructive = false,
+  confirmLoading = false,
   onConfirm,
   onCancel,
 }: ConfirmModalProps) {
@@ -31,7 +34,14 @@ export function ConfirmModal({
           {message && <Text style={styles.message}>{message}</Text>}
           <View style={styles.actions}>
             <View style={styles.actionButton}>
-              <Button label={cancelLabel} variant="outline" tone="neutral" fullWidth onPress={onCancel} />
+              <Button
+                label={cancelLabel}
+                variant="outline"
+                tone="neutral"
+                fullWidth
+                disabled={confirmLoading}
+                onPress={onCancel}
+              />
             </View>
             <View style={styles.actionButton}>
               <Button
@@ -39,6 +49,7 @@ export function ConfirmModal({
                 variant="solid"
                 tone={destructive ? 'danger' : 'primary'}
                 fullWidth
+                loading={confirmLoading}
                 onPress={onConfirm}
               />
             </View>

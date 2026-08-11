@@ -138,8 +138,10 @@ test('markAllRead() surfaces an error when the write fails', async () => {
     }),
   });
 
-  useNotificationsStore.setState({ items: [], error: null });
+  const unreadItems = [{ id: 'n1', title: 'a', body: 'b', read: false, createdAt: 'now' }];
+  useNotificationsStore.setState({ items: unreadItems, error: null });
   await useNotificationsStore.getState().markAllRead();
 
   assert.equal(useNotificationsStore.getState().error, 'network error');
+  assert.deepEqual(useNotificationsStore.getState().items, unreadItems, 'failed write should roll back the optimistic read flip');
 });

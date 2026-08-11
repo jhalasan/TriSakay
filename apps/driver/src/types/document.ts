@@ -1,5 +1,5 @@
 export type DocumentType = 'drivers_license' | 'or_cr' | 'franchise_permit' | 'tricycle_photo';
-export type DocumentStatus = 'unsubmitted' | 'pending' | 'verified' | 'rejected';
+export type DocumentStatus = 'unsubmitted' | 'selected' | 'pending' | 'verified' | 'rejected';
 
 export const DOCUMENT_TYPES: DocumentType[] = ['drivers_license', 'or_cr', 'franchise_permit', 'tricycle_photo'];
 
