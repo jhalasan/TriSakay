@@ -1,5 +1,3 @@
-import type { PaymentMethod } from './booking';
-
 export interface RideHistoryItem {
   id: string;
   driverName: string;
@@ -8,5 +6,6 @@ export interface RideHistoryItem {
   dropoff: string;
   fare: number;
   status: 'done' | 'cancelled';
-  paymentMethod: PaymentMethod;
+  paymentMethod: 'cash' | 'gcash' | null;
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | null;
 }
