@@ -54,3 +54,15 @@ export function initials(fullName: string): string {
   const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
   return (first + last).toUpperCase();
 }
+
+/** ISO timestamp -> 'Just now' / 'N min ago' / 'N hr ago' / 'N days ago', matching the wireframe's relative-time labels. */
+export function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
