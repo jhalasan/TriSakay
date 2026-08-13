@@ -28,7 +28,7 @@ Cross-reference: `docs/CONTEXT.MD` §7 (Passenger App feature list) and FR-11 (c
 
 **🟡 Partial (UI real, data fake or missing):**
 - Settings (`app/(tabs)/settings.tsx`) — toggles and the language cycler are in-memory only, no persistence or real i18n.
-- Notifications (`app/notifications.tsx`) — still mock-seeded; `packages/services/src/notifications/index.ts` is still a one-line stub (the driver app's `apps/driver/app/notifications.tsx` + real service is a working template to port from).
+- Notifications (`app/notifications.tsx`) — still mock-seeded (`useNotificationsStore` reads `seedNotifications`, never imports the service). `packages/services/src/notifications/index.ts` is no longer a stub — `subscribeToNotifications()`/`markAllNotificationsRead()` are already fully built and shared (the driver app already consumes them). Passenger side just needs to call the existing service, not port anything.
 - Complaint submission (`app/(tabs)/complaints.tsx`) — free-text form only, `wait(600)` fake submit, no `complaints` insert. The "related trip" picker now calls `useHistoryStore.load()` on mount so it isn't permanently empty.
 
 **❌ No code at all:**
