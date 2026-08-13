@@ -5,11 +5,7 @@ function fakeClientWithSuccess() {
   return {
     channel: () => { throw new Error('channel not needed for this test'); },
     removeChannel: () => {},
-    from: () => ({
-      // completeTrip() reads estimated_fare before writing final_fare.
-      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { estimated_fare: 45 }, error: null }) }) }),
-      update: () => ({ eq: () => Promise.resolve({ error: null }) }),
-    }),
+    rpc: async () => ({ data: [{ ride_request_id: 'req-9' }], error: null }),
   };
 }
 
@@ -171,10 +167,7 @@ test('complete() sets error and keeps current when the backend call fails', asyn
   __setSupabaseClientForTests({
     channel: () => { throw new Error('channel not needed for this test'); },
     removeChannel: () => {},
-    from: () => ({
-      select: () => ({ eq: () => ({ maybeSingle: () => Promise.resolve({ data: { estimated_fare: 45 }, error: null }) }) }),
-      update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }),
-    }),
+    rpc: async () => ({ data: null, error: { message: 'No active trip found for this driver to complete' } }),
   });
 
   useTripStore.setState({
@@ -212,6 +205,93 @@ test('cancel() on an empty trip returns null without calling the backend', async
   useTripStore.setState({ current: null, error: null });
 
   assert.equal(await useTripStore.getState().cancel('Cancelled by driver'), null);
+});
+
+test('hydrate() populates current from the backend when an active trip exists', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    channel: () => { throw new Error('channel not needed for this test'); },
+    removeChannel: () => {},
+    rpc: async () => ({
+      data: [{
+        trip_id: 'trip-9',
+        ride_request_id: 'req-9',
+        seats_requested: 2,
+        preferred_method: 'cash',
+        estimated_fare: 45,
+        started_at: '2026-08-11T00:00:00.000Z',
+        passenger_id: 'p1',
+        passenger_name: 'Juan Dela Cruz',
+        avatar_url: 'https://example.com/a.jpg',
+        cash_confirmed: false,
+      }],
+      error: null,
+    }),
+  });
+
+  useTripStore.setState({ current: null, error: null });
+  await useTripStore.getState().hydrate();
+
+  assert.deepEqual(useTripStore.getState().current, {
+    id: 'req-9',
+    tripId: 'trip-9',
+    passengerName: 'Juan Dela Cruz',
+    passengerAvatarUrl: 'https://example.com/a.jpg',
+    seats: 2,
+    paymentMethod: 'cash',
+    fare: 45,
+    cashConfirmed: false,
+    startedAt: '2026-08-11T00:00:00.000Z',
+  });
+});
+
+test('hydrate() leaves current untouched when there is no active trip', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    channel: () => { throw new Error('channel not needed for this test'); },
+    removeChannel: () => {},
+    rpc: async () => ({ data: [], error: null }),
+  });
+
+  useTripStore.setState({ current: null, error: null });
+  await useTripStore.getState().hydrate();
+
+  assert.equal(useTripStore.getState().current, null);
+});
+
+test('hydrate() leaves current untouched on a backend error', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    channel: () => { throw new Error('channel not needed for this test'); },
+    removeChannel: () => {},
+    rpc: async () => ({ data: null, error: { message: 'network error' } }),
+  });
+
+  useTripStore.setState({ current: null, error: null });
+  await useTripStore.getState().hydrate();
+
+  assert.equal(useTripStore.getState().current, null);
+  assert.equal(useTripStore.getState().error, null);
+});
+
+test('reset() clears current and error', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+
+  useTripStore.setState({
+    current: { id: 'req-9', tripId: 'trip-9', passengerName: null, passengerAvatarUrl: null, seats: 2, paymentMethod: 'cash', fare: 45, cashConfirmed: false, startedAt: 'now' },
+    error: 'stale error',
+  });
+
+  useTripStore.getState().reset();
+
+  assert.equal(useTripStore.getState().current, null);
+  assert.equal(useTripStore.getState().error, null);
 });
 
 test('useEarningsStore.load() sums total_collected from v_driver_earnings', async () => {

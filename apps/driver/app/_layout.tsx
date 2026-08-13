@@ -17,6 +17,7 @@ import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsent
 import { useDriverStore } from '../src/store/useDriverStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
 import { useRequestsStore } from '../src/store/useRequestsStore';
+import { useTripStore } from '../src/store/useTripStore';
 import { useVerificationStore, type VerificationGateStatus } from '../src/store/useVerificationStore';
 
 export const unstable_settings = { initialRouteName: 'index' };
@@ -126,6 +127,25 @@ function useRatingSync(sessionUserId: string | null) {
 }
 
 /**
+ * Rehydrates useTripStore.current from the backend on boot/login, and clears
+ * it on logout/session change — without the reset half, a new driver signing
+ * in on the same device could otherwise inherit the previous driver's
+ * in-progress trip (stale `current` from before the session changed).
+ */
+function useTripSync(sessionUserId: string | null) {
+  const hydrate = useTripStore((state) => state.hydrate);
+  const reset = useTripStore((state) => state.reset);
+
+  useEffect(() => {
+    if (sessionUserId === null) {
+      reset();
+      return;
+    }
+    void hydrate();
+  }, [sessionUserId, hydrate, reset]);
+}
+
+/**
  * Kept subscribed for the whole session, not just while the Notifications
  * screen is mounted — Dashboard's bell icon shows the unread count too, so
  * items need to arrive live regardless of which screen the driver is on.
@@ -180,6 +200,7 @@ function RootLayoutNav() {
   useVerificationSync(sessionUserId);
   useAvailabilitySync(sessionUserId);
   useRatingSync(sessionUserId);
+  useTripSync(sessionUserId);
   useNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus, verificationStatus);
   useLocationPrompt(isAuthenticated, consentStatus);

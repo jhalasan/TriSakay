@@ -38,6 +38,7 @@ export function subscribeToNotifications(
   onError?: (message: string) => void,
 ): () => void {
   const client = getSupabaseClient();
+  let cancelled = false;
 
   async function refetch() {
     const { data, error } = await client
@@ -46,6 +47,7 @@ export function subscribeToNotifications(
       .eq('user_id', userId)
       .order('created_at', { ascending: false });
 
+    if (cancelled) return;
     if (error) {
       onError?.(error.message);
       return;
@@ -66,11 +68,12 @@ export function subscribeToNotifications(
       if (status === 'SUBSCRIBED') {
         void refetch();
       } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
-        onError?.('Lost connection while listening for notifications. Please check your connection.');
+        if (!cancelled) onError?.('Lost connection while listening for notifications. Please check your connection.');
       }
     });
 
   return () => {
+    cancelled = true;
     client.removeChannel(channel);
   };
 }
