@@ -14,6 +14,7 @@ import { colors, fontFamily } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
+import { useNotificationsStore } from '../src/store/useNotificationsStore';
 
 /**
  * Anchors the root stack to `index`. Screens declared as <Stack.Screen>
@@ -126,6 +127,24 @@ function useConsentSync(sessionUserId: string | null) {
 }
 
 /**
+ * Kept subscribed for the whole session, not just while the Notifications
+ * screen is mounted — home.tsx's unread-count badge needs items to arrive
+ * live regardless of which screen the passenger is on.
+ */
+function useNotificationsSync(sessionUserId: string | null) {
+  const subscribe = useNotificationsStore((state) => state.subscribe);
+  const unsubscribe = useNotificationsStore((state) => state.unsubscribe);
+
+  useEffect(() => {
+    if (sessionUserId === null) {
+      unsubscribe();
+      return;
+    }
+    subscribe(sessionUserId);
+  }, [sessionUserId, subscribe, unsubscribe]);
+}
+
+/**
  * Surfaces the permission prompt on every foreground while permission is
  * missing. The dismissal flag is cleared by the hook's AppState listener, so
  * "Not now" holds for this session only — FR-11.4 asks for a prompt on app
@@ -180,6 +199,7 @@ function RootLayoutNav() {
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
   const consentStatus = useConsentStore((state) => state.status);
   useConsentSync(sessionUserId);
+  useNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 
