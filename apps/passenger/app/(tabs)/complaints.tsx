@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -9,7 +9,13 @@ import { wait } from '../../src/mocks/delay';
 import { styles } from '../../src/styles/tabs/complaints.styles';
 
 export default function ComplaintsScreen() {
-  const rides = useHistoryStore((state) => state.rides);
+  const rides = useHistoryStore((state) => state.items);
+  const loadHistory = useHistoryStore((state) => state.load);
+
+  useEffect(() => {
+    void loadHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const [relatedTripId, setRelatedTripId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
