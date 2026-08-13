@@ -12,6 +12,7 @@ export * from './payments/index.ts';
 export * from './ratings/index.ts';
 export * from './location/index.ts';
 export * from './storage/index.ts';
+export * from './trip-history/index.ts';
 
 export function getServiceStatus() {
   return 'Services ready';

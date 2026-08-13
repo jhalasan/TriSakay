@@ -1219,6 +1219,22 @@ export type Database = {
           status: Database["public"]["Enums"]["ride_status"]
         }[]
       }
+      get_passenger_trip_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          cancelled_at: string
+          completed_at: string
+          dest_label: string
+          driver_name: string
+          fare: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_label: string
+          requested_at: string
+          ride_request_id: string
+          status: Database["public"]["Enums"]["ride_status"]
+        }[]
+      }
       get_trip_driver_info: {
         Args: { p_ride_request_id: string }
         Returns: {

@@ -42,7 +42,7 @@ Generated 2026-08-05 from a full-repo review: typecheck clean, 74/74 tests pass 
 
 - [ ] Passenger + Driver: complaint submission → real `complaints` insert. Passenger form is free-text only — needs the real `complaint_category` enum added to the form, not just wiring.
 - [ ] Driver: complaint management/triage view.
-- [ ] Passenger: trip history → real query (`useHistoryStore` seeded empty).
+- [x] **Passenger: trip history** *(done 2026-08-14)* — real query via `get_passenger_trip_history` RPC + `useHistoryStore.load()`.
 - [x] **Driver: trip history** *(corrected 2026-08-10)* — real query via `get_driver_trip_history` RPC + `useHistoryStore.load()`.
 - [x] **Driver: earnings** *(corrected 2026-08-10)* — real total via `getDriverEarnings()` summing `v_driver_earnings` ("tracked/simulated" copy kept, never "payout"). The earnings-chart breakdown is still mock — narrower gap than this line originally implied.
 - [x] **Driver: own ratings** *(corrected 2026-08-10)* — real read via `getDriverRatingSummary()` + `useRatingSync`.
@@ -50,7 +50,7 @@ Generated 2026-08-05 from a full-repo review: typecheck clean, 74/74 tests pass 
 - [x] **Driver: notifications** *(corrected 2026-08-10)* — real `subscribeToNotifications`/`markAllNotificationsRead` service, wired session-wide via `useNotificationsSync` (`apps/driver/app/_layout.tsx`), with passing tests. FR-1.6a's email-notification piece (verification decisions) is still open — no email-sending infra exists in the repo yet.
 - [ ] **(new)** FR-1.6a: on a driver verification decision (approved/rejected), notify the driver via **in-app notification** (depends on the notifications service above) **and email** — no email-sending infrastructure exists anywhere in the repo yet (no Resend/SendGrid/SMTP integration found), so this needs a new Edge Function + provider, not just wiring an existing one.
 - [ ] **(new)** Enable `pg_cron` (Supabase Dashboard → Database → Extensions) and schedule `notify_expiring_franchises()` per the comment in `docs/SCHEMA.MD` §4.8 (`select cron.schedule('notify-expiring-franchises', '0 8 * * *', 'select public.notify_expiring_franchises();')`). Low value until the admin verification-review screen above can actually populate `mtop_no`/`mtop_expiry_date` — otherwise `v_expiring_franchises` stays empty and the job has nothing to notify on.
-- [ ] Passenger: new Payment History screen — doesn't exist at all (`payment-methods.tsx` is static info, not history).
+- [x] **Passenger: new Payment History screen** *(done 2026-08-14)* — new `app/profile/payment-history.tsx`, linked from `payment-methods.tsx`, reading the same trip-history RPC filtered to paid/refunded rows.
 - [ ] Passenger: Settings persistence (`useSettingsStore` toggles are in-memory) + actual Filipino i18n behind the language cycler (currently just flips a label).
 
 ## P3 — Account/auth completeness

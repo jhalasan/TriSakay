@@ -809,6 +809,60 @@ begin
 end $$;
 
 
+-- 4.3d passenger trip history (real ride/payment history) ---------------
+-- Passengers have no direct SELECT on other users' users rows (see 4.3c
+-- above) — this security-definer function is the only path to a matched
+-- driver's name for history purposes, self-authorized via
+-- passenger_id = auth.uid(). trips/users joins are LEFT JOIN (not INNER)
+-- because a ride cancelled before a driver was ever assigned has
+-- trip_id null; the transactions join is also LEFT because a
+-- cancelled-before-payment ride has no transaction row at all —
+-- payment_method/payment_status come back null in that case, a normal
+-- state for both consuming passenger-app screens, not an error.
+create or replace function public.get_passenger_trip_history(p_limit integer default 50)
+returns table (
+  ride_request_id uuid,
+  driver_name     text,
+  pickup_label    text,
+  dest_label      text,
+  status          ride_status,
+  fare            numeric,
+  payment_method  payment_method,
+  payment_status  payment_status,
+  requested_at    timestamptz,
+  completed_at    timestamptz,
+  cancelled_at    timestamptz
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    rr.id,
+    u.full_name,
+    rr.pickup_label,
+    rr.dest_label,
+    rr.status,
+    coalesce(rr.final_fare, rr.estimated_fare),
+    tx.method,
+    tx.status,
+    rr.requested_at,
+    rr.completed_at,
+    rr.cancelled_at
+  from public.ride_requests rr
+  left join public.trips t on t.id = rr.trip_id
+  left join public.users u on u.id = t.driver_id
+  left join public.transactions tx on tx.ride_request_id = rr.id
+  where rr.passenger_id = auth.uid()
+    and rr.status in ('completed', 'cancelled')
+  order by coalesce(rr.completed_at, rr.cancelled_at, rr.requested_at) desc
+  limit p_limit;
+end $$;
+
+
 -- 4.4 seat capacity enforcement ---------------------------------------
 -- Total seats across a trip's live requests must not exceed max_seats.
 create or replace function public.enforce_trip_seat_capacity()
