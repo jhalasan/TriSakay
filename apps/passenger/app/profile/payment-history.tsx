@@ -1,5 +1,6 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
+import { useFocusEffect } from 'expo-router';
 import { Badge, EmptyState, ListRow, Spinner, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
@@ -19,10 +20,12 @@ export default function PaymentHistoryScreen() {
 
   const { refreshing, onRefresh } = usePullToRefresh(load);
 
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   // A pending/failed/absent payment means checkout never actually resolved —
   // it doesn't belong in a "history" list, only paid/refunded do.
@@ -31,7 +34,7 @@ export default function PaymentHistoryScreen() {
     [items]
   );
 
-  if (loading && items.length === 0) {
+  if (loading && items.length === 0 && !refreshing) {
     return (
       <View style={styles.container}>
         <ScreenHeader title="Payment history" />
@@ -57,13 +60,13 @@ export default function PaymentHistoryScreen() {
         renderItem={({ item }) => (
           <ListRow
             title={
-              item.pickup && item.dropoff ? `${item.pickup} → ${item.dropoff}` : formatDate(item.date)
+              item.pickup && item.dropoff ? `${item.pickup} → ${item.dropoff}` : 'Trip'
             }
             subtitle={formatDate(item.date)}
             trailing={
               <View style={styles.trailingSlot}>
                 <Badge
-                  label={item.paymentMethod === 'gcash' ? 'GCash' : 'Cash'}
+                  label={item.paymentMethod === 'gcash' ? 'GCash' : item.paymentMethod === 'cash' ? 'Cash' : '—'}
                   tone="neutral"
                 />
                 <Badge

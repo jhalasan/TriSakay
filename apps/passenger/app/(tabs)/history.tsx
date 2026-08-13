@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from 'expo-router';
 import { Avatar, Badge, Button, EmptyState, ListRow, Spinner, colors } from '@trisakay/ui';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
@@ -34,17 +35,19 @@ export default function HistoryScreen() {
 
   const { refreshing, onRefresh } = usePullToRefresh(load);
 
-  useEffect(() => {
-    void load();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      void load();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   const filteredRides = useMemo(() => {
     if (filter === 'all') return items;
     return items.filter((ride) => ride.status === filter);
   }, [items, filter]);
 
-  if (loading && items.length === 0) {
+  if (loading && items.length === 0 && !refreshing) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
         <View style={styles.loadingWrap}>
@@ -87,7 +90,7 @@ export default function HistoryScreen() {
                 ? `${formatDate(item.date)} · ${item.pickup} → ${item.dropoff}`
                 : formatDate(item.date)
             }
-            leading={<Avatar name={item.driverName} size="md" />}
+            leading={<Avatar name={item.driverName || 'Driver'} size="md" />}
             trailing={
               <View style={styles.trailingSlot}>
                 <Badge
