@@ -138,3 +138,46 @@ export async function listExpiringFranchises(): Promise<ListExpiringFranchisesRe
 
   return { data: rows, error: null };
 }
+
+export interface RecentTripActivityRow {
+  id: string;
+  driverName: string | null;
+  status: 'forming' | 'active' | 'completed' | 'cancelled';
+  updatedAt: string;
+}
+
+export interface ListRecentTripActivityResult {
+  data: RecentTripActivityRow[];
+  error: string | null;
+}
+
+/**
+ * Deliberately not a nested PostgREST embed (`driver_profiles(users(...))`)
+ * — this codebase has no precedent of multi-hop embeds anywhere, and every
+ * existing cross-user join instead uses either a security-definer RPC or,
+ * as here, a plain follow-up lookup (same resolveUserNames() helper
+ * listOverdueComplaints/listExpiringFranchises above already use). trips.driver_id
+ * holds the same value as users.id (driver_profiles.user_id IS users.id),
+ * so the follow-up .in() lookup works without hopping through driver_profiles.
+ */
+export async function listRecentTripActivity(limit = 10): Promise<ListRecentTripActivityResult> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('trips')
+    .select('id, status, updated_at, driver_id')
+    .order('updated_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return { data: [], error: error.message };
+
+  const names = await resolveUserNames(client, (data ?? []).map((row) => row.driver_id));
+
+  const rows = (data ?? []).map((row) => ({
+    id: row.id,
+    driverName: names.get(row.driver_id) ?? null,
+    status: row.status,
+    updatedAt: row.updated_at,
+  }));
+
+  return { data: rows, error: null };
+}

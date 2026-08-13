@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { getAdminDashboardStats, listExpiringFranchises, listOverdueComplaints } from '../src/admin/dashboard.ts';
+import { getAdminDashboardStats, listExpiringFranchises, listOverdueComplaints, listRecentTripActivity } from '../src/admin/dashboard.ts';
 
 function countQuery(count: number) {
   return {
@@ -212,6 +212,73 @@ test('listExpiringFranchises returns { data: [], error } when the view query fai
   } as any);
 
   const { data, error } = await listExpiringFranchises();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
+});
+
+test('listRecentTripActivity maps trip rows, resolves driver names, and respects the limit arg', async () => {
+  let capturedLimit: number | null = null;
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'trips') {
+        return {
+          select: () => ({
+            order: () => ({
+              limit: async (n: number) => {
+                capturedLimit = n;
+                return {
+                  data: [
+                    { id: 'trip1', status: 'active', updated_at: '2026-08-14T00:00:00.000Z', driver_id: 'u1' },
+                    { id: 'trip2', status: 'completed', updated_at: '2026-08-13T23:50:00.000Z', driver_id: 'u-deleted' },
+                  ],
+                  error: null,
+                };
+              },
+            }),
+          }),
+        };
+      }
+      if (table === 'users') {
+        // u-deleted no longer exists — only u1 comes back.
+        return { select: () => ({ in: async () => ({ data: [{ id: 'u1', full_name: 'Ronnie Bautista' }], error: null }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await listRecentTripActivity(20);
+
+  assert.equal(error, null);
+  assert.equal(capturedLimit, 20);
+  assert.deepEqual(data, [
+    { id: 'trip1', driverName: 'Ronnie Bautista', status: 'active', updatedAt: '2026-08-14T00:00:00.000Z' },
+    { id: 'trip2', driverName: null, status: 'completed', updatedAt: '2026-08-13T23:50:00.000Z' },
+  ]);
+});
+
+test('listRecentTripActivity defaults the limit to 10', async () => {
+  let capturedLimit: number | null = null;
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'trips') {
+        return { select: () => ({ order: () => ({ limit: async (n: number) => { capturedLimit = n; return { data: [], error: null }; } }) }) };
+      }
+      return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
+    },
+  } as any);
+
+  await listRecentTripActivity();
+  assert.equal(capturedLimit, 10);
+});
+
+test('listRecentTripActivity returns { data: [], error } on a query error', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({
+      select: () => ({ order: () => ({ limit: async () => ({ data: null, error: { message: 'connection refused' } }) }) }),
+    }),
+  } as any);
+
+  const { data, error } = await listRecentTripActivity();
   assert.deepEqual(data, []);
   assert.equal(error, 'connection refused');
 });
