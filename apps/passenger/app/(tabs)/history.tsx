@@ -1,8 +1,9 @@
-import { useMemo, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Badge, Button, EmptyState, ListRow } from '@trisakay/ui';
+import { Avatar, Badge, Button, EmptyState, ListRow, Spinner, colors } from '@trisakay/ui';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
+import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/tabs/history.styles';
 
@@ -25,13 +26,33 @@ function formatDate(iso: string) {
 }
 
 export default function HistoryScreen() {
-  const rides = useHistoryStore((state) => state.rides);
+  const items = useHistoryStore((state) => state.items);
+  const loading = useHistoryStore((state) => state.loading);
+  const error = useHistoryStore((state) => state.error);
+  const load = useHistoryStore((state) => state.load);
   const [filter, setFilter] = useState<FilterMode>('all');
 
+  const { refreshing, onRefresh } = usePullToRefresh(load);
+
+  useEffect(() => {
+    void load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const filteredRides = useMemo(() => {
-    if (filter === 'all') return rides;
-    return rides.filter((ride) => ride.status === filter);
-  }, [rides, filter]);
+    if (filter === 'all') return items;
+    return items.filter((ride) => ride.status === filter);
+  }, [items, filter]);
+
+  if (loading && items.length === 0) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.loadingWrap}>
+          <Spinner size="large" />
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -46,10 +67,15 @@ export default function HistoryScreen() {
         />
       </View>
 
+      {error && <Text style={styles.errorText}>{error}</Text>}
+
       <FlatList
         data={filteredRides}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBluePressed} />
+        }
         ListEmptyComponent={<EmptyState title="No rides yet" message="Your completed trips will show up here." />}
         renderItem={({ item }) => (
           <ListRow

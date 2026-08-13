@@ -29,4 +29,15 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkSoft,
   },
+  loadingWrap: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  errorText: {
+    ...typography.caption,
+    color: colors.danger,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
 });
