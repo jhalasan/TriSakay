@@ -6,7 +6,6 @@ import { Badge, Button, Card } from '@trisakay/ui';
 import { createGcashCheckout, subscribeToTransactionStatus } from '@trisakay/services';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useBookingStore } from '../../src/store/useBookingStore';
-import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { formatCurrency } from '../../src/utils/currency';
 import type { PaymentMethod } from '../../src/types/booking';
 import { styles } from '../../src/styles/booking/payment.styles';
@@ -23,15 +22,12 @@ type PaymentPhase = 'idle' | 'opening' | 'waiting' | 'failed';
 
 export default function PaymentScreen() {
   const router = useRouter();
-  const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
   const fare = useBookingStore((state) => state.fare);
-  const driver = useBookingStore((state) => state.driver);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const paymentMethod = useBookingStore((state) => state.paymentMethod);
   const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
-  const addRide = useHistoryStore((state) => state.addRide);
 
   const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
@@ -103,20 +99,6 @@ export default function PaymentScreen() {
     settledRef.current = true;
 
     setTripStatus('paid');
-
-    if (driver && dropoff) {
-      addRide({
-        id: `r-${Date.now()}`,
-        driverName: driver.name,
-        date: new Date().toISOString(),
-        pickup: pickup?.label ?? '',
-        dropoff: dropoff.label,
-        fare: fare ?? 0,
-        status: 'done',
-        paymentMethod,
-      });
-    }
-
     router.replace('/booking/rate-driver');
   }
 
