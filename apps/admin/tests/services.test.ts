@@ -1,5 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
+import { __setSupabaseClientForTests } from '@trisakay/services';
 import { flagDriver, listDrivers, reactivateDriver, suspendDriver } from '../src/services/drivers.ts';
 import { blockPassenger, listPassengers, unblockPassenger } from '../src/services/passengers.ts';
 import { approveVerification, listVerificationCases, rejectVerification, updateVerificationCase } from '../src/services/verification.ts';
@@ -9,29 +10,95 @@ import { getReportSummary, listTransactions } from '../src/services/reports.ts';
 import { addPsoUser, listPsoUsers, togglePsoUserActive } from '../src/services/psoUsers.ts';
 import { getFareConfig, getFeatureToggles, getSystemSettings, updateFareConfig } from '../src/services/settings.ts';
 
-test('listDrivers() resolves a non-empty array with no error', async () => {
+/**
+ * Drivers/Passengers now go through @trisakay/services against real
+ * users/driver_profiles/tricycles/ride_requests/passenger_discounts tables
+ * plus the perform_account_action RPC — no more in-memory mock array — so
+ * these tests drive a small stateful fake Supabase client instead.
+ */
+function fakeAccountsClient() {
+  const users = [
+    { id: 'd1', full_name: 'Ronnie Bautista', contact_no: '0917-000-0001', email: 'ronnie@example.com', status: 'active', role: 'driver', created_at: '2026-01-01T00:00:00.000Z' },
+    { id: 'p1', full_name: 'Maria Fe Santos', contact_no: '0917-000-0002', email: 'maria@example.com', status: 'active', role: 'passenger', created_at: '2026-01-01T00:00:00.000Z' },
+  ];
+
+  return {
+    from: (table: string) => {
+      if (table === 'users') {
+        return {
+          select: () => ({
+            eq: (_col: string, value: string) => ({
+              order: async () => ({ data: users.filter((u) => u.role === value), error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'driver_profiles' || table === 'tricycles') {
+        return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
+      }
+      if (table === 'ride_requests' || table === 'passenger_discounts') {
+        return { select: () => ({ eq: () => ({ in: async () => ({ data: [], error: null }) }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+    rpc: async (fn: string, args: { p_target_user_id: string; p_action_type: string }) => {
+      if (fn !== 'perform_account_action') throw new Error(`unexpected rpc ${fn}`);
+      const user = users.find((u) => u.id === args.p_target_user_id);
+      if (!user) return { error: { message: 'not found' } };
+      const nextStatus: Record<string, string> = {
+        flag: 'flagged',
+        unflag: 'active',
+        suspend: 'suspended',
+        reactivate: 'active',
+        deactivate: 'deactivated',
+      };
+      user.status = nextStatus[args.p_action_type];
+      return { error: null };
+    },
+  } as any;
+}
+
+test('listDrivers() resolves the driver rows with no error', async () => {
+  __setSupabaseClientForTests(fakeAccountsClient());
   const { data, error } = await listDrivers();
   assert.equal(error, null);
-  assert.ok(Array.isArray(data) && data.length > 0);
+  assert.equal(data.length, 1);
+  assert.equal(data[0].id, 'd1');
 });
 
-test('flagDriver() / suspendDriver() / reactivateDriver() mutate accountStatus', async () => {
-  const before = (await listDrivers()).data[0];
-  await flagDriver(before.id);
-  assert.equal((await listDrivers()).data.find((d) => d.id === before.id)?.accountStatus, 'flagged');
+test('flagDriver() / suspendDriver() / reactivateDriver() require a reason and mutate accountStatus via the RPC', async () => {
+  __setSupabaseClientForTests(fakeAccountsClient());
 
-  await suspendDriver(before.id);
-  assert.equal((await listDrivers()).data.find((d) => d.id === before.id)?.accountStatus, 'suspended');
+  await flagDriver('d1', 'Multiple passenger complaints');
+  assert.equal((await listDrivers()).data.find((d) => d.id === 'd1')?.accountStatus, 'flagged');
 
-  await reactivateDriver(before.id);
-  assert.equal((await listDrivers()).data.find((d) => d.id === before.id)?.accountStatus, 'active');
+  await suspendDriver('d1', 'Repeated late cancellations');
+  assert.equal((await listDrivers()).data.find((d) => d.id === 'd1')?.accountStatus, 'suspended');
+
+  await reactivateDriver('d1', 'Appeal reviewed and approved');
+  assert.equal((await listDrivers()).data.find((d) => d.id === 'd1')?.accountStatus, 'active');
 });
 
-test('listPassengers() / blockPassenger() / unblockPassenger() round-trip account_status', async () => {
+test('flagDriver() surfaces a friendly error when the RPC fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }) }),
+    rpc: async () => ({ error: { message: 'permission denied' } }),
+  } as any);
+
+  const { error } = await flagDriver('d1', 'reason');
+  assert.equal(error, "Couldn't complete that action. Please try again.");
+});
+
+test('listPassengers() / blockPassenger() / unblockPassenger() round-trip account_status via the RPC', async () => {
+  __setSupabaseClientForTests(fakeAccountsClient());
+
   const passenger = (await listPassengers()).data[0];
-  await blockPassenger(passenger.id);
+  assert.equal(passenger.id, 'p1');
+
+  await blockPassenger(passenger.id, 'Reported unsafe conduct by driver');
   assert.equal((await listPassengers()).data.find((p) => p.id === passenger.id)?.accountStatus, 'suspended');
-  await unblockPassenger(passenger.id);
+
+  await unblockPassenger(passenger.id, 'Investigation cleared the passenger');
   assert.equal((await listPassengers()).data.find((p) => p.id === passenger.id)?.accountStatus, 'active');
 });
 

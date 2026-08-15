@@ -12,7 +12,7 @@ export interface FakeClientConfig {
     args: unknown
   ) => Promise<{ data: { session: unknown }; error: { message: string } | null }>;
   getSession?: () => Promise<{ data: { session: unknown } }>;
-  signOut?: () => Promise<void>;
+  signOut?: (args?: unknown) => Promise<void>;
   userRow?: Record<string, unknown> | null;
   updateError?: string | null;
   /** Rows `user_consents` selects resolve to. */
@@ -34,7 +34,10 @@ export interface FakeClientConfig {
   channel?: (name: string) => unknown;
   removeChannel?: (channel: unknown) => void;
   /** Override for `.functions.invoke(name, options)` — used by Edge Function callers. */
-  functionsInvoke?: (name: string, options: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+  functionsInvoke?: (
+    name: string,
+    options: unknown
+  ) => Promise<{ data: unknown; error: { message: string; context?: unknown } | null }>;
   /** Override for `.rpc(fn, args)` — used by RPC-based service functions (e.g. get_trip_driver_info). */
   rpc?: (fn: string, args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
 }

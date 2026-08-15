@@ -95,17 +95,17 @@ test('signIn returns a session on success', async () => {
   assert.equal(result.error, null);
 });
 
-test('signOut calls the underlying auth.signOut', async () => {
-  let called = false;
+test('signOut calls the underlying auth.signOut with local scope, not global', async () => {
+  let capturedArgs: unknown;
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      signOut: async () => {
-        called = true;
+      signOut: async (args?: unknown) => {
+        capturedArgs = args;
       },
     })
   );
   await signOut();
-  assert.equal(called, true);
+  assert.deepEqual(capturedArgs, { scope: 'local' });
 });
 
 test('getCurrentUserProfile returns null when there is no active session', async () => {

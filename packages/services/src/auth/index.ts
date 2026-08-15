@@ -42,8 +42,15 @@ export async function signIn({ email, password }: SignInInput): Promise<AuthResu
   return { session: data.session, error: error?.message ?? null };
 }
 
+/**
+ * `scope: 'local'` — the default scope would revoke every session for this
+ * user, on every device. A driver logging out on one phone (or a passenger
+ * testing a second device) would otherwise silently kill an already-running
+ * session elsewhere, which then fails its next API call with a raw "Session
+ * not found" 401 instead of a clean re-login prompt.
+ */
 export async function signOut(): Promise<void> {
-  await getSupabaseClient().auth.signOut();
+  await getSupabaseClient().auth.signOut({ scope: 'local' });
 }
 
 export async function getSession(): Promise<Session | null> {

@@ -14,6 +14,7 @@ function toAppUser(profile: PublicUser): User {
     email: profile.email,
     phone: profile.contact_no ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
+    accountStatus: profile.status,
   };
 }
 

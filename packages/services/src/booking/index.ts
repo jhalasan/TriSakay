@@ -294,6 +294,30 @@ const PENDING_REQUESTS_REFETCH_DEBOUNCE_MS = 500;
  * debounced — the initial post-SUBSCRIBED refetch is not, callers expect
  * the first page of results right away.
  */
+/**
+ * The Functions SDK's own `error.message` is always the generic "Edge
+ * Function returned a non-2xx status code" — it never surfaces the JSON
+ * body our own function actually returned. `error.context` is the raw
+ * `Response`, so read it directly for the real reason. A 401 here means the
+ * driver's session was invalidated (e.g. signed out on another device) even
+ * though its access token hadn't reached its own expiry yet — a plain
+ * re-login clears it, so that's what the driver is told to do instead of a
+ * raw technical string.
+ */
+async function describePendingRequestsError(error: { context?: unknown }): Promise<string> {
+  if (error.context instanceof Response) {
+    try {
+      const body = (await error.context.json()) as { error?: string | null };
+      if (body?.error === 'Not authenticated' || body?.error === 'Missing Authorization header') {
+        return 'Your session expired. Please log out and log back in.';
+      }
+    } catch {
+      // Response body wasn't JSON — fall through to the generic message.
+    }
+  }
+  return "Couldn't load ride requests. Please check your connection and try again.";
+}
+
 export function subscribeToPendingRideRequests(
   driverId: string,
   onData: (rows: RideRequestRow[]) => void,
@@ -308,7 +332,7 @@ export function subscribeToPendingRideRequests(
 
     if (cancelled) return;
     if (error) {
-      onError?.(error.message);
+      onError?.(await describePendingRequestsError(error));
       return;
     }
 

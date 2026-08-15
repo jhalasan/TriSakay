@@ -1265,6 +1265,15 @@ export type Database = {
       is_pso: { Args: never; Returns: boolean }
       is_supervisor: { Args: never; Returns: boolean }
       notify_expiring_franchises: { Args: never; Returns: undefined }
+      perform_account_action: {
+        Args: {
+          p_action_type: Database["public"]["Enums"]["account_action_type"]
+          p_complaint_id?: string
+          p_reason: string
+          p_target_user_id: string
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       account_action_type:

@@ -14,6 +14,8 @@ const TITLES: Record<string, string> = {
   '/monitoring': 'Ride Monitoring',
   '/complaints': 'Complaints Management',
   '/reports': 'Reports & Analytics',
+  '/rating-oversight': 'Rating Oversight',
+  '/discounts': 'Fare Discount Review',
   '/pso-users': 'PSO User Management',
   '/settings': 'System Settings',
 };

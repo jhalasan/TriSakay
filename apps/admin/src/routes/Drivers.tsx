@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { TableToolbar } from '../components/TableToolbar';
 import { Select } from '../components/Select';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
@@ -8,9 +8,38 @@ import { Avatar } from '../components/Avatar';
 import { RatingSquares } from '../components/RatingSquares';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { useDriversStore } from '../store/useDriversStore';
 import type { DriverRow } from '../types/driver';
 import { titleCaseLabel } from '../lib/format';
+
+type PendingActionKind = 'flag' | 'suspend' | 'reactivate';
+
+interface PendingAction {
+  driver: DriverRow;
+  kind: PendingActionKind;
+}
+
+const ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (name: string) => string }> = {
+  flag: {
+    title: 'Flag driver',
+    confirmLabel: 'Flag',
+    tone: 'primary',
+    message: (name) => `Flag ${name}'s account? This is visible to other PSO staff reviewing this driver.`,
+  },
+  suspend: {
+    title: 'Suspend driver',
+    confirmLabel: 'Suspend',
+    tone: 'danger',
+    message: (name) => `Suspend ${name}'s account? They won't be able to accept ride requests until reactivated.`,
+  },
+  reactivate: {
+    title: 'Reactivate driver',
+    confirmLabel: 'Reactivate',
+    tone: 'primary',
+    message: (name) => `Reactivate ${name}'s account?`,
+  },
+};
 
 const STATUS_TONE: Record<DriverRow['accountStatus'], 'neutral' | 'success' | 'warn' | 'danger'> = {
   active: 'success',
@@ -23,12 +52,29 @@ const PAGE_SIZE = 5;
 
 /** Wireframe screen 3 "Driver management" (FR-6.1, 6.2). */
 export function Drivers() {
-  const { drivers, loading, search, statusFilter, page, fetch, setSearch, setStatusFilter, setPage, flag, suspend, reactivate } =
+  const { drivers, loading, error, search, statusFilter, page, fetch, setSearch, setStatusFilter, setPage, flag, suspend, reactivate } =
     useDriversStore();
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
     fetch();
   }, [fetch]);
+
+  function closeModal() {
+    setPendingAction(null);
+    setReason('');
+  }
+
+  async function handleConfirm() {
+    if (!pendingAction) return;
+    setSubmitting(true);
+    const action = pendingAction.kind === 'flag' ? flag : pendingAction.kind === 'suspend' ? suspend : reactivate;
+    const ok = await action(pendingAction.driver.id, reason);
+    setSubmitting(false);
+    if (ok) closeModal();
+  }
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -77,16 +123,28 @@ export function Drivers() {
           <Button variant="outline" tone="neutral" size="sm">
             View
           </Button>
-          <Button variant="outline" tone="neutral" size="sm" onClick={() => flag(d.id)}>
+          <Button variant="outline" tone="neutral" size="sm" onClick={() => setPendingAction({ driver: d, kind: 'flag' })}>
             Flag
           </Button>
           <RoleGate min="supervisor">
             {d.accountStatus === 'suspended' ? (
-              <Button variant="outline" tone="primary" size="sm" superscript="S+" onClick={() => reactivate(d.id)}>
+              <Button
+                variant="outline"
+                tone="primary"
+                size="sm"
+                superscript="S+"
+                onClick={() => setPendingAction({ driver: d, kind: 'reactivate' })}
+              >
                 Reactivate
               </Button>
             ) : (
-              <Button variant="solid" tone="danger" size="sm" superscript="S+" onClick={() => suspend(d.id)}>
+              <Button
+                variant="solid"
+                tone="danger"
+                size="sm"
+                superscript="S+"
+                onClick={() => setPendingAction({ driver: d, kind: 'suspend' })}
+              >
                 Suspend
               </Button>
             )}
@@ -98,6 +156,21 @@ export function Drivers() {
 
   return (
     <div className="page">
+      {error && (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--danger)',
+            background: 'var(--danger-soft)',
+            border: '1px solid var(--danger)',
+            borderRadius: 'var(--r-sm)',
+            padding: 'var(--sp-sm)',
+            marginBottom: 'var(--sp-sm)',
+          }}
+        >
+          {error}
+        </div>
+      )}
       <TableToolbar
         search={search}
         onSearchChange={setSearch}
@@ -124,6 +197,20 @@ export function Drivers() {
       />
       <DataTable columns={columns} rows={pageRows} getRowKey={(d) => d.id} loading={loading} emptyMessage="No drivers match your filters." />
       <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+      {pendingAction && (
+        <ConfirmModal
+          title={ACTION_COPY[pendingAction.kind].title}
+          message={ACTION_COPY[pendingAction.kind].message(pendingAction.driver.fullName)}
+          confirmLabel={ACTION_COPY[pendingAction.kind].confirmLabel}
+          tone={ACTION_COPY[pendingAction.kind].tone}
+          reasonRequired
+          reason={reason}
+          onReasonChange={setReason}
+          confirmLoading={submitting}
+          onCancel={closeModal}
+          onConfirm={handleConfirm}
+        />
+      )}
     </div>
   );
 }

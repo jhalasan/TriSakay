@@ -1,16 +1,5 @@
-import { MOCK_DRIVERS } from '../mocks/drivers.ts';
-import { wait } from '../mocks/delay.ts';
+import { listDriversForAdmin, performAccountAction } from '@trisakay/services';
 import type { DriverRow } from '../types/driver';
-
-/**
- * Mock-backed service layer. Function signatures are shaped to match the
- * eventual Supabase queries against `users` + `driver_profiles` +
- * `tricycles` (docs/SCHEMA.MD) — e.g. listDrivers() will become a
- * `.from('users').select(...)` join, flagDriver()/suspendDriver() will
- * become inserts into `account_actions` alongside a `users.status` update
- * (FR-6.2). No Supabase import here — this pass is frontend-only.
- */
-let drivers = [...MOCK_DRIVERS];
 
 export interface ServiceResult<T> {
   data: T;
@@ -18,27 +7,40 @@ export interface ServiceResult<T> {
 }
 
 export async function listDrivers(): Promise<ServiceResult<DriverRow[]>> {
-  await wait();
+  const { data, error } = await listDriversForAdmin();
+  if (error) return { data: [], error };
+
+  const drivers: DriverRow[] = data.map((d) => ({
+    id: d.id,
+    fullName: d.fullName,
+    contactNo: d.contactNo ?? '',
+    email: d.email,
+    accountStatus: d.accountStatus,
+    verificationStatus: d.verificationStatus,
+    ratingAvg: d.ratingAvg,
+    ratingCount: d.ratingCount,
+    plateNo: d.plateNo ?? '—',
+    cluster: d.cluster,
+    createdAt: d.createdAt,
+  }));
+
   return { data: drivers, error: null };
 }
 
 /** PSO Staff+ action — no S+ gate required (docs/CONTEXT.MD §6). */
-export async function flagDriver(driverId: string): Promise<ServiceResult<null>> {
-  await wait();
-  drivers = drivers.map((d) => (d.id === driverId ? { ...d, accountStatus: 'flagged' } : d));
-  return { data: null, error: null };
+export async function flagDriver(driverId: string, reason: string): Promise<ServiceResult<null>> {
+  const { error } = await performAccountAction(driverId, 'flag', reason);
+  return { data: null, error };
 }
 
 /** S+ action — PSO Supervisor/Admin only (FR-6.2). */
-export async function suspendDriver(driverId: string): Promise<ServiceResult<null>> {
-  await wait();
-  drivers = drivers.map((d) => (d.id === driverId ? { ...d, accountStatus: 'suspended' } : d));
-  return { data: null, error: null };
+export async function suspendDriver(driverId: string, reason: string): Promise<ServiceResult<null>> {
+  const { error } = await performAccountAction(driverId, 'suspend', reason);
+  return { data: null, error };
 }
 
 /** S+ action — reverses a suspend/flag. */
-export async function reactivateDriver(driverId: string): Promise<ServiceResult<null>> {
-  await wait();
-  drivers = drivers.map((d) => (d.id === driverId ? { ...d, accountStatus: 'active' } : d));
-  return { data: null, error: null };
+export async function reactivateDriver(driverId: string, reason: string): Promise<ServiceResult<null>> {
+  const { error } = await performAccountAction(driverId, 'reactivate', reason);
+  return { data: null, error };
 }

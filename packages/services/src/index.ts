@@ -13,7 +13,12 @@ export * from './ratings/index.ts';
 export * from './location/index.ts';
 export * from './storage/index.ts';
 export * from './trip-history/index.ts';
+export * from './admin/accounts.ts';
 export * from './admin/dashboard.ts';
+export * from './admin/discounts.ts';
+export * from './admin/drivers.ts';
+export * from './admin/passengers.ts';
+export * from './admin/ratings.ts';
 
 export function getServiceStatus() {
   return 'Services ready';

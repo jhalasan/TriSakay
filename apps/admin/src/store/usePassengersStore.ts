@@ -13,8 +13,8 @@ interface PassengersState {
   setSearch: (value: string) => void;
   setStatusFilter: (value: PassengersState['statusFilter']) => void;
   setPage: (page: number) => void;
-  block: (passengerId: string) => Promise<void>;
-  unblock: (passengerId: string) => Promise<void>;
+  block: (passengerId: string, reason: string) => Promise<boolean>;
+  unblock: (passengerId: string, reason: string) => Promise<boolean>;
 }
 
 export const usePassengersStore = create<PassengersState>()((set, get) => ({
@@ -35,15 +35,23 @@ export const usePassengersStore = create<PassengersState>()((set, get) => ({
   setStatusFilter: (value) => set({ statusFilter: value, page: 1 }),
   setPage: (page) => set({ page }),
 
-  block: async (passengerId) => {
-    const { error } = await blockPassenger(passengerId);
-    if (error) return set({ error });
+  block: async (passengerId, reason) => {
+    const { error } = await blockPassenger(passengerId, reason);
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 
-  unblock: async (passengerId) => {
-    const { error } = await unblockPassenger(passengerId);
-    if (error) return set({ error });
+  unblock: async (passengerId, reason) => {
+    const { error } = await unblockPassenger(passengerId, reason);
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 }));

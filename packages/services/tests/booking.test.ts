@@ -892,7 +892,7 @@ test('subscribeToPendingRideRequests unsubscribe removes the channel', async () 
   assert.equal(removedChannel, fakeChannel);
 });
 
-test('subscribeToPendingRideRequests forwards an Edge Function transport error via onError instead of treating it as an empty list', async () => {
+test('subscribeToPendingRideRequests forwards a friendly message for an Edge Function transport error instead of treating it as an empty list', async () => {
   let capturedStatusCallback: ((status: string) => void) | null = null;
   const fakeChannel = {
     on: () => fakeChannel,
@@ -906,7 +906,7 @@ test('subscribeToPendingRideRequests forwards an Edge Function transport error v
     createFakeSupabaseClient({
       channel: () => fakeChannel,
       removeChannel: () => {},
-      functionsInvoke: async () => ({ data: null, error: { message: 'query failed' } }),
+      functionsInvoke: async () => ({ data: null, error: { message: 'Edge Function returned a non-2xx status code' } }),
     })
   );
 
@@ -923,7 +923,45 @@ test('subscribeToPendingRideRequests forwards an Edge Function transport error v
   await Promise.resolve();
 
   assert.deepEqual(receivedData, []);
-  assert.deepEqual(receivedErrors, ['query failed']);
+  assert.deepEqual(receivedErrors, ["Couldn't load ride requests. Please check your connection and try again."]);
+});
+
+test('subscribeToPendingRideRequests translates a 401 "Not authenticated" body into a re-login message', async () => {
+  let capturedStatusCallback: ((status: string) => void) | null = null;
+  const fakeChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      capturedStatusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  const response = new Response(JSON.stringify({ data: null, error: 'Not authenticated' }), { status: 401 });
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      functionsInvoke: async () => ({
+        data: null,
+        error: { message: 'Edge Function returned a non-2xx status code', context: response },
+      }),
+    })
+  );
+
+  const receivedData: unknown[] = [];
+  const receivedErrors: string[] = [];
+  subscribeToPendingRideRequests(
+    'driver1',
+    (rows) => receivedData.push(rows),
+    (message) => receivedErrors.push(message),
+  );
+
+  capturedStatusCallback!('SUBSCRIBED');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+
+  assert.deepEqual(receivedData, []);
+  assert.deepEqual(receivedErrors, ['Your session expired. Please log out and log back in.']);
 });
 
 test('subscribeToPendingRideRequests forwards an in-body error from the Edge Function via onError', async () => {

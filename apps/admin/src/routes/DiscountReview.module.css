@@ -1,0 +1,75 @@
+.caseList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+.case,
+.caseActive {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  padding: var(--sp-sm) var(--sp-md);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--panel);
+  font-size: 12px;
+  color: var(--ink);
+  cursor: pointer;
+  text-align: left;
+}
+
+.caseActive {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.review {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: var(--sp-md);
+}
+
+@media (max-width: 900px) {
+  .review {
+    grid-template-columns: 1fr;
+  }
+}
+
+.documents {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-md);
+  align-content: start;
+}
+
+@media (max-width: 600px) {
+  .documents {
+    grid-template-columns: 1fr;
+  }
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+  align-self: start;
+}
+
+.decisionRow {
+  display: flex;
+  gap: var(--sp-sm);
+  margin-top: var(--sp-sm);
+}
+
+.decisionRow > * {
+  flex: 1;
+}
+
+.readOnlyNote {
+  font-size: 11px;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--sp-sm);
+}
