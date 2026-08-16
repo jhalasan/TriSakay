@@ -16,7 +16,8 @@
     "test:admin": "npm --workspace apps/admin run test",
     "test:services": "npm --workspace packages/services run test",
     "test:ui": "npm --workspace packages/ui run test",
-    "typecheck": "tsc -b && tsc -p packages/services/tsconfig.tests.json && tsc -p packages/ui/tsconfig.tests.json"
+    "test:shared": "npm --workspace packages/shared run test",
+    "typecheck": "tsc -b && tsc -p packages/services/tsconfig.tests.json && tsc -p packages/ui/tsconfig.tests.json && tsc -p packages/shared/tsconfig.tests.json"
   },
   "devDependencies": {
     "@types/react": "~19.1.0",
