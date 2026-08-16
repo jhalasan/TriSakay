@@ -53,6 +53,43 @@ export async function signOut(): Promise<void> {
   await getSupabaseClient().auth.signOut({ scope: 'local' });
 }
 
+export interface RequestPasswordResetResult {
+  error: string | null;
+}
+
+/**
+ * Triggers Supabase's "Reset Password" email. The project's email template
+ * must include `{{ .Token }}` (Dashboard → Auth → Email Templates) for this
+ * to deliver a 6-digit code rather than a magic link — this app has no
+ * deep-link handling, so verifyPasswordReset() below is the only supported
+ * completion path.
+ */
+export async function requestPasswordReset(email: string): Promise<RequestPasswordResetResult> {
+  const { error } = await getSupabaseClient().auth.resetPasswordForEmail(email);
+  return { error: error?.message ?? null };
+}
+
+export interface VerifyPasswordResetInput {
+  email: string;
+  token: string;
+}
+
+/** Exchanges the emailed 6-digit code for a live (recovery) session. */
+export async function verifyPasswordReset({ email, token }: VerifyPasswordResetInput): Promise<AuthResult> {
+  const { data, error } = await getSupabaseClient().auth.verifyOtp({ email, token, type: 'recovery' });
+  return { session: data.session, error: error?.message ?? null };
+}
+
+export interface UpdatePasswordResult {
+  error: string | null;
+}
+
+/** Sets a new password on the current (recovery) session established by verifyPasswordReset(). */
+export async function updatePassword(newPassword: string): Promise<UpdatePasswordResult> {
+  const { error } = await getSupabaseClient().auth.updateUser({ password: newPassword });
+  return { error: error?.message ?? null };
+}
+
 export async function getSession(): Promise<Session | null> {
   const { data } = await getSupabaseClient().auth.getSession();
   return data.session;

@@ -13,6 +13,12 @@ export interface FakeClientConfig {
   ) => Promise<{ data: { session: unknown }; error: { message: string } | null }>;
   getSession?: () => Promise<{ data: { session: unknown } }>;
   signOut?: (args?: unknown) => Promise<void>;
+  resetPasswordForEmail?: (
+    email: string,
+    options?: unknown
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  verifyOtp?: (args: unknown) => Promise<{ data: { session: unknown }; error: { message: string } | null }>;
+  updateUser?: (args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
   userRow?: Record<string, unknown> | null;
   updateError?: string | null;
   /** Rows `user_consents` selects resolve to. */
@@ -51,6 +57,9 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     signOut: config.signOut ?? (async () => {}),
     getSession: config.getSession ?? (async () => ({ data: { session: null } })),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    resetPasswordForEmail: config.resetPasswordForEmail ?? (async () => ({ data: {}, error: null })),
+    verifyOtp: config.verifyOtp ?? (async () => ({ data: { session: null }, error: null })),
+    updateUser: config.updateUser ?? (async () => ({ data: {}, error: null })),
   };
 
   const usersQuery = {

@@ -77,6 +77,12 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
     // rider could confirm it (mirrors the same fix in apps/driver's layout).
     if (root === 'logout') return;
 
+    // Verifying the emailed reset code establishes a real session mid-flow
+    // (see packages/services/src/auth's verifyPasswordReset), which would
+    // otherwise flip isAuthenticated and bounce this screen to Home before
+    // the rider has actually set a new password.
+    if (root === 'reset-password') return;
+
     const inAuthGroup = root === '(auth)';
     const onConsent = root === 'consent';
 
@@ -215,6 +221,7 @@ function RootLayoutNav() {
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="consent" />
+          <Stack.Screen name="reset-password" />
           <Stack.Screen
             name="location-permission"
             options={{ presentation: 'transparentModal', animation: 'fade' }}

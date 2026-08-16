@@ -48,6 +48,12 @@ function useProtectedRoute(
     // would get bounced back before the driver could confirm it.
     if (root === 'logout') return;
 
+    // Verifying the emailed reset code establishes a real session mid-flow
+    // (see packages/services/src/auth's verifyPasswordReset), which would
+    // otherwise flip isAuthenticated and bounce this screen to Dashboard
+    // before the driver has actually set a new password.
+    if (root === 'reset-password') return;
+
     const inAuthGroup = root === '(auth)';
     const onConsent = root === 'consent';
     const onVerification = root === 'verification-pending';
@@ -235,6 +241,7 @@ function RootLayoutNav() {
           <Stack.Screen name="consent" />
           <Stack.Screen name="verification-pending" />
           <Stack.Screen name="account-suspended" />
+          <Stack.Screen name="reset-password" />
           <Stack.Screen name="location-permission" options={{ presentation: 'transparentModal', animation: 'fade' }} />
           <Stack.Screen name="logout" options={{ presentation: 'transparentModal', animation: 'fade' }} />
         </Stack>
