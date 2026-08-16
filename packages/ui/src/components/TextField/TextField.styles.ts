@@ -38,6 +38,9 @@ export const styles = StyleSheet.create({
   iconSlot: {
     marginRight: spacing.sm,
   },
+  revealButton: {
+    marginLeft: spacing.sm,
+  },
   helperText: {
     ...typography.caption,
     color: colors.inkSoft,
