@@ -12,11 +12,13 @@ import {
 import { Button, MapOverlaySheet, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { styles } from '../../src/styles/booking/finding-driver.styles';
 
 export default function FindingDriverScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
   const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
@@ -125,14 +127,14 @@ export default function FindingDriverScreen() {
       </View>
 
       <MapOverlaySheet bottomInset={insets.bottom}>
-        <Text style={styles.title}>Finding a driver</Text>
+        <Text style={styles.title}>{t.findingDriver.title}</Text>
         <Text style={styles.subtitle}>
-          {dropoff ? `Looking for a tricycle to ${dropoff.label}` : 'Looking for a tricycle nearby'}
+          {dropoff ? `${t.findingDriver.lookingForTricycleTo} ${dropoff.label}` : t.findingDriver.lookingForTricycleNearby}
         </Text>
         {subscriptionError && <Text style={styles.cancelError}>{subscriptionError}</Text>}
         <View style={styles.cancelButton}>
           <Button
-            label="Cancel request"
+            label={t.findingDriver.cancelRequest}
             variant="outline"
             tone="neutral"
             fullWidth
