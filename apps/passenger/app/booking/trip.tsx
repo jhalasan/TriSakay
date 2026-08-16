@@ -5,12 +5,14 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { subscribeToRideRequestStatus } from '@trisakay/services';
 import { Badge, Button, EmptyState, GradientSurface, OsmMap, motion, spacing } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { styles } from '../../src/styles/booking/trip.styles';
 
 export default function TripScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
   const driver = useBookingStore((state) => state.driver);
   const pickup = useBookingStore((state) => state.pickup);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
@@ -76,8 +78,8 @@ export default function TripScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.emptyWrap}>
-          <EmptyState title="No driver matched" message="Try requesting a ride again." />
-          <Button label="Back to Home" onPress={() => router.replace('/(tabs)/home')} />
+          <EmptyState title={t.trip.noDriverMatchedTitle} message={t.trip.noDriverMatchedMessage} />
+          <Button label={t.trip.backToHome} onPress={() => router.replace('/(tabs)/home')} />
         </View>
       </View>
     );
@@ -88,7 +90,7 @@ export default function TripScreen() {
       <View style={styles.mapFill}>
         <OsmMap
           variant="route"
-          caption="Map · trip route"
+          caption={t.trip.mapCaption}
           height="100%"
           latitude={pickup?.latitude}
           longitude={pickup?.longitude}
@@ -99,7 +101,7 @@ export default function TripScreen() {
       </View>
 
       <View style={styles.statusBadgeWrap}>
-        <Badge label="Driver assigned" tone="blue" dot />
+        <Badge label={t.trip.driverAssigned} tone="blue" dot />
       </View>
 
       <Animated.View
@@ -117,7 +119,7 @@ export default function TripScreen() {
         <GradientSurface token="brand" direction="diagonal" style={styles.sheetAccent} />
         <DriverInfoCard driver={driver} />
         {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
-        <Text style={styles.caption}>No in-app call or message — coordination is in person.</Text>
+        <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
       </Animated.View>
     </View>
   );
