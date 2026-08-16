@@ -9,11 +9,7 @@ import { useBookingStore } from '../../src/store/useBookingStore';
 import { formatCurrency } from '../../src/utils/currency';
 import type { PaymentMethod } from '../../src/types/booking';
 import { styles } from '../../src/styles/booking/payment.styles';
-
-const PAYMENT_OPTIONS: { value: PaymentMethod; title: string; subtitle: string }[] = [
-  { value: 'gcash', title: 'GCash Wallet', subtitle: 'Pay using your GCash balance' },
-  { value: 'cash', title: 'Cash', subtitle: 'Pay the driver directly' },
-];
+import { useTranslation } from '../../src/hooks/useTranslation';
 
 const GCASH_WAIT_TIMEOUT_MS = 120_000;
 const CASH_WAIT_TIMEOUT_MS = 30_000;
@@ -22,6 +18,11 @@ type PaymentPhase = 'idle' | 'opening' | 'waiting' | 'failed';
 
 export default function PaymentScreen() {
   const router = useRouter();
+  const t = useTranslation();
+  const PAYMENT_OPTIONS: { value: PaymentMethod; title: string; subtitle: string }[] = [
+    { value: 'gcash', title: t.payment.gcashWalletTitle, subtitle: t.payment.gcashWalletSubtitle },
+    { value: 'cash', title: t.common.cash, subtitle: t.payment.cashSubtitle },
+  ];
   const dropoff = useBookingStore((state) => state.dropoff);
   const fare = useBookingStore((state) => state.fare);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
@@ -48,7 +49,7 @@ export default function PaymentScreen() {
 
     if (!rideRequestId) {
       function markMissingRideDetails() {
-        setPaymentError('Missing ride details — please go back and try again.');
+        setPaymentError(t.payment.missingRideDetails);
         setPaymentPhase('failed');
       }
 
@@ -85,7 +86,7 @@ export default function PaymentScreen() {
 
       timeoutRef.current = setTimeout(() => {
         unsubscribeRef.current?.();
-        setPaymentError('Still waiting for the driver to confirm cash received.');
+        setPaymentError(t.payment.stillWaitingCashConfirm);
         setPaymentPhase('failed');
       }, CASH_WAIT_TIMEOUT_MS);
     }
@@ -109,7 +110,7 @@ export default function PaymentScreen() {
     unsubscribeRef.current = null;
 
     if (!rideRequestId) {
-      setPaymentError('Missing ride details — please go back and try again.');
+      setPaymentError(t.payment.missingRideDetails);
       setPaymentPhase('failed');
       return;
     }
@@ -120,7 +121,7 @@ export default function PaymentScreen() {
     const { checkoutUrl, error } = await createGcashCheckout(rideRequestId);
 
     if (error || !checkoutUrl) {
-      setPaymentError(error ?? 'Could not start GCash checkout.');
+      setPaymentError(error ?? t.payment.couldNotStartGcashCheckout);
       setPaymentPhase('failed');
       return;
     }
@@ -137,7 +138,7 @@ export default function PaymentScreen() {
         } else if (row.status === 'failed') {
           unsubscribeRef.current?.();
           if (timeoutRef.current) clearTimeout(timeoutRef.current);
-          setPaymentError('Payment failed. You can retry.');
+          setPaymentError(t.payment.paymentFailedRetry);
           setPaymentPhase('failed');
         }
       },
@@ -155,7 +156,7 @@ export default function PaymentScreen() {
 
     timeoutRef.current = setTimeout(() => {
       unsubscribeRef.current?.();
-      setPaymentError("We couldn't confirm your payment yet. You can retry.");
+      setPaymentError(t.payment.couldNotConfirmPaymentYet);
       setPaymentPhase('failed');
     }, GCASH_WAIT_TIMEOUT_MS);
 
@@ -185,16 +186,16 @@ export default function PaymentScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Payment" showBack={false} />
+      <ScreenHeader title={t.payment.title} showBack={false} />
       <View style={styles.content}>
         <Card variant="raised" style={styles.amountCard}>
-          <Text style={styles.amountLabel}>Amount due</Text>
+          <Text style={styles.amountLabel}>{t.payment.amountDue}</Text>
           <Text style={styles.amountValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
-          {dropoff && <Text style={styles.amountNote}>Trip to {dropoff.label}</Text>}
+          {dropoff && <Text style={styles.amountNote}>{t.payment.tripTo} {dropoff.label}</Text>}
         </Card>
 
         <View>
-          <Text style={styles.sectionLabel}>Pay with</Text>
+          <Text style={styles.sectionLabel}>{t.payment.payWith}</Text>
           {PAYMENT_OPTIONS.map((option) => {
             const selected = paymentMethod === option.value;
             return (
@@ -213,7 +214,7 @@ export default function PaymentScreen() {
                   <Text style={styles.optionTitle}>{option.title}</Text>
                   <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
                 </View>
-                <Badge label={option.value === 'gcash' ? 'GCash' : 'Cash'} tone="neutral" />
+                <Badge label={option.value === 'gcash' ? t.common.gcash : t.common.cash} tone="neutral" />
               </Pressable>
             );
           })}
@@ -222,8 +223,8 @@ export default function PaymentScreen() {
         {paymentPhase === 'waiting' && (
           <Text style={styles.gcashStatusText}>
             {paymentMethod === 'cash'
-              ? 'Waiting for the driver to confirm cash received…'
-              : 'Waiting for PayMongo to confirm your payment…'}
+              ? t.payment.waitingForCashConfirm
+              : t.payment.waitingForGcashConfirm}
           </Text>
         )}
         {paymentPhase === 'failed' && paymentError && (
@@ -231,9 +232,9 @@ export default function PaymentScreen() {
             <Text style={styles.gcashErrorText}>{paymentError}</Text>
             <View style={styles.gcashErrorActions}>
               {paymentMethod === 'cash' ? (
-                <Button label="Check again" onPress={handleCheckAgainCash} />
+                <Button label={t.payment.checkAgain} onPress={handleCheckAgainCash} />
               ) : (
-                <Button label="Retry GCash" onPress={handleRetryGcash} />
+                <Button label={t.payment.retryGcash} onPress={handleRetryGcash} />
               )}
             </View>
           </View>
@@ -243,7 +244,7 @@ export default function PaymentScreen() {
       {paymentMethod === 'gcash' && (
         <View style={styles.footer}>
           <Button
-            label={paymentPhase === 'opening' ? 'Opening PayMongo…' : 'Pay now'}
+            label={paymentPhase === 'opening' ? t.payment.openingPaymongo : t.payment.payNow}
             fullWidth
             loading={paymentPhase === 'opening'}
             disabled={paymentPhase === 'waiting' || paymentPhase === 'failed'}
