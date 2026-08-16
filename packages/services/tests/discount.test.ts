@@ -8,7 +8,7 @@ import { applyForDiscount } from '../src/discount/index.ts';
 /** uploadIdPhoto() reads the file via a real fetch() — stub it so tests never hit the network. */
 function stubFetch(): () => void {
   const original = globalThis.fetch;
-  globalThis.fetch = (async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })) as typeof fetch;
+  globalThis.fetch = (async () => ({ arrayBuffer: async () => new ArrayBuffer(0) })) as unknown as typeof fetch;
   return () => {
     globalThis.fetch = original;
   };

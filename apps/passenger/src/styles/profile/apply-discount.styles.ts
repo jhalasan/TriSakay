@@ -40,12 +40,10 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   photoRow: {
-    flexDirection: 'row',
+    flexDirection: 'column',
     gap: spacing.md,
   },
-  photoSlot: {
-    flex: 1,
-  },
+  photoSlot: {},
   photoUpload: {
     height: 140,
     borderRadius: radius.md,
