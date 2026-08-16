@@ -68,6 +68,8 @@ Generated 2026-08-05 from a full-repo review: typecheck clean, 74/74 tests pass 
 
 ## P4 — Compliance / pre-demo polish
 
+- [x] **Phone-size scaling** *(done 2026-08-16)* — `packages/ui`'s shared tokens (`spacing`, `typography`, `radius`) now run through a new `moderateScale()` helper (`packages/ui/src/theme/scale.ts`) keyed off device width at launch, so every screen consuming these tokens scales proportionally from small phones (~320px) to large ones (~430px+). 5 new unit tests, wired into `npm run typecheck`/`npm run test:ui`.
+- [ ] **(new) Landscape orientation is not supported.** Both apps lock `"orientation": "portrait"` in `app.json`, and the phone-size scaling above is a load-time value (no `useWindowDimensions` subscription), so nothing currently reacts to a width/height swap. Making the app landscape-aware would need: (1) unlocking orientation in both `app.json`s, (2) switching the scale tokens to a live-updating hook instead of a one-time `Dimensions.get()` read, and (3) auditing screen layouts (esp. fixed-height elements like the profile hero band) for landscape-appropriate proportions. Not started.
 - [ ] Replace placeholder ToS/Privacy legal copy in `consent.tsx` (both apps) — currently literal "Placeholder —" paragraphs; FR-11 requires real disclosure text.
 - [ ] Resolve map library divergence: spec says MapLibre, code uses Leaflet-in-WebView on OSMF's free tile service, which the component's own comments flag as not production-safe past dev/low-volume use. Either swap or amend `CONTEXT.MD` to match reality — don't leave it silently diverged.
 - [ ] Decide on committing Supabase migrations locally (`supabase/` dir referenced in the spec doesn't exist; schema only lives via MCP `apply_migration`) — affects whether `git log` can ever show schema history.
@@ -80,7 +82,7 @@ Generated 2026-08-05 from a full-repo review: typecheck clean, 74/74 tests pass 
 
 ## P6 — Housekeeping (low risk, no user-facing impact, fix opportunistically)
 
-- [ ] `apps/passenger/package.json`, `packages/ui/package.json`, `packages/utils/package.json` missing `"type": "module"` — Node's test runner currently reparses each `.ts` test file as ESM at runtime with a warning; harmless today but worth silencing.
+- [ ] `apps/passenger/package.json`, `packages/utils/package.json` missing `"type": "module"` — Node's test runner currently reparses each `.ts` test file as ESM at runtime with a warning; harmless today but worth silencing. (`packages/ui/package.json` picked this up already, as a side effect of adding its test runner for the phone-size-scaling work above.)
 - [ ] Confirm/document the "driver test accounts need manual email confirmation" friction (Supabase dashboard "Confirm email" + low built-in rate limit) before QA/demo sessions — not a code fix, an ops note.
 
 ---
