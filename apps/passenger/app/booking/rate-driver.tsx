@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-na
 import { Avatar, Button, Card, StarRating, Textarea } from '@trisakay/ui';
 import { submitRating } from '@trisakay/services';
 import { useBookingStore } from '../../src/store/useBookingStore';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { styles } from '../../src/styles/booking/rate-driver.styles';
 
 export default function RateDriverScreen() {
@@ -11,6 +12,7 @@ export default function RateDriverScreen() {
   const driver = useBookingStore((state) => state.driver);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const reset = useBookingStore((state) => state.reset);
+  const t = useTranslation();
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
@@ -60,8 +62,8 @@ export default function RateDriverScreen() {
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Card variant="raised" style={styles.driverCard}>
           <Avatar name={driver?.name} size="xl" />
-          <Text style={styles.name}>{driver?.name ?? 'Your driver'}</Text>
-          <Text style={styles.subtitle}>How was your ride?</Text>
+          <Text style={styles.name}>{driver?.name ?? t.rateDriver.yourDriverFallback}</Text>
+          <Text style={styles.subtitle}>{t.rateDriver.howWasYourRide}</Text>
         </Card>
 
         {canRate ? (
@@ -72,8 +74,8 @@ export default function RateDriverScreen() {
 
             <View style={styles.commentWrap}>
               <Textarea
-                label="Comment (optional)"
-                placeholder="Tell us about your trip"
+                label={t.rateDriver.commentLabel}
+                placeholder={t.rateDriver.commentPlaceholder}
                 value={comment}
                 onChangeText={handleCommentChange}
               />
@@ -83,7 +85,7 @@ export default function RateDriverScreen() {
 
             <View style={styles.submitWrap}>
               <Button
-                label="Submit rating"
+                label={t.rateDriver.submitRating}
                 fullWidth
                 disabled={rating === 0}
                 loading={submitting}
@@ -93,17 +95,17 @@ export default function RateDriverScreen() {
 
             {submitError && (
               <View style={styles.submitWrap}>
-                <Button label="Skip for now" variant="outline" fullWidth onPress={finish} />
+                <Button label={t.rateDriver.skipForNow} variant="outline" fullWidth onPress={finish} />
               </View>
             )}
           </>
         ) : (
           <>
             <Text style={styles.fallbackNote}>
-              We couldn't confirm your driver for this trip — you can still continue.
+              {t.rateDriver.couldNotConfirmDriver}
             </Text>
             <View style={styles.submitWrap}>
-              <Button label="Continue" fullWidth onPress={finish} />
+              <Button label={t.rateDriver.continue} fullWidth onPress={finish} />
             </View>
           </>
         )}
