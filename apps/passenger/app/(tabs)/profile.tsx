@@ -171,6 +171,12 @@ export default function ProfileScreen() {
             chevron
           />
           <ListRow
+            title="Fare matrix"
+            leading={<Ionicons name="receipt-outline" size={20} color={colors.accentBlue} />}
+            onPress={() => router.push('/profile/fare-matrix')}
+            chevron
+          />
+          <ListRow
             title="Settings"
             leading={<Ionicons name="settings-outline" size={20} color={colors.accentBlue} />}
             onPress={() => router.push('/(tabs)/settings')}

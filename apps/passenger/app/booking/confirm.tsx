@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { createRideRequest, estimateFare, getFareDiscountRate, getMyDiscount } from '@trisakay/services';
@@ -197,17 +198,27 @@ export default function ConfirmScreen() {
 
         <View style={styles.sectionRow}>
           <Text style={styles.sectionLabel}>Seats</Text>
-          <Stepper value={seats} onChange={setSeats} min={1} max={4} />
+          <Stepper value={seats} onChange={setSeats} min={1} max={6} />
         </View>
 
         <Card variant="raised" style={styles.fareCard}>
           <View style={styles.fareLabelRow}>
-            <Text style={styles.fareLabel}>Estimated fare</Text>
+            <View style={styles.fareLabelWithInfo}>
+              <Text style={styles.fareLabel}>Estimated fare</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel="View fare matrix"
+                onPress={() => router.push('/profile/fare-matrix')}
+              >
+                <Ionicons name="information-circle-outline" size={16} color={colors.inkFaint} />
+              </Pressable>
+            </View>
             {discountApproved && (
               <Badge label={`${discountRatePercent ?? 20}% discount applied`} tone="green" />
             )}
           </View>
           <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
+          {route && <Text style={styles.fareNote}>Road distance: {route.distanceKm.toFixed(1)} km</Text>}
           <Text style={styles.fareNote}>
             {fareError
               ? 'Could not reach the fare service.'
