@@ -33,6 +33,37 @@ test('submitComplaint inserts with submitted_by set to the signed-in user', asyn
   });
 });
 
+test('submitComplaint includes category and ride_request_id when provided', async () => {
+  let capturedInsert: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: () => ({
+        insert: async (row: unknown) => {
+          capturedInsert = row;
+          return { error: null };
+        },
+      }),
+    })
+  );
+
+  const { error } = await submitComplaint({
+    subject: 'Overcharged',
+    message: 'Driver asked for more than the fare.',
+    category: 'fare',
+    rideRequestId: 'ride-1',
+  });
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedInsert, {
+    submitted_by: 'u1',
+    subject: 'Overcharged',
+    message: 'Driver asked for more than the fare.',
+    category: 'fare',
+    ride_request_id: 'ride-1',
+  });
+});
+
 test('submitComplaint returns an error when there is no active session', async () => {
   __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
 

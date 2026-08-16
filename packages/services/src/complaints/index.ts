@@ -2,6 +2,7 @@ import { getSupabaseClient } from '../supabase/client.ts';
 import type { Database } from '../supabase/database.types.ts';
 
 export type ComplaintDbStatus = Database['public']['Enums']['complaint_status'];
+export type ComplaintCategory = Database['public']['Enums']['complaint_category'];
 
 async function getSignedInUserId(): Promise<string | null> {
   const { data } = await getSupabaseClient().auth.getSession();
@@ -11,6 +12,10 @@ async function getSignedInUserId(): Promise<string | null> {
 export interface SubmitComplaintInput {
   subject: string;
   message: string;
+  /** Left for the column's own default ('other') when omitted. */
+  category?: ComplaintCategory;
+  /** The ride this complaint is about, if any — `complaints.ride_request_id` is nullable. */
+  rideRequestId?: string;
 }
 
 export interface SubmitComplaintResult {
@@ -19,19 +24,27 @@ export interface SubmitComplaintResult {
 
 /**
  * Files a complaint as the signed-in user (`submitted_by = auth.uid()`,
- * enforced by the `complaints_submit` RLS policy). No category picker exists
- * in the driver UI yet, so `category` is left for the column's own default
- * rather than guessing one — same gap already flagged on the passenger side
- * (docs/CHECKLIST.MD P2). No attachment upload either; `complaint_attachments`
- * has nothing to wire until the UI grows one.
+ * enforced by the `complaints_submit` RLS policy). No attachment upload yet;
+ * `complaint_attachments` has nothing to wire until the UI grows one.
  */
-export async function submitComplaint({ subject, message }: SubmitComplaintInput): Promise<SubmitComplaintResult> {
+export async function submitComplaint({
+  subject,
+  message,
+  category,
+  rideRequestId,
+}: SubmitComplaintInput): Promise<SubmitComplaintResult> {
   const userId = await getSignedInUserId();
   if (!userId) return { error: 'Not signed in' };
 
   const { error } = await getSupabaseClient()
     .from('complaints')
-    .insert({ submitted_by: userId, subject, message });
+    .insert({
+      submitted_by: userId,
+      subject,
+      message,
+      ...(category ? { category } : {}),
+      ...(rideRequestId ? { ride_request_id: rideRequestId } : {}),
+    });
 
   return { error: error?.message ?? null };
 }
