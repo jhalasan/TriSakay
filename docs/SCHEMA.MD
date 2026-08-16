@@ -980,8 +980,16 @@ create trigger trg_ratings_refresh
 
 -- 4.6 rating may only be submitted for one's own completed ride,
 -- and must name the driver who actually drove that trip -----------------
+-- security definer: passengers have no RLS-visible rows in `trips`
+-- (7.4 only grants driver_id = auth.uid()/PSO), so without definer the
+-- driver_id lookup below always returns NULL for a passenger's insert
+-- and the trigger raises its "must name the driver" exception on every
+-- rating, unconditionally (found via the rating-submission investigation).
 create or replace function public.validate_rating()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql
+security definer
+set search_path = public
+as $$
 declare
   rr public.ride_requests%rowtype;
   trip_driver uuid;
