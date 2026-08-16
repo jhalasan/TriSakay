@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { File } from 'expo-file-system';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { submitDriverDocuments, type DriverDocumentInput } from '@trisakay/services';
-import { BrandMotif, Button, GradientSurface, TextField } from '@trisakay/ui';
+import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION, submitDriverDocuments, type DriverDocumentInput } from '@trisakay/services';
+import { BrandMotif, Button, Card, Checkbox, GradientSurface, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { DocumentUploadRow } from '../../src/components/DocumentUploadRow';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useConsentStore } from '../../src/store/useConsentStore';
 import { useDocumentsStore } from '../../src/store/useDocumentsStore';
+import { DISCLOSURES, POLICY_BODY } from '../../src/content/legalCopy';
 import { DOCUMENT_LABEL, DOCUMENT_TYPES } from '../../src/types/document';
 import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/register.styles';
@@ -31,6 +33,7 @@ export default function RegisterScreen() {
   const authError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
   const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
+  const acceptConsent = useConsentStore((state) => state.accept);
   const documents = useDocumentsStore((state) => state.documents);
   const submitDocument = useDocumentsStore((state) => state.submit);
   const removeDocument = useDocumentsStore((state) => state.remove);
@@ -39,6 +42,7 @@ export default function RegisterScreen() {
   const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [termsChecked, setTermsChecked] = useState(false);
 
   const allDocumentsUploaded = DOCUMENT_TYPES.every((type) => documents[type].status !== 'unsubmitted');
 
@@ -97,6 +101,15 @@ export default function RegisterScreen() {
       );
       return;
     }
+
+    // Record the acceptance the driver already gave on this same step right
+    // away, so it's part of one continuous action rather than a separate
+    // screen popping up after the account already exists. Only possible on
+    // the signed_in path — recordConsent needs a live session (RLS), which
+    // check_email doesn't have yet (handled, and returned, above). Any
+    // failure here falls back to the post-login consent gate (app/consent.tsx),
+    // unchanged.
+    await acceptConsent();
 
     let uploadError: string | null;
     try {
@@ -209,20 +222,42 @@ export default function RegisterScreen() {
             />
           ))}
 
+          <Text style={styles.stepIntro}>Please read and accept these before your account is created.</Text>
+          <Text style={styles.version}>
+            Terms {CURRENT_TOS_VERSION} · Privacy {CURRENT_PRIVACY_VERSION}
+          </Text>
+
+          {POLICY_BODY.map((paragraph) => (
+            <Text key={paragraph.slice(0, 24)} style={styles.paragraph}>
+              {paragraph}
+            </Text>
+          ))}
+
+          <Text style={styles.sectionLabel}>What we collect &amp; share</Text>
+          <Card style={styles.disclosureCard}>
+            {DISCLOSURES.map((item, index) => (
+              <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
+                <Text style={styles.disclosureTitle}>{item.title}</Text>
+                <Text style={styles.disclosureBody}>{item.body}</Text>
+              </View>
+            ))}
+          </Card>
+
+          <Checkbox
+            checked={termsChecked}
+            onChange={setTermsChecked}
+            label="I have read and accept the Terms of Service and Privacy Policy, and confirm I am a licensed tricycle driver"
+          />
+
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
           <Button
             label="Register"
             onPress={handleSubmit}
             loading={submitting || awaitingGate}
-            disabled={!allDocumentsUploaded}
+            disabled={!allDocumentsUploaded || !termsChecked}
             fullWidth
           />
-
-          <Text style={styles.legalText}>
-            By registering, you agree to TriSakay's Terms of Service and Privacy Policy, and confirm you are a
-            licensed tricycle driver.
-          </Text>
         </ScrollView>
       )}
     </KeyboardAvoidingView>
