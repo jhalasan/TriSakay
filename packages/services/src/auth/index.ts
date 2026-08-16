@@ -112,12 +112,21 @@ export async function getCurrentUserProfile(): Promise<PublicUser | null> {
   return data;
 }
 
-export async function updateProfile({ fullName }: { fullName: string }): Promise<{ error: string | null }> {
+export async function updateProfile({
+  fullName,
+  phone,
+}: {
+  fullName: string;
+  phone?: string;
+}): Promise<{ error: string | null }> {
   const { data: sessionData } = await getSupabaseClient().auth.getSession();
   const userId = sessionData.session?.user.id;
   if (!userId) return { error: 'Not signed in' };
 
-  const { error } = await getSupabaseClient().from('users').update({ full_name: fullName }).eq('id', userId);
+  const { error } = await getSupabaseClient()
+    .from('users')
+    .update({ full_name: fullName, ...(phone !== undefined ? { contact_no: phone } : {}) })
+    .eq('id', userId);
   return { error: error?.message ?? null };
 }
 

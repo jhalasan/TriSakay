@@ -21,6 +21,8 @@ export interface FakeClientConfig {
   updateUser?: (args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
   userRow?: Record<string, unknown> | null;
   updateError?: string | null;
+  /** Receives the object passed to the `users` table's `.update()`, so tests can assert the payload shape. */
+  onUsersUpdate?: (row: unknown) => void;
   /** Rows `user_consents` selects resolve to. */
   consentRows?: FakeConsentRow[];
   consentSelectError?: string | null;
@@ -79,7 +81,10 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     select: usersQuery.select,
     eq: usersQuery.eq,
     single: usersQuery.single,
-    update: () => updateQuery,
+    update: (row: unknown) => {
+      config.onUsersUpdate?.(row);
+      return updateQuery;
+    },
   };
 
   // `.in()` terminates the consent query, so it is the only awaitable link.

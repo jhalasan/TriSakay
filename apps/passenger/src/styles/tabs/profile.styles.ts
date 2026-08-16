@@ -82,11 +82,17 @@ export const styles = StyleSheet.create({
     marginTop: spacing.sm,
   },
   detailsCard: {
-    flexDirection: 'row',
+    gap: spacing.md,
   },
-  detailCol: {
-    flex: 1,
-    gap: 2,
+  /** Stacked full-width rather than side-by-side columns — a bordered
+   * TextField (52px, min-height) sitting next to plain label text in a
+   * cramped half-width column read as overlapping/awkward in edit mode. */
+  detailRow: {
+    gap: spacing.xs,
+  },
+  detailDivider: {
+    height: 1,
+    backgroundColor: colors.lineSoft,
   },
   detailLabelRow: {
     flexDirection: 'row',

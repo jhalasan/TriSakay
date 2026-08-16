@@ -145,6 +145,40 @@ test('updateProfile updates full_name and reports no error on success', async ()
   assert.equal(result.error, null);
 });
 
+test('updateProfile writes contact_no when phone is provided', async () => {
+  const fakeSession = { user: { id: 'u1' } };
+  let capturedUpdate: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: fakeSession } }),
+      updateError: null,
+      onUsersUpdate: (row) => {
+        capturedUpdate = row;
+      },
+    })
+  );
+  const result = await updateProfile({ fullName: 'New Name', phone: '09171234567' });
+  assert.equal(result.error, null);
+  assert.deepEqual(capturedUpdate, { full_name: 'New Name', contact_no: '09171234567' });
+});
+
+test('updateProfile omits contact_no when phone is not provided', async () => {
+  const fakeSession = { user: { id: 'u1' } };
+  let capturedUpdate: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: fakeSession } }),
+      updateError: null,
+      onUsersUpdate: (row) => {
+        capturedUpdate = row;
+      },
+    })
+  );
+  const result = await updateProfile({ fullName: 'New Name' });
+  assert.equal(result.error, null);
+  assert.deepEqual(capturedUpdate, { full_name: 'New Name' });
+});
+
 test('updateProfile returns an error when there is no active session', async () => {
   __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
   const result = await updateProfile({ fullName: 'New Name' });

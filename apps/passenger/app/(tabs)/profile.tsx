@@ -17,6 +17,7 @@ export default function ProfileScreen() {
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name ?? '');
+  const [phone, setPhone] = useState(user?.phone ?? '');
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -26,7 +27,7 @@ export default function ProfileScreen() {
       return;
     }
     setSaving(true);
-    const { error } = await updateProfile({ fullName: name });
+    const { error } = await updateProfile({ fullName: name, phone });
     setSaving(false);
     if (error) {
       Alert.alert('Could not save', error);
@@ -128,7 +129,7 @@ export default function ProfileScreen() {
         </View>
 
         <Card style={styles.detailsCard}>
-          <View style={styles.detailCol}>
+          <View style={styles.detailRow}>
             <View style={styles.detailLabelRow}>
               <Ionicons name="mail-outline" size={14} color={colors.inkSoft} />
               <Text style={styles.detailLabel}>Email</Text>
@@ -137,12 +138,22 @@ export default function ProfileScreen() {
               {user?.email ?? '—'}
             </Text>
           </View>
-          <View style={styles.detailCol}>
+          <View style={styles.detailDivider} />
+          <View style={styles.detailRow}>
             <View style={styles.detailLabelRow}>
               <Ionicons name="call-outline" size={14} color={colors.inkSoft} />
               <Text style={styles.detailLabel}>Phone</Text>
             </View>
-            <Text style={styles.detailValue}>{user?.phone ?? '—'}</Text>
+            {isEditing ? (
+              <TextField
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                placeholder="09XX XXX XXXX"
+              />
+            ) : (
+              <Text style={styles.detailValue}>{user?.phone ?? '—'}</Text>
+            )}
           </View>
         </Card>
 
