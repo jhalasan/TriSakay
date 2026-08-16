@@ -8,6 +8,7 @@ import { useBookingStore } from '../../src/store/useBookingStore';
 import { reverseGeocode, searchPlaces } from '../../src/utils/geocode';
 import type { LocationPoint } from '../../src/types/booking';
 import { styles } from '../../src/styles/booking/set-destination.styles';
+import { useTranslation } from '../../src/hooks/useTranslation';
 
 /** Keeps to roughly one Nominatim request per pause in typing, per its usage policy. */
 const SEARCH_DEBOUNCE_MS = 450;
@@ -16,6 +17,7 @@ export default function SetDestinationScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const setDropoff = useBookingStore((state) => state.setDropoff);
+  const t = useTranslation();
 
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<LocationPoint[]>([]);
@@ -53,7 +55,7 @@ export default function SetDestinationScreen() {
     reverseGeocode(point.latitude, point.longitude)
       .then((resolved) => {
         setPinDropped(true);
-        setSelected({ ...resolved, label: 'Dropped pin' });
+        setSelected({ ...resolved, label: t.setDestination.droppedPin });
       })
       .finally(() => setResolvingPin(false));
   }
@@ -69,7 +71,7 @@ export default function SetDestinationScreen() {
       <View style={styles.mapFill}>
         <OsmMap
           variant="pin"
-          caption={resolvingPin ? 'Locating pin…' : 'Tap or drag the pin to drop a destination'}
+          caption={resolvingPin ? t.setDestination.locatingPin : t.setDestination.tapOrDragPin}
           height="100%"
           latitude={selected?.latitude}
           longitude={selected?.longitude}
@@ -87,7 +89,7 @@ export default function SetDestinationScreen() {
       <View style={styles.topFloating}>
         <MapSearchBar onBack={() => router.back()}>
           <TextField
-            placeholder="Search for a destination"
+            placeholder={t.setDestination.searchForDestination}
             value={query}
             onChangeText={setQuery}
             autoFocus
@@ -96,7 +98,7 @@ export default function SetDestinationScreen() {
       </View>
 
       <MapOverlaySheet maxHeight={360} bottomInset={insets.bottom}>
-        <Text style={styles.resultsLabel}>Search results</Text>
+        <Text style={styles.resultsLabel}>{t.setDestination.searchResults}</Text>
         <FlatList
           style={styles.resultsList}
           data={pinDropped && selected ? [selected, ...results] : results}
@@ -119,18 +121,18 @@ export default function SetDestinationScreen() {
           )}
           ListEmptyComponent={
             <EmptyState
-              title={searching ? 'Searching…' : query ? 'No matches' : 'Search for a destination'}
+              title={searching ? t.setDestination.searching : query ? t.setDestination.noMatches : t.setDestination.searchForDestination}
               message={
                 searching
-                  ? 'Looking for places nearby.'
+                  ? t.setDestination.lookingForPlacesNearby
                   : query
-                    ? 'Try a different search term, or drop a pin on the map instead.'
-                    : 'Type a place name, or tap the map to drop a pin.'
+                    ? t.setDestination.tryDifferentSearchTerm
+                    : t.setDestination.typePlaceNameOrTapMap
               }
             />
           }
         />
-        <Button label="Confirm destination" fullWidth disabled={!selected} onPress={handleConfirm} />
+        <Button label={t.setDestination.confirmDestination} fullWidth disabled={!selected} onPress={handleConfirm} />
       </MapOverlaySheet>
     </SafeAreaView>
   );
