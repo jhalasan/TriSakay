@@ -80,3 +80,15 @@
   border-top: 1px solid var(--line-soft);
   padding-top: var(--sp-sm);
 }
+
+.readOnlyField {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  font-size: 12px;
+  color: var(--ink);
+}
+
+.readOnlyField > span:first-child {
+  color: var(--ink-faint);
+}

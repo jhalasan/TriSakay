@@ -41,6 +41,8 @@ export default function RegisterScreen() {
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
+  const [plateNo, setPlateNo] = useState('');
+  const [plateNoError, setPlateNoError] = useState<string | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
 
@@ -72,10 +74,16 @@ export default function RegisterScreen() {
       const data = await new File(uri).arrayBuffer();
       inputs.push({ type, data });
     }
-    return submitDriverDocuments(userId, inputs);
+    return submitDriverDocuments(userId, plateNo.trim().toUpperCase(), inputs);
   }
 
   async function handleSubmit() {
+    if (!isNonEmpty(plateNo)) {
+      setPlateNoError('Enter your tricycle plate number.');
+      return;
+    }
+    setPlateNoError(undefined);
+
     clearError();
     setSubmitting(true);
     const { outcome, userId } = await register(form.name, form.email, form.phone, form.password);
@@ -211,6 +219,18 @@ export default function RegisterScreen() {
             Upload these so a PSO reviewer can verify your franchise before you go online.
           </Text>
 
+          <TextField
+            label="Tricycle plate number"
+            placeholder="e.g. GSC-1187"
+            value={plateNo}
+            onChangeText={(v) => {
+              setPlateNo(v);
+              if (plateNoError) setPlateNoError(undefined);
+            }}
+            error={plateNoError}
+            autoCapitalize="characters"
+          />
+
           {DOCUMENT_TYPES.map((type) => (
             <DocumentUploadRow
               key={type}
@@ -255,7 +275,7 @@ export default function RegisterScreen() {
             label="Register"
             onPress={handleSubmit}
             loading={submitting || awaitingGate}
-            disabled={!allDocumentsUploaded || !termsChecked}
+            disabled={!isNonEmpty(plateNo) || !allDocumentsUploaded || !termsChecked}
             fullWidth
           />
         </ScrollView>

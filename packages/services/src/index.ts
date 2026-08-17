@@ -19,6 +19,7 @@ export * from './admin/discounts.ts';
 export * from './admin/drivers.ts';
 export * from './admin/passengers.ts';
 export * from './admin/ratings.ts';
+export * from './admin/verification.ts';
 
 export function getServiceStatus() {
   return 'Services ready';

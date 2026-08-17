@@ -1274,6 +1274,21 @@ export type Database = {
         }
         Returns: undefined
       }
+      perform_verification_decision: {
+        Args: {
+          p_decision: Database["public"]["Enums"]["verification_status"]
+          p_driver_id: string
+          p_notes?: string
+        }
+        Returns: undefined
+      }
+      submit_driver_documents: {
+        Args: {
+          p_documents: Json
+          p_plate_no: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_action_type:

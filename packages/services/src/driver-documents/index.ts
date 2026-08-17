@@ -34,19 +34,27 @@ async function uploadDriverDocument(userId: string, doc: DriverDocumentInput) {
 
 /**
  * Uploads each document to the private `driver-docs` bucket under the
- * driver's own folder, then inserts one `driver_documents` row per file
- * (`status` defaults to `pending` — a PSO reviewer approves/rejects each
- * individually). Requires an active session for `userId` (RLS scopes both
- * the bucket and the table to the owning driver, same as discount ID
+ * driver's own folder, then calls the `submit_driver_documents` RPC to
+ * record them all in one transaction. Requires an active session for
+ * `userId` (RLS scopes the bucket to the owning driver, same as discount ID
  * photos on the passenger side).
  *
- * Does not create a `tricycles` row — the registration form collects no
- * vehicle-identifying fields (plate number, MTOP), so there is nothing
- * honest to write there yet. Tricycle records are created during PSO
- * verification review (admin app), not at driver registration.
+ * The RPC (not a plain insert) exists because vehicle documents need a
+ * `tricycle_id` the driver doesn't have yet — there's no `tricycles` row
+ * before this call. The RPC creates one from `plateNo` (the only vehicle
+ * field the registration form actually collects; MTOP/cluster stay blank
+ * for PSO to transcribe during review), attaches every document to it, and
+ * flips both `driver_profiles.verification_status` and the new tricycle's
+ * `verification_status` from `unsubmitted` to `pending` — the transition
+ * that makes the case show up for review. Nothing else in the system does
+ * this: RLS blocks a driver from setting their own `verification_status`
+ * directly (`driver_update_self`'s `with check` requires it stay
+ * unchanged), and there is no trigger for it, so without this single
+ * atomic call a submitted driver would sit as `unsubmitted` forever.
  */
 export async function submitDriverDocuments(
   userId: string,
+  plateNo: string,
   documents: DriverDocumentInput[]
 ): Promise<SubmitDriverDocumentsResult> {
   const uploaded: { docType: DriverDocumentType; path: string }[] = [];
@@ -66,16 +74,22 @@ export async function submitDriverDocuments(
       uploaded.push({ docType: doc.type, path });
     }
 
-    const { error: insertError } = await getSupabaseClient()
-      .from('driver_documents')
-      .insert(uploaded.map((u) => ({ driver_id: userId, doc_type: u.docType, storage_path: u.path })));
+    const { error: rpcError } = await getSupabaseClient().rpc('submit_driver_documents', {
+      p_plate_no: plateNo,
+      p_documents: uploaded.map((u) => ({ doc_type: u.docType, storage_path: u.path })),
+    });
 
-    if (insertError) {
+    if (rpcError) {
       await getSupabaseClient()
         .storage.from('driver-docs')
         .remove(uploaded.map((u) => u.path))
         .catch(() => {});
-      return { error: insertError.message };
+      return {
+        error:
+          rpcError.code === '23505'
+            ? 'That plate number is already registered to another driver. Please double-check it and try again.'
+            : rpcError.message,
+      };
     }
 
     return { error: null };

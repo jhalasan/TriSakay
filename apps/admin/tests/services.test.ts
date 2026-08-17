@@ -102,7 +102,71 @@ test('listPassengers() / blockPassenger() / unblockPassenger() round-trip accoun
   assert.equal((await listPassengers()).data.find((p) => p.id === passenger.id)?.accountStatus, 'active');
 });
 
+/**
+ * Verification now goes through @trisakay/services against real
+ * driver_profiles/tricycles/driver_documents plus the
+ * perform_verification_decision RPC — same stateful-fake-client pattern as
+ * fakeAccountsClient() above, kept separate since the table shapes differ.
+ */
+function fakeVerificationClient() {
+  const driverProfiles = [{ user_id: 'drv1', verification_status: 'pending' }];
+  const tricycles = [
+    { id: 'tri1', driver_id: 'drv1', plate_no: 'GSC-1187', mtop_no: null as string | null, mtop_expiry_date: null as string | null, cluster: null as string | null },
+  ];
+  const documents = [
+    { id: 'doc1', driver_id: 'drv1', doc_type: 'drivers_license', status: 'pending', storage_path: 'a.jpg', remarks: null as string | null },
+    { id: 'doc2', driver_id: 'drv1', doc_type: 'or_cr', status: 'pending', storage_path: 'b.jpg', remarks: null as string | null },
+  ];
+  const users = [{ id: 'drv1', full_name: 'Ariel Cabahug' }];
+
+  return {
+    from: (table: string) => {
+      if (table === 'driver_profiles') {
+        return {
+          select: () => ({
+            neq: (_col: string, value: string) => ({
+              order: async () => ({ data: driverProfiles.filter((p) => p.verification_status !== value), error: null }),
+            }),
+          }),
+        };
+      }
+      if (table === 'users') {
+        return { select: () => ({ in: async () => ({ data: users, error: null }) }) };
+      }
+      if (table === 'tricycles') {
+        return {
+          select: () => ({ in: () => ({ eq: async () => ({ data: tricycles, error: null }) }) }),
+          update: (patch: Record<string, unknown>) => ({
+            eq: (_col: string, driverId: string) => ({
+              eq: async () => {
+                const t = tricycles.find((row) => row.driver_id === driverId);
+                if (t) Object.assign(t, patch);
+                return { error: null };
+              },
+            }),
+          }),
+        };
+      }
+      if (table === 'driver_documents') {
+        return { select: () => ({ in: async () => ({ data: documents, error: null }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+    rpc: async (fn: string, args: { p_driver_id: string; p_decision: string }) => {
+      if (fn !== 'perform_verification_decision') throw new Error(`unexpected rpc ${fn}`);
+      const profile = driverProfiles.find((p) => p.user_id === args.p_driver_id);
+      if (profile) profile.verification_status = args.p_decision;
+      const tricycle = tricycles.find((t) => t.driver_id === args.p_driver_id);
+      if (tricycle) (tricycle as any).verification_status = args.p_decision;
+      for (const doc of documents) if (doc.driver_id === args.p_driver_id) doc.status = args.p_decision;
+      return { error: null };
+    },
+  } as any;
+}
+
 test('verification service: MTOP transcription (FR-1.4a) and approve/reject', async () => {
+  __setSupabaseClientForTests(fakeVerificationClient());
+
   const { data: cases } = await listVerificationCases();
   assert.ok(cases.length > 0);
   const target = cases[0];
@@ -112,10 +176,10 @@ test('verification service: MTOP transcription (FR-1.4a) and approve/reject', as
   assert.equal(updated?.mtopNo, 'MTOP-TEST-001');
   assert.equal(updated?.cluster, 'melting_pot');
 
-  await approveVerification(target.driverId);
+  await approveVerification(target.driverId, 'Franchise confirmed at PSO office');
   assert.equal((await listVerificationCases()).data.find((c) => c.driverId === target.driverId)?.overallStatus, 'approved');
 
-  await rejectVerification(target.driverId);
+  await rejectVerification(target.driverId, 'Franchise permit expired');
   assert.equal((await listVerificationCases()).data.find((c) => c.driverId === target.driverId)?.overallStatus, 'rejected');
 });
 
