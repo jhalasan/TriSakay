@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "main": "expo-router/entry",
   "scripts": {
-    "start": "expo start",
-    "start:tunnel": "expo start --tunnel",
-    "start:clear": "expo start --clear",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
-    "web": "expo start --web",
+    "start": "expo start --port 8082",
+    "start:tunnel": "expo start --tunnel --port 8082",
+    "start:clear": "expo start --clear --port 8082",
+    "android": "expo start --android --port 8082",
+    "ios": "expo start --ios --port 8082",
+    "web": "expo start --web --port 8082",
     "test": "node --test ./tests/*.test.js"
   },
   "dependencies": {
