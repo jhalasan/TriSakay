@@ -14,11 +14,16 @@ export * from './location/index.ts';
 export * from './storage/index.ts';
 export * from './trip-history/index.ts';
 export * from './admin/accounts.ts';
+export * from './admin/complaints.ts';
 export * from './admin/dashboard.ts';
 export * from './admin/discounts.ts';
 export * from './admin/drivers.ts';
+export * from './admin/monitoring.ts';
 export * from './admin/passengers.ts';
+export * from './admin/psoUsers.ts';
 export * from './admin/ratings.ts';
+export * from './admin/reports.ts';
+export * from './admin/settings.ts';
 export * from './admin/verification.ts';
 
 export function getServiceStatus() {

@@ -65,7 +65,7 @@ export function SystemSettings() {
             <TextField label="Base Fare (₱)" type="number" step="0.01" value={baseFare} onChange={(e) => setBaseFare(e.target.value)} />
             <TextField label="Base Distance (km)" type="number" step="0.1" value={baseKm} onChange={(e) => setBaseKm(e.target.value)} />
             <TextField label="Rate per Succeeding km (₱)" type="number" step="0.01" value={ratePerKm} onChange={(e) => setRatePerKm(e.target.value)} />
-            <p className={styles.ordinance}>{fareConfig.ordinanceRef}</p>
+            <p className={styles.ordinance}>{fareConfig.ordinanceRef ?? 'No ordinance reference on file.'}</p>
             <Button
               loading={saving}
               onClick={() =>

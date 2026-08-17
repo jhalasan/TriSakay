@@ -5,9 +5,9 @@ import { flagDriver, listDrivers, reactivateDriver, suspendDriver } from '../src
 import { blockPassenger, listPassengers, unblockPassenger } from '../src/services/passengers.ts';
 import { approveVerification, listVerificationCases, rejectVerification, updateVerificationCase } from '../src/services/verification.ts';
 import { listComplaints, recordDhDirective, setComplaintStatus } from '../src/services/complaints.ts';
-import { listActiveTricycles, listRecentActivity } from '../src/services/monitoring.ts';
+import { listActiveTricycles } from '../src/services/monitoring.ts';
 import { getReportSummary, listTransactions } from '../src/services/reports.ts';
-import { addPsoUser, listPsoUsers, togglePsoUserActive } from '../src/services/psoUsers.ts';
+import { addPsoUser, disablePsoUser, enablePsoUser, listPsoUsers } from '../src/services/psoUsers.ts';
 import { getFareConfig, getFeatureToggles, getSystemSettings, updateFareConfig } from '../src/services/settings.ts';
 
 /**
@@ -183,7 +183,48 @@ test('verification service: MTOP transcription (FR-1.4a) and approve/reject', as
   assert.equal((await listVerificationCases()).data.find((c) => c.driverId === target.driverId)?.overallStatus, 'rejected');
 });
 
+function fakeComplaintsClient() {
+  const complaints = [
+    {
+      id: 'cmp1',
+      submitted_by: 'p1',
+      against_user_id: 'd1',
+      category: 'fare',
+      subject: 'Driver refused agreed fare',
+      status: 'open',
+      dh_directive: null as string | null,
+      created_at: '2026-08-01T00:00:00.000Z',
+    },
+  ];
+  const users = [
+    { id: 'p1', full_name: 'Maria Fe Santos' },
+    { id: 'd1', full_name: 'Ferdinand Amaro' },
+  ];
+
+  return {
+    from: (table: string) => {
+      if (table === 'complaints') {
+        return {
+          select: () => ({ order: async () => ({ data: complaints, error: null }) }),
+          update: (patch: Record<string, unknown>) => ({
+            eq: async (_col: string, id: string) => {
+              const c = complaints.find((row) => row.id === id);
+              if (c) Object.assign(c, patch);
+              return { error: null };
+            },
+          }),
+        };
+      }
+      if (table === 'users') return { select: () => ({ in: async () => ({ data: users, error: null }) }) };
+      throw new Error(`unexpected table ${table}`);
+    },
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'staff1' } } } }) },
+  } as any;
+}
+
 test('complaints service: status transitions and DH directive (FR-4.3a)', async () => {
+  __setSupabaseClientForTests(fakeComplaintsClient());
+
   const complaint = (await listComplaints()).data[0];
   await setComplaintStatus(complaint.id, 'escalated');
   assert.equal((await listComplaints()).data.find((c) => c.id === complaint.id)?.status, 'escalated');
@@ -192,37 +233,225 @@ test('complaints service: status transitions and DH directive (FR-4.3a)', async 
   assert.equal((await listComplaints()).data.find((c) => c.id === complaint.id)?.dhDirective, 'Contact both parties.');
 });
 
-test('monitoring service resolves active tricycles and recent activity', async () => {
-  const [tricycles, activity] = await Promise.all([listActiveTricycles(), listRecentActivity()]);
-  assert.ok(Array.isArray(tricycles.data));
-  assert.ok(Array.isArray(activity.data));
+test('monitoring service resolves on-duty drivers, splitting active trips from idle ones', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'driver_profiles') {
+        return { select: () => ({ eq: async () => ({ data: [{ user_id: 'drv1' }, { user_id: 'drv2' }], error: null }) }) };
+      }
+      if (table === 'users') {
+        return {
+          select: () => ({
+            in: async () => ({
+              data: [
+                { id: 'drv1', full_name: 'Ronnie Bautista' },
+                { id: 'drv2', full_name: 'Ariel Cabahug' },
+              ],
+              error: null,
+            }),
+          }),
+        };
+      }
+      if (table === 'tricycles') {
+        return {
+          select: () => ({
+            in: () => ({
+              eq: async () => ({
+                data: [
+                  { driver_id: 'drv1', plate_no: 'GSC-1187', seat_capacity: 6 },
+                  { driver_id: 'drv2', plate_no: 'GSC-2214', seat_capacity: 4 },
+                ],
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'trips') {
+        return {
+          select: () => ({
+            in: () => ({ eq: async () => ({ data: [{ id: 'trip1', driver_id: 'drv1', max_seats: 6 }], error: null }) }),
+          }),
+        };
+      }
+      if (table === 'ride_requests') {
+        return {
+          select: () => ({
+            in: () => ({ in: async () => ({ data: [{ trip_id: 'trip1', seats_requested: 3 }], error: null }) }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await listActiveTricycles();
+  assert.equal(error, null);
+  assert.equal(data.length, 2);
+
+  const onTrip = data.find((r) => r.driverId === 'drv1');
+  assert.equal(onTrip?.tripStatus, 'active');
+  assert.equal(onTrip?.seatsTaken, 3);
+  assert.equal(onTrip?.maxSeats, 6);
+
+  const idle = data.find((r) => r.driverId === 'drv2');
+  assert.equal(idle?.tripStatus, 'idle');
+  assert.equal(idle?.seatsTaken, 0);
+  assert.equal(idle?.maxSeats, 4);
 });
 
-test('reports service resolves a summary and transaction list', async () => {
-  const [summary, transactions] = await Promise.all([getReportSummary(), listTransactions()]);
+test('reports service resolves a summary', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return { select: () => ({ eq: () => ({ gte: async () => ({ data: [{ requested_at: '2026-08-05T07:00:00.000Z' }], error: null }) }) }) };
+      }
+      if (table === 'transactions') {
+        return { select: () => ({ eq: () => ({ gte: async () => ({ data: [{ amount: '18.00' }], error: null }) }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const summary = await getReportSummary('30d');
   assert.equal(summary.error, null);
-  assert.ok(typeof summary.data.totalRides === 'number');
-  assert.ok(Array.isArray(transactions.data));
+  assert.equal(summary.data.totalRides, 1);
+  assert.equal(summary.data.totalRevenue, 18);
 });
 
-test('psoUsers service: add + toggle active', async () => {
+test('reports service resolves a transaction list', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'transactions') {
+        return {
+          select: () => ({
+            gte: () => ({
+              order: async () => ({
+                data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'paid', created_at: '2026-08-05T07:00:00.000Z' }],
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'ride_requests') {
+        return { select: () => ({ in: async () => ({ data: [{ id: 'rr1', passenger_id: 'p1', trip_id: null }], error: null }) }) };
+      }
+      if (table === 'users') {
+        return { select: () => ({ in: async () => ({ data: [{ id: 'p1', full_name: 'Maria Fe Santos' }], error: null }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const transactions = await listTransactions('30d');
+  assert.equal(transactions.error, null);
+  assert.equal(transactions.data.length, 1);
+  assert.equal(transactions.data[0].passengerName, 'Maria Fe Santos');
+  assert.equal(transactions.data[0].driverName, '—');
+});
+
+function fakePsoUsersClient() {
+  const users = [{ id: 'pso1', full_name: 'Jasmin Oclarit', email: 'j.oclarit@pso.gensantos.gov.ph', role: 'pso_staff', status: 'active', created_at: '2025-05-20T00:00:00.000Z' }];
+
+  return {
+    from: (table: string) => {
+      if (table !== 'users') throw new Error(`unexpected table ${table}`);
+      return {
+        select: () => ({ in: () => ({ order: async () => ({ data: users, error: null }) }) }),
+      };
+    },
+    functions: {
+      invoke: async (fn: string, opts: { body: { fullName: string; email: string; role: string } }) => {
+        if (fn !== 'admin-create-pso-user') throw new Error(`unexpected function ${fn}`);
+        users.push({
+          id: 'pso2',
+          full_name: opts.body.fullName,
+          email: opts.body.email,
+          role: opts.body.role,
+          status: 'active',
+          created_at: '2026-08-17T00:00:00.000Z',
+        });
+        return { data: { userId: 'pso2', tempPassword: 'Tq7!generated', error: null }, error: null };
+      },
+    },
+    rpc: async (fn: string, args: { p_target_user_id: string; p_action_type: string }) => {
+      if (fn !== 'perform_account_action') throw new Error(`unexpected rpc ${fn}`);
+      const user = users.find((u) => u.id === args.p_target_user_id);
+      if (user) user.status = args.p_action_type === 'suspend' ? 'suspended' : 'active';
+      return { error: null };
+    },
+  } as any;
+}
+
+test('psoUsers service: add + disable/enable', async () => {
+  __setSupabaseClientForTests(fakePsoUsersClient());
+
   const before = (await listPsoUsers()).data.length;
-  await addPsoUser({ fullName: 'Test User', email: 'test.user@example.com', role: 'pso_staff' });
+  const { tempPassword, error: addError } = await addPsoUser({ fullName: 'Test User', email: 'test.user@example.com', role: 'pso_staff' });
+  assert.equal(addError, null);
+  assert.equal(tempPassword, 'Tq7!generated');
+
   const afterAdd = await listPsoUsers();
   assert.equal(afterAdd.data.length, before + 1);
 
-  const added = afterAdd.data[afterAdd.data.length - 1];
+  const added = afterAdd.data.find((u) => u.id === 'pso2')!;
   assert.equal(added.isActive, true);
-  await togglePsoUserActive(added.id);
+
+  await disablePsoUser(added.id, 'Left the PSO office');
   assert.equal((await listPsoUsers()).data.find((u) => u.id === added.id)?.isActive, false);
+
+  await enablePsoUser(added.id, 'Rehired');
+  assert.equal((await listPsoUsers()).data.find((u) => u.id === added.id)?.isActive, true);
 });
 
-test('settings service resolves fare config, system settings, and feature toggles; updateFareConfig() patches', async () => {
-  const [fare, system, toggles] = await Promise.all([getFareConfig(), getSystemSettings(), getFeatureToggles()]);
-  assert.equal(fare.data.baseFare, 15.0);
-  assert.equal(system.data.bearingToleranceDeg, 40.0);
-  assert.equal(toggles.data.gcashEnabled, true);
+function fakeSettingsClient() {
+  const fareConfig = { base_fare: 15.0, base_km: 4.0, rate_per_km: 1.0, discount_rate_percent: 20.0, ordinance_ref: 'Ordinance No. 08, s.2023' };
+  const systemSettings = {
+    bearing_tolerance_deg: 40.0,
+    detour_ratio_max: 1.25,
+    search_radius_km: 3.0,
+    low_rating_threshold: 3.0,
+    gcash_enabled: true,
+    cash_enabled: true,
+    franchise_expiry_notifications: true,
+  };
 
-  await updateFareConfig({ baseFare: 18 });
-  assert.equal((await getFareConfig()).data.baseFare, 18);
+  return {
+    from: (table: string) => {
+      if (table === 'fare_config') {
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: fareConfig, error: null }) }) }) };
+      }
+      if (table === 'system_settings') {
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: systemSettings, error: null }) }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+    rpc: async (fn: string, args: { p_base_fare: number; p_base_km: number; p_rate_per_km: number }) => {
+      if (fn !== 'update_fare_config') throw new Error(`unexpected rpc ${fn}`);
+      fareConfig.base_fare = args.p_base_fare;
+      fareConfig.base_km = args.p_base_km;
+      fareConfig.rate_per_km = args.p_rate_per_km;
+      return { data: 'fare1', error: null };
+    },
+  } as any;
+}
+
+test('settings service resolves fare config, system settings, and feature toggles; updateFareConfig() patches', async () => {
+  __setSupabaseClientForTests(fakeSettingsClient());
+
+  const [fare, system, toggles] = await Promise.all([getFareConfig(), getSystemSettings(), getFeatureToggles()]);
+  assert.equal(fare.data!.baseFare, 15.0);
+  assert.equal(system.data!.bearingToleranceDeg, 40.0);
+  assert.equal(toggles.data!.gcashEnabled, true);
+
+  await updateFareConfig({ baseFare: 18, baseKm: 4.0, ratePerKm: 1.0 });
+  assert.equal((await getFareConfig()).data!.baseFare, 18);
+});
+
+test('updateFareConfig() rejects an incomplete patch instead of silently sending undefined fields to the RPC', async () => {
+  __setSupabaseClientForTests(fakeSettingsClient());
+
+  const { error } = await updateFareConfig({ baseFare: 18 });
+  assert.equal(error, 'Base fare, base distance, and rate per km are all required.');
 });

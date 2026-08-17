@@ -722,7 +722,10 @@ export type Database = {
       system_settings: {
         Row: {
           bearing_tolerance_deg: number
+          cash_enabled: boolean
           detour_ratio_max: number
+          franchise_expiry_notifications: boolean
+          gcash_enabled: boolean
           id: string
           is_active: boolean
           low_rating_threshold: number
@@ -732,7 +735,10 @@ export type Database = {
         }
         Insert: {
           bearing_tolerance_deg?: number
+          cash_enabled?: boolean
           detour_ratio_max?: number
+          franchise_expiry_notifications?: boolean
+          gcash_enabled?: boolean
           id?: string
           is_active?: boolean
           low_rating_threshold?: number
@@ -742,7 +748,10 @@ export type Database = {
         }
         Update: {
           bearing_tolerance_deg?: number
+          cash_enabled?: boolean
           detour_ratio_max?: number
+          franchise_expiry_notifications?: boolean
+          gcash_enabled?: boolean
           id?: string
           is_active?: boolean
           low_rating_threshold?: number
@@ -1286,6 +1295,16 @@ export type Database = {
         Args: {
           p_documents: Json
           p_plate_no: string
+        }
+        Returns: string
+      }
+      update_fare_config: {
+        Args: {
+          p_base_fare: number
+          p_base_km: number
+          p_discount_rate_percent: number
+          p_ordinance_ref: string | null
+          p_rate_per_km: number
         }
         Returns: string
       }

@@ -39,7 +39,7 @@ const ALL_STATUSES: { label: string; value: ComplaintStatus }[] = [
 
 /** Wireframe screen 7 "Complaints management" — two-step flow per FR-4.3-4.8: PSO Staff triage, then a Department Head directive (FR-4.3a). */
 export function Complaints() {
-  const { complaints, loading, search, statusFilter, priorityFilter, page, fetch, setSearch, setStatusFilter, setPriorityFilter, updateStatus, setDhDirective } =
+  const { complaints, loading, search, statusFilter, page, fetch, setSearch, setStatusFilter, updateStatus, setDhDirective } =
     useComplaintsStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [directiveDraft, setDirectiveDraft] = useState('');
@@ -53,10 +53,9 @@ export function Complaints() {
     return complaints.filter((c) => {
       const matchesSearch = !q || c.subject.toLowerCase().includes(q) || c.submittedByName.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-      const matchesPriority = priorityFilter === 'all' || c.priority === priorityFilter;
-      return matchesSearch && matchesStatus && matchesPriority;
+      return matchesSearch && matchesStatus;
     });
-  }, [complaints, search, statusFilter, priorityFilter]);
+  }, [complaints, search, statusFilter]);
 
   const selected = complaints.find((c) => c.id === selectedId) ?? null;
 
@@ -110,25 +109,12 @@ export function Complaints() {
         onSearchChange={setSearch}
         searchPlaceholder="Search by subject or complainant…"
         filters={
-          <>
-            <Select
-              aria-label="Filter by status"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              options={[{ label: 'All statuses', value: 'all' }, ...ALL_STATUSES]}
-            />
-            <Select
-              aria-label="Filter by priority"
-              value={priorityFilter}
-              onChange={(e) => setPriorityFilter(e.target.value as typeof priorityFilter)}
-              options={[
-                { label: 'All priorities', value: 'all' },
-                { label: 'High', value: 'high' },
-                { label: 'Normal', value: 'normal' },
-                { label: 'Low', value: 'low' },
-              ]}
-            />
-          </>
+          <Select
+            aria-label="Filter by status"
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+            options={[{ label: 'All statuses', value: 'all' }, ...ALL_STATUSES]}
+          />
         }
       />
       <DataTable columns={columns} rows={filtered} getRowKey={(c) => c.id} loading={loading} emptyMessage="No complaints match your filters." />

@@ -8,12 +8,10 @@ interface ComplaintsState {
   error: string | null;
   search: string;
   statusFilter: ComplaintStatus | 'all';
-  priorityFilter: ComplaintRow['priority'] | 'all';
   page: number;
   fetch: () => Promise<void>;
   setSearch: (value: string) => void;
   setStatusFilter: (value: ComplaintsState['statusFilter']) => void;
-  setPriorityFilter: (value: ComplaintsState['priorityFilter']) => void;
   setPage: (page: number) => void;
   updateStatus: (id: string, status: ComplaintStatus) => Promise<void>;
   setDhDirective: (id: string, directive: string) => Promise<void>;
@@ -25,7 +23,6 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
   error: null,
   search: '',
   statusFilter: 'all',
-  priorityFilter: 'all',
   page: 1,
 
   fetch: async () => {
@@ -36,7 +33,6 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
 
   setSearch: (value) => set({ search: value, page: 1 }),
   setStatusFilter: (value) => set({ statusFilter: value, page: 1 }),
-  setPriorityFilter: (value) => set({ priorityFilter: value, page: 1 }),
   setPage: (page) => set({ page }),
 
   updateStatus: async (id, status) => {
