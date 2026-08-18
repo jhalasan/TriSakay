@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react';
 import { Select } from '../components/Select';
 import { Button } from '../components/Button';
-import { PlaceholderBox } from '../components/PlaceholderBox';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { StatTile } from '../components/StatTile';
-import { getReportSummary, listTransactions, type ReportDateRange } from '../services/reports';
-import type { ReportSummary, TransactionRow } from '../types/report';
+import { PeakHoursChart, RidesRevenueChart } from '../components/charts';
+import { getPeakHourHistogram, getReportSummary, getRidesRevenueOverTime, listTransactions, type ReportDateRange } from '../services/reports';
+import type { PeakHourBucket, ReportSummary, RidesRevenuePoint, TransactionRow } from '../types/report';
 import { formatCurrency, formatDateTime, paymentMethodLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import styles from './Reports.module.css';
@@ -29,13 +29,22 @@ export function Reports() {
   const [dateRange, setDateRange] = useState<ReportDateRange>('30d');
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const [ridesRevenue, setRidesRevenue] = useState<RidesRevenuePoint[]>([]);
+  const [peakHours, setPeakHours] = useState<PeakHourBucket[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([getReportSummary(dateRange), listTransactions(dateRange)]).then(([s, t]) => {
+    Promise.all([
+      getReportSummary(dateRange),
+      listTransactions(dateRange),
+      getRidesRevenueOverTime(dateRange),
+      getPeakHourHistogram(dateRange),
+    ]).then(([s, t, rr, ph]) => {
       setSummary(s.data);
       setTransactions(t.data);
+      setRidesRevenue(rr.data);
+      setPeakHours(ph.data);
       setLoading(false);
     });
   }, [dateRange]);
@@ -92,11 +101,11 @@ export function Reports() {
       <div className="two-col">
         <div className="panel">
           <div className="panel-title">Rides / Revenue</div>
-          <PlaceholderBox label="Rides / revenue — chart" />
+          <RidesRevenueChart data={ridesRevenue} loading={loading} />
         </div>
         <div className="panel">
           <div className="panel-title">Peak Hours</div>
-          <PlaceholderBox label="Peak hours — chart" />
+          <PeakHoursChart data={peakHours} loading={loading} />
         </div>
       </div>
 
