@@ -53,3 +53,25 @@ export async function uploadAvatar({
     return { publicUrl: null, error: err instanceof Error ? err.message : 'Upload failed' };
   }
 }
+
+export interface GetSignedDocumentUrlResult {
+  url: string | null;
+  error: string | null;
+}
+
+/**
+ * Time-limited read URL for a private-bucket document (driver verification
+ * photos, discount ID photos). Both buckets already grant `is_pso()` a
+ * `SELECT` policy on `storage.objects` (verified live against the project),
+ * so a signed-in PSO/Supervisor/Admin session can call this directly — no
+ * RPC or service-role key needed, unlike the write-side account actions.
+ */
+export async function getSignedDocumentUrl(
+  bucket: 'driver-docs' | 'discount-ids',
+  path: string,
+  expirySeconds = 300
+): Promise<GetSignedDocumentUrlResult> {
+  const { data, error } = await getSupabaseClient().storage.from(bucket).createSignedUrl(path, expirySeconds);
+  if (error) return { url: null, error: error.message };
+  return { url: data.signedUrl, error: null };
+}
