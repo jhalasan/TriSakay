@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { getAdminReportSummary, listTransactionsForAdmin } from '../src/admin/reports.ts';
+import { getAdminReportSummary, getPeakHourHistogram, getRidesRevenueOverTime, listTransactionsForAdmin } from '../src/admin/reports.ts';
 
 /**
  * The peak-hour bucketing reads Date#getHours() (local wall-clock time,
@@ -169,4 +169,86 @@ test('listTransactionsForAdmin returns an empty list without further queries whe
   const { data, error } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
   assert.deepEqual(data, []);
   assert.equal(error, null);
+});
+
+test('getPeakHourHistogram returns 12 two-hour buckets and labels each one', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: async () => ({
+                data: [{ requested_at: todayAt(6, 15) }, { requested_at: todayAt(7, 40) }, { requested_at: todayAt(14, 0) }],
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await getPeakHourHistogram('2026-08-01T00:00:00.000Z');
+  assert.equal(error, null);
+  assert.equal(data.length, 12);
+  assert.deepEqual(data[3], { hourLabel: '6:00 AM–8:00 AM', count: 2 });
+  assert.deepEqual(data[7], { hourLabel: '2:00 PM–4:00 PM', count: 1 });
+  assert.equal(data.reduce((sum, b) => sum + b.count, 0), 3);
+});
+
+test('getPeakHourHistogram returns { data: [], error } when the query fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+  } as any);
+
+  const { data, error } = await getPeakHourHistogram('2026-08-01T00:00:00.000Z');
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
+});
+
+test('getRidesRevenueOverTime buckets completed rides and paid revenue by calendar day', async () => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0).toISOString();
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 9, 0, 0).toISOString();
+  const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0).toISOString();
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return {
+          select: () => ({
+            eq: () => ({ gte: async () => ({ data: [{ requested_at: yesterday }, { requested_at: today }], error: null }) }),
+          }),
+        };
+      }
+      if (table === 'transactions') {
+        return {
+          select: () => ({
+            eq: () => ({ gte: async () => ({ data: [{ amount: '18.00', created_at: yesterday }, { amount: '24.50', created_at: today }], error: null }) }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await getRidesRevenueOverTime(since);
+  assert.equal(error, null);
+  assert.equal(data.length, 2);
+  assert.equal(data[0].rides, 1);
+  assert.equal(data[0].revenue, 18);
+  assert.equal(data[1].rides, 1);
+  assert.equal(data[1].revenue, 24.5);
+});
+
+test('getRidesRevenueOverTime returns { data: [], error } when the rides query fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+  } as any);
+
+  const { data, error } = await getRidesRevenueOverTime('2026-08-01T00:00:00.000Z');
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
 });

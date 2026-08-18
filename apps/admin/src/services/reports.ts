@@ -1,5 +1,5 @@
-import { getAdminReportSummary, listTransactionsForAdmin } from '@trisakay/services';
-import type { ReportSummary, TransactionRow } from '../types/report';
+import { getAdminReportSummary, getPeakHourHistogram as getPeakHourHistogramShared, getRidesRevenueOverTime as getRidesRevenueOverTimeShared, listTransactionsForAdmin } from '@trisakay/services';
+import type { PeakHourBucket, ReportSummary, RidesRevenuePoint, TransactionRow } from '../types/report';
 import type { ServiceResult } from './drivers';
 
 export type ReportDateRange = '7d' | '30d' | 'quarter';
@@ -21,5 +21,15 @@ export async function getReportSummary(range: ReportDateRange): Promise<ServiceR
 
 export async function listTransactions(range: ReportDateRange): Promise<ServiceResult<TransactionRow[]>> {
   const { data, error } = await listTransactionsForAdmin(dateRangeSinceIso(range));
+  return { data, error };
+}
+
+export async function getRidesRevenueOverTime(range: ReportDateRange): Promise<ServiceResult<RidesRevenuePoint[]>> {
+  const { data, error } = await getRidesRevenueOverTimeShared(dateRangeSinceIso(range));
+  return { data, error };
+}
+
+export async function getPeakHourHistogram(range: ReportDateRange): Promise<ServiceResult<PeakHourBucket[]>> {
+  const { data, error } = await getPeakHourHistogramShared(dateRangeSinceIso(range));
   return { data, error };
 }
