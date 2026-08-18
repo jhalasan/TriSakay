@@ -42,6 +42,12 @@ export function Button({
 
   return (
     <button className={classes} disabled={disabled || loading} {...rest}>
+      {loading && (
+        <svg className={styles.spinner} viewBox="0 0 24 24" width="13" height="13" aria-hidden="true">
+          <circle cx="12" cy="12" r="9.5" fill="none" strokeWidth="3" stroke="currentColor" strokeOpacity="0.25" />
+          <path d="M21.5 12a9.5 9.5 0 0 0-9.5-9.5" fill="none" strokeWidth="3" stroke="currentColor" strokeLinecap="round" />
+        </svg>
+      )}
       {children}
       {superscript && <sup className={styles.superscript}>{superscript}</sup>}
     </button>

@@ -1,63 +1,209 @@
 .page {
-  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  background: var(--panel);
+}
+
+/* ---------- Left: brand panel ---------- */
+
+.brandPanel {
+  position: relative;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
+  overflow: hidden;
+  padding: var(--sp-xxxl) var(--sp-xxl);
+  background: var(--gradient-hero);
+  color: var(--white);
+}
+
+.routeArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.brandContent {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-lg);
+  max-width: 400px;
+  margin: auto 0;
+}
+
+.brandLogo {
+  width: 168px;
+  height: auto;
+  margin-bottom: var(--sp-md);
+}
+
+.brandHeadline {
+  font-family: var(--font-brand);
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+  margin: 0;
+}
+
+.brandTagline {
+  font-size: 14px;
+  line-height: 1.65;
+  color: rgba(255, 255, 255, 0.78);
+  margin: 0;
+  max-width: 360px;
+}
+
+.brandFooter {
+  position: relative;
+  z-index: 1;
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.45);
+}
+
+/* ---------- Right: form panel ---------- */
+
+.formPanel {
+  display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--gradient-hero);
-  padding: var(--sp-xl);
-}
-
-.badge {
+  padding: var(--sp-xxl);
   background: var(--panel);
-  border-radius: var(--r-lg);
-  padding: var(--sp-lg) var(--sp-xl);
-  box-shadow: var(--shadow-card);
-  margin-bottom: var(--sp-xl);
 }
 
-.logo {
-  display: block;
-  width: 180px;
+.formPanelInner {
+  width: 100%;
+  max-width: 360px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+}
+
+.mobileMark {
+  display: none;
+  width: 44px;
   height: auto;
+  margin: 0 auto var(--sp-xl);
 }
 
 .card {
-  width: 340px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: var(--r-lg);
-  padding: var(--sp-xl);
   display: flex;
   flex-direction: column;
-  gap: var(--sp-md);
-  box-shadow: var(--shadow-card);
+  gap: var(--sp-lg);
+  animation: rise 420ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .brandRow {
   display: flex;
   flex-direction: column;
-  gap: 2px;
-  margin-bottom: var(--sp-sm);
+  gap: 4px;
+  margin-bottom: var(--sp-xs);
 }
 
 .brandTitle {
   font-family: var(--font-brand);
-  font-size: 18px;
+  font-size: 22px;
   font-weight: 700;
   color: var(--ink);
+  margin: 0;
 }
 
 .brandSub {
-  font-size: 11px;
+  font-size: 13px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.eyeToggle {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border: none;
+  background: transparent;
+  border-radius: var(--r-sm);
+  color: var(--ink-faint);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.eyeToggle:hover {
+  background: var(--fill);
   color: var(--ink-soft);
 }
 
+.eyeToggle:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
 .error {
-  font-size: 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 12px;
+  line-height: 1.5;
   color: var(--danger);
   background: var(--danger-soft);
   border: 1px solid var(--danger);
   border-radius: var(--r-sm);
-  padding: var(--sp-sm);
+  padding: var(--sp-sm) var(--sp-md);
+  animation: rise 200ms ease;
+}
+
+.errorIcon {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.accessNote {
+  text-align: center;
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin: var(--sp-xs) 0 0;
+}
+
+/* ---------- Responsive ---------- */
+
+@media (max-width: 900px) {
+  .page {
+    grid-template-columns: 1fr;
+  }
+
+  .brandPanel {
+    display: none;
+  }
+
+  .mobileMark {
+    display: block;
+  }
+
+  .formPanel {
+    padding: var(--sp-xl) var(--sp-lg);
+  }
+}
+
+@media (max-width: 420px) {
+  .formPanel {
+    padding: var(--sp-lg) var(--sp-md);
+  }
 }
