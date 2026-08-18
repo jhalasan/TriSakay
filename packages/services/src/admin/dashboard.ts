@@ -181,3 +181,75 @@ export async function listRecentTripActivity(limit = 10): Promise<ListRecentTrip
 
   return { data: rows, error: null };
 }
+
+export interface RidesPerDayPoint {
+  day: string; // e.g. 'Mon 8/17'
+  count: number;
+}
+
+export interface GetRidesPerDayResult {
+  data: RidesPerDayPoint[];
+  error: string | null;
+}
+
+/**
+ * "Rides Over Time (Week)" dashboard chart — completed ride_requests for
+ * each of the last 7 calendar days (local wall-clock, matching the rest of
+ * this app's en-PH rendering), oldest first. Always returns exactly 7
+ * points, zero-filled, so the chart never shows a gap for a quiet day.
+ */
+export async function getRidesPerDay(): Promise<GetRidesPerDayResult> {
+  const client = getSupabaseClient();
+  const since = new Date();
+  since.setDate(since.getDate() - 6);
+  since.setHours(0, 0, 0, 0);
+
+  const { data, error } = await client
+    .from('ride_requests')
+    .select('requested_at')
+    .eq('status', 'completed')
+    .gte('requested_at', since.toISOString());
+
+  if (error) return { data: [], error: error.message };
+
+  const days: { key: string; day: string }[] = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date();
+    d.setDate(d.getDate() - i);
+    days.push({ key: d.toLocaleDateString('en-CA'), day: d.toLocaleDateString('en-PH', { weekday: 'short', month: 'numeric', day: 'numeric' }) });
+  }
+
+  const countByKey = new Map<string, number>();
+  for (const row of data ?? []) {
+    const key = new Date(row.requested_at).toLocaleDateString('en-CA');
+    countByKey.set(key, (countByKey.get(key) ?? 0) + 1);
+  }
+
+  return { data: days.map(({ key, day }) => ({ day, count: countByKey.get(key) ?? 0 })), error: null };
+}
+
+export interface TripStatusCount {
+  status: 'forming' | 'active' | 'completed' | 'cancelled';
+  count: number;
+}
+
+export interface GetTripStatusBreakdownResult {
+  data: TripStatusCount[];
+  error: string | null;
+}
+
+const TRIP_STATUSES: TripStatusCount['status'][] = ['forming', 'active', 'completed', 'cancelled'];
+
+/** "Ride Status" dashboard donut — ride counts by TripStatus, all-time, 4 parallel counts (same idiom as getAdminDashboardStats). */
+export async function getTripStatusBreakdown(): Promise<GetTripStatusBreakdownResult> {
+  const client = getSupabaseClient();
+
+  const results = await Promise.all(
+    TRIP_STATUSES.map((status) => client.from('trips').select('*', { count: 'exact', head: true }).eq('status', status))
+  );
+
+  const firstError = results.find((r) => r.error)?.error;
+  if (firstError) return { data: [], error: firstError.message };
+
+  return { data: TRIP_STATUSES.map((status, i) => ({ status, count: results[i].count ?? 0 })), error: null };
+}
