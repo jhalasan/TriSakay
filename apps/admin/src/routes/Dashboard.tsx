@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StatTile } from '../components/StatTile';
-import { PlaceholderBox } from '../components/PlaceholderBox';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
+import { RideStatusChart, RidesOverTimeChart } from '../components/charts';
 import {
   getDashboardStats,
+  getRidesPerDay,
+  getTripStatusBreakdown,
   listExpiringFranchises,
   listOverdueComplaints,
   listRecentTripActivity,
@@ -14,6 +16,8 @@ import {
   type ExpiringFranchiseRow,
   type OverdueComplaintRow,
   type RecentTripActivityRow,
+  type RidesPerDayPoint,
+  type TripStatusCount,
 } from '../services/dashboard';
 import { formatRelativeTime, titleCaseLabel } from '../lib/format';
 
@@ -73,16 +77,20 @@ export function Dashboard() {
   const [expiringError, setExpiringError] = useState<string | null>(null);
   const [activity, setActivity] = useState<RecentTripActivityRow[]>([]);
   const [activityError, setActivityError] = useState<string | null>(null);
+  const [ridesPerDay, setRidesPerDay] = useState<RidesPerDayPoint[]>([]);
+  const [statusBreakdown, setStatusBreakdown] = useState<TripStatusCount[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [statsResult, overdueResult, expiringResult, activityResult] = await Promise.all([
+      const [statsResult, overdueResult, expiringResult, activityResult, ridesResult, statusResult] = await Promise.all([
         getDashboardStats(),
         listOverdueComplaints(),
         listExpiringFranchises(),
         listRecentTripActivity(),
+        getRidesPerDay(),
+        getTripStatusBreakdown(),
       ]);
       if (cancelled) return;
 
@@ -94,6 +102,8 @@ export function Dashboard() {
       setExpiringError(expiringResult.error);
       setActivity(activityResult.data);
       setActivityError(activityResult.error);
+      setRidesPerDay(ridesResult.data);
+      setStatusBreakdown(statusResult.data);
       setLoading(false);
     })();
     return () => {
@@ -116,11 +126,11 @@ export function Dashboard() {
       <div className="two-col">
         <div className="panel">
           <div className="panel-title">Rides Over Time (Week)</div>
-          <PlaceholderBox label="Rides over time — chart" />
+          <RidesOverTimeChart data={ridesPerDay} loading={loading} />
         </div>
         <div className="panel">
           <div className="panel-title">Ride Status</div>
-          <PlaceholderBox label="Ride status — chart" />
+          <RideStatusChart data={statusBreakdown} loading={loading} />
         </div>
       </div>
 
