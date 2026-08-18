@@ -20,6 +20,6 @@ export interface DriverRow {
   ratingAvg: number; // driver_profiles.rating_avg, 0-5
   ratingCount: number;
   plateNo: string;
-  cluster: TricycleCluster;
+  cluster: TricycleCluster | null; // null when the driver has no tricycle on file yet
   createdAt: string; // ISO
 }

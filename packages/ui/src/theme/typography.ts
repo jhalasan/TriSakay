@@ -1,4 +1,8 @@
-import type { TextStyle } from 'react-native';
+import { Dimensions, type TextStyle } from 'react-native';
+import { moderateScale } from './scale';
+
+const deviceWidth = Dimensions.get('window').width;
+const scaleFont = (size: number) => moderateScale(size, deviceWidth);
 
 /**
  * Poppins — geometric, rounded, and noticeably more branded than a neutral UI
@@ -42,23 +46,33 @@ type TypeStyle = Pick<
  */
 export const typography = {
   /** Fares and amounts due — the one number the rider is looking for. */
-  amount: { fontSize: 40, lineHeight: 46, fontFamily: fontFamily.extrabold, letterSpacing: -1.2 },
-  display: { fontSize: 34, lineHeight: 40, fontFamily: fontFamily.extrabold, letterSpacing: -0.8 },
-  h1: { fontSize: 27, lineHeight: 33, fontFamily: fontFamily.bold, letterSpacing: -0.4 },
-  h2: { fontSize: 20, lineHeight: 26, fontFamily: fontFamily.bold, letterSpacing: -0.2 },
-  h3: { fontSize: 17, lineHeight: 23, fontFamily: fontFamily.semibold },
-  body: { fontSize: 16, lineHeight: 24, fontFamily: fontFamily.regular },
-  bodyStrong: { fontSize: 16, lineHeight: 24, fontFamily: fontFamily.semibold },
-  caption: { fontSize: 13, lineHeight: 18, fontFamily: fontFamily.regular },
+  amount: {
+    fontSize: scaleFont(40),
+    lineHeight: scaleFont(46),
+    fontFamily: fontFamily.extrabold,
+    letterSpacing: -1.2,
+  },
+  display: {
+    fontSize: scaleFont(34),
+    lineHeight: scaleFont(40),
+    fontFamily: fontFamily.extrabold,
+    letterSpacing: -0.8,
+  },
+  h1: { fontSize: scaleFont(27), lineHeight: scaleFont(33), fontFamily: fontFamily.bold, letterSpacing: -0.4 },
+  h2: { fontSize: scaleFont(20), lineHeight: scaleFont(26), fontFamily: fontFamily.bold, letterSpacing: -0.2 },
+  h3: { fontSize: scaleFont(17), lineHeight: scaleFont(23), fontFamily: fontFamily.semibold },
+  body: { fontSize: scaleFont(16), lineHeight: scaleFont(24), fontFamily: fontFamily.regular },
+  bodyStrong: { fontSize: scaleFont(16), lineHeight: scaleFont(24), fontFamily: fontFamily.semibold },
+  caption: { fontSize: scaleFont(13), lineHeight: scaleFont(18), fontFamily: fontFamily.regular },
   label: {
-    fontSize: 12,
-    lineHeight: 16,
+    fontSize: scaleFont(12),
+    lineHeight: scaleFont(16),
     fontFamily: fontFamily.bold,
     letterSpacing: 0.6,
     textTransform: 'uppercase',
   },
-  button: { fontSize: 16, lineHeight: 20, fontFamily: fontFamily.bold },
-  buttonSmall: { fontSize: 14, lineHeight: 18, fontFamily: fontFamily.semibold },
+  button: { fontSize: scaleFont(16), lineHeight: scaleFont(20), fontFamily: fontFamily.bold },
+  buttonSmall: { fontSize: scaleFont(14), lineHeight: scaleFont(18), fontFamily: fontFamily.semibold },
 } satisfies Record<string, TypeStyle>;
 
 export type TypographyToken = keyof typeof typography;

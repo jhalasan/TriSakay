@@ -18,6 +18,9 @@ expo-env.d.ts
 *.key
 *.mobileprovision
 
+# EAS credentials (local credential-manager output; never commit signing secrets)
+credentials.json
+
 # Metro
 .metro-health-check*
 
@@ -45,3 +48,4 @@ yarn-error.*
 
 # Claude Code isolated worktrees (EnterWorktree tool scratch state)
 /.claude/worktrees/
+.worktrees/

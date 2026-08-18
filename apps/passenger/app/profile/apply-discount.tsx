@@ -27,7 +27,8 @@ export default function ApplyDiscountScreen() {
   const [loading, setLoading] = useState(true);
   const [existing, setExisting] = useState<PassengerDiscount | null>(null);
   const [category, setCategory] = useState<DiscountCategory>('senior_citizen');
-  const [photoUri, setPhotoUri] = useState<string | null>(null);
+  const [frontPhotoUri, setFrontPhotoUri] = useState<string | null>(null);
+  const [backPhotoUri, setBackPhotoUri] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -48,25 +49,32 @@ export default function ApplyDiscountScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  async function handlePickPhoto() {
+  async function handlePickPhoto(side: 'front' | 'back') {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
       Alert.alert('Permission needed', 'Allow photo library access to upload your ID.');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) setPhotoUri(result.assets[0].uri);
+    if (result.canceled || !result.assets[0]) return;
+    if (side === 'front') setFrontPhotoUri(result.assets[0].uri);
+    else setBackPhotoUri(result.assets[0].uri);
   }
 
   async function handleSubmit() {
     if (!user) return;
-    if (!photoUri) {
-      setFormError('Add a photo of your ID before submitting.');
+    if (!frontPhotoUri || !backPhotoUri) {
+      setFormError('Add photos of both the front and back of your ID before submitting.');
       return;
     }
     setFormError(null);
     setSubmitting(true);
-    const { error } = await applyForDiscount({ userId: user.id, category, uri: photoUri });
+    const { error } = await applyForDiscount({
+      userId: user.id,
+      category,
+      frontUri: frontPhotoUri,
+      backUri: backPhotoUri,
+    });
     if (error) {
       setSubmitting(false);
       setFormError(error);
@@ -74,7 +82,8 @@ export default function ApplyDiscountScreen() {
     }
     await refresh();
     setSubmitting(false);
-    setPhotoUri(null);
+    setFrontPhotoUri(null);
+    setBackPhotoUri(null);
   }
 
   if (loading) {
@@ -121,8 +130,9 @@ export default function ApplyDiscountScreen() {
         }
       >
         <Text style={styles.intro}>
-          Senior citizens, PWDs, and students may apply for a fare discount. Upload a photo of your
-          valid ID — a PSO Supervisor reviews it before the discount takes effect.
+          Senior citizens, PWDs, and students may apply for a fare discount. Upload photos of the
+          front and back of your valid ID — a PSO Supervisor checks its authenticity before the
+          discount takes effect.
         </Text>
 
         {existing?.status === 'rejected' && (
@@ -143,26 +153,50 @@ export default function ApplyDiscountScreen() {
           <SegmentedControl options={CATEGORY_OPTIONS} value={category} onChange={setCategory} />
         </View>
 
-        <View>
-          <Text style={styles.sectionLabel}>ID photo</Text>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={photoUri ? 'Change ID photo' : 'Add ID photo'}
-            style={[styles.photoUpload, photoUri && styles.photoUploadFilled]}
-            onPress={handlePickPhoto}
-          >
-            {photoUri ? (
-              <>
-                <Image source={{ uri: photoUri }} style={styles.photoPreview} resizeMode="cover" />
-                <Text style={styles.photoChangeLabel}>Tap to change</Text>
-              </>
-            ) : (
-              <>
-                <Ionicons name="card-outline" size={28} color={colors.inkSoft} />
-                <Text style={styles.photoUploadLabel}>Tap to add a photo of your ID</Text>
-              </>
-            )}
-          </Pressable>
+        <View style={styles.photoRow}>
+          <View style={styles.photoSlot}>
+            <Text style={styles.sectionLabel}>ID photo — front</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={frontPhotoUri ? 'Change front ID photo' : 'Add front ID photo'}
+              style={[styles.photoUpload, frontPhotoUri && styles.photoUploadFilled]}
+              onPress={() => handlePickPhoto('front')}
+            >
+              {frontPhotoUri ? (
+                <>
+                  <Image source={{ uri: frontPhotoUri }} style={styles.photoPreview} resizeMode="cover" />
+                  <Text style={styles.photoChangeLabel}>Tap to change</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="card-outline" size={28} color={colors.inkSoft} />
+                  <Text style={styles.photoUploadLabel}>Tap to add the front</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
+
+          <View style={styles.photoSlot}>
+            <Text style={styles.sectionLabel}>ID photo — back</Text>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={backPhotoUri ? 'Change back ID photo' : 'Add back ID photo'}
+              style={[styles.photoUpload, backPhotoUri && styles.photoUploadFilled]}
+              onPress={() => handlePickPhoto('back')}
+            >
+              {backPhotoUri ? (
+                <>
+                  <Image source={{ uri: backPhotoUri }} style={styles.photoPreview} resizeMode="cover" />
+                  <Text style={styles.photoChangeLabel}>Tap to change</Text>
+                </>
+              ) : (
+                <>
+                  <Ionicons name="card-outline" size={28} color={colors.inkSoft} />
+                  <Text style={styles.photoUploadLabel}>Tap to add the back</Text>
+                </>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {formError && <Text style={styles.formError}>{formError}</Text>}

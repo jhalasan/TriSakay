@@ -13,9 +13,9 @@ interface DriversState {
   setSearch: (value: string) => void;
   setStatusFilter: (value: DriversState['statusFilter']) => void;
   setPage: (page: number) => void;
-  flag: (driverId: string) => Promise<void>;
-  suspend: (driverId: string) => Promise<void>;
-  reactivate: (driverId: string) => Promise<void>;
+  flag: (driverId: string, reason: string) => Promise<boolean>;
+  suspend: (driverId: string, reason: string) => Promise<boolean>;
+  reactivate: (driverId: string, reason: string) => Promise<boolean>;
 }
 
 export const useDriversStore = create<DriversState>()((set, get) => ({
@@ -36,21 +36,33 @@ export const useDriversStore = create<DriversState>()((set, get) => ({
   setStatusFilter: (value) => set({ statusFilter: value, page: 1 }),
   setPage: (page) => set({ page }),
 
-  flag: async (driverId) => {
-    const { error } = await flagDriver(driverId);
-    if (error) return set({ error });
+  flag: async (driverId, reason) => {
+    const { error } = await flagDriver(driverId, reason);
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 
-  suspend: async (driverId) => {
-    const { error } = await suspendDriver(driverId);
-    if (error) return set({ error });
+  suspend: async (driverId, reason) => {
+    const { error } = await suspendDriver(driverId, reason);
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 
-  reactivate: async (driverId) => {
-    const { error } = await reactivateDriver(driverId);
-    if (error) return set({ error });
+  reactivate: async (driverId, reason) => {
+    const { error } = await reactivateDriver(driverId, reason);
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 }));

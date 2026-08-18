@@ -14,6 +14,12 @@ export const styles = StyleSheet.create({
     color: colors.accentBlue,
     fontFamily: fontFamily.semibold,
   },
+  error: {
+    ...typography.caption,
+    color: colors.danger,
+    paddingHorizontal: spacing.lg,
+    paddingBottom: spacing.sm,
+  },
   row: {
     flexDirection: 'row',
     gap: spacing.md,

@@ -507,7 +507,8 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["discount_category"]
           id: string
-          id_photo_path: string
+          id_photo_back_path: string
+          id_photo_front_path: string
           passenger_id: string
           remarks: string | null
           reviewed_at: string | null
@@ -518,7 +519,8 @@ export type Database = {
         Insert: {
           category: Database["public"]["Enums"]["discount_category"]
           id?: string
-          id_photo_path: string
+          id_photo_back_path: string
+          id_photo_front_path: string
           passenger_id: string
           remarks?: string | null
           reviewed_at?: string | null
@@ -529,7 +531,8 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["discount_category"]
           id?: string
-          id_photo_path?: string
+          id_photo_back_path?: string
+          id_photo_front_path?: string
           passenger_id?: string
           remarks?: string | null
           reviewed_at?: string | null
@@ -719,7 +722,10 @@ export type Database = {
       system_settings: {
         Row: {
           bearing_tolerance_deg: number
+          cash_enabled: boolean
           detour_ratio_max: number
+          franchise_expiry_notifications: boolean
+          gcash_enabled: boolean
           id: string
           is_active: boolean
           low_rating_threshold: number
@@ -729,7 +735,10 @@ export type Database = {
         }
         Insert: {
           bearing_tolerance_deg?: number
+          cash_enabled?: boolean
           detour_ratio_max?: number
+          franchise_expiry_notifications?: boolean
+          gcash_enabled?: boolean
           id?: string
           is_active?: boolean
           low_rating_threshold?: number
@@ -739,7 +748,10 @@ export type Database = {
         }
         Update: {
           bearing_tolerance_deg?: number
+          cash_enabled?: boolean
           detour_ratio_max?: number
+          franchise_expiry_notifications?: boolean
+          gcash_enabled?: boolean
           id?: string
           is_active?: boolean
           low_rating_threshold?: number
@@ -1169,6 +1181,18 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       business_days_since: { Args: { p_start: string }; Returns: number }
+      cancel_trip: {
+        Args: { p_reason: string; p_ride_request_id: string; p_trip_id: string }
+        Returns: {
+          ride_request_id: string
+        }[]
+      }
+      complete_trip: {
+        Args: { p_ride_request_id: string; p_trip_id: string }
+        Returns: {
+          ride_request_id: string
+        }[]
+      }
       compute_fare: {
         Args: {
           p_distance_km: number
@@ -1176,6 +1200,68 @@ export type Database = {
           p_seats?: number
         }
         Returns: number
+      }
+      get_active_trip_for_driver: {
+        Args: never
+        Returns: {
+          avatar_url: string
+          cash_confirmed: boolean
+          estimated_fare: number
+          passenger_id: string
+          passenger_name: string
+          preferred_method: Database["public"]["Enums"]["payment_method"]
+          ride_request_id: string
+          seats_requested: number
+          started_at: string
+          trip_id: string
+        }[]
+      }
+      get_driver_trip_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          cancelled_at: string
+          completed_at: string
+          fare: number
+          passenger_name: string
+          requested_at: string
+          ride_request_id: string
+          status: Database["public"]["Enums"]["ride_status"]
+        }[]
+      }
+      get_passenger_trip_history: {
+        Args: { p_limit?: number }
+        Returns: {
+          cancelled_at: string
+          completed_at: string
+          dest_label: string
+          driver_name: string
+          fare: number
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_label: string
+          requested_at: string
+          ride_request_id: string
+          status: Database["public"]["Enums"]["ride_status"]
+        }[]
+      }
+      get_trip_driver_info: {
+        Args: { p_ride_request_id: string }
+        Returns: {
+          avatar_url: string
+          driver_id: string
+          driver_name: string
+          plate_no: string
+          rating_avg: number
+          rating_count: number
+        }[]
+      }
+      get_trip_passenger_info: {
+        Args: { p_ride_request_id: string }
+        Returns: {
+          avatar_url: string
+          passenger_id: string
+          passenger_name: string
+        }[]
       }
       is_admin: { Args: never; Returns: boolean }
       is_cluster_authorized: {
@@ -1188,6 +1274,40 @@ export type Database = {
       is_pso: { Args: never; Returns: boolean }
       is_supervisor: { Args: never; Returns: boolean }
       notify_expiring_franchises: { Args: never; Returns: undefined }
+      perform_account_action: {
+        Args: {
+          p_action_type: Database["public"]["Enums"]["account_action_type"]
+          p_complaint_id?: string
+          p_reason: string
+          p_target_user_id: string
+        }
+        Returns: undefined
+      }
+      perform_verification_decision: {
+        Args: {
+          p_decision: Database["public"]["Enums"]["verification_status"]
+          p_driver_id: string
+          p_notes?: string
+        }
+        Returns: undefined
+      }
+      submit_driver_documents: {
+        Args: {
+          p_documents: Json
+          p_plate_no: string
+        }
+        Returns: string
+      }
+      update_fare_config: {
+        Args: {
+          p_base_fare: number
+          p_base_km: number
+          p_discount_rate_percent: number
+          p_ordinance_ref: string | null
+          p_rate_per_km: number
+        }
+        Returns: string
+      }
     }
     Enums: {
       account_action_type:

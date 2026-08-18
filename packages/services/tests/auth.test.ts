@@ -5,10 +5,13 @@ import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
 import {
   getCurrentUserProfile,
   onAuthStateChange,
+  requestPasswordReset,
   signIn,
   signOut,
   signUp,
+  updatePassword,
   updateProfile,
+  verifyPasswordReset,
 } from '../src/auth/index.ts';
 
 test('signUp sends full name, phone, and default role as signup metadata', async () => {
@@ -95,17 +98,17 @@ test('signIn returns a session on success', async () => {
   assert.equal(result.error, null);
 });
 
-test('signOut calls the underlying auth.signOut', async () => {
-  let called = false;
+test('signOut calls the underlying auth.signOut with local scope, not global', async () => {
+  let capturedArgs: unknown;
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      signOut: async () => {
-        called = true;
+      signOut: async (args?: unknown) => {
+        capturedArgs = args;
       },
     })
   );
   await signOut();
-  assert.equal(called, true);
+  assert.deepEqual(capturedArgs, { scope: 'local' });
 });
 
 test('getCurrentUserProfile returns null when there is no active session', async () => {
@@ -142,10 +145,128 @@ test('updateProfile updates full_name and reports no error on success', async ()
   assert.equal(result.error, null);
 });
 
+test('updateProfile writes contact_no when phone is provided', async () => {
+  const fakeSession = { user: { id: 'u1' } };
+  let capturedUpdate: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: fakeSession } }),
+      updateError: null,
+      onUsersUpdate: (row) => {
+        capturedUpdate = row;
+      },
+    })
+  );
+  const result = await updateProfile({ fullName: 'New Name', phone: '09171234567' });
+  assert.equal(result.error, null);
+  assert.deepEqual(capturedUpdate, { full_name: 'New Name', contact_no: '09171234567' });
+});
+
+test('updateProfile omits contact_no when phone is not provided', async () => {
+  const fakeSession = { user: { id: 'u1' } };
+  let capturedUpdate: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: fakeSession } }),
+      updateError: null,
+      onUsersUpdate: (row) => {
+        capturedUpdate = row;
+      },
+    })
+  );
+  const result = await updateProfile({ fullName: 'New Name' });
+  assert.equal(result.error, null);
+  assert.deepEqual(capturedUpdate, { full_name: 'New Name' });
+});
+
 test('updateProfile returns an error when there is no active session', async () => {
   __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
   const result = await updateProfile({ fullName: 'New Name' });
   assert.equal(result.error, 'Not signed in');
+});
+
+test('requestPasswordReset sends the email to Supabase and reports no error on success', async () => {
+  let capturedEmail: string | null = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      resetPasswordForEmail: async (email) => {
+        capturedEmail = email;
+        return { data: {}, error: null };
+      },
+    })
+  );
+
+  const result = await requestPasswordReset('juan@example.com');
+  assert.equal(capturedEmail, 'juan@example.com');
+  assert.equal(result.error, null);
+});
+
+test('requestPasswordReset returns the error message when Supabase rejects the request', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      resetPasswordForEmail: async () => ({ data: {}, error: { message: 'Rate limit exceeded' } }),
+    })
+  );
+
+  const result = await requestPasswordReset('juan@example.com');
+  assert.equal(result.error, 'Rate limit exceeded');
+});
+
+test('verifyPasswordReset sends the email/token pair as a recovery OTP and returns the session', async () => {
+  let capturedArgs: any = null;
+  const fakeSession = { access_token: 'recovery-token', user: { id: 'u1' } };
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      verifyOtp: async (args) => {
+        capturedArgs = args;
+        return { data: { session: fakeSession }, error: null };
+      },
+    })
+  );
+
+  const result = await verifyPasswordReset({ email: 'juan@example.com', token: '123456' });
+  assert.deepEqual(capturedArgs, { email: 'juan@example.com', token: '123456', type: 'recovery' });
+  assert.deepEqual(result.session, fakeSession);
+  assert.equal(result.error, null);
+});
+
+test('verifyPasswordReset returns the error message for an invalid or expired code', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      verifyOtp: async () => ({ data: { session: null }, error: { message: 'Token has expired or is invalid' } }),
+    })
+  );
+
+  const result = await verifyPasswordReset({ email: 'juan@example.com', token: '000000' });
+  assert.equal(result.error, 'Token has expired or is invalid');
+  assert.equal(result.session, null);
+});
+
+test('updatePassword sends the new password to Supabase and reports no error on success', async () => {
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      updateUser: async (args) => {
+        capturedArgs = args;
+        return { data: {}, error: null };
+      },
+    })
+  );
+
+  const result = await updatePassword('newSecret1');
+  assert.deepEqual(capturedArgs, { password: 'newSecret1' });
+  assert.equal(result.error, null);
+});
+
+test('updatePassword returns the error message on failure', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      updateUser: async () => ({ data: {}, error: { message: 'Password too weak' } }),
+    })
+  );
+
+  const result = await updatePassword('123');
+  assert.equal(result.error, 'Password too weak');
 });
 
 test('onAuthStateChange forwards session changes and returns an unsubscribe function', () => {

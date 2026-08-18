@@ -4,6 +4,7 @@ import { colors, spacing, typography } from '@trisakay/ui';
 export const styles = StyleSheet.create({
   container: { flex: 1 },
   markReadText: { ...typography.caption, color: colors.accentBlue },
+  error: { ...typography.caption, color: colors.danger, paddingHorizontal: spacing.lg, paddingBottom: spacing.sm },
   listContent: { padding: spacing.lg },
   row: { flexDirection: 'row', gap: spacing.md, paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lineSoft },
   dotSlot: { width: 8, alignItems: 'center', paddingTop: 6 },

@@ -4,7 +4,7 @@ export interface FareConfig {
   baseKm: number; // 4.00
   ratePerKm: number; // 1.00
   discountRatePercent: number; // 20.00, RA 9994 / RA 10754 (FR-3.12)
-  ordinanceRef: string;
+  ordinanceRef: string | null; // nullable in the DB — no ordinance cited yet is a valid state
 }
 
 /** Mirrors docs/SCHEMA.MD `system_settings` (§3.4) — matching heuristic thresholds, FR-2.5. */

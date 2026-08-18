@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { createRideRequest, estimateFare, getFareDiscountRate, getMyDiscount } from '@trisakay/services';
@@ -15,6 +16,7 @@ import {
 import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { formatCurrency } from '../../src/utils/currency';
@@ -36,6 +38,7 @@ export default function ConfirmScreen() {
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setRideRequestId = useBookingStore((state) => state.setRideRequestId);
   const { isGranted } = useLocationPermission();
+  const t = useTranslation();
   const [fareError, setFareError] = useState<string | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -115,10 +118,10 @@ export default function ConfirmScreen() {
   if (!dropoff) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title="Confirm ride" />
+        <ScreenHeader title={t.confirm.title} />
         <View style={styles.emptyState}>
-          <Text style={styles.emptyText}>No destination selected yet.</Text>
-          <Button label="Choose a destination" onPress={() => router.replace('/booking/set-destination')} />
+          <Text style={styles.emptyText}>{t.confirm.noDestinationSelected}</Text>
+          <Button label={t.confirm.chooseDestination} onPress={() => router.replace('/booking/set-destination')} />
         </View>
       </View>
     );
@@ -151,7 +154,7 @@ export default function ConfirmScreen() {
     setIsRequesting(false);
 
     if (error || !data) {
-      setRequestError(error ?? 'Could not request a ride. Please try again.');
+      setRequestError(error ?? t.confirm.couldNotRequestRide);
       return;
     }
 
@@ -162,11 +165,11 @@ export default function ConfirmScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Confirm ride" />
+      <ScreenHeader title={t.confirm.title} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <OsmMap
           variant="route"
-          caption="Route preview"
+          caption={t.confirm.routePreview}
           height={180}
           // Midpoint of the trip — only the initial center while the route is
           // still loading; once it arrives the map fits the route bounds instead.
@@ -181,8 +184,8 @@ export default function ConfirmScreen() {
           <View style={styles.routeRow}>
             <View style={[styles.routeDot, { backgroundColor: colors.accentGreen }]} />
             <View style={styles.routeTextSlot}>
-              <Text style={styles.routeLabel}>{pickup?.label ?? 'Pickup point'}</Text>
-              <Text style={styles.routeAddress}>{pickup?.address ?? 'Not set yet'}</Text>
+              <Text style={styles.routeLabel}>{pickup?.label ?? t.confirm.pickupPointFallback}</Text>
+              <Text style={styles.routeAddress}>{pickup?.address ?? t.confirm.notSetYetFallback}</Text>
             </View>
           </View>
           <View style={styles.routeDivider} />
@@ -196,41 +199,51 @@ export default function ConfirmScreen() {
         </Card>
 
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionLabel}>Seats</Text>
-          <Stepper value={seats} onChange={setSeats} min={1} max={4} />
+          <Text style={styles.sectionLabel}>{t.confirm.seats}</Text>
+          <Stepper value={seats} onChange={setSeats} min={1} max={6} />
         </View>
 
         <Card variant="raised" style={styles.fareCard}>
           <View style={styles.fareLabelRow}>
-            <Text style={styles.fareLabel}>Estimated fare</Text>
+            <View style={styles.fareLabelWithInfo}>
+              <Text style={styles.fareLabel}>{t.confirm.estimatedFare}</Text>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t.confirm.viewFareMatrix}
+                onPress={() => router.push('/profile/fare-matrix')}
+              >
+                <Ionicons name="information-circle-outline" size={16} color={colors.inkFaint} />
+              </Pressable>
+            </View>
             {discountApproved && (
-              <Badge label={`${discountRatePercent ?? 20}% discount applied`} tone="green" />
+              <Badge label={`${discountRatePercent ?? 20}${t.confirm.discountAppliedSuffix}`} tone="green" />
             )}
           </View>
           <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
+          {route && (<Text style={styles.fareNote}>{t.confirm.roadDistanceLabel} {route.distanceKm.toFixed(1)} km</Text>)}
           <Text style={styles.fareNote}>
             {fareError
-              ? 'Could not reach the fare service.'
+              ? t.confirm.couldNotReachFareService
               : fare === null
-                ? 'Estimating fare…'
-                : 'Final fare is confirmed at drop-off'}
+                ? t.confirm.estimatingFare
+                : t.confirm.fareConfirmedAtDropoff}
           </Text>
           {discountApproved === false && (
             <Pressable
               accessibilityRole="button"
               onPress={() => router.push('/profile/apply-discount')}
             >
-              <Text style={styles.discountLink}>Senior, PWD, or student? Apply for a fare discount</Text>
+              <Text style={styles.discountLink}>{t.confirm.applyForDiscountPrompt}</Text>
             </Pressable>
           )}
         </Card>
 
         <View>
-          <Text style={styles.sectionLabelSpaced}>Payment method</Text>
+          <Text style={styles.sectionLabelSpaced}>{t.confirm.paymentMethod}</Text>
           <SegmentedControl
             options={[
-              { label: 'GCash', value: 'gcash' },
-              { label: 'Cash', value: 'cash' },
+              { label: t.common.gcash, value: 'gcash' },
+              { label: t.common.cash, value: 'cash' },
             ]}
             value={paymentMethod}
             onChange={setPaymentMethod}
@@ -240,7 +253,7 @@ export default function ConfirmScreen() {
 
       <View style={styles.footer}>
         <Button
-          label="Request ride"
+          label={t.confirm.requestRide}
           fullWidth
           loading={isRequesting}
           disabled={!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady}

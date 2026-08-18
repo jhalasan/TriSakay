@@ -1,15 +1,25 @@
-import { MOCK_REPORT_SUMMARY, MOCK_TRANSACTIONS } from '../mocks/reports.ts';
-import { wait } from '../mocks/delay.ts';
+import { getAdminReportSummary, listTransactionsForAdmin } from '@trisakay/services';
 import type { ReportSummary, TransactionRow } from '../types/report';
 import type { ServiceResult } from './drivers';
 
-/** Read-only (FR-5.3, 5.4, 9.7). */
-export async function getReportSummary(): Promise<ServiceResult<ReportSummary>> {
-  await wait();
-  return { data: MOCK_REPORT_SUMMARY, error: null };
+export type ReportDateRange = '7d' | '30d' | 'quarter';
+
+/** Cutoff for a given range selector, computed against "now" so a 7-day report always means the trailing week. */
+export function dateRangeSinceIso(range: ReportDateRange): string {
+  const now = new Date();
+  if (range === '7d') return new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString();
+  if (range === '30d') return new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString();
+  const quarterStartMonth = Math.floor(now.getMonth() / 3) * 3;
+  return new Date(now.getFullYear(), quarterStartMonth, 1).toISOString();
 }
 
-export async function listTransactions(): Promise<ServiceResult<TransactionRow[]>> {
-  await wait();
-  return { data: MOCK_TRANSACTIONS, error: null };
+/** Read-only (FR-5.3, 5.4, 9.7). */
+export async function getReportSummary(range: ReportDateRange): Promise<ServiceResult<ReportSummary>> {
+  const { data, error } = await getAdminReportSummary(dateRangeSinceIso(range));
+  return { data, error };
+}
+
+export async function listTransactions(range: ReportDateRange): Promise<ServiceResult<TransactionRow[]>> {
+  const { data, error } = await listTransactionsForAdmin(dateRangeSinceIso(range));
+  return { data, error };
 }

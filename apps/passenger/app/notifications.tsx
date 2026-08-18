@@ -10,6 +10,7 @@ function formatDate(iso: string) {
 
 export default function NotificationsScreen() {
   const items = useNotificationsStore((state) => state.items);
+  const error = useNotificationsStore((state) => state.error);
   const markAllRead = useNotificationsStore((state) => state.markAllRead);
 
   return (
@@ -22,6 +23,7 @@ export default function NotificationsScreen() {
           </Text>
         }
       />
+      {error && <Text style={styles.error}>{error}</Text>}
       <FlatList
         data={items}
         keyExtractor={(item) => item.id}

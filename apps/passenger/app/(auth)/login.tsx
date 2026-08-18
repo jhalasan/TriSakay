@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { BrandMotif, Button, GradientSurface, TextField } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isValidEmail, isValidPassword } from '../../src/utils/validation';
@@ -91,10 +91,7 @@ export default function LoginScreen() {
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
           <View style={styles.forgotLink}>
-            <Text
-              style={styles.forgotLinkText}
-              onPress={() => Alert.alert('Forgot password', 'Password recovery is not available in this preview.')}
-            >
+            <Text style={styles.forgotLinkText} onPress={() => router.push('/(auth)/forgot-password')}>
               Forgot password?
             </Text>
           </View>

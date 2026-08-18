@@ -4,7 +4,8 @@ import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { TextField } from '../components/TextField';
 import { Select } from '../components/Select';
-import { addPsoUser, listPsoUsers, togglePsoUserActive } from '../services/psoUsers';
+import { ConfirmModal } from '../components/ConfirmModal';
+import { usePsoUsersStore } from '../store/usePsoUsersStore';
 import type { PsoUserRow } from '../types/psoUser';
 import { ROLE_LABELS } from '../lib/rbac';
 import type { AdminRole } from '../types/role';
@@ -15,34 +16,55 @@ const ROLE_TONE: Record<AdminRole, 'info' | 'warn' | 'neutral'> = {
   pso_staff: 'neutral',
 };
 
+type PendingActionKind = 'disable' | 'enable';
+interface PendingAction {
+  user: PsoUserRow;
+  kind: PendingActionKind;
+}
+
 /** Wireframe screen 9 "User management" — PSO staff & roles (FR-6.3). Admin-only screen; route access is gated in App.tsx. */
 export function PsoUsers() {
-  const [users, setUsers] = useState<PsoUserRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { users, loading, error, createdTempPassword, fetch, addUser, clearTempPassword, disable, enable } = usePsoUsersStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AdminRole>('pso_staff');
+  const [creating, setCreating] = useState(false);
+  const [createdEmail, setCreatedEmail] = useState('');
 
-  async function refresh() {
-    setLoading(true);
-    const { data } = await listPsoUsers();
-    setUsers(data);
-    setLoading(false);
-  }
+  const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
+  const [reason, setReason] = useState('');
+  const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    refresh();
-  }, []);
+    fetch();
+  }, [fetch]);
 
   async function handleAdd() {
     if (!fullName.trim() || !email.trim()) return;
-    await addPsoUser({ fullName, email, role });
-    setFullName('');
-    setEmail('');
-    setRole('pso_staff');
-    setShowAddForm(false);
-    await refresh();
+    setCreating(true);
+    const ok = await addUser({ fullName, email, role });
+    setCreating(false);
+    if (ok) {
+      setCreatedEmail(email);
+      setFullName('');
+      setEmail('');
+      setRole('pso_staff');
+      setShowAddForm(false);
+    }
+  }
+
+  function closeActionModal() {
+    setPendingAction(null);
+    setReason('');
+  }
+
+  async function handleConfirmAction() {
+    if (!pendingAction) return;
+    setSubmitting(true);
+    const ok = await (pendingAction.kind === 'disable' ? disable : enable)(pendingAction.user.id, reason);
+    setSubmitting(false);
+    if (ok) closeActionModal();
   }
 
   const columns: DataTableColumn<PsoUserRow>[] = [
@@ -54,28 +76,69 @@ export function PsoUsers() {
       key: 'actions',
       header: 'Actions',
       render: (u) => (
-        <div style={{ display: 'flex', gap: 6 }}>
-          <Button variant="outline" tone="neutral" size="sm">
-            Edit
-          </Button>
-          <Button
-            variant="outline"
-            tone={u.isActive ? 'danger' : 'primary'}
-            size="sm"
-            onClick={async () => {
-              await togglePsoUserActive(u.id);
-              await refresh();
-            }}
-          >
-            {u.isActive ? 'Disable' : 'Enable'}
-          </Button>
-        </div>
+        <Button
+          variant="outline"
+          tone={u.isActive ? 'danger' : 'primary'}
+          size="sm"
+          onClick={() => setPendingAction({ user: u, kind: u.isActive ? 'disable' : 'enable' })}
+        >
+          {u.isActive ? 'Disable' : 'Enable'}
+        </Button>
       ),
     },
   ];
 
   return (
     <div className="page">
+      {error && (
+        <div
+          style={{
+            fontSize: 12,
+            color: 'var(--danger)',
+            background: 'var(--danger-soft)',
+            border: '1px solid var(--danger)',
+            borderRadius: 'var(--r-sm)',
+            padding: 'var(--sp-sm)',
+          }}
+        >
+          {error}
+        </div>
+      )}
+
+      {createdTempPassword && (
+        <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="panel-title">Account created for {createdEmail}</div>
+          <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: 0 }}>
+            Share this temporary password with them directly — it won't be shown again, and no email was sent.
+          </p>
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <code
+              style={{
+                fontFamily: 'monospace',
+                fontSize: 14,
+                background: 'var(--surface-alt, #f4f4f4)',
+                padding: '6px 10px',
+                borderRadius: 'var(--r-sm)',
+                userSelect: 'all',
+              }}
+            >
+              {createdTempPassword}
+            </code>
+            <Button
+              variant="outline"
+              tone="neutral"
+              size="sm"
+              onClick={() => navigator.clipboard?.writeText(createdTempPassword)}
+            >
+              Copy
+            </Button>
+            <Button variant="solid" tone="primary" size="sm" onClick={clearTempPassword}>
+              Done
+            </Button>
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
         <Button onClick={() => setShowAddForm((v) => !v)}>Add PSO user</Button>
       </div>
@@ -94,12 +157,33 @@ export function PsoUsers() {
               { label: 'Administrator', value: 'admin' },
             ]}
           />
-          <Button onClick={handleAdd}>Save</Button>
+          <Button onClick={handleAdd} loading={creating} disabled={!fullName.trim() || !email.trim()}>
+            Save
+          </Button>
         </div>
       )}
 
       <DataTable columns={columns} rows={users} getRowKey={(u) => u.id} loading={loading} />
       <p style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Roles: PSO Staff · PSO Supervisor (fixed role enum) · Administrator.</p>
+
+      {pendingAction && (
+        <ConfirmModal
+          title={pendingAction.kind === 'disable' ? 'Disable PSO account' : 'Enable PSO account'}
+          message={
+            pendingAction.kind === 'disable'
+              ? `Disable ${pendingAction.user.fullName}'s account? They won't be able to sign in to the admin portal until re-enabled.`
+              : `Re-enable ${pendingAction.user.fullName}'s account?`
+          }
+          confirmLabel={pendingAction.kind === 'disable' ? 'Disable' : 'Enable'}
+          tone={pendingAction.kind === 'disable' ? 'danger' : 'primary'}
+          reasonRequired
+          reason={reason}
+          onReasonChange={setReason}
+          confirmLoading={submitting}
+          onCancel={closeActionModal}
+          onConfirm={handleConfirmAction}
+        />
+      )}
     </div>
   );
 }

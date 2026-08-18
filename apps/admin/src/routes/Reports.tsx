@@ -5,9 +5,10 @@ import { PlaceholderBox } from '../components/PlaceholderBox';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { StatTile } from '../components/StatTile';
-import { getReportSummary, listTransactions } from '../services/reports';
+import { getReportSummary, listTransactions, type ReportDateRange } from '../services/reports';
 import type { ReportSummary, TransactionRow } from '../types/report';
 import { formatCurrency, formatDateTime, paymentMethodLabel, titleCaseLabel } from '../lib/format';
+import { downloadCsv, toCsv } from '../lib/csv';
 import styles from './Reports.module.css';
 
 const PAYMENT_TONE: Record<TransactionRow['status'], 'neutral' | 'success' | 'warn' | 'danger'> = {
@@ -18,18 +19,38 @@ const PAYMENT_TONE: Record<TransactionRow['status'], 'neutral' | 'success' | 'wa
 };
 
 /** Wireframe screen 8 "Reports & analytics" (FR-5.3, 5.4, 9.7). */
+const DATE_RANGE_OPTIONS: { label: string; value: ReportDateRange }[] = [
+  { label: 'Last 7 days', value: '7d' },
+  { label: 'Last 30 days', value: '30d' },
+  { label: 'This quarter', value: 'quarter' },
+];
+
 export function Reports() {
+  const [dateRange, setDateRange] = useState<ReportDateRange>('30d');
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    Promise.all([getReportSummary(), listTransactions()]).then(([s, t]) => {
+    setLoading(true);
+    Promise.all([getReportSummary(dateRange), listTransactions(dateRange)]).then(([s, t]) => {
       setSummary(s.data);
       setTransactions(t.data);
       setLoading(false);
     });
-  }, []);
+  }, [dateRange]);
+
+  function exportCsv() {
+    const csv = toCsv(transactions, [
+      { header: 'Date', value: (t) => t.createdAt },
+      { header: 'Passenger', value: (t) => t.passengerName },
+      { header: 'Driver', value: (t) => t.driverName },
+      { header: 'Amount', value: (t) => t.amount },
+      { header: 'Method', value: (t) => t.method },
+      { header: 'Status', value: (t) => t.status },
+    ]);
+    downloadCsv(`transactions-${dateRange}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+  }
 
   const columns: DataTableColumn<TransactionRow>[] = [
     { key: 'passenger', header: 'Passenger', render: (t) => t.passengerName },
@@ -45,21 +66,18 @@ export function Reports() {
       <div className={styles.toolbar}>
         <Select
           aria-label="Date range"
-          options={[
-            { label: 'Last 7 days', value: '7d' },
-            { label: 'Last 30 days', value: '30d' },
-            { label: 'This quarter', value: 'quarter' },
-          ]}
+          value={dateRange}
+          onChange={(e) => setDateRange(e.target.value as ReportDateRange)}
+          options={DATE_RANGE_OPTIONS}
         />
-        <Select
-          aria-label="Report type"
-          options={[
-            { label: 'Ride volume', value: 'rides' },
-            { label: 'Complaints', value: 'complaints' },
-            { label: 'Driver activity', value: 'drivers' },
-          ]}
-        />
-        <Button variant="outline" tone="neutral" size="sm" style={{ marginLeft: 'auto' }}>
+        <Button
+          variant="outline"
+          tone="neutral"
+          size="sm"
+          style={{ marginLeft: 'auto' }}
+          disabled={transactions.length === 0}
+          onClick={exportCsv}
+        >
           Export CSV
         </Button>
       </div>

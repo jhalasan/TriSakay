@@ -67,40 +67,64 @@ export function DriverVerification() {
 
           <div className={`panel ${styles.sidebar}`}>
             <div className="panel-title">Franchise / Permit (Ordinance 21, s.2024)</div>
-            <TextField
-              label="MTOP Number"
-              value={selectedCase.mtopNo}
-              onChange={(e) => updateFields(selectedCase.driverId, { mtopNo: e.target.value })}
-              placeholder="e.g. MTOP-2026-00123"
-            />
-            <TextField
-              label="MTOP Expiry Date"
-              type="date"
-              value={selectedCase.mtopExpiryDate}
-              onChange={(e) => updateFields(selectedCase.driverId, { mtopExpiryDate: e.target.value })}
-            />
-            <Select
-              label="Cluster"
-              value={selectedCase.cluster}
-              onChange={(e) => updateFields(selectedCase.driverId, { cluster: e.target.value as TricycleCluster | '' })}
-              options={CLUSTER_OPTIONS}
-            />
-            <Textarea
-              label="Notes"
-              value={selectedCase.notes}
-              onChange={(e) => updateFields(selectedCase.driverId, { notes: e.target.value })}
-              placeholder="Reviewer notes…"
-            />
 
             <RoleGate
               min="supervisor"
-              fallback={<div className={styles.readOnlyNote}>Approve / Reject — PSO Supervisor &amp; Administrator only. PSO Staff: read-only review.</div>}
+              fallback={
+                <>
+                  <div className={styles.readOnlyField}><span>MTOP Number</span>{selectedCase.mtopNo || '—'}</div>
+                  <div className={styles.readOnlyField}><span>MTOP Expiry Date</span>{selectedCase.mtopExpiryDate || '—'}</div>
+                  <div className={styles.readOnlyField}><span>Cluster</span>{selectedCase.cluster || '—'}</div>
+                  <div className={styles.readOnlyField}><span>Notes</span>{selectedCase.notes || '—'}</div>
+                  <div className={styles.readOnlyNote}>
+                    Editing &amp; Approve / Reject — PSO Supervisor &amp; Administrator only. PSO Staff: read-only review.
+                  </div>
+                </>
+              }
             >
+              <TextField
+                label="MTOP Number"
+                value={selectedCase.mtopNo}
+                onChange={(e) => updateFields(selectedCase.driverId, { mtopNo: e.target.value })}
+                placeholder="e.g. MTOP-2026-00123"
+              />
+              <TextField
+                label="MTOP Expiry Date"
+                type="date"
+                value={selectedCase.mtopExpiryDate}
+                onChange={(e) => updateFields(selectedCase.driverId, { mtopExpiryDate: e.target.value })}
+              />
+              <Select
+                label="Cluster"
+                value={selectedCase.cluster}
+                onChange={(e) => updateFields(selectedCase.driverId, { cluster: e.target.value as TricycleCluster | '' })}
+                options={CLUSTER_OPTIONS}
+              />
+              <Textarea
+                label="Notes"
+                value={selectedCase.notes}
+                onChange={(e) => updateFields(selectedCase.driverId, { notes: e.target.value })}
+                placeholder="Reviewer notes, required if rejecting…"
+              />
+
               <div className={styles.decisionRow}>
-                <Button variant="solid" tone="primary" superscript="S+" fullWidth onClick={() => approve(selectedCase.driverId)}>
+                <Button
+                  variant="solid"
+                  tone="primary"
+                  superscript="S+"
+                  fullWidth
+                  onClick={() => approve(selectedCase.driverId, selectedCase.notes || undefined)}
+                >
                   Approve
                 </Button>
-                <Button variant="outline" tone="danger" superscript="S+" fullWidth onClick={() => reject(selectedCase.driverId)}>
+                <Button
+                  variant="outline"
+                  tone="danger"
+                  superscript="S+"
+                  fullWidth
+                  disabled={!selectedCase.notes.trim()}
+                  onClick={() => reject(selectedCase.driverId, selectedCase.notes)}
+                >
                   Reject
                 </Button>
               </div>

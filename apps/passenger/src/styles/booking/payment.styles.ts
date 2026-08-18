@@ -90,4 +90,25 @@ export const styles = StyleSheet.create({
     borderTopColor: colors.lineSoft,
     backgroundColor: colors.panel,
   },
+  gcashStatusText: {
+    ...typography.caption,
+    color: colors.inkSoft,
+    textAlign: 'center',
+    marginTop: spacing.md,
+  },
+  gcashErrorBox: {
+    marginTop: spacing.md,
+    padding: spacing.lg,
+    borderRadius: radius.md,
+    backgroundColor: colors.accentBlueSoft,
+    gap: spacing.md,
+  },
+  gcashErrorText: {
+    ...typography.body,
+    color: colors.ink,
+  },
+  gcashErrorActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
 });

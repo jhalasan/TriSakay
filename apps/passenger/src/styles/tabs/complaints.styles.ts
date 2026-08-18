@@ -51,6 +51,10 @@ export const styles = StyleSheet.create({
     borderRadius: radius.sm,
     overflow: 'hidden',
   },
+  error: {
+    ...typography.caption,
+    color: colors.danger,
+  },
   successWrap: {
     flex: 1,
     alignItems: 'center',

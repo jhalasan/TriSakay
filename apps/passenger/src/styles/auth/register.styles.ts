@@ -2,6 +2,65 @@ import { StyleSheet } from 'react-native';
 import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
+  stepWrap: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.md,
+    gap: spacing.xs,
+  },
+  stepLabel: {
+    ...typography.label,
+    color: colors.inkSoft,
+  },
+  stepTrack: {
+    flexDirection: 'row',
+    gap: spacing.xs,
+  },
+  stepSegment: {
+    flex: 1,
+    height: 4,
+    borderRadius: radius.pill,
+    backgroundColor: colors.line,
+  },
+  stepSegmentActive: {
+    backgroundColor: colors.accentBlue,
+  },
+  stepIntro: {
+    ...typography.body,
+    color: colors.inkSoft,
+  },
+  version: {
+    ...typography.caption,
+    color: colors.inkSoft,
+  },
+  paragraph: {
+    ...typography.body,
+    color: colors.inkSoft,
+  },
+  sectionLabel: {
+    ...typography.label,
+    color: colors.inkSoft,
+    marginTop: spacing.md,
+  },
+  disclosureCard: {
+    padding: 0,
+  },
+  disclosureRow: {
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.xs,
+  },
+  disclosureRowDivided: {
+    borderTopWidth: 1,
+    borderTopColor: colors.lineSoft,
+  },
+  disclosureTitle: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+  },
+  disclosureBody: {
+    ...typography.caption,
+    color: colors.inkSoft,
+  },
   /** Slim brand band under the header — echoes login's hero without repeating its full height. */
   heroBand: {
     height: 88,
@@ -85,10 +144,5 @@ export const styles = StyleSheet.create({
   authError: {
     ...typography.caption,
     color: colors.danger,
-  },
-  legalText: {
-    ...typography.caption,
-    color: colors.inkSoft,
-    textAlign: 'center',
   },
 });

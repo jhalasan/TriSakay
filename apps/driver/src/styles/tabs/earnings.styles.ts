@@ -16,4 +16,5 @@ export const styles = StyleSheet.create({
   logAmount: { ...typography.body, color: colors.ink },
   logDate: { ...typography.caption, color: colors.inkSoft },
   caption: { ...typography.caption, color: colors.inkSoft, textAlign: 'center' },
+  error: { ...typography.caption, color: colors.danger },
 });

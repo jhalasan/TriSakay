@@ -1,11 +1,16 @@
+import { Dimensions } from 'react-native';
+import { moderateScale } from './scale';
+
+const deviceWidth = Dimensions.get('window').width;
+
 export const spacing = {
-  xs: 4,
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 24,
-  xxl: 32,
-  xxxl: 48,
+  xs: moderateScale(4, deviceWidth),
+  sm: moderateScale(8, deviceWidth),
+  md: moderateScale(12, deviceWidth),
+  lg: moderateScale(16, deviceWidth),
+  xl: moderateScale(24, deviceWidth),
+  xxl: moderateScale(32, deviceWidth),
+  xxxl: moderateScale(48, deviceWidth),
 } as const;
 
 export type SpacingToken = keyof typeof spacing;

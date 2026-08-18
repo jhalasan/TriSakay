@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { FlatList, Text, View } from 'react-native';
+import { useEffect, useMemo, useState } from 'react';
+import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Badge, Button, EmptyState, ListRow } from '@trisakay/ui';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
@@ -17,7 +17,14 @@ function formatDate(iso: string) {
 
 export default function HistoryScreen() {
   const trips = useHistoryStore((state) => state.trips);
+  const loading = useHistoryStore((state) => state.loading);
+  const historyError = useHistoryStore((state) => state.error);
+  const load = useHistoryStore((state) => state.load);
   const [filter, setFilter] = useState<FilterMode>('all');
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const filteredTrips = useMemo(() => {
     if (filter === 'all') return trips;
@@ -37,11 +44,16 @@ export default function HistoryScreen() {
         />
       </View>
 
+      {historyError && <Text style={styles.error}>{historyError}</Text>}
+
       <FlatList
         data={filteredTrips}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<EmptyState title="No trips yet" message="Your completed trips will show up here." />}
+        refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
+        ListEmptyComponent={
+          loading ? null : <EmptyState title="No trips yet" message="Your completed trips will show up here." />
+        }
         renderItem={({ item }) => (
           <ListRow
             title={item.passengerName || 'Passenger'}

@@ -4,10 +4,11 @@ import type { TricycleCluster, VerificationStatus } from './driver';
 export type DocumentType = 'drivers_license' | 'or_cr' | 'franchise_permit' | 'tricycle_photo';
 
 export interface DriverDocument {
+  id: string;
   docType: DocumentType;
   label: string;
   status: VerificationStatus;
-  storagePathPlaceholder: string; // stands in for the future Storage object path
+  storagePath: string;
 }
 
 /**

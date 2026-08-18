@@ -14,6 +14,8 @@ const TITLES: Record<string, string> = {
   '/monitoring': 'Ride Monitoring',
   '/complaints': 'Complaints Management',
   '/reports': 'Reports & Analytics',
+  '/rating-oversight': 'Rating Oversight',
+  '/discounts': 'Fare Discount Review',
   '/pso-users': 'PSO User Management',
   '/settings': 'System Settings',
 };
@@ -48,8 +50,11 @@ export function AppShell() {
           confirmLabel="Log out"
           tone="danger"
           onCancel={() => setConfirmingLogout(false)}
-          onConfirm={() => {
-            signOut();
+          onConfirm={async () => {
+            // signOut() is a real async Supabase call now — navigating before
+            // it resolves would hit /login while isAuthenticated is still
+            // stale-true, and RedirectIfAuthed would bounce straight back.
+            await signOut();
             navigate('/login', { replace: true });
           }}
         />

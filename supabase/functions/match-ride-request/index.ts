@@ -6,9 +6,15 @@
 //      public.is_cluster_authorized() (docs/SCHEMA.MD §4.3b) rather than
 //      calling it via .rpc() per candidate, to avoid one round trip per
 //      pending request in a request-board-scale hot path — if the ordinance
-//      logic there ever changes, update both together. A pickup with no
-//      resolved barangay cluster is excluded, same as the DB function's own
-//      null handling (safer default, not silently allowed).
+//      logic there ever changes, update both together. UNLIKE the DB
+//      function, a pickup with no resolved barangay cluster is ALLOWED
+//      through here rather than excluded: createRideRequest() never
+//      populates pickup_barangay_id (no barangay-boundary data exists yet —
+//      see docs/superpowers/specs/2026-08-02-ride-request-insert-design.md),
+//      so every request currently has a null cluster. Excluding null used
+//      to mean the request board was empty for every driver, always. Once
+//      pickup_barangay_id resolution ships, this becomes a real hard filter
+//      again for the requests it can classify.
 //   2. SOFT FILTER — bearing tolerance + detour ratio (both read from
 //      system_settings) between the driver's current position/declared
 //      route and each request's pickup/destination. Only applied once the
@@ -82,12 +88,13 @@ function bearingDiffDeg(a: number, b: number): number {
   return diff > 180 ? 360 - diff : diff;
 }
 
-/** Mirrors public.is_cluster_authorized() — see the file header comment. */
+/** Mirrors public.is_cluster_authorized(), except for the null-barangay case — see the file header comment. */
 function isClusterAuthorized(
   tricycleCluster: TricycleCluster | null,
   barangayCluster: TricycleCluster | null,
 ): boolean {
-  if (!tricycleCluster || !barangayCluster) return false;
+  if (!tricycleCluster) return false;
+  if (!barangayCluster) return true;
   if (tricycleCluster === barangayCluster) return true;
   return barangayCluster === 'melting_pot' && tricycleCluster !== 'melting_pot';
 }

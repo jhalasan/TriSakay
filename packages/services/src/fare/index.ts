@@ -36,3 +36,36 @@ export async function getFareDiscountRate(): Promise<FareDiscountRateResult> {
     .maybeSingle();
   return { discountRatePercent: data?.discount_rate_percent ?? null, error: error?.message ?? null };
 }
+
+export interface FareConfig {
+  baseFare: number;
+  baseKm: number;
+  ratePerKm: number;
+  discountRatePercent: number;
+  ordinanceRef: string | null;
+}
+
+export interface FareConfigResult {
+  data: FareConfig | null;
+  error: string | null;
+}
+
+/** The active tariff, for display (e.g. the passenger-facing fare matrix) — never hardcode these figures client-side. */
+export async function getFareConfig(): Promise<FareConfigResult> {
+  const { data, error } = await getSupabaseClient()
+    .from('fare_config')
+    .select('base_fare, base_km, rate_per_km, discount_rate_percent, ordinance_ref')
+    .eq('is_active', true)
+    .maybeSingle();
+  if (error || !data) return { data: null, error: error?.message ?? null };
+  return {
+    data: {
+      baseFare: data.base_fare,
+      baseKm: data.base_km,
+      ratePerKm: data.rate_per_km,
+      discountRatePercent: data.discount_rate_percent,
+      ordinanceRef: data.ordinance_ref,
+    },
+    error: null,
+  };
+}

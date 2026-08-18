@@ -46,7 +46,8 @@
           "photosPermission": "TriSakay needs access to your photos so you can set a profile picture.",
           "cameraPermission": "TriSakay needs access to your camera so you can take a profile picture."
         }
-      ]
+      ],
+      "expo-web-browser"
     ]
   }
 }

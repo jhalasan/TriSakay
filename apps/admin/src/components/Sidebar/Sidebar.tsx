@@ -15,6 +15,8 @@ const CORE_ITEMS: NavItem[] = [
   { to: '/monitoring', label: 'Ride Monitoring' },
   { to: '/complaints', label: 'Complaints' },
   { to: '/reports', label: 'Reports & Analytics' },
+  { to: '/rating-oversight', label: 'Rating Oversight' },
+  { to: '/discounts', label: 'Fare Discounts' },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [

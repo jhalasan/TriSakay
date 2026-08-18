@@ -15,13 +15,15 @@ export interface DocumentUploadRowProps {
 
 const STATUS_LABEL: Record<DocumentStatus, string> = {
   unsubmitted: 'Not uploaded',
-  pending: 'Pending',
+  selected: 'Selected',
+  pending: 'Pending review',
   verified: 'Verified',
   rejected: 'Rejected',
 };
 
 const STATUS_TONE: Record<DocumentStatus, BadgeTone> = {
   unsubmitted: 'neutral',
+  selected: 'neutral',
   pending: 'neutral',
   verified: 'green',
   rejected: 'danger',

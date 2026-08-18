@@ -54,3 +54,36 @@ export function initials(fullName: string): string {
   const last = parts.length > 1 ? parts[parts.length - 1][0] : '';
   return (first + last).toUpperCase();
 }
+
+/**
+ * Mirrors the DB's `business_days_since()` exactly (counts Mon–Fri days
+ * strictly after `startIso`'s date, up to and including today) so this
+ * matches `v_overdue_complaints`'s numbers for the same complaint. Computed
+ * client-side rather than one RPC call per row.
+ */
+export function businessDaysSince(startIso: string): number {
+  const start = new Date(startIso);
+  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + 1));
+  const today = new Date();
+  const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+
+  let count = 0;
+  while (cursor <= end) {
+    const isoDow = cursor.getUTCDay() === 0 ? 7 : cursor.getUTCDay(); // 1=Mon ... 7=Sun
+    if (isoDow < 6) count++;
+    cursor.setUTCDate(cursor.getUTCDate() + 1);
+  }
+  return count;
+}
+
+/** ISO timestamp -> 'Just now' / 'N min ago' / 'N hr ago' / 'N days ago', matching the wireframe's relative-time labels. */
+export function formatRelativeTime(iso: string): string {
+  const diffMs = Date.now() - new Date(iso).getTime();
+  const minutes = Math.floor(diffMs / 60_000);
+  if (minutes < 1) return 'Just now';
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) return `${hours} hr ago`;
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}

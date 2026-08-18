@@ -69,6 +69,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.xs,
   },
+  fareLabelWithInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
   fareLabel: {
     ...typography.label,
     color: colors.accentBluePressed,

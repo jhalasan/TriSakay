@@ -14,6 +14,7 @@ import { colors, fontFamily } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
+import { useNotificationsStore } from '../src/store/useNotificationsStore';
 
 /**
  * Anchors the root stack to `index`. Screens declared as <Stack.Screen>
@@ -71,6 +72,17 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
     const isSplashOrRoot = root === undefined || root === 'splash';
     if (isSplashOrRoot) return;
 
+    // Logout must stay reachable regardless of gate state, or the confirm
+    // modal opened from a blocked screen would get bounced back before the
+    // rider could confirm it (mirrors the same fix in apps/driver's layout).
+    if (root === 'logout') return;
+
+    // Verifying the emailed reset code establishes a real session mid-flow
+    // (see packages/services/src/auth's verifyPasswordReset), which would
+    // otherwise flip isAuthenticated and bounce this screen to Home before
+    // the rider has actually set a new password.
+    if (root === 'reset-password') return;
+
     const inAuthGroup = root === '(auth)';
     const onConsent = root === 'consent';
 
@@ -118,6 +130,24 @@ function useConsentSync(sessionUserId: string | null) {
     if (sessionUserId === null) return;
     void check();
   }, [sessionUserId, check, reset]);
+}
+
+/**
+ * Kept subscribed for the whole session, not just while the Notifications
+ * screen is mounted — home.tsx's unread-count badge needs items to arrive
+ * live regardless of which screen the passenger is on.
+ */
+function useNotificationsSync(sessionUserId: string | null) {
+  const subscribe = useNotificationsStore((state) => state.subscribe);
+  const unsubscribe = useNotificationsStore((state) => state.unsubscribe);
+
+  useEffect(() => {
+    if (sessionUserId === null) {
+      unsubscribe();
+      return;
+    }
+    subscribe(sessionUserId);
+  }, [sessionUserId, subscribe, unsubscribe]);
 }
 
 /**
@@ -175,6 +205,7 @@ function RootLayoutNav() {
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
   const consentStatus = useConsentStore((state) => state.status);
   useConsentSync(sessionUserId);
+  useNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 
@@ -190,6 +221,7 @@ function RootLayoutNav() {
         >
           <Stack.Screen name="index" />
           <Stack.Screen name="consent" />
+          <Stack.Screen name="reset-password" />
           <Stack.Screen
             name="location-permission"
             options={{ presentation: 'transparentModal', animation: 'fade' }}

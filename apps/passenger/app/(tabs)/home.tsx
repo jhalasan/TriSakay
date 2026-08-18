@@ -7,6 +7,7 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { Avatar, Card, EmptyState, MapOverlaySheet, MapSearchBar, OsmMap, colors } from '@trisakay/ui';
 import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
@@ -24,6 +25,7 @@ export default function HomeScreen() {
   const setPickup = useBookingStore((state) => state.setPickup);
   const setDropoff = useBookingStore((state) => state.setDropoff);
   const unreadCount = useNotificationsStore((state) => state.items.filter((n) => !n.read).length);
+  const t = useTranslation();
   const { isGranted } = useLocationPermission();
   const insets = useSafeAreaInsets();
   const [locating, setLocating] = useState(false);
@@ -65,7 +67,7 @@ export default function HomeScreen() {
       <View style={styles.mapFill}>
         <OsmMap
           variant="pin"
-          caption={locating ? 'Finding your location…' : 'Drag the pin to set pickup'}
+          caption={locating ? t.home.findingLocation : t.home.dragPinToSetPickup}
           height="100%"
           latitude={pickup?.latitude}
           longitude={pickup?.longitude}
@@ -82,7 +84,7 @@ export default function HomeScreen() {
           <View style={styles.headerRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Profile"
+              accessibilityLabel={t.home.profileAccessibilityLabel}
               onPress={() => router.push('/(tabs)/profile')}
             >
               <Avatar name={user?.name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="md" />
@@ -90,14 +92,14 @@ export default function HomeScreen() {
             <MapSearchBar
               variant="flat"
               style={styles.headerSearchBar}
-              label="Where to?"
+              label={t.home.whereTo}
               disabled={!isGranted}
               onPress={() => (isGranted ? router.push('/booking/set-destination') : router.push('/location-permission'))}
               accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
             />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Notifications"
+              accessibilityLabel={t.home.notificationsAccessibilityLabel}
               style={styles.bellButton}
               onPress={() => router.push('/notifications')}
             >
@@ -110,11 +112,11 @@ export default function HomeScreen() {
       </View>
 
       <MapOverlaySheet maxHeight={320} bottomInset={insets.bottom}>
-        <Text style={styles.sectionLabel}>Saved places</Text>
+        <Text style={styles.sectionLabel}>{t.home.savedPlaces}</Text>
         {SHORTCUTS.length === 0 ? (
           <EmptyState
-            title="No saved places yet"
-            message="Places you save will appear here for one-tap booking."
+            title={t.home.noSavedPlacesTitle}
+            message={t.home.noSavedPlacesMessage}
           />
         ) : (
           <ScrollView contentContainerStyle={styles.shortcuts}>

@@ -1,35 +1,66 @@
-import { MOCK_VERIFICATION_CASES } from '../mocks/verification.ts';
-import { wait } from '../mocks/delay.ts';
-import type { VerificationCase } from '../types/verification';
+import {
+  approveVerification as approveVerificationReal,
+  listPendingVerifications,
+  rejectVerification as rejectVerificationReal,
+  updateVerificationFields as updateVerificationFieldsReal,
+} from '@trisakay/services';
+import type { VerificationCase, DocumentType } from '../types/verification';
 import type { ServiceResult } from './drivers';
 
-let cases = [...MOCK_VERIFICATION_CASES];
+const DOCUMENT_LABEL: Record<DocumentType, string> = {
+  drivers_license: "Driver's License",
+  or_cr: 'OR / CR',
+  franchise_permit: 'Franchise / Permit',
+  tricycle_photo: 'Tricycle Photo',
+};
 
 export async function listVerificationCases(): Promise<ServiceResult<VerificationCase[]>> {
-  await wait();
+  const { data, error } = await listPendingVerifications();
+  if (error) return { data: [], error };
+
+  const cases: VerificationCase[] = data.map((c) => ({
+    driverId: c.driverId,
+    driverFullName: c.driverFullName,
+    plateNo: c.plateNo,
+    documents: c.documents.map((d) => ({
+      id: d.id,
+      docType: d.docType,
+      label: DOCUMENT_LABEL[d.docType],
+      status: d.status,
+      storagePath: d.storagePath,
+    })),
+    mtopNo: c.mtopNo ?? '',
+    mtopExpiryDate: c.mtopExpiryDate ?? '',
+    cluster: c.cluster ?? '',
+    overallStatus: c.overallStatus,
+    notes: c.notes ?? '',
+  }));
+
   return { data: cases, error: null };
 }
 
-/** PSO Supervisor/Admin transcribing MTOP fields while reviewing the uploaded Franchise/Permit (FR-1.4a). Not S+ gated by itself — editing notes/fields is part of review, distinct from the Approve/Reject decision. */
+/** PSO Staff+ — transcription only, not an S+ decision (see updateVerificationFields's own doc comment on the RLS boundary). */
 export async function updateVerificationCase(
   driverId: string,
   patch: Partial<Pick<VerificationCase, 'mtopNo' | 'mtopExpiryDate' | 'cluster' | 'notes'>>
 ): Promise<ServiceResult<null>> {
-  await wait(150);
-  cases = cases.map((c) => (c.driverId === driverId ? { ...c, ...patch } : c));
-  return { data: null, error: null };
+  const { mtopNo, mtopExpiryDate, cluster } = patch;
+  const { error } = await updateVerificationFieldsReal(driverId, {
+    ...(mtopNo !== undefined && { mtopNo }),
+    ...(mtopExpiryDate !== undefined && { mtopExpiryDate }),
+    ...(cluster !== undefined && cluster !== '' && { cluster }),
+  });
+  return { data: null, error };
 }
 
 /** S+ action (FR-1.5). */
-export async function approveVerification(driverId: string): Promise<ServiceResult<null>> {
-  await wait();
-  cases = cases.map((c) => (c.driverId === driverId ? { ...c, overallStatus: 'approved' } : c));
-  return { data: null, error: null };
+export async function approveVerification(driverId: string, notes?: string): Promise<ServiceResult<null>> {
+  const { error } = await approveVerificationReal(driverId, notes);
+  return { data: null, error };
 }
 
 /** S+ action (FR-1.5). */
-export async function rejectVerification(driverId: string): Promise<ServiceResult<null>> {
-  await wait();
-  cases = cases.map((c) => (c.driverId === driverId ? { ...c, overallStatus: 'rejected' } : c));
-  return { data: null, error: null };
+export async function rejectVerification(driverId: string, notes: string): Promise<ServiceResult<null>> {
+  const { error } = await rejectVerificationReal(driverId, notes);
+  return { data: null, error };
 }

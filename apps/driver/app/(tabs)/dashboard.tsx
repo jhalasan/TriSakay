@@ -1,12 +1,13 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
+import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Badge, Toggle, colors } from '@trisakay/ui';
 import { RequestCard } from '../../src/components/RequestCard';
 import { StatTile } from '../../src/components/StatTile';
+import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
@@ -36,10 +37,24 @@ export default function DashboardScreen() {
   const requestError = useRequestsStore((state) => state.error);
   const subscribe = useRequestsStore((state) => state.subscribe);
   const unsubscribe = useRequestsStore((state) => state.unsubscribe);
-  const accept = useRequestsStore((state) => state.accept);
   const decline = useRequestsStore((state) => state.decline);
 
-  const startTrip = useTripStore((state) => state.startTrip);
+  const handleAccept = useAcceptRideRequest();
+  const activeTrip = useTripStore((state) => state.current);
+
+  // Tied to isAvailable itself (not the toggle handler) so a driver who was
+  // online before an app restart gets resubscribed here too, once
+  // useAvailabilitySync (app/_layout.tsx) re-syncs isAvailable on boot —
+  // otherwise the request board would stay silent even though the backend
+  // still considers them available and matchable.
+  useEffect(() => {
+    if (!user) return;
+    if (isAvailable) {
+      subscribe(user.id);
+    } else {
+      unsubscribe();
+    }
+  }, [isAvailable, user, subscribe, unsubscribe]);
 
   async function handleToggleAvailable(next: boolean) {
     setTogglingAvailability(true);
@@ -56,28 +71,16 @@ export default function DashboardScreen() {
       }
     }
 
-    const ok = await setAvailable(next, coords);
+    await setAvailable(next, coords);
     setTogglingAvailability(false);
-    if (!ok) return;
-
-    if (next && user) {
-      subscribe(user.id);
-    } else {
-      unsubscribe();
-    }
   }
 
-  async function handleAccept(id: string) {
-    if (useTripStore.getState().current) {
-      router.push('/trip/active');
-      return;
-    }
-    if (!user) return;
-    const accepted = await accept(id, user.id);
-    if (accepted) {
-      startTrip(accepted, accepted.tripId);
-      router.push('/trip/active');
-    }
+  // Covers a trip rehydrated from the backend on app restart (useTripSync in
+  // _layout.tsx) — without this, that trip existed only in the store with no
+  // way to actually reach it from the UI, which was the whole point of the
+  // rehydration fix (see get_active_trip_for_driver's usage in useTripStore).
+  if (activeTrip) {
+    return <Redirect href="/trip/active" />;
   }
 
   const incoming = pending[0];

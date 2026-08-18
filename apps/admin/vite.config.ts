@@ -9,6 +9,7 @@ export default defineConfig({
   plugins: [react()],
   resolve: {
     alias: {
+      '@trisakay/services': path.resolve(__dirname, '../../packages/services/src'),
       '@trisakay/shared': path.resolve(__dirname, '../../packages/shared/src'),
       '@trisakay/utils': path.resolve(__dirname, '../../packages/utils/src'),
     },

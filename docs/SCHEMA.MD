@@ -288,7 +288,8 @@ create table public.passenger_discounts (
   id            uuid primary key default gen_random_uuid(),
   passenger_id  uuid not null references public.users(id) on delete cascade,
   category      discount_category not null,
-  id_photo_path text not null,          -- Supabase Storage object path
+  id_photo_front_path text not null,    -- Supabase Storage object path (front of ID)
+  id_photo_back_path  text not null,    -- Supabase Storage object path (back of ID)
   status        verification_status not null default 'pending',
   reviewed_by   uuid references public.users(id) on delete set null,
   reviewed_at   timestamptz,
@@ -767,6 +768,101 @@ comment on function public.is_cluster_authorized is
   'Within the single-barangay Dadiangas West pilot (Melting Pot cluster), this always returns true for any colored tricycle — the constraint only binds once the system extends to other barangays, per confirmed scope. Called by the match-ride-request Edge Function as the hard pre-filter (FR-2.5) — it is not wired to any DB constraint or trigger, so it will show as unused if you grep for callers inside this file.';
 
 
+-- 4.3c trip driver info (passenger-visible) -----------------------------
+-- Passengers have no direct SELECT on trips/driver_profiles/tricycles/other
+-- users' users rows (see §7.1-7.4) — this security-definer function is the
+-- only path to a matched driver's public info, self-authorized via
+-- passenger_id = auth.uid() rather than broadening those tables' RLS.
+create or replace function public.get_trip_driver_info(p_ride_request_id uuid)
+returns table (
+  driver_id    uuid,
+  driver_name  text,
+  avatar_url   text,
+  plate_no     text,
+  rating_avg   numeric,
+  rating_count int
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+declare
+  v_trip_id uuid;
+begin
+  select trip_id into v_trip_id
+  from public.ride_requests
+  where id = p_ride_request_id
+    and passenger_id = auth.uid();
+
+  if v_trip_id is null then
+    return;
+  end if;
+
+  return query
+  select u.id, u.full_name, u.avatar_url, t.plate_no, dp.rating_avg, dp.rating_count
+  from public.trips tr
+  join public.users u on u.id = tr.driver_id
+  join public.driver_profiles dp on dp.user_id = tr.driver_id
+  left join public.tricycles t on t.id = tr.tricycle_id
+  where tr.id = v_trip_id;
+end $$;
+
+
+-- 4.3d passenger trip history (real ride/payment history) ---------------
+-- Passengers have no direct SELECT on other users' users rows (see 4.3c
+-- above) — this security-definer function is the only path to a matched
+-- driver's name for history purposes, self-authorized via
+-- passenger_id = auth.uid(). trips/users joins are LEFT JOIN (not INNER)
+-- because a ride cancelled before a driver was ever assigned has
+-- trip_id null; the transactions join is also LEFT because a
+-- cancelled-before-payment ride has no transaction row at all —
+-- payment_method/payment_status come back null in that case, a normal
+-- state for both consuming passenger-app screens, not an error.
+create or replace function public.get_passenger_trip_history(p_limit integer default 50)
+returns table (
+  ride_request_id uuid,
+  driver_name     text,
+  pickup_label    text,
+  dest_label      text,
+  status          ride_status,
+  fare            numeric,
+  payment_method  payment_method,
+  payment_status  payment_status,
+  requested_at    timestamptz,
+  completed_at    timestamptz,
+  cancelled_at    timestamptz
+)
+language plpgsql
+stable
+security definer
+set search_path = public
+as $$
+begin
+  return query
+  select
+    rr.id,
+    u.full_name,
+    rr.pickup_label,
+    rr.dest_label,
+    rr.status,
+    coalesce(rr.final_fare, rr.estimated_fare),
+    tx.method,
+    tx.status,
+    rr.requested_at,
+    rr.completed_at,
+    rr.cancelled_at
+  from public.ride_requests rr
+  left join public.trips t on t.id = rr.trip_id
+  left join public.users u on u.id = t.driver_id
+  left join public.transactions tx on tx.ride_request_id = rr.id
+  where rr.passenger_id = auth.uid()
+    and rr.status in ('completed', 'cancelled')
+  order by coalesce(rr.completed_at, rr.cancelled_at, rr.requested_at) desc
+  limit p_limit;
+end $$;
+
+
 -- 4.4 seat capacity enforcement ---------------------------------------
 -- Total seats across a trip's live requests must not exceed max_seats.
 create or replace function public.enforce_trip_seat_capacity()
@@ -884,8 +980,16 @@ create trigger trg_ratings_refresh
 
 -- 4.6 rating may only be submitted for one's own completed ride,
 -- and must name the driver who actually drove that trip -----------------
+-- security definer: passengers have no RLS-visible rows in `trips`
+-- (7.4 only grants driver_id = auth.uid()/PSO), so without definer the
+-- driver_id lookup below always returns NULL for a passenger's insert
+-- and the trigger raises its "must name the driver" exception on every
+-- rating, unconditionally (found via the rating-submission investigation).
 create or replace function public.validate_rating()
-returns trigger language plpgsql as $$
+returns trigger language plpgsql
+security definer
+set search_path = public
+as $$
 declare
   rr public.ride_requests%rowtype;
   trip_driver uuid;
@@ -1425,6 +1529,9 @@ alter publication supabase_realtime add table public.ride_requests;
 alter publication supabase_realtime add table public.trips;
 alter publication supabase_realtime add table public.notifications;
 alter publication supabase_realtime add table public.driver_profiles;
+-- Needed for the passenger app's GCash payment-status subscription
+-- (subscribeToTransactionStatus) to receive paid/failed updates.
+alter publication supabase_realtime add table public.transactions;
 
 -- =====================================================================
 -- END OF SCHEMA

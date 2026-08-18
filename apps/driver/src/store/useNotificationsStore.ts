@@ -1,12 +1,50 @@
 import { create } from 'zustand';
+import { markAllNotificationsRead, subscribeToNotifications, type NotificationRow } from '@trisakay/services';
 import type { NotificationItem } from '../types/notification';
+
+function toItem(row: NotificationRow): NotificationItem {
+  return { id: row.id, title: row.title, body: row.message, read: row.is_read, createdAt: row.created_at };
+}
+
+let stopRealtime: (() => void) | null = null;
 
 interface NotificationsState {
   items: NotificationItem[];
-  markAllRead: () => void;
+  error: string | null;
+  subscribe: (userId: string) => void;
+  unsubscribe: () => void;
+  markAllRead: () => Promise<void>;
 }
 
-export const useNotificationsStore = create<NotificationsState>()((set) => ({
+export const useNotificationsStore = create<NotificationsState>()((set, get) => ({
   items: [],
-  markAllRead: () => set((state) => ({ items: state.items.map((item) => ({ ...item, read: true })) })),
+  error: null,
+
+  subscribe: (userId) => {
+    stopRealtime?.();
+    stopRealtime = subscribeToNotifications(
+      userId,
+      (rows) => set({ items: rows.map(toItem), error: null }),
+      (message) => set({ error: message }),
+    );
+  },
+
+  unsubscribe: () => {
+    stopRealtime?.();
+    stopRealtime = null;
+    set({ items: [], error: null });
+  },
+
+  markAllRead: async () => {
+    // Optimistic — the Realtime subscription reconciles right behind this
+    // anyway, so the visual flip doesn't need to wait on the round-trip.
+    // But if the write fails, nothing changed server-side (no Realtime event
+    // fires to correct it), so the previous snapshot is restored below —
+    // otherwise the badge would stay silently wrong until the next restart.
+    const previousItems = get().items;
+    set({ items: previousItems.map((item) => ({ ...item, read: true })) });
+
+    const { error } = await markAllNotificationsRead();
+    if (error) set({ items: previousItems, error });
+  },
 }));

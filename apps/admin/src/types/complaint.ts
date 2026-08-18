@@ -15,8 +15,6 @@ export type ComplaintStatus =
   | 'resolved'
   | 'dismissed';
 
-export type ComplaintPriority = 'low' | 'normal' | 'high';
-
 export interface ComplaintRow {
   id: string;
   subject: string;
@@ -24,7 +22,6 @@ export interface ComplaintRow {
   againstUserName: string | null;
   category: ComplaintCategory;
   status: ComplaintStatus;
-  priority: ComplaintPriority;
   dhDirective: string | null; // FR-4.3a Department Head directive
   businessDaysElapsed: number; // feeds the FR-4.8 3-day ARTA flag
   createdAt: string;

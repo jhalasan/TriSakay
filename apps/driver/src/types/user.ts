@@ -4,4 +4,5 @@ export interface User {
   email: string;
   phone?: string;
   avatarUrl?: string;
+  accountStatus: 'active' | 'flagged' | 'suspended' | 'deactivated';
 }

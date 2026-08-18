@@ -3,19 +3,27 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { cancelRideRequest, subscribeToRideRequestStatus } from '@trisakay/services';
+import {
+  cancelRideRequest,
+  getTripDriverInfo,
+  subscribeToRideRequestStatus,
+  type TripDriverInfo,
+} from '@trisakay/services';
 import { Button, MapOverlaySheet, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { styles } from '../../src/styles/booking/finding-driver.styles';
 
 export default function FindingDriverScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
   const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
+  const setDriver = useBookingStore((state) => state.setDriver);
   const reset = useBookingStore((state) => state.reset);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -38,14 +46,28 @@ export default function FindingDriverScreen() {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
 
+    const applyDriverAndAdvance = (data?: TripDriverInfo | null) => {
+      if (cancelled) return;
+      setDriver({
+        id: data?.driverId ?? '',
+        name: data?.driverName ?? '',
+        plateNumber: data?.plateNo ?? '',
+        rating: data?.ratingAvg ?? null,
+        etaMinutes: null,
+      });
+      setTripStatus('matched');
+      router.replace('/booking/trip');
+    };
+
     unsubscribe = subscribeToRideRequestStatus(
       rideRequestId,
       (row) => {
-        if (cancelled) return;
+        if (cancelled || hasExitedRef.current) return;
         if (row.status === 'assigned') {
           hasExitedRef.current = true;
-          setTripStatus('matched');
-          router.replace('/booking/driver-found');
+          getTripDriverInfo(row.id)
+            .then(({ data }) => applyDriverAndAdvance(data))
+            .catch(() => applyDriverAndAdvance());
         } else if (row.status === 'cancelled') {
           hasExitedRef.current = true;
           reset();
@@ -105,14 +127,14 @@ export default function FindingDriverScreen() {
       </View>
 
       <MapOverlaySheet bottomInset={insets.bottom}>
-        <Text style={styles.title}>Finding a driver</Text>
+        <Text style={styles.title}>{t.findingDriver.title}</Text>
         <Text style={styles.subtitle}>
-          {dropoff ? `Looking for a tricycle to ${dropoff.label}` : 'Looking for a tricycle nearby'}
+          {dropoff ? `${t.findingDriver.lookingForTricycleTo} ${dropoff.label}` : t.findingDriver.lookingForTricycleNearby}
         </Text>
         {subscriptionError && <Text style={styles.cancelError}>{subscriptionError}</Text>}
         <View style={styles.cancelButton}>
           <Button
-            label="Cancel request"
+            label={t.findingDriver.cancelRequest}
             variant="outline"
             tone="neutral"
             fullWidth

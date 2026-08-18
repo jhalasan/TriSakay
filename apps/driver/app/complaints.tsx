@@ -1,10 +1,9 @@
-import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { KeyboardAvoidingView, Platform, RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Badge, Button, Card, EmptyState, Textarea, TextField, type BadgeTone } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
 import { useComplaintsStore, type ComplaintStatus } from '../src/store/useComplaintsStore';
 import { isNonEmpty } from '../src/utils/validation';
-import { wait } from '../src/mocks/delay';
 import { styles } from '../src/styles/complaints.styles';
 
 const STATUS_LABEL: Record<ComplaintStatus, string> = { open: 'Open', review: 'Review', closed: 'Closed' };
@@ -12,22 +11,29 @@ const STATUS_TONE: Record<ComplaintStatus, BadgeTone> = { open: 'blue', review: 
 
 export default function ComplaintsScreen() {
   const complaints = useComplaintsStore((state) => state.complaints);
-  const addComplaint = useComplaintsStore((state) => state.addComplaint);
+  const loading = useComplaintsStore((state) => state.loading);
+  const complaintsError = useComplaintsStore((state) => state.error);
+  const load = useComplaintsStore((state) => state.load);
+  const submit = useComplaintsStore((state) => state.submit);
   const [composing, setComposing] = useState(false);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    void load();
+  }, [load]);
 
   const canSubmit = isNonEmpty(subject) && isNonEmpty(message);
 
   async function handleSubmit() {
     if (!canSubmit) return;
     setSubmitting(true);
-    await wait(600);
-    addComplaint({ id: `c-${complaints.length + 1}`, subject, status: 'open' });
+    const ok = await submit(subject, message);
+    setSubmitting(false);
+    if (!ok) return;
     setSubject('');
     setMessage('');
-    setSubmitting(false);
     setComposing(false);
   }
 
@@ -42,15 +48,20 @@ export default function ComplaintsScreen() {
         }
       />
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
+        >
           {composing ? (
             <View style={styles.formGap}>
               <TextField label="Subject" placeholder="What's this about?" value={subject} onChangeText={setSubject} />
               <Textarea label="Message" placeholder="Describe what happened" value={message} onChangeText={setMessage} />
+              {complaintsError && <Text style={styles.error}>{complaintsError}</Text>}
               <Button label="Submit complaint" fullWidth disabled={!canSubmit} loading={submitting} onPress={handleSubmit} />
             </View>
           ) : complaints.length === 0 ? (
-            <EmptyState title="No complaints" message="Complaints you submit will appear here." />
+            loading ? null : <EmptyState title="No complaints" message="Complaints you submit will appear here." />
           ) : (
             <View style={styles.listContent}>
               {complaints.map((item) => (

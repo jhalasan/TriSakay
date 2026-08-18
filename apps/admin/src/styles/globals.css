@@ -134,3 +134,9 @@ a {
     grid-template-columns: 1fr;
   }
 }
+
+.form-error {
+  color: var(--danger);
+  font-size: 13px;
+  margin-bottom: var(--sp-sm);
+}

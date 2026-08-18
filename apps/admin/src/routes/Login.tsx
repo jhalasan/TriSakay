@@ -7,9 +7,9 @@ import styles from './Login.module.css';
 
 /**
  * Wireframe screen 1 "Admin log in" — centered card, EMAIL/PASSWORD, Log in.
- * Frontend-only this pass: useSessionStore.signIn() accepts any non-empty
- * credentials and signs in as the PSO Supervisor persona. Real Supabase
- * Auth + users.role lookup is docs/ADMIN_TODO.MD F1.
+ * Real Supabase Auth: useSessionStore.signIn() authenticates against
+ * auth.users, reads users.role, and rejects (signs back out) any role
+ * outside pso_staff/pso_supervisor/admin — this app is PSO-portal only.
  */
 export function Login() {
   const navigate = useNavigate();
@@ -22,11 +22,9 @@ export function Login() {
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
     setSubmitting(true);
-    await signIn(email, password);
+    const ok = await signIn(email, password);
     setSubmitting(false);
-    if (useSessionStore.getState().isAuthenticated) {
-      navigate('/', { replace: true });
-    }
+    if (ok) navigate('/', { replace: true });
   }
 
   return (

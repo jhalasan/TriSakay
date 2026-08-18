@@ -12,9 +12,17 @@ export interface FakeClientConfig {
     args: unknown
   ) => Promise<{ data: { session: unknown }; error: { message: string } | null }>;
   getSession?: () => Promise<{ data: { session: unknown } }>;
-  signOut?: () => Promise<void>;
+  signOut?: (args?: unknown) => Promise<void>;
+  resetPasswordForEmail?: (
+    email: string,
+    options?: unknown
+  ) => Promise<{ data: unknown; error: { message: string } | null }>;
+  verifyOtp?: (args: unknown) => Promise<{ data: { session: unknown }; error: { message: string } | null }>;
+  updateUser?: (args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
   userRow?: Record<string, unknown> | null;
   updateError?: string | null;
+  /** Receives the object passed to the `users` table's `.update()`, so tests can assert the payload shape. */
+  onUsersUpdate?: (row: unknown) => void;
   /** Rows `user_consents` selects resolve to. */
   consentRows?: FakeConsentRow[];
   consentSelectError?: string | null;
@@ -34,7 +42,12 @@ export interface FakeClientConfig {
   channel?: (name: string) => unknown;
   removeChannel?: (channel: unknown) => void;
   /** Override for `.functions.invoke(name, options)` — used by Edge Function callers. */
-  functionsInvoke?: (name: string, options: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+  functionsInvoke?: (
+    name: string,
+    options: unknown
+  ) => Promise<{ data: unknown; error: { message: string; context?: unknown } | null }>;
+  /** Override for `.rpc(fn, args)` — used by RPC-based service functions (e.g. get_trip_driver_info). */
+  rpc?: (fn: string, args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
 }
 
 export function createFakeSupabaseClient(config: FakeClientConfig = {}): SupabaseClient<Database> {
@@ -46,6 +59,9 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     signOut: config.signOut ?? (async () => {}),
     getSession: config.getSession ?? (async () => ({ data: { session: null } })),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
+    resetPasswordForEmail: config.resetPasswordForEmail ?? (async () => ({ data: {}, error: null })),
+    verifyOtp: config.verifyOtp ?? (async () => ({ data: { session: null }, error: null })),
+    updateUser: config.updateUser ?? (async () => ({ data: {}, error: null })),
   };
 
   const usersQuery = {
@@ -65,7 +81,10 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     select: usersQuery.select,
     eq: usersQuery.eq,
     single: usersQuery.single,
-    update: () => updateQuery,
+    update: (row: unknown) => {
+      config.onUsersUpdate?.(row);
+      return updateQuery;
+    },
   };
 
   // `.in()` terminates the consent query, so it is the only awaitable link.
@@ -102,6 +121,7 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     auth,
     from,
     functions,
+    rpc: config.rpc ?? (() => { throw new Error('rpc not configured on fake client'); }),
     channel: config.channel ?? (() => { throw new Error('channel not configured on fake client'); }),
     removeChannel: config.removeChannel ?? (() => {}),
   } as unknown as SupabaseClient<Database>;

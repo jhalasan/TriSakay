@@ -111,7 +111,7 @@ Each primitive lives in its own folder with a colocated `ComponentName.styles.ts
 
 Tiles come from `tile.openstreetmap.org`, OSMF's free community service, whose usage policy is binding and non-obvious:
 
-- **Attribution** — "© OpenStreetMap contributors" renders via Leaflet's own attribution control at 12px in `colors.inkSoft`. On `trip-in-progress` it moves bottom-left (`attributionLeft`) *and* is lifted by `bottomInset`, because `driverStrip` spans the bottom of the screen — moving it sideways alone still left it clipped.
+- **Attribution** — "© OpenStreetMap contributors" renders via Leaflet's own attribution control at 12px in `colors.inkSoft`.
 - **User-Agent** — `applicationNameForUserAgent` *appends* `TriSakayPassenger/1.0` to the platform UA. A generic library default is blocked without notice; replacing the UA wholesale risks CDN heuristics.
 - **Bounded panning** — riders can pan the maps, which is ordinary permitted use; the policy's actual target is bulk downloading. What keeps this honest is that an interactive map is clamped to a ~27 km box around the city (`maxBounds` at full viscosity) with a zoom floor of 12, so no single gesture can walk the viewport across the planet or pull a continent's worth of tiles.
 - **Caching** — `cacheEnabled` stays true; the policy requires honouring cache headers.

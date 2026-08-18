@@ -7,8 +7,9 @@ export type PassengerDiscount = Database['public']['Tables']['passenger_discount
 export interface ApplyForDiscountInput {
   userId: string;
   category: DiscountCategory;
-  /** A local file URI, e.g. from expo-image-picker. */
-  uri: string;
+  /** Local file URIs, e.g. from expo-image-picker. */
+  frontUri: string;
+  backUri: string;
   contentType?: 'image/jpeg' | 'image/png' | 'image/webp';
 }
 
@@ -22,36 +23,55 @@ const EXTENSION_BY_TYPE = {
   'image/webp': 'webp',
 } as const;
 
+async function uploadIdPhoto(userId: string, category: DiscountCategory, uri: string, side: 'front' | 'back', contentType: 'image/jpeg' | 'image/png' | 'image/webp') {
+  const response = await fetch(uri);
+  const arrayBuffer = await response.arrayBuffer();
+  const path = `${userId}/${category}-${side}-${Date.now()}.${EXTENSION_BY_TYPE[contentType]}`;
+  const { error } = await getSupabaseClient().storage.from('discount-ids').upload(path, arrayBuffer, { contentType });
+  return { path, error };
+}
+
 /**
- * Uploads the ID photo to the private `discount-ids` bucket under the
- * passenger's own folder, then files the `passenger_discounts` claim
- * (`status` defaults to `pending` — only PSO Supervisor/Admin can approve
- * it, per RLS). The unique `passenger_discounts_one_live_claim` index
- * rejects a second submission while one is still pending or already
- * approved, surfaced here as a plain error message rather than a thrown
- * Postgres exception.
+ * Uploads the front and back ID photos to the private `discount-ids`
+ * bucket under the passenger's own folder, then files the
+ * `passenger_discounts` claim (`status` defaults to `pending` — only PSO
+ * Supervisor/Admin can approve it, per RLS). Both sides are required so
+ * PSO reviewers can check the ID's authenticity. The unique
+ * `passenger_discounts_one_live_claim` index rejects a second submission
+ * while one is still pending or already approved, surfaced here as a
+ * plain error message rather than a thrown Postgres exception.
  */
 export async function applyForDiscount({
   userId,
   category,
-  uri,
+  frontUri,
+  backUri,
   contentType = 'image/jpeg',
 }: ApplyForDiscountInput): Promise<ApplyForDiscountResult> {
   try {
-    const response = await fetch(uri);
-    const arrayBuffer = await response.arrayBuffer();
-    const path = `${userId}/${category}-${Date.now()}.${EXTENSION_BY_TYPE[contentType]}`;
+    const front = await uploadIdPhoto(userId, category, frontUri, 'front', contentType);
+    if (front.error) return { error: front.error.message };
 
-    const { error: uploadError } = await getSupabaseClient()
-      .storage.from('discount-ids')
-      .upload(path, arrayBuffer, { contentType });
-    if (uploadError) return { error: uploadError.message };
+    const back = await uploadIdPhoto(userId, category, backUri, 'back', contentType);
+    if (back.error) {
+      // Best-effort — the front photo already landed in Storage and nothing
+      // will ever reference it if we stop here. Its own failure is swallowed
+      // on purpose: it must never mask the real error below.
+      await getSupabaseClient().storage.from('discount-ids').remove([front.path]).catch(() => {});
+      return { error: back.error.message };
+    }
 
     const { error: insertError } = await getSupabaseClient()
       .from('passenger_discounts')
-      .insert({ passenger_id: userId, category, id_photo_path: path });
+      .insert({
+        passenger_id: userId,
+        category,
+        id_photo_front_path: front.path,
+        id_photo_back_path: back.path,
+      });
 
     if (insertError) {
+      await getSupabaseClient().storage.from('discount-ids').remove([front.path, back.path]).catch(() => {});
       return {
         error: insertError.code === '23505'
           ? 'You already have a discount application pending or approved.'

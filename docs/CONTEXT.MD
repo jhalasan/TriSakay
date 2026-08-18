@@ -38,7 +38,7 @@ Three separate applications sharing one backend/database:
 | Driver app | React Native, Expo, TypeScript |
 | Admin app | React, Vite, TypeScript |
 | Backend | Supabase (PostgreSQL, Supabase Auth, Supabase Storage) |
-| Maps | OpenStreetMap + MapLibre |
+| Maps | OpenStreetMap + Leaflet |
 | State management | Zustand |
 | Forms | React Hook Form |
 | Validation | Zod |
@@ -129,6 +129,7 @@ Based on **General Santos City Ordinance No. 08, Series of 2023**: ₱15 for the
 - FR-3.2 Admin can update these parameters if the ordinance is amended, rather than hardcoding them permanently
 - FR-3.3 Final fare locked and passed to payment transaction upon ride completion
 - FR-3.4 *(New — worth citing in your Introduction/Related Literature)* Public enforcement of this ordinance is documented as inconsistent; automated, ordinance-based fare computation directly addresses this compliance gap and strengthens your project's social value justification
+- FR-3.5 *(New)* Fare = the ordinance rate only — **no app/booking surcharge or platform markup of any kind**. Tricycles operate under an MTOP franchise legally bound to the posted fare matrix (Ord. 21 Sec. 16(a): drivers must be "guided by the imposition of fares," "no illegal fare contracting"); an app-usage markup would itself be the overcharge FR-4's complaint process exists to catch, and would undercut FR-3.4's own compliance-gap justification. Ride-hailing dynamic/platform pricing (Grab/Uber) doesn't transfer here — those operate under the national TNVS/LTFRB framework, which has no equivalent in this ordinance-regulated, locally-franchised tricycle context. Any future sustainability/revenue model (e.g. an institutional PSO/LGU partnership or cooperative fee) is out of scope for this capstone and would not be a passenger-facing surcharge
 
 **Passenger fare discounts (FR-3.10–3.15):** per the ordinance's preserved discount privileges (RA 9994 senior citizen, RA 10754 PWD; extended to students for simplicity), a passenger may apply for a fare discount by uploading a valid ID photo in-app. PSO Supervisor/Admin reviews and approves/rejects — same reviewer authority as driver verification, mirroring that same document-review pattern rather than inventing a new workflow. Once approved, a flat **20%** discount is automatically applied to that passenger's fare on every ride. The rate is Admin-configurable (`fare_config.discount_rate_percent`), not hardcoded. A passenger with no approved discount pays full fare. PSO Supervisor/Admin may revoke an approved discount if found invalid. New use cases: **UC47 — Apply for Fare Discount** (Passenger, mirrors UC18), **UC48 — Review Discount Application** (PSO Supervisor+, mirrors UC37).
 
@@ -278,7 +279,7 @@ All other state changes (verification approval, complaint status, account suspen
 
 **Real-time layer:** Supabase Realtime (Postgres change subscriptions) drives ride status updates, request board updates, and availability changes — not polling.
 
-**External services:** PayMongo — GCash channel, kept in Test Mode only, no Live Mode activation (payments), OpenStreetMap + MapLibre (map rendering only — the matching heuristic itself uses lightweight trigonometry, not a routing engine call).
+**External services:** PayMongo — GCash channel, kept in Test Mode only, no Live Mode activation (payments), OpenStreetMap + Leaflet (map rendering only — the matching heuristic itself uses lightweight trigonometry, not a routing engine call).
 
 **Privacy-by-design for location data:** no background/idle tracking; a Driver's live GPS only transmits while availability is toggled ON; Passengers never see a Driver's exact live position pre-match; live location sharing is scoped to the matched Passenger-Driver pair and only for the active trip's duration; auto-off on trip completion/cancellation; only pickup/drop-off coordinates are persisted, not a continuous GPS trail — directly addressing panel feedback on privacy/misuse risk.
 
