@@ -88,3 +88,68 @@ export async function listActiveTricyclesForAdmin(): Promise<ListActiveTricycles
 
   return { data: rows, error: null };
 }
+
+export interface ActiveTricycleLocationCell {
+  lat: number;
+  lng: number;
+  count: number;
+  driverNames: string[];
+}
+
+export interface GetActiveTricycleLocationsResult {
+  data: ActiveTricycleLocationCell[];
+  error: string | null;
+}
+
+/** ~1.1km grid cell — never exposes a driver's literal coordinates. */
+function roundToGrid(n: number): number {
+  return Math.round(n * 100) / 100;
+}
+
+/**
+ * FR-5.1/5.2 map data. Coordinates are rounded to a coarse grid before
+ * anything else touches them, per NFR-2.5 — multiple drivers in the same
+ * cell collapse into one marker with a count, never individual exact pins.
+ * Only `is_available` drivers with a live fix are included; the same
+ * `clear_location_when_offline` trigger that nulls current_lat/current_lng
+ * on sign-off (docs/SCHEMA.MD §4.7) means an offline driver is naturally
+ * excluded here without an extra filter.
+ */
+export async function getActiveTricycleLocations(): Promise<GetActiveTricycleLocationsResult> {
+  const client = getSupabaseClient();
+
+  const { data: profiles, error: profilesError } = await client
+    .from('driver_profiles')
+    .select('user_id, current_lat, current_lng')
+    .eq('is_available', true);
+
+  if (profilesError) return { data: [], error: profilesError.message };
+
+  const located = (profiles ?? []).filter(
+    (p): p is typeof p & { current_lat: number; current_lng: number } => p.current_lat != null && p.current_lng != null
+  );
+  if (located.length === 0) return { data: [], error: null };
+
+  const driverIds = located.map((p) => p.user_id);
+  const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', driverIds);
+  if (usersError) return { data: [], error: usersError.message };
+
+  const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name]));
+
+  const cellByKey = new Map<string, ActiveTricycleLocationCell>();
+  for (const p of located) {
+    const lat = roundToGrid(p.current_lat);
+    const lng = roundToGrid(p.current_lng);
+    const key = `${lat},${lng}`;
+    const name = nameById.get(p.user_id) ?? '—';
+    const existing = cellByKey.get(key);
+    if (existing) {
+      existing.count += 1;
+      existing.driverNames.push(name);
+    } else {
+      cellByKey.set(key, { lat, lng, count: 1, driverNames: [name] });
+    }
+  }
+
+  return { data: [...cellByKey.values()], error: null };
+}
