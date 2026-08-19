@@ -1,0 +1,247 @@
+erDiagram
+  USERS ||--o| DRIVER_PROFILES : "has if driver"
+  DRIVER_PROFILES ||--o{ TRICYCLES : owns
+  DRIVER_PROFILES ||--o{ DRIVER_DOCUMENTS : uploads
+  TRICYCLES o|--o{ DRIVER_DOCUMENTS : "for (optional)"
+  USERS ||--o{ PASSENGER_DISCOUNTS : applies
+  DRIVER_PROFILES ||--o{ TRIPS : drives
+  TRICYCLES ||--o{ TRIPS : "used in"
+  USERS ||--o{ RIDE_REQUESTS : requests
+  TRIPS o|--o{ RIDE_REQUESTS : "carries (optional)"
+  BARANGAYS o|--o{ RIDE_REQUESTS : "pickup in (optional)"
+  RIDE_REQUESTS ||--o| TRANSACTIONS : "billed as"
+  RIDE_REQUESTS ||--o| RATINGS : "rated via"
+  USERS ||--o{ COMPLAINTS : submits
+  USERS o|--o{ COMPLAINTS : "named in (optional)"
+  RIDE_REQUESTS o|--o{ COMPLAINTS : "concerns (optional)"
+  USERS ||--o{ ACCOUNT_ACTIONS : "target of"
+  COMPLAINTS o|--o{ ACCOUNT_ACTIONS : "resulted in (optional)"
+  USERS ||--o{ NOTIFICATIONS : receives
+  USERS ||--o{ USER_CONSENTS : accepts
+  USERS ||--o{ EMERGENCY_ALERTS : triggers
+  RIDE_REQUESTS o|--o{ EMERGENCY_ALERTS : "during (optional)"
+
+  USERS {
+    uuid id PK
+    text full_name
+    text contact_no
+    text email
+    user_role role
+    account_status status
+    text avatar_url
+    timestamp created_at
+    timestamp updated_at
+  }
+  DRIVER_PROFILES {
+    uuid user_id PK, FK
+    text license_no UK
+    verification_status verification_status
+    uuid verified_by FK
+    timestamp verified_at
+    boolean is_available
+    numeric current_lat
+    numeric current_lng
+    numeric declared_dest_lat
+    numeric declared_dest_lng
+    timestamp location_updated_at
+    numeric rating_avg
+    int rating_count
+    timestamp created_at
+    timestamp updated_at
+  }
+  TRICYCLES {
+    uuid id PK
+    uuid driver_id FK
+    text plate_no UK
+    text body_no
+    tricycle_cluster cluster
+    int seat_capacity
+    verification_status verification_status
+    uuid verified_by FK
+    timestamp verified_at
+    text mtop_no UK
+    date mtop_expiry_date
+    boolean is_active
+    timestamp created_at
+    timestamp updated_at
+  }
+  DRIVER_DOCUMENTS {
+    uuid id PK
+    uuid driver_id FK
+    uuid tricycle_id FK
+    document_type doc_type
+    text storage_path
+    verification_status status
+    uuid reviewed_by FK
+    timestamp reviewed_at
+    text remarks
+    timestamp created_at
+  }
+  PASSENGER_DISCOUNTS {
+    uuid id PK
+    uuid passenger_id FK
+    discount_category category
+    text id_photo_path
+    verification_status status
+    uuid reviewed_by FK
+    timestamp reviewed_at
+    text remarks
+    timestamp submitted_at
+  }
+  TRIPS {
+    uuid id PK
+    uuid driver_id FK
+    uuid tricycle_id FK
+    trip_status status
+    numeric origin_lat
+    numeric origin_lng
+    numeric declared_dest_lat
+    numeric declared_dest_lng
+    int max_seats
+    timestamp started_at
+    timestamp completed_at
+    timestamp created_at
+    timestamp updated_at
+  }
+  BARANGAYS {
+    uuid id PK
+    text name UK
+    tricycle_cluster cluster
+    boolean is_split
+    text notes
+    timestamp created_at
+  }
+  RIDE_REQUESTS {
+    uuid id PK
+    uuid passenger_id FK
+    uuid trip_id FK
+    numeric pickup_lat
+    numeric pickup_lng
+    text pickup_label
+    uuid pickup_barangay_id FK
+    numeric dest_lat
+    numeric dest_lng
+    text dest_label
+    int seats_requested
+    numeric distance_km
+    numeric estimated_fare
+    numeric final_fare
+    boolean discount_applied
+    numeric discount_percent
+    ride_status status
+    payment_method preferred_method
+    timestamp requested_at
+    timestamp assigned_at
+    timestamp picked_up_at
+    timestamp completed_at
+    timestamp cancelled_at
+    text cancel_reason
+  }
+  TRANSACTIONS {
+    uuid id PK
+    uuid ride_request_id FK, UK
+    numeric amount
+    payment_method method
+    payment_status status
+    text paymongo_session_id UK
+    jsonb paymongo_payload
+    uuid cash_confirmed_by FK
+    timestamp cash_confirmed_at
+    timestamp created_at
+    timestamp updated_at
+  }
+  RATINGS {
+    uuid id PK
+    uuid ride_request_id FK, UK
+    uuid passenger_id FK
+    uuid driver_id FK
+    int stars
+    text comment
+    timestamp created_at
+  }
+  COMPLAINTS {
+    uuid id PK
+    uuid submitted_by FK
+    uuid against_user_id FK
+    uuid ride_request_id FK
+    complaint_category category
+    text subject
+    text message
+    complaint_status status
+    uuid triaged_by FK
+    timestamp triaged_at
+    uuid dh_reviewed_by FK
+    timestamp dh_reviewed_at
+    text dh_directive
+    uuid mediation_scheduled_by FK
+    timestamp mediation_scheduled_at
+    timestamp mediation_meeting_at
+    text mediation_location
+    uuid resolved_by FK
+    timestamp resolved_at
+    text resolution_notes
+    timestamp created_at
+    timestamp updated_at
+  }
+  ACCOUNT_ACTIONS {
+    uuid id PK
+    uuid target_user_id FK
+    account_action_type action_type
+    uuid performed_by FK
+    text reason
+    uuid complaint_id FK
+    timestamp created_at
+  }
+  FARE_CONFIG {
+    uuid id PK
+    numeric base_fare
+    numeric base_km
+    numeric rate_per_km
+    numeric discount_rate_percent
+    text ordinance_ref
+    timestamp effective_from
+    boolean is_active
+    uuid updated_by FK
+    timestamp created_at
+  }
+  SYSTEM_SETTINGS {
+    uuid id PK
+    numeric bearing_tolerance_deg
+    numeric detour_ratio_max
+    numeric search_radius_km
+    numeric low_rating_threshold
+    boolean is_active
+    uuid updated_by FK
+    timestamp updated_at
+  }
+  NOTIFICATIONS {
+    uuid id PK
+    uuid user_id FK
+    notification_type type
+    text title
+    text message
+    uuid ref_id
+    boolean is_read
+    timestamp created_at
+  }
+  USER_CONSENTS {
+    uuid id PK
+    uuid user_id FK
+    text policy_type
+    text policy_version
+    timestamp accepted_at
+  }
+  EMERGENCY_ALERTS {
+    uuid id PK
+    uuid ride_request_id FK
+    uuid triggered_by FK
+    emergency_role triggered_role
+    uuid counterpart_id FK
+    numeric lat
+    numeric lng
+    emergency_status status
+    uuid reviewed_by FK
+    timestamp reviewed_at
+    text notes
+    timestamp created_at
+  }

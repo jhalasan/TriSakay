@@ -145,13 +145,22 @@ create type account_action_type as enum (
   'deactivate'
 );
 
+-- FR-12: emergency/SOS. Bidirectional — either party in a ride can trigger.
+create type emergency_role as enum ('passenger', 'driver');
+create type emergency_status as enum ('logged', 'reviewed', 'closed');
+
+-- 'emergency_alert' added via a separate `alter type ... add value` migration
+-- (applied_migration: add_emergency_alert_types) — Postgres requires ADD VALUE
+-- to commit before the new label can be referenced, so it cannot land in the
+-- same statement as this CREATE TYPE.
 create type notification_type as enum (
   'ride_status',
   'verification_status',
   'complaint_status',
   'payment_status',
   'discount_status',    -- FR-3.10-3.15 / UC48 fare-discount review outcome
-  'franchise_expiring'  -- FR-1.7/FR-7.5 MTOP franchise-expiry notification job
+  'franchise_expiring', -- FR-1.7/FR-7.5 MTOP franchise-expiry notification job
+  'emergency_alert'     -- FR-12/UC49-50 emergency alert, immediate PSO Staff+ notification
 );
 
 
@@ -642,6 +651,41 @@ comment on table public.user_consents is
   'Append-only. A new row per (re-)acceptance — supports proving consent to a specific policy version at a specific time.';
 
 
+-- 3.7 emergency_alerts ---------------------------------------------------
+-- FR-12. Deliberately NOT the complaints table: different urgency,
+-- different pipeline. This is an incident log for PSO's follow-up/
+-- accountability record, not the actual safety mechanism — the button's
+-- primary action (dialing 911/PNP) happens entirely client-side, on the
+-- phone's native dialer, and has no representation here at all. What
+-- this table captures is only what software can usefully capture:
+-- who, where, with whom, when.
+--
+-- Bidirectional by design (either Passenger or Driver may trigger),
+-- mirroring the existing bidirectional complaints model.
+--
+-- The counterpart (the other party on the ride) is deliberately NOT
+-- given read access via RLS below — telling a potentially dangerous
+-- counterpart mid-ride that an alert was filed against them could
+-- escalate the situation. Only the triggering user and PSO can see it.
+create table public.emergency_alerts (
+  id              uuid primary key default gen_random_uuid(),
+  ride_request_id uuid references public.ride_requests(id) on delete set null,
+  triggered_by    uuid not null references public.users(id) on delete cascade,
+  triggered_role  emergency_role not null,
+  counterpart_id  uuid references public.users(id) on delete set null,
+  lat             double precision not null,
+  lng             double precision not null,
+  status          emergency_status not null default 'logged',
+  reviewed_by     uuid references public.users(id) on delete set null,
+  reviewed_at     timestamptz,
+  notes           text,
+  created_at      timestamptz not null default now()
+);
+
+comment on table public.emergency_alerts is
+  'FR-12 incident log only, not on the complaints/ARTA pipeline. Real safety action is the client-side 911/PNP dial-out, not represented in this schema.';
+
+
 -- ---------------------------------------------------------------------
 -- 4. FUNCTIONS & TRIGGERS
 -- ---------------------------------------------------------------------
@@ -705,15 +749,19 @@ create trigger trg_auth_user_created
 -- 4.3 fare computation (Ordinance No. 08, s. 2023) --------------------
 -- P15 for the first 4 km, +P1 per succeeding km, per passenger seat.
 -- If p_passenger_id has an approved passenger_discounts row (senior/PWD/
--- student), the active discount_rate_percent is applied (FR-3.10-3.13).
+-- student), the discount applies to ONLY that one verified seat, not the
+-- whole multi-seat total (FR-3.13a) — RA 9994/10754 are personal
+-- entitlements, and companion seats in a group booking are never
+-- individually verified, so they can't legitimately receive a discount.
 create or replace function public.compute_fare(
   p_distance_km  numeric,
   p_seats        smallint default 1,
   p_passenger_id uuid default null
-) returns numeric language plpgsql stable as $$
+) returns numeric language plpgsql stable set search_path = public as $$
 declare
   cfg  public.fare_config%rowtype;
-  per_passenger numeric;
+  base_fare_per_seat numeric;
+  total_fare numeric;
   is_eligible boolean;
 begin
   select * into cfg from public.fare_config where is_active limit 1;
@@ -722,12 +770,12 @@ begin
   end if;
 
   if p_distance_km <= cfg.base_km then
-    per_passenger := cfg.base_fare;
+    base_fare_per_seat := cfg.base_fare;
   else
-    per_passenger := cfg.base_fare + ceil(p_distance_km - cfg.base_km) * cfg.rate_per_km;
+    base_fare_per_seat := cfg.base_fare + ceil(p_distance_km - cfg.base_km) * cfg.rate_per_km;
   end if;
 
-  per_passenger := per_passenger * p_seats;
+  total_fare := base_fare_per_seat * p_seats;
 
   if p_passenger_id is not null then
     select exists(
@@ -736,11 +784,13 @@ begin
     ) into is_eligible;
 
     if is_eligible then
-      per_passenger := per_passenger * (1 - cfg.discount_rate_percent / 100);
+      -- Subtract one seat's worth of discount only — the verified
+      -- requester's own portion, not the whole group's fare.
+      total_fare := total_fare - (base_fare_per_seat * cfg.discount_rate_percent / 100);
     end if;
   end if;
 
-  return round(per_passenger, 2);
+  return round(total_fare, 2);
 end $$;
 
 
@@ -1114,6 +1164,45 @@ comment on function public.business_days_since is
   'Used by v_overdue_complaints for the 3-business-day ARTA target (PSO-MTPS-PR-03 Sec. C, FR-4.8). Known simplification: no holiday calendar.';
 
 
+-- 4.10 emergency alert -> immediate PSO notification (FR-12) -------------
+-- Fires the moment a passenger or driver triggers an alert. Notifies
+-- EVERY PSO Staff+ account, not just supervisors — visibility on a
+-- safety event shouldn't be gated the way review/approval actions are.
+-- security definer so it can write notifications for users other than
+-- whoever triggered the alert.
+--
+-- Important scope note (belongs in the thesis limitations, not just
+-- this comment): this makes the alert visible to PSO as fast as the
+-- database can manage it — it does NOT mean PSO is staffed to see it
+-- in real time, 24/7. The button's actual safety mechanism is the
+-- client-side dial-out to 911/PNP, which this trigger has nothing to
+-- do with.
+create or replace function public.notify_pso_on_emergency()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  insert into public.notifications (user_id, type, title, message, ref_id)
+  select
+    u.id,
+    'emergency_alert'::notification_type,
+    'Emergency alert',
+    format('%s triggered an emergency alert during a ride. Location: %s, %s.',
+           initcap(new.triggered_role::text), new.lat, new.lng),
+    new.id
+  from public.users u
+  where u.role in ('pso_staff', 'pso_supervisor', 'admin');
+  return new;
+end;
+$$;
+
+create trigger trg_emergency_notify_pso
+  after insert on public.emergency_alerts
+  for each row execute function public.notify_pso_on_emergency();
+
+
 -- ---------------------------------------------------------------------
 -- 5. INDEXES
 -- ---------------------------------------------------------------------
@@ -1156,6 +1245,9 @@ create index idx_actions_target            on public.account_actions (target_use
 
 create index idx_notifications_unread      on public.notifications (user_id, is_read)
   where not is_read;
+
+create index idx_emergency_status          on public.emergency_alerts (status);
+create index idx_emergency_triggered_by    on public.emergency_alerts (triggered_by);
 
 
 -- ---------------------------------------------------------------------
@@ -1293,6 +1385,7 @@ alter table public.fare_config      enable row level security;
 alter table public.system_settings  enable row level security;
 alter table public.notifications    enable row level security;
 alter table public.user_consents    enable row level security;
+alter table public.emergency_alerts enable row level security;
 
 -- 7.1 users -----------------------------------------------------------
 create policy users_select_self on public.users
@@ -1506,6 +1599,20 @@ create policy consents_insert_own on public.user_consents
 create policy consents_read on public.user_consents
   for select using (user_id = auth.uid() or public.is_pso());
 
+-- 7.13 emergency_alerts -------------------------------------------------
+-- Deliberately NOT counterpart-readable (see table comment, 3.7): the
+-- other party on the ride never gets access to a filed alert, only the
+-- person who triggered it and PSO. Only Supervisor+ can mark it
+-- reviewed/closed — same review-tier pattern as complaints and ratings.
+create policy emergency_insert_own on public.emergency_alerts
+  for insert with check (triggered_by = auth.uid());
+
+create policy emergency_read on public.emergency_alerts
+  for select using (triggered_by = auth.uid() or public.is_pso());
+
+create policy emergency_review_supervisor on public.emergency_alerts
+  for update using (public.is_supervisor()) with check (public.is_supervisor());
+
 
 -- ---------------------------------------------------------------------
 -- 8. SEED DATA
@@ -1532,6 +1639,8 @@ alter publication supabase_realtime add table public.driver_profiles;
 -- Needed for the passenger app's GCash payment-status subscription
 -- (subscribeToTransactionStatus) to receive paid/failed updates.
 alter publication supabase_realtime add table public.transactions;
+-- PSO screens can subscribe for immediate visibility, same reasoning (FR-12).
+alter publication supabase_realtime add table public.emergency_alerts;
 
 -- =====================================================================
 -- END OF SCHEMA

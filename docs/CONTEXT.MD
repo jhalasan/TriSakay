@@ -86,7 +86,7 @@ docs/
 
 ---
 
-## 4. Functional Requirements (FR-1 to FR-9) — LOCKED
+## 4. Functional Requirements (FR-1 to FR-12) — LOCKED
 
 ### FR-1: User Account & Profile Management — UPDATED (verification scope clarified per Ordinance No. 21, s.2024)
 - FR-1.1 Register (Passenger, Driver)
@@ -108,12 +108,12 @@ Two matching moments, both governed by the same system-assisted route-corridor h
 - FR-2.2 Passenger sets destination — either by selecting a point on the map or by searching for the location by name
 - FR-2.3 System computes estimated fare before request confirmation (includes FR-3)
 - FR-2.4 Passenger submits ride request
-- FR-2.5 System matches request to available driver(s) via a two-stage check: **(1) hard cluster-authorization filter** — per Ordinance No. 37, Series of 2018, Section 119, a tricycle's assigned cluster (Red/White/Apple Green/Melting Pot) must be authorized to serve the pickup barangay's cluster (colored clusters serve only their own + Melting Pot; Melting Pot units serve Melting Pot only) — followed by **(2) the bearing/distance-tolerance heuristic** (soft check), both run server-side in a Supabase Edge Function
+- FR-2.5 System matches request to available driver(s) via a two-stage check: **(1) hard cluster-authorization filter** — per Ordinance No. 37, Series of 2018, Section 119, a tricycle's assigned cluster (Red/White/Apple Green/Melting Pot — **Melting Pot is the cluster covering the city center, including City Hall, where every driver is authorized to operate regardless of their own assigned cluster color**) must be authorized to serve the pickup barangay's cluster (colored clusters serve only their own + Melting Pot; Melting Pot units serve Melting Pot only) — followed by **(2) the bearing/distance-tolerance heuristic** (soft check), both run server-side in a Supabase Edge Function
   - FR-2.5a **Pre-trip Request Board**: before starting a trip, Driver declares intended direction; system surfaces compatible pending requests
   - FR-2.5b Driver may select multiple passengers from the board, up to seat capacity, before departing
   - FR-2.5c **Mid-trip pickup**: once trip is active, system continues surfacing new compatible requests for driver to accept, subject to remaining seats
   - FR-2.5d Driver retains final discretion to accept/decline at both stages
-  - FR-2.5e *(Scope note)* Cluster authorization is confirmed to apply system-wide, not just the pilot locale — pilot **testing** is limited to Barangay Dadiangas West (entirely within the Melting Pot cluster, so the constraint doesn't bind during testing itself), but the app is architecturally built to extend to other barangays/clusters
+  - FR-2.5e *(Scope note)* Cluster authorization is confirmed to apply system-wide, not just the pilot locale — pilot **testing** is limited to Barangay Dadiangas West (entirely within the Melting Pot cluster, so the constraint doesn't bind during testing itself), but the app is architecturally built to extend to other barangays/clusters. *(Melting Pot's definition above is confirmed from local/lived knowledge of GenSan's tricycle system, not from directly reading Ordinance No. 37's text — fine for design purposes, but worth pulling the primary source if your paper wants a hard citation for it.)*
 - FR-2.6 Driver toggles availability (online/offline)
 - FR-2.7 Available driver(s) notified of incoming requests
 - FR-2.8 Driver accepts/declines requests
@@ -125,13 +125,14 @@ Two matching moments, both governed by the same system-assisted route-corridor h
 
 ### FR-3: Fare Computation — RESOLVED
 Based on **General Santos City Ordinance No. 08, Series of 2023**: ₱15 for the first 4 kilometers, plus ₱1 per succeeding kilometer, per passenger (applies to tricycles under the white, apple green, and red clusters citywide).
-- FR-3.1 Estimated fare = ₱15 (first 4 km) + ₱1 × (km beyond 4), computed per passenger based on trip distance
+- FR-3.1 Estimated fare = ₱15 (first 4 km) + ₱1 × (km beyond 4), computed per passenger based on trip distance. **Confirmed:** for a single `ride_request` with `seats_requested` > 1 (a group/companions traveling together to the same destination under one request), the computed fare is multiplied by `seats_requested` — already implemented this way in `compute_fare()` and in the live app
 - FR-3.2 Admin can update these parameters if the ordinance is amended, rather than hardcoding them permanently
 - FR-3.3 Final fare locked and passed to payment transaction upon ride completion
 - FR-3.4 *(New — worth citing in your Introduction/Related Literature)* Public enforcement of this ordinance is documented as inconsistent; automated, ordinance-based fare computation directly addresses this compliance gap and strengthens your project's social value justification
 - FR-3.5 *(New)* Fare = the ordinance rate only — **no app/booking surcharge or platform markup of any kind**. Tricycles operate under an MTOP franchise legally bound to the posted fare matrix (Ord. 21 Sec. 16(a): drivers must be "guided by the imposition of fares," "no illegal fare contracting"); an app-usage markup would itself be the overcharge FR-4's complaint process exists to catch, and would undercut FR-3.4's own compliance-gap justification. Ride-hailing dynamic/platform pricing (Grab/Uber) doesn't transfer here — those operate under the national TNVS/LTFRB framework, which has no equivalent in this ordinance-regulated, locally-franchised tricycle context. Any future sustainability/revenue model (e.g. an institutional PSO/LGU partnership or cooperative fee) is out of scope for this capstone and would not be a passenger-facing surcharge
 
 **Passenger fare discounts (FR-3.10–3.15):** per the ordinance's preserved discount privileges (RA 9994 senior citizen, RA 10754 PWD; extended to students for simplicity), a passenger may apply for a fare discount by uploading a valid ID photo in-app. PSO Supervisor/Admin reviews and approves/rejects — same reviewer authority as driver verification, mirroring that same document-review pattern rather than inventing a new workflow. Once approved, a flat **20%** discount is automatically applied to that passenger's fare on every ride. The rate is Admin-configurable (`fare_config.discount_rate_percent`), not hardcoded. A passenger with no approved discount pays full fare. PSO Supervisor/Admin may revoke an approved discount if found invalid. New use cases: **UC47 — Apply for Fare Discount** (Passenger, mirrors UC18), **UC48 — Review Discount Application** (PSO Supervisor+, mirrors UC37).
+- FR-3.13a *(New — resolves the group-fare/discount interaction)* In a group booking (`seats_requested` > 1), the discount applies to **only the verified requester's own seat** — not the whole group's fare. RA 9994/10754 are personal entitlements, and companion seats are never individually verified, so they can't legitimately receive a discount either. `compute_fare()` subtracts one seat's worth of discount from the multi-seat total, rather than discounting the total.
 
 ### FR-4: Complaint Management — UPDATED per PSO-MTPS-PR-03 (Processing of Complaints Involving Tricycle Drivers)
 Real PSO process: verify → forward to Department Head → DH directs staff to contact both parties → both parties are scheduled for and attend an **MTFRB (Motorized Tricycle Franchising and Regulatory Board) mediation meeting** for final settlement — resolution is a mediated outcome, not a self-contained digital PSO decision. **Scope note:** PSO's real-world intake spans several channels (social media, letters, phone/Facebook, a Google feedback form — PSO-MTPS-PR-03 Sec. E); TriSakay's complaint feature only covers complaints tied to an app-registered user (i.e. arising from TriSakay-mediated rides), the same app-only boundary already drawn for driver verification vs. franchise-granting. Other channels stay on PSO's existing process, untouched.
@@ -144,6 +145,7 @@ Real PSO process: verify → forward to Department Head → DH directs staff to 
 - FR-4.6 PSO Supervisor/Admin records the mediation outcome/settlement details after the meeting occurs, setting final status to resolved or dismissed
 - FR-4.7 Complaint records and any submitted evidence are handled per RA 10173 (Data Privacy Act of 2012) — same confidentiality standard the PSO's own complaint form already cites, which TriSakay's Privacy Policy (FR-11.2) is designed to mirror rather than invent independently
 - FR-4.8 *(New)* On submission, the Passenger/Driver is shown PSO's actual service standard: "processed within 3 working days" (PSO-MTPS-PR-03 Sec. C, an ARTA-mandated Simple Transaction) — a real, citable commitment, unlike the driver-verification turnaround (FR-1.5/Section 10) where no such figure exists yet. Covers submission through mediation being scheduled, not through the MTFRB meeting itself, since that date depends on MTFRB's own calendar
+- FR-4.9 *(New — distinguishes the `'safety'` complaint category from FR-12)* Complaint category `'safety'` is for reporting a safety concern **after the fact** — something that doesn't need immediate intervention, filed for PSO's record/accountability, and going through the normal 3-day/DH/mediation pipeline above. It is not an emergency channel. If the complaint form is opened with an active trip in progress and `'safety'` is selected, the UI nudges (without blocking) toward FR-12's Emergency Alert instead: *"If you're in immediate danger right now, use the Emergency Alert button instead."*
 
 ### FR-5: Monitoring & Reporting
 - FR-5.1 Real-time ride activity dashboard (PSO Staff+)
@@ -163,15 +165,17 @@ Real PSO process: verify → forward to Department Head → DH directs staff to 
 - FR-7.3 Complaint status update notifications
 - FR-7.4 Payment status notifications
 - FR-7.5 *(New)* MTOP franchise expiry notifications (see FR-1.7) — sent by a daily scheduled job, not user-triggered
+- FR-7.6 *(New)* Emergency alert notifications — sent to every PSO Staff+ account immediately on trigger (see FR-12.4)
 
 ### FR-8: System Settings
-- FR-8.1 Admin configures fare parameters, zone/route tolerances, notification templates
+- FR-8.1 Admin configures fare parameters and zone/route tolerances
 
 ### FR-9: Online Payment — UPDATED (PayMongo, Test Mode)
 Confirmed: online GCash payments route through **PayMongo** as the payment gateway (GCash channel), kept permanently in **PayMongo Test Mode** — Live Mode activation is out of scope for this prototype, since driver payouts are simulated and no real money moves through the system (see FR-9.6). **Post-paid** (passenger pays after trip completion), **cash remains an option** alongside GCash.
 
 - FR-9.1 Passenger selects payment method: cash or GCash, post-paid
 - FR-9.2 On ride completion, if GCash was selected, system creates a PayMongo Checkout Session (test mode) for the final fare; passenger completes payment through PayMongo's hosted checkout page; PayMongo confirms payment via a signature-verified server-side webhook — payment status is never trusted from the client
+- FR-9.2a *(New — clarifies "ride completion" in FR-9.2/9.9 for pooled trips)* Each passenger's payment closes independently, at **that passenger's own drop-off** — once the Driver confirms cash received (FR-9.9) or the GCash webhook confirms (FR-9.2) — not when the Driver's overall trip finally ends. A Driver can keep carrying other passengers after an earlier passenger's `ride_request` is already paid and closed; nothing waits for the whole trip to finish. `transactions` is 1:1 with `ride_request_id`, not `trip_id`, precisely for this reason
 - FR-9.3 System generates/stores transaction record (amount, method, status, timestamp, linked ride, PayMongo checkout session ID)
 - FR-9.4 Ride payment status: pending, paid, failed, refunded
 - FR-9.5 Passenger views payment/transaction history
@@ -193,12 +197,27 @@ New use cases: **UC43 — Rate Driver** (Passenger, post-trip) and **UC44 — Re
 
 ### FR-11: Terms of Service & Privacy Consent — LOCKED
 - FR-11.1 On first launch/registration, system presents Terms of Service and Privacy Policy; user must explicitly accept before proceeding to any core feature
-- FR-11.2 Privacy Policy discloses what data is collected and shared: name/contact (visible to matched Driver/Passenger during active ride only), live location (ride-scoped per NFR-2.5), ride/payment history (visible to PSO for oversight), payment details (shared with PayMongo for processing only)
+- FR-11.2 Privacy Policy discloses what data is collected and shared: name/contact (visible to matched Driver/Passenger during active ride only), live location (ride-scoped per NFR-2.5), ride/payment history (visible to PSO for oversight), payment details (shared with PayMongo for processing only), **and — since FR-12 — an emergency alert's live location and counterpart identity, shared with PSO beyond the routine ride-scoped disclosure**
 - FR-11.3 System records consent as an auditable event (user, policy version, timestamp), not just a one-time popup with no trace
 - FR-11.4 On app start, if location permission is not granted, system prompts the user to enable it before allowing location-dependent features, with a plain explanation of why it's needed
 - FR-11.5 If the user declines, location-dependent features are disabled gracefully with a retry option, rather than crashing or failing silently
 
 New use cases: **UC45 — Accept Terms of Service & Privacy Policy** (all roles, first launch/registration); **UC46 — Grant Location Permission** (Passenger, Driver, app startup). This is the disclosure/consent layer sitting on top of the technical enforcement already defined in NFR-2.5.
+
+---
+
+### FR-12: Emergency/SOS — NEW
+Bidirectional (Passenger, Driver) — either party may trigger during an active trip. Two deliberately separate mechanisms, not one: **(1) a real emergency-services dial-out**, which is the feature's actual safety mechanism, and **(2) a PSO-facing incident log**, which supports follow-up/accountability but is not itself a monitored rescue channel. Not routed through the complaints/ARTA pipeline (FR-4) — different urgency, different process. **Distinction from the `'safety'` complaint category:** this is for active/ongoing danger happening right now; a safety concern noticed after the fact belongs in a complaint instead (see FR-4.9).
+
+- FR-12.1 Passenger or Driver may trigger an emergency alert during an active trip
+- FR-12.2 Primary action: deep-links to the phone's native dialer, pre-filled with a real emergency number (911 national hotline and/or PNP GenSan) — this is the feature's actual safety mechanism; TriSakay does not attempt to build its own emergency response system
+- FR-12.3 In parallel, system logs an incident record (triggering user/role, counterpart, ride_request_id, live coordinates, timestamp) for PSO's post-event review — a separate table from `complaints`, not on the 3-day ARTA/mediation pipeline
+- FR-12.4 PSO Staff+ can view emergency alerts (broad visibility, not gated to Supervisor+ — the point is fast visibility on a safety event, unlike verification/discount approvals)
+- FR-12.5 PSO Supervisor+ marks an alert reviewed/closed, with optional notes
+- FR-12.6 The counterpart on the ride is never given access to the alert record — avoids tipping off a potentially dangerous party mid-ride
+- FR-12.7 *(Stated limitation, not a capability — belongs in the thesis' Limitations section)* PSO review of emergency alerts is not real-time/24-7 monitored in this pilot; the feature's actual safety guarantee is the client-side dial-out to 911/PNP, not a TriSakay-mediated response
+
+New use cases: **UC49 — Trigger Emergency Alert** (Passenger, Driver, during active trip); **UC50 — Review Emergency Alert** (view: PSO Staff+; mark reviewed: PSO Supervisor+). Brings the total to 50 use cases.
 
 ---
 
@@ -209,7 +228,7 @@ New use cases: **UC45 — Accept Terms of Service & Privacy Policy** (all roles,
 - **NFR-2 Security:** Supabase Auth (hashed credentials); RBAC-enforced feature access; HTTPS/TLS for all PayMongo communication, webhook signature verification, no storage of raw payment credentials (PayMongo's hosted checkout handles card/e-wallet data — TriSakay never touches it directly); access-controlled document storage via Supabase Storage RLS. Full PCI-DSS compliance/pen testing is out of scope.
   - **NFR-2.5 (privacy):** real-time location data is only collected/shared while a Driver is marked available or while a ride is actively in progress between matched parties — never broadcast to unmatched users, never tracked continuously/in the background. This directly satisfies panel feedback on privacy risk (toggleable, purpose-limited tracking, data minimization — no persistent GPS trail logging beyond pickup/drop-off coordinates).
 - **NFR-3 Usability:** simple, low-literacy-friendly UI; Filipino/English labeling; evaluated via a standard usability instrument (e.g., SUS) with actual commuters/drivers/PSO staff.
-- **NFR-4 Reliability:** graceful handling of failure cases (no match found, GCash failure, lost GPS); best-effort uptime during testing/demo periods, no formal SLA.
+- **NFR-4 Reliability:** graceful handling of failure cases (no match found, GCash failure, lost GPS, emergency alert fails to save/send); best-effort uptime during testing/demo periods, no formal SLA. For the emergency alert specifically: the "Call 911/PNP" action (FR-12.2) must remain reachable even if the PSO incident-log write fails — the dial-out never depends on the app's own backend succeeding.
 - **NFR-5 Scalability:** architecture designed to reasonably extend to additional barangays/zones, though only tested in Barangay Dadiangas West — a "designed-for," not "load-tested," claim.
 - **NFR-6 Maintainability:** strict TypeScript, SOLID principles, UI/business-logic separation, shared packages for fare calc/validation/types.
 - **NFR-7 Portability:** Passenger and Driver apps support **both Android and iOS** (React Native/Expo, EAS Build for both); Admin app compatible with latest two versions of Chrome/Edge/Firefox.
@@ -232,6 +251,9 @@ PSO sub-roles are a simple fixed enum (not a configurable permissions table), si
 | Submit complaint | ✅ | ✅ | ❌ | ❌ | ❌ |
 | Triage complaints (first pass) | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Resolve escalated complaints | ❌ | ❌ | ❌ | ✅ | ✅ |
+| Trigger emergency alert | ✅ | ✅ | ❌ | ❌ | ❌ |
+| View emergency alerts | ❌ | ❌ | ✅ | ✅ | ✅ |
+| Mark emergency alert reviewed/closed | ❌ | ❌ | ❌ | ✅ | ✅ |
 | View ride monitoring dashboard | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Flag account | ❌ | ❌ | ✅ | ✅ | ✅ |
 | Suspend/deactivate account | ❌ | ❌ | ❌ | ✅ | ✅ |
@@ -244,22 +266,22 @@ PSO sub-roles are a simple fixed enum (not a configurable permissions table), si
 
 ## 7. System Features — LOCKED
 
-**Passenger App:** Registration & Login, Profile Management, GPS Pickup Selection, Destination Selection (map or search), Fare Estimation, Ride Request, Ride Status Tracking, Driver Info View, Ride History, Payment (Cash/GCash), Payment History, Rate Driver, Apply for Fare Discount, Complaint Submission, Notifications, Settings, Logout
+**Passenger App:** Registration & Login, Profile Management, GPS Pickup Selection, Destination Selection (map or search), Fare Estimation, Ride Request, Ride Status Tracking, Driver Info View, Ride History, Payment (Cash/GCash), Payment History, Rate Driver, Apply for Fare Discount, Trigger Emergency Alert, Complaint Submission, Notifications, Settings, Logout
 
-**Driver App:** Registration & Login, Profile Management, Document Upload, Verification Status Tracking, Availability Toggle, Request Board, Accept/Decline Ride, Passenger Info View, Trip History, Earnings (simulated), View Own Ratings, Complaint Submission/Management, Notifications, Logout
+**Driver App:** Registration & Login, Profile Management, Document Upload, Verification Status Tracking, Availability Toggle, Request Board, Accept/Decline Ride, Passenger Info View, Trip History, Earnings (simulated), View Own Ratings, Trigger Emergency Alert, Complaint Submission/Management, Notifications, Logout
 
 **Admin Web App:**
-- Shared (PSO Staff, Supervisor, Admin): Login, Dashboard, Complaint Handling, Reports & Analytics (view), Transaction Oversight (view), View Driver Rating Trends
-- PSO Supervisor + Admin: Driver/Tricycle Verification Review, Account Suspension/Deactivation, Review Flagged Ratings, Review Fare Discount Applications
+- Shared (PSO Staff, Supervisor, Admin): Login, Dashboard, Complaint Handling, View Emergency Alerts, Reports & Analytics (view), Transaction Oversight (view), View Driver Rating Trends
+- PSO Supervisor + Admin: Driver/Tricycle Verification Review, Account Suspension/Deactivation, Review Flagged Ratings, Review Fare Discount Applications, Mark Emergency Alert Reviewed/Closed
 - Admin only: PSO Account Management, System Settings, Full User Management
 
 ---
 
 ## 8. Use Case Summary — LOCKED
 
-44 total use cases (UC1–UC44) across 5 actors, with generalization: PSO Supervisor inherits PSO Staff use cases; Administrator inherits PSO Supervisor use cases. Key relationships: UC6 (Request Ride) «include»s UC5 (Estimate Fare); UC21 (Select Passengers Pre-Trip) «extend»s UC20 (View Request Board); UC23 (Accept Mid-Trip Pickup) «extend»s UC22 (Start Trip). UC43 (Rate Driver, Passenger) and UC44 (Review Flagged Rating, PSO Supervisor+) were added for the Rating & Merit System (FR-10). UC45 (Accept Terms of Service & Privacy Policy) and UC46 (Grant Location Permission) were added for FR-11. UC47 (Apply for Fare Discount, Passenger) and UC48 (Review Discount Application, PSO Supervisor+) were added for the fare discount feature, bringing the total to 48.
+50 total use cases (UC1–UC50) across 5 actors, with generalization: PSO Supervisor inherits PSO Staff use cases; Administrator inherits PSO Supervisor use cases. Key relationships: UC6 (Request Ride) «include»s UC5 (Estimate Fare); UC21 (Select Passengers Pre-Trip) «extend»s UC20 (View Request Board); UC23 (Accept Mid-Trip Pickup) «extend»s UC22 (Start Trip). UC43 (Rate Driver, Passenger) and UC44 (Review Flagged Rating, PSO Supervisor+) were added for the Rating & Merit System (FR-10). UC45 (Accept Terms of Service & Privacy Policy) and UC46 (Grant Location Permission) were added for FR-11. UC47 (Apply for Fare Discount, Passenger) and UC48 (Review Discount Application, PSO Supervisor+) were added for the fare discount feature. UC49 (Trigger Emergency Alert, Passenger/Driver) and UC50 (Review Emergency Alert, PSO Staff+/Supervisor+) were added for FR-12, bringing the total to 50.
 
-Full actor-by-actor use case list and all 42 formal specifications (actor, precondition, main flow, alternate flow, postcondition, business rules) were drafted in-session — priority specs covered UC6, UC10, UC20–23 in depth (matching, request board, payment), with the remaining 36 specified at standard depth. Diagrams produced: package-level use case diagrams (3, grouped by app) and full individual-oval UML-style use case diagrams (3, one per app) matching classic notation.
+Full actor-by-actor use case list and formal specifications (actor, precondition, main flow, alternate flow, postcondition, business rules) were drafted for all 50 use cases — priority specs covered UC6, UC10, UC20–23 in depth (matching, request board, payment), with the remaining specified at standard depth; UC43–UC50 (rating, consent, discount, emergency) were added in later rounds at the same standard depth. Diagrams produced: package-level use case diagrams (3, grouped by app) and full individual-oval UML-style use case diagrams (3, one per app) matching classic notation.
 
 ---
 
@@ -289,17 +311,19 @@ All other state changes (verification approval, complaint status, account suspen
 
 ## 10. Data & Documents Still Needed from PSO (and Drivers/Passengers)
 
-1. **Regulatory documents:** franchise/permit requirements, official or informal fare matrix/ordinance, existing complaint-handling procedure, driver code of conduct.
+1. **Regulatory documents:** ~~franchise/permit requirements~~ (obtained — Ordinance No. 21 + MTOP Conditions PDF, drives FR-1.4/1.4a/1.7), official or informal fare matrix/ordinance (obtained — see Resolved below), ~~existing complaint-handling procedure~~ (obtained — PSO-MTPS-PR-03, drives FR-4), **driver code of conduct — still genuinely needed, nothing uploaded matches this.**
 2. **Operational data:** current tricycle route/terminal/zoning structure (resolves FR-2.5 tolerance assumptions), typical trip distances/durations, number of active drivers/units, peak-hour demand patterns.
-3. **PSO organizational structure:** actual PSO Staff vs. Supervisor responsibilities (validates the two-tier RBAC model), existing reporting requirements to city government.
+3. **PSO organizational structure:** PSO-MTPS-PR-03 names "Personnel In-charge," "DH," and MTFRB as real roles, but doesn't explicitly confirm your two-tier PSO Staff/Supervisor model maps onto those cleanly — still worth validating directly.
 4. **Pain points (SOP Objective 1):** interviews/surveys with PSO personnel, drivers, and passengers on current problems, disputes, and any existing informal monitoring tools.
 5. **Ethics compliance:** all data-gathering instruments must go through the same ERC-approved consent process already used for the study's other instruments.
 
 **Items still pending this data gathering:**
 - FR-2.5 matching tolerance parameters (bearing angle, detour ratio) — architecture/approach is locked (Option 1 heuristic), only the numeric thresholds are open.
-- *(New)* Typical document verification turnaround time (how long PSO actually takes to review a driver's submitted documents) — not yet known, so the app's copy does not commit to a specific number of days (see FR-1.5, Section 11 item 7).
+- Typical document verification turnaround time (how long PSO actually takes to review a driver's submitted documents) — not yet known, so the app's copy does not commit to a specific number of days (see FR-1.5, Section 11 item 7).
+- Driver code of conduct document.
+- PSO Staff-vs-Supervisor role validation against real org structure.
 
-**Resolved:** FR-3 fare formula — now based on General Santos City Ordinance No. 08, Series of 2023 (₱15 first 4 km + ₱1/km thereafter).
+**Resolved:** FR-3 fare formula (Ordinance No. 08); FR-1 franchise/verification documentation (Ordinance No. 21 + MTOP Conditions); FR-4 complaint process (PSO-MTPS-PR-03).
 
 ---
 
@@ -313,6 +337,9 @@ A low-fidelity wireframe kit (42 screens: Driver 14, Passenger 17, Admin 11) was
 5. *(New)* On the Driver's "Documents & tricycle" upload screen, add a hint under the Driver's License upload: "Must be a Professional license (Code A or A1)" — an ordinary license is not valid for MTH under Ord. 21 Sec. 16 (see FR-1.4).
 6. *(New)* On the Admin/PSO Verification Review screen, add input fields for **MTOP number** and **MTOP expiry date**, filled in by the reviewer while cross-checking the uploaded Franchise/Permit document (see FR-1.4a).
 7. *(New)* On the Driver's post-submission confirmation screen, use neutral, no-SLA copy — e.g. "Your documents are under PSO review. We'll notify you once a decision is made." — rather than committing to a specific number of working days, since actual PSO turnaround time isn't known yet (see FR-1.5, Section 10).
+8. *(New — FR-12 was never checked against the wireframe kit)* Add an **Emergency/SOS button** to the Driver and Passenger Active Trip screens, always visible while a trip is active (FR-12.1). Recommend requiring a brief hold rather than a single tap, to avoid accidental triggers — standard practice for this kind of control (see iOS/Android's own SOS gestures).
+9. *(New)* The button opens a dedicated screen, not an instant auto-dial: a prominent **"Call 911 / PNP"** button (the actual safety action, FR-12.2) plus a separate confirmation line, **"PSO has been notified of your location"** (FR-12.3) — two distinct actions shown clearly apart, not blended into one, so it's obvious which one is the real help and which is the record-keeping.
+10. *(New)* Add an **Emergency Alerts** screen to the Admin app: list + detail view (trigger time, triggering role, location, linked ride) visible to PSO Staff+; a **"Mark Reviewed"** action visible only to PSO Supervisor+ — same role-gating pattern as item 3.
 
 Already correctly reflected in the kit (no changes needed): map/search destination selection, seat counter, post-paid GCash/Cash screen, 1–5 star one-directional rating with comment, privacy-aware ride monitoring caption, ordinance-labeled fare matrix, PSO Staff/Supervisor role tags in User Management.
 
@@ -338,16 +365,16 @@ Two algorithmic flowcharts, detailed enough to hand directly to implementation:
 
 **Core entities:** `users` (id, name, contact, role enum, created_at) → `driver_profiles` (1:1, user_id FK, license_no, verification_status, rating_avg) → `tricycles` (1:many, driver_id FK, plate_no, cluster, mtop_no, mtop_expiry_date, verification_status) → `driver_documents` (1:many, driver_id FK, tricycle_id nullable FK, doc_type, status, reviewed_by FK→users) and `trips` (1:many, driver_id FK, status, timestamps) → `ride_requests` (many:1 to trips via trip_id nullable FK, many:1 to users via passenger_id FK; pickup/destination coords, seats_requested, fare, status enum) → `transactions` (1:1, ride_request_id FK, amount, method, status, paymongo_session_id) and `ratings` (1:1, ride_request_id FK, stars 1-5, comment).
 
-**Support entities (all reference `users`):** `complaints` (submitted_by, against_user_id nullable, ride_request_id nullable, category, status, dh_directive, resolved_by nullable), `fare_config` (base_fare, base_km, rate_per_km, updated_by), `system_settings` (bearing_tolerance, detour_ratio_max, updated_by), `notifications` (user_id, type, message, read_status).
+**Support entities (all reference `users`):** `complaints` (submitted_by, against_user_id nullable, ride_request_id nullable, category, status, dh_directive, resolved_by nullable), `emergency_alerts` (triggered_by, triggered_role, counterpart_id nullable, ride_request_id nullable, lat, lng, status, reviewed_by nullable), `fare_config` (base_fare, base_km, rate_per_km, updated_by), `system_settings` (bearing_tolerance, detour_ratio_max, updated_by), `notifications` (user_id, type, message, read_status).
 
 No many-to-many relationships exist in this domain, so no junction tables are needed — all relationships are one-to-one or one-to-many via foreign keys, consistent with the project's normalization requirement.
 
 ---
 
-## 15. Next Phases (Not Yet Started)
+## 15. Next Phases
 
-12. Database Schema
-13. Folder Architecture
+12. ~~Database Schema~~ — substantially built (`trisakay_schema.sql`); treat as living/iterative alongside CONTEXT.md rather than "not started."
+13. ~~Folder Architecture~~ — monorepo layout already sketched in Section 3; refine as the real build progresses.
 14. API Design
 15. Development Roadmap
 16. Sprint Planning
