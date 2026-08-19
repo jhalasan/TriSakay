@@ -15,6 +15,9 @@ export function RidesOverTimeChart({ data, loading = false }: RidesOverTimeChart
   if (loading) {
     return <div className={styles.loading}>Loading…</div>;
   }
+  if (data.length === 0) {
+    return <div className={styles.loading}>No rides recorded yet.</div>;
+  }
 
   return (
     <ResponsiveContainer width="100%" height={220}>

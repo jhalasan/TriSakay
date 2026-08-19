@@ -78,7 +78,9 @@ export function Dashboard() {
   const [activity, setActivity] = useState<RecentTripActivityRow[]>([]);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [ridesPerDay, setRidesPerDay] = useState<RidesPerDayPoint[]>([]);
+  const [ridesError, setRidesError] = useState<string | null>(null);
   const [statusBreakdown, setStatusBreakdown] = useState<TripStatusCount[]>([]);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -103,7 +105,9 @@ export function Dashboard() {
       setActivity(activityResult.data);
       setActivityError(activityResult.error);
       setRidesPerDay(ridesResult.data);
+      setRidesError(ridesResult.error);
       setStatusBreakdown(statusResult.data);
+      setStatusError(statusResult.error);
       setLoading(false);
     })();
     return () => {
@@ -126,10 +130,12 @@ export function Dashboard() {
       <div className="two-col">
         <div className="panel">
           <div className="panel-title">Rides Over Time (Week)</div>
+          {ridesError && <div className="form-error">{ridesError}</div>}
           <RidesOverTimeChart data={ridesPerDay} loading={loading} />
         </div>
         <div className="panel">
           <div className="panel-title">Ride Status</div>
+          {statusError && <div className="form-error">{statusError}</div>}
           <RideStatusChart data={statusBreakdown} loading={loading} />
         </div>
       </div>

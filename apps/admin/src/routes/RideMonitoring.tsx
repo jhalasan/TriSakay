@@ -16,11 +16,13 @@ export function RideMonitoring() {
   const [tricycles, setTricycles] = useState<ActiveTricycleRow[]>([]);
   const [cells, setCells] = useState<ActiveTricycleLocationCell[]>([]);
   const [mapLoading, setMapLoading] = useState(true);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
     listActiveTricycles().then((res) => setTricycles(res.data));
     getActiveTricycleLocations().then((res) => {
       setCells(res.data);
+      setMapError(res.error);
       setMapLoading(false);
     });
   }, []);
@@ -35,6 +37,7 @@ export function RideMonitoring() {
             </div>
             <Badge label="Live" tone="success" />
           </div>
+          {mapError && <div className="form-error">{mapError}</div>}
           <LiveMap cells={cells} loading={mapLoading} />
           <p className={styles.caption}>
             Locations shown are coarse and update only while a Driver is available or on an active trip — no continuous GPS trail is

@@ -30,7 +30,9 @@ export function Reports() {
   const [summary, setSummary] = useState<ReportSummary | null>(null);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [ridesRevenue, setRidesRevenue] = useState<RidesRevenuePoint[]>([]);
+  const [ridesRevenueError, setRidesRevenueError] = useState<string | null>(null);
   const [peakHours, setPeakHours] = useState<PeakHourBucket[]>([]);
+  const [peakHoursError, setPeakHoursError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -44,7 +46,9 @@ export function Reports() {
       setSummary(s.data);
       setTransactions(t.data);
       setRidesRevenue(rr.data);
+      setRidesRevenueError(rr.error);
       setPeakHours(ph.data);
+      setPeakHoursError(ph.error);
       setLoading(false);
     });
   }, [dateRange]);
@@ -101,10 +105,12 @@ export function Reports() {
       <div className="two-col">
         <div className="panel">
           <div className="panel-title">Rides / Revenue</div>
+          {ridesRevenueError && <div className="form-error">{ridesRevenueError}</div>}
           <RidesRevenueChart data={ridesRevenue} loading={loading} />
         </div>
         <div className="panel">
           <div className="panel-title">Peak Hours</div>
+          {peakHoursError && <div className="form-error">{peakHoursError}</div>}
           <PeakHoursChart data={peakHours} loading={loading} />
         </div>
       </div>

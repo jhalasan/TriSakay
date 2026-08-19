@@ -15,6 +15,9 @@ export function PeakHoursChart({ data, loading = false }: PeakHoursChartProps) {
   if (loading) {
     return <div className={styles.loading}>Loading…</div>;
   }
+  if (data.length === 0) {
+    return <div className={styles.loading}>No rides in this range.</div>;
+  }
 
   return (
     <ResponsiveContainer width="100%" height={220}>
