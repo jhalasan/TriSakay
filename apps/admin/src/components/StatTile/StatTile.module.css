@@ -4,9 +4,35 @@
   gap: var(--sp-sm);
   padding: var(--sp-lg);
   border: 1px solid var(--line);
+  border-left: 3px solid var(--line);
   border-radius: var(--r-md);
   background: var(--panel);
   box-shadow: var(--shadow-card);
+  transition: box-shadow 150ms ease;
+}
+
+.tile:hover {
+  box-shadow: 0 6px 16px rgba(0, 46, 96, 0.14);
+}
+
+.neutral {
+  border-left-color: var(--line-strong);
+}
+
+.primary {
+  border-left-color: var(--primary);
+}
+
+.success {
+  border-left-color: var(--success);
+}
+
+.warn {
+  border-left-color: var(--warn);
+}
+
+.danger {
+  border-left-color: var(--danger);
 }
 
 .label {

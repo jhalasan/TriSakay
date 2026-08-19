@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
-import { PlaceholderBox } from '../components/PlaceholderBox';
+import { LiveMap } from '../components/LiveMap';
 import { Avatar } from '../components/Avatar';
 import { Badge } from '../components/Badge';
-import { listActiveTricycles } from '../services/monitoring';
+import { getActiveTricycleLocations, listActiveTricycles, type ActiveTricycleLocationCell } from '../services/monitoring';
 import type { ActiveTricycleRow } from '../types/ride';
 import styles from './RideMonitoring.module.css';
 
@@ -14,9 +14,17 @@ import styles from './RideMonitoring.module.css';
  */
 export function RideMonitoring() {
   const [tricycles, setTricycles] = useState<ActiveTricycleRow[]>([]);
+  const [cells, setCells] = useState<ActiveTricycleLocationCell[]>([]);
+  const [mapLoading, setMapLoading] = useState(true);
+  const [mapError, setMapError] = useState<string | null>(null);
 
   useEffect(() => {
     listActiveTricycles().then((res) => setTricycles(res.data));
+    getActiveTricycleLocations().then((res) => {
+      setCells(res.data);
+      setMapError(res.error);
+      setMapLoading(false);
+    });
   }, []);
 
   return (
@@ -29,7 +37,8 @@ export function RideMonitoring() {
             </div>
             <Badge label="Live" tone="success" />
           </div>
-          <PlaceholderBox label="Live map · active tricycles" height={420} />
+          {mapError && <div className="form-error">{mapError}</div>}
+          <LiveMap cells={cells} loading={mapLoading} />
           <p className={styles.caption}>
             Locations shown are coarse and update only while a Driver is available or on an active trip — no continuous GPS trail is
             persisted (NFR-2.5).

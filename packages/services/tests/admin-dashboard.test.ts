@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { getAdminDashboardStats, listExpiringFranchises, listOverdueComplaints, listRecentTripActivity } from '../src/admin/dashboard.ts';
+import { getAdminDashboardStats, getRidesPerDay, getTripStatusBreakdown, listExpiringFranchises, listOverdueComplaints, listRecentTripActivity } from '../src/admin/dashboard.ts';
 
 function countQuery(count: number) {
   return {
@@ -279,6 +279,101 @@ test('listRecentTripActivity returns { data: [], error } on a query error', asyn
   } as any);
 
   const { data, error } = await listRecentTripActivity();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
+});
+
+test('getRidesPerDay groups completed ride_requests into calendar-day buckets, oldest first', async () => {
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0).toISOString();
+  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 9, 0, 0).toISOString();
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: async () => ({
+                data: [{ requested_at: yesterday }, { requested_at: today }, { requested_at: today }],
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await getRidesPerDay();
+  assert.equal(error, null);
+  assert.equal(data.length, 7);
+  assert.equal(data[5].count, 1); // yesterday
+  assert.equal(data[6].count, 2); // today
+});
+
+test('getRidesPerDay returns 7 zero-count days (not an error) when nothing happened this week', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) }),
+  } as any);
+
+  const { data, error } = await getRidesPerDay();
+  assert.equal(error, null);
+  assert.equal(data.length, 7);
+  assert.ok(data.every((d) => d.count === 0));
+});
+
+test('getRidesPerDay returns { data: [], error } when the query fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+  } as any);
+
+  const { data, error } = await getRidesPerDay();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
+});
+
+test('getTripStatusBreakdown issues one count query per TripStatus and maps them', async () => {
+  const captured: { column: string; value: unknown }[] = [];
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      assert.equal(table, 'trips');
+      return {
+        select: () => ({
+          eq: async (column: string, value: unknown) => {
+            captured.push({ column, value });
+            const counts: Record<string, number> = { forming: 2, active: 5, completed: 421, cancelled: 34 };
+            return { count: counts[value as string], error: null };
+          },
+        }),
+      };
+    },
+  } as any);
+
+  const { data, error } = await getTripStatusBreakdown();
+  assert.equal(error, null);
+  assert.deepEqual(data, [
+    { status: 'forming', count: 2 },
+    { status: 'active', count: 5 },
+    { status: 'completed', count: 421 },
+    { status: 'cancelled', count: 34 },
+  ]);
+  assert.ok(captured.every((c) => c.column === 'status'));
+});
+
+test('getTripStatusBreakdown returns { data: [], error } when any one count query errors', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({
+      select: () => ({
+        eq: async (_column: string, value: unknown) =>
+          value === 'active' ? { count: null, error: { message: 'connection refused' } } : { count: 1, error: null },
+      }),
+    }),
+  } as any);
+
+  const { data, error } = await getTripStatusBreakdown();
   assert.deepEqual(data, []);
   assert.equal(error, 'connection refused');
 });

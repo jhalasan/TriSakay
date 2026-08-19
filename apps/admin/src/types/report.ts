@@ -18,3 +18,14 @@ export interface ReportSummary {
   averageFare: number;
   peakHourLabel: string;
 }
+
+export interface RidesRevenuePoint {
+  day: string;
+  rides: number;
+  revenue: number;
+}
+
+export interface PeakHourBucket {
+  hourLabel: string;
+  count: number;
+}

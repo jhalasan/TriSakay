@@ -93,6 +93,7 @@ a {
   border-radius: var(--r-md);
   padding: var(--sp-lg);
   box-shadow: var(--shadow-card);
+  transition: box-shadow 150ms ease, border-color 150ms ease;
 }
 
 /* A DataTable already provides its own raised-surface shadow; nesting it
@@ -102,11 +103,11 @@ a {
 }
 
 .panel-title {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.03em;
-  color: var(--ink-soft);
-  text-transform: uppercase;
+  font-family: var(--font-brand);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--ink);
   margin-bottom: var(--sp-md);
 }
 

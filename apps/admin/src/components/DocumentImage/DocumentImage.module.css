@@ -1,0 +1,11 @@
+.image {
+  width: 100%;
+  object-fit: cover;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  display: block;
+}
+
+.fallback {
+  width: 100%;
+}

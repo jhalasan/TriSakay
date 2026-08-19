@@ -38,7 +38,7 @@ export async function getAdminReportSummary(sinceIso: string): Promise<GetAdminR
   const totalRides = rides?.length ?? 0;
   const totalRevenue = (paidTxns ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
   const averageFare = totalRides > 0 ? totalRevenue / totalRides : 0;
-  const peakHourLabel = totalRides > 0 ? peakTwoHourWindowLabel(rides!.map((r) => r.requested_at)) : '—';
+  const peakHourLabel = totalRides > 0 ? peakLabelFromHistogram(twoHourHistogram(rides!.map((r) => r.requested_at))) : '—';
 
   return { data: { totalRides, totalRevenue, averageFare, peakHourLabel }, error: null };
 }
@@ -48,17 +48,25 @@ function emptySummary(): AdminReportSummary {
 }
 
 /** Uses local wall-clock hours (not UTC) deliberately — matches lib/format.ts's en-PH date/time rendering, so "peak hour" means the PSO's own local time, not a UTC bucket. */
-function peakTwoHourWindowLabel(timestamps: string[]): string {
+function twoHourHistogram(timestamps: string[]): number[] {
   const counts = new Array(12).fill(0); // 12 two-hour buckets covering a day
   for (const ts of timestamps) {
     const hour = new Date(ts).getHours();
     counts[Math.floor(hour / 2)]++;
   }
+  return counts;
+}
+
+function peakLabelFromHistogram(counts: number[]): string {
   let peakBucket = 0;
   for (let i = 1; i < counts.length; i++) {
     if (counts[i] > counts[peakBucket]) peakBucket = i;
   }
-  const startHour = peakBucket * 2;
+  return bucketLabel(peakBucket);
+}
+
+function bucketLabel(bucketIndex: number): string {
+  const startHour = bucketIndex * 2;
   return `${formatHour(startHour)}–${formatHour(startHour + 2)}`;
 }
 
@@ -156,4 +164,70 @@ export async function listTransactionsForAdmin(sinceIso: string): Promise<ListTr
   });
 
   return { data: rows, error: null };
+}
+
+export interface PeakHourBucket {
+  hourLabel: string;
+  count: number;
+}
+
+export interface GetPeakHourHistogramResult {
+  data: PeakHourBucket[];
+  error: string | null;
+}
+
+/** "Peak Hours" report chart — the same 12 two-hour buckets getAdminReportSummary's peakHourLabel is derived from, exposed in full. */
+export async function getPeakHourHistogram(sinceIso: string): Promise<GetPeakHourHistogramResult> {
+  const client = getSupabaseClient();
+  const { data, error } = await client.from('ride_requests').select('requested_at').eq('status', 'completed').gte('requested_at', sinceIso);
+
+  if (error) return { data: [], error: error.message };
+
+  const counts = twoHourHistogram((data ?? []).map((r) => r.requested_at));
+  return { data: counts.map((count, i) => ({ hourLabel: bucketLabel(i), count })), error: null };
+}
+
+export interface RidesRevenuePoint {
+  day: string;
+  rides: number;
+  revenue: number;
+}
+
+export interface GetRidesRevenueOverTimeResult {
+  data: RidesRevenuePoint[];
+  error: string | null;
+}
+
+/** "Rides / Revenue" report chart — completed ride_requests and paid transactions in range, bucketed by local calendar day, oldest first. */
+export async function getRidesRevenueOverTime(sinceIso: string): Promise<GetRidesRevenueOverTimeResult> {
+  const client = getSupabaseClient();
+
+  const [{ data: rides, error: ridesError }, { data: paidTxns, error: txnsError }] = await Promise.all([
+    client.from('ride_requests').select('requested_at').eq('status', 'completed').gte('requested_at', sinceIso),
+    client.from('transactions').select('amount, created_at').eq('status', 'paid').gte('created_at', sinceIso),
+  ]);
+
+  if (ridesError) return { data: [], error: ridesError.message };
+  if (txnsError) return { data: [], error: txnsError.message };
+
+  const ridesByDay = new Map<string, number>();
+  for (const r of rides ?? []) {
+    const key = new Date(r.requested_at).toLocaleDateString('en-CA');
+    ridesByDay.set(key, (ridesByDay.get(key) ?? 0) + 1);
+  }
+
+  const revenueByDay = new Map<string, number>();
+  for (const t of paidTxns ?? []) {
+    const key = new Date(t.created_at).toLocaleDateString('en-CA');
+    revenueByDay.set(key, (revenueByDay.get(key) ?? 0) + Number(t.amount));
+  }
+
+  const dayKeys = [...new Set([...ridesByDay.keys(), ...revenueByDay.keys()])].sort();
+  const data = dayKeys.map((key) => ({
+    day: new Date(key).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }),
+    rides: ridesByDay.get(key) ?? 0,
+    revenue: revenueByDay.get(key) ?? 0,
+  }));
+
+  return { data, error: null };
 }

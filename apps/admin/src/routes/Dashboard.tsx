@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { StatTile } from '../components/StatTile';
-import { PlaceholderBox } from '../components/PlaceholderBox';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
+import { RideStatusChart, RidesOverTimeChart } from '../components/charts';
 import {
   getDashboardStats,
+  getRidesPerDay,
+  getTripStatusBreakdown,
   listExpiringFranchises,
   listOverdueComplaints,
   listRecentTripActivity,
@@ -14,6 +16,8 @@ import {
   type ExpiringFranchiseRow,
   type OverdueComplaintRow,
   type RecentTripActivityRow,
+  type RidesPerDayPoint,
+  type TripStatusCount,
 } from '../services/dashboard';
 import { formatRelativeTime, titleCaseLabel } from '../lib/format';
 
@@ -73,16 +77,22 @@ export function Dashboard() {
   const [expiringError, setExpiringError] = useState<string | null>(null);
   const [activity, setActivity] = useState<RecentTripActivityRow[]>([]);
   const [activityError, setActivityError] = useState<string | null>(null);
+  const [ridesPerDay, setRidesPerDay] = useState<RidesPerDayPoint[]>([]);
+  const [ridesError, setRidesError] = useState<string | null>(null);
+  const [statusBreakdown, setStatusBreakdown] = useState<TripStatusCount[]>([]);
+  const [statusError, setStatusError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [statsResult, overdueResult, expiringResult, activityResult] = await Promise.all([
+      const [statsResult, overdueResult, expiringResult, activityResult, ridesResult, statusResult] = await Promise.all([
         getDashboardStats(),
         listOverdueComplaints(),
         listExpiringFranchises(),
         listRecentTripActivity(),
+        getRidesPerDay(),
+        getTripStatusBreakdown(),
       ]);
       if (cancelled) return;
 
@@ -94,6 +104,10 @@ export function Dashboard() {
       setExpiringError(expiringResult.error);
       setActivity(activityResult.data);
       setActivityError(activityResult.error);
+      setRidesPerDay(ridesResult.data);
+      setRidesError(ridesResult.error);
+      setStatusBreakdown(statusResult.data);
+      setStatusError(statusResult.error);
       setLoading(false);
     })();
     return () => {
@@ -105,22 +119,24 @@ export function Dashboard() {
     <div className="page">
       {statsError && <div className="form-error">{statsError}</div>}
       <div className="stat-grid">
-        <StatTile label="Total Drivers" value={loading ? '—' : (stats?.totalDrivers ?? '—')} />
-        <StatTile label="Active Rides" value={loading ? '—' : (stats?.activeRides ?? '—')} />
-        <StatTile label="Pending Verifications" value={loading ? '—' : (stats?.pendingVerifications ?? '—')} />
-        <StatTile label="Open Complaints" value={loading ? '—' : (stats?.openComplaints ?? '—')} />
-        <StatTile label="Overdue Complaints" value={loading ? '—' : overdue.length} hint="Past 3-business-day ARTA target" />
-        <StatTile label="Expiring Franchises" value={loading ? '—' : expiring.length} hint="MTOP renewal due within 30 days" />
+        <StatTile label="Total Drivers" value={loading ? '—' : (stats?.totalDrivers ?? '—')} tone="primary" />
+        <StatTile label="Active Rides" value={loading ? '—' : (stats?.activeRides ?? '—')} tone="success" />
+        <StatTile label="Pending Verifications" value={loading ? '—' : (stats?.pendingVerifications ?? '—')} tone="warn" />
+        <StatTile label="Open Complaints" value={loading ? '—' : (stats?.openComplaints ?? '—')} tone="danger" />
+        <StatTile label="Overdue Complaints" value={loading ? '—' : overdue.length} hint="Past 3-business-day ARTA target" tone="danger" />
+        <StatTile label="Expiring Franchises" value={loading ? '—' : expiring.length} hint="MTOP renewal due within 30 days" tone="warn" />
       </div>
 
       <div className="two-col">
         <div className="panel">
           <div className="panel-title">Rides Over Time (Week)</div>
-          <PlaceholderBox label="Rides over time — chart" />
+          {ridesError && <div className="form-error">{ridesError}</div>}
+          <RidesOverTimeChart data={ridesPerDay} loading={loading} />
         </div>
         <div className="panel">
           <div className="panel-title">Ride Status</div>
-          <PlaceholderBox label="Ride status — chart" />
+          {statusError && <div className="form-error">{statusError}</div>}
+          <RideStatusChart data={statusBreakdown} loading={loading} />
         </div>
       </div>
 

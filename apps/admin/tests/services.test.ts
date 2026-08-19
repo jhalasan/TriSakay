@@ -5,8 +5,10 @@ import { flagDriver, listDrivers, reactivateDriver, suspendDriver } from '../src
 import { blockPassenger, listPassengers, unblockPassenger } from '../src/services/passengers.ts';
 import { approveVerification, listVerificationCases, rejectVerification, updateVerificationCase } from '../src/services/verification.ts';
 import { listComplaints, recordDhDirective, setComplaintStatus } from '../src/services/complaints.ts';
-import { listActiveTricycles } from '../src/services/monitoring.ts';
-import { getReportSummary, listTransactions } from '../src/services/reports.ts';
+import { listActiveTricycles, getActiveTricycleLocations } from '../src/services/monitoring.ts';
+import { getReportSummary, listTransactions, getRidesRevenueOverTime, getPeakHourHistogram, dateRangeSinceIso } from '../src/services/reports.ts';
+import { getRidesPerDay, getTripStatusBreakdown } from '../src/services/dashboard.ts';
+import { getSignedDocumentUrl } from '../src/services/documents.ts';
 import { addPsoUser, disablePsoUser, enablePsoUser, listPsoUsers } from '../src/services/psoUsers.ts';
 import { getFareConfig, getFeatureToggles, getSystemSettings, updateFareConfig } from '../src/services/settings.ts';
 
@@ -454,4 +456,112 @@ test('updateFareConfig() rejects an incomplete patch instead of silently sending
 
   const { error } = await updateFareConfig({ baseFare: 18 });
   assert.equal(error, 'Base fare, base distance, and rate per km are all required.');
+});
+
+test('getRidesPerDay() resolves 7 daily buckets with no error', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) }),
+  } as any);
+
+  const { data, error } = await getRidesPerDay();
+  assert.equal(error, null);
+  assert.equal(data.length, 7);
+});
+
+test('getTripStatusBreakdown() resolves counts per TripStatus with no error', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({
+      select: () => ({
+        eq: async (_column: string, value: unknown) => ({ count: value === 'active' ? 5 : 1, error: null }),
+      }),
+    }),
+  } as any);
+
+  const { data, error } = await getTripStatusBreakdown();
+  assert.equal(error, null);
+  assert.equal(data.find((d) => d.status === 'active')?.count, 5);
+});
+
+test('getRidesRevenueOverTime() applies dateRangeSinceIso(range) to the gte(...) call', async () => {
+  let capturedSince: string | null = null;
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: async (_col: string, value: string) => {
+                capturedSince = value;
+                return { data: [], error: null };
+              },
+            }),
+          }),
+        };
+      }
+      if (table === 'transactions') {
+        return { select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await getRidesRevenueOverTime('7d');
+  assert.equal(error, null);
+  assert.deepEqual(data, []);
+  assert.ok(capturedSince !== null);
+  assert.ok(Math.abs(new Date(capturedSince!).getTime() - new Date(dateRangeSinceIso('7d')).getTime()) < 1000);
+});
+
+test('getPeakHourHistogram() applies dateRangeSinceIso(range) to the gte(...) call', async () => {
+  let capturedSince: string | null = null;
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: async (_col: string, value: string) => {
+                capturedSince = value;
+                return { data: [], error: null };
+              },
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await getPeakHourHistogram('quarter');
+  assert.equal(error, null);
+  assert.equal(data.length, 12);
+  assert.equal(capturedSince, dateRangeSinceIso('quarter'));
+});
+
+
+test('getActiveTricycleLocations() resolves grid cells with no error', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'driver_profiles') return { select: () => ({ eq: async () => ({ data: [], error: null }) }) };
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await getActiveTricycleLocations();
+  assert.equal(error, null);
+  assert.deepEqual(data, []);
+});
+
+test('getSignedDocumentUrl() resolves a signed URL with no error', async () => {
+  __setSupabaseClientForTests({
+    storage: {
+      from: () => ({ createSignedUrl: async () => ({ data: { signedUrl: 'https://example.test/signed/abc' }, error: null }) }),
+    },
+  } as any);
+
+  const { url, error } = await getSignedDocumentUrl('driver-docs', 'drv1/drivers_license-123.jpg');
+  assert.equal(error, null);
+  assert.equal(url, 'https://example.test/signed/abc');
 });
