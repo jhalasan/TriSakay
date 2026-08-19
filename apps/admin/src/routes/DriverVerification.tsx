@@ -61,7 +61,7 @@ export function DriverVerification() {
         <div className={styles.review}>
           <div className={styles.documents}>
             {selectedCase.documents.map((doc) => (
-              <DocumentPanel key={doc.docType} label={doc.label} status={doc.status} />
+              <DocumentPanel key={doc.docType} label={doc.label} status={doc.status} storagePath={doc.storagePath} />
             ))}
           </div>
 

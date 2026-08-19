@@ -1,5 +1,5 @@
 import { Badge } from '../Badge';
-import { PlaceholderBox } from '../PlaceholderBox';
+import { DocumentImage } from '../DocumentImage';
 import type { VerificationStatus } from '../../types/driver';
 import { titleCaseLabel } from '../../lib/format';
 import styles from './DocumentPanel.module.css';
@@ -15,16 +15,17 @@ const STATUS_TONE: Record<VerificationStatus, 'neutral' | 'success' | 'warn' | '
 export interface DocumentPanelProps {
   label: string;
   status: VerificationStatus;
+  storagePath: string;
 }
 
-export function DocumentPanel({ label, status }: DocumentPanelProps) {
+export function DocumentPanel({ label, status, storagePath }: DocumentPanelProps) {
   return (
     <div className={styles.panel}>
       <div className={styles.header}>
         <span className={styles.label}>{label}</span>
         <Badge label={titleCaseLabel(status)} tone={STATUS_TONE[status]} />
       </div>
-      <PlaceholderBox label="Document" height={120} />
+      <DocumentImage bucket="driver-docs" path={storagePath} alt={label} height={120} />
     </div>
   );
 }

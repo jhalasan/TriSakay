@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { PlaceholderBox } from '../components/PlaceholderBox';
+import { DocumentImage } from '../components/DocumentImage';
 import { Textarea } from '../components/Textarea';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
@@ -78,11 +78,11 @@ export function DiscountReview() {
           <div className={styles.documents}>
             <div>
               <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 6 }}>ID — Front</div>
-              <PlaceholderBox label="ID Photo" height={160} />
+              <DocumentImage bucket="discount-ids" path={selected.idPhotoFrontPath} alt={`${selected.passengerName} — ID front`} height={160} />
             </div>
             <div>
               <div style={{ fontSize: 11, color: 'var(--ink-faint)', marginBottom: 6 }}>ID — Back</div>
-              <PlaceholderBox label="ID Photo" height={160} />
+              <DocumentImage bucket="discount-ids" path={selected.idPhotoBackPath} alt={`${selected.passengerName} — ID back`} height={160} />
             </div>
           </div>
 
