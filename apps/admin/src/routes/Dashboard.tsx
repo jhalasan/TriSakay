@@ -115,12 +115,12 @@ export function Dashboard() {
     <div className="page">
       {statsError && <div className="form-error">{statsError}</div>}
       <div className="stat-grid">
-        <StatTile label="Total Drivers" value={loading ? '—' : (stats?.totalDrivers ?? '—')} />
-        <StatTile label="Active Rides" value={loading ? '—' : (stats?.activeRides ?? '—')} />
-        <StatTile label="Pending Verifications" value={loading ? '—' : (stats?.pendingVerifications ?? '—')} />
-        <StatTile label="Open Complaints" value={loading ? '—' : (stats?.openComplaints ?? '—')} />
-        <StatTile label="Overdue Complaints" value={loading ? '—' : overdue.length} hint="Past 3-business-day ARTA target" />
-        <StatTile label="Expiring Franchises" value={loading ? '—' : expiring.length} hint="MTOP renewal due within 30 days" />
+        <StatTile label="Total Drivers" value={loading ? '—' : (stats?.totalDrivers ?? '—')} tone="primary" />
+        <StatTile label="Active Rides" value={loading ? '—' : (stats?.activeRides ?? '—')} tone="success" />
+        <StatTile label="Pending Verifications" value={loading ? '—' : (stats?.pendingVerifications ?? '—')} tone="warn" />
+        <StatTile label="Open Complaints" value={loading ? '—' : (stats?.openComplaints ?? '—')} tone="danger" />
+        <StatTile label="Overdue Complaints" value={loading ? '—' : overdue.length} hint="Past 3-business-day ARTA target" tone="danger" />
+        <StatTile label="Expiring Franchises" value={loading ? '—' : expiring.length} hint="MTOP renewal due within 30 days" tone="warn" />
       </div>
 
       <div className="two-col">

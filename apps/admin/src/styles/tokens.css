@@ -41,6 +41,9 @@
   --danger-pressed: #931E17;
   --danger-soft: #FBEAE8;
 
+  --warn: #a06b00;
+  --warn-soft: #fff6dc;
+
   --overlay: rgba(10, 14, 17, 0.58);
 
   /* Layout — ported from the wireframe kit exactly */
