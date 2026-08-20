@@ -11,10 +11,17 @@ export const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
     gap: spacing.md,
   },
+  headerBlock: {
+    gap: 2,
+    marginBottom: spacing.sm,
+  },
   title: {
     ...typography.h1,
     color: colors.ink,
-    marginBottom: spacing.sm,
+  },
+  tagline: {
+    ...typography.caption,
+    color: colors.inkSoft,
   },
   fieldLabel: {
     ...typography.label,
@@ -30,6 +37,19 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.panel,
     paddingHorizontal: spacing.md,
     minHeight: 48,
+  },
+  categoryFieldContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  categoryIconBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   pickerFieldText: {
     ...typography.body,
@@ -66,6 +86,30 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.danger,
     textAlign: 'center',
+  },
+  successIconBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentGreenSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  evidenceLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  evidenceCounter: {
+    backgroundColor: colors.fill,
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
+  },
+  evidenceCounterText: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.inkSoft,
   },
   evidenceRow: {
     flexDirection: 'row',
