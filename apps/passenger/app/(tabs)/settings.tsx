@@ -2,34 +2,46 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Toggle, colors } from '@trisakay/ui';
+import { Button, Card, Toggle, colors } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useSettingsStore, type SettingsLanguage } from '../../src/store/useSettingsStore';
 import { styles } from '../../src/styles/tabs/settings.styles';
 
 const LANGUAGE_CODES: SettingsLanguage[] = ['en', 'fil'];
 
-function CheckboxRow({
+function SectionLabel({ label }: { label: string }) {
+  return <Text style={styles.sectionLabel}>{label}</Text>;
+}
+
+function IconBadge({ name }: { name: keyof typeof Ionicons.glyphMap }) {
+  return (
+    <View style={styles.iconBadge}>
+      <Ionicons name={name} size={16} color={colors.accentBluePressed} />
+    </View>
+  );
+}
+
+function ToggleRow({
+  icon,
   label,
-  checked,
-  onToggle,
+  value,
+  onValueChange,
+  divider = true,
 }: {
+  icon: keyof typeof Ionicons.glyphMap;
   label: string;
-  checked: boolean;
-  onToggle: () => void;
+  value: boolean;
+  onValueChange: (value: boolean) => void;
+  divider?: boolean;
 }) {
   return (
-    <Pressable
-      style={styles.row}
-      onPress={onToggle}
-      accessibilityRole="checkbox"
-      accessibilityState={{ checked }}
-    >
-      <Text style={styles.rowLabel}>{label}</Text>
-      <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-        {checked && <Ionicons name="checkmark" size={15} color={colors.white} />}
+    <View style={[styles.row, divider && styles.rowDivider]}>
+      <View style={styles.rowLeading}>
+        <IconBadge name={icon} />
+        <Text style={styles.rowLabel}>{label}</Text>
       </View>
-    </Pressable>
+      <Toggle value={value} onValueChange={onValueChange} />
+    </View>
   );
 }
 
@@ -62,27 +74,58 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>{t.settings.title}</Text>
+        <View style={styles.headerBlock}>
+          <Text style={styles.title}>{t.settings.title}</Text>
+          <Text style={styles.tagline}>Manage how TriSakay works for you.</Text>
+        </View>
 
-        <View>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>{t.settings.pushNotifications}</Text>
-            <Toggle value={pushNotificationsEnabled} onValueChange={togglePushNotifications} />
-          </View>
-          <View style={styles.row}>
-            <Text style={styles.rowLabel}>{t.settings.locationTracking}</Text>
-            <Toggle value={locationTrackingEnabled} onValueChange={toggleLocationTracking} />
-          </View>
+        <SectionLabel label="Notifications" />
+        <Card style={styles.card}>
+          <ToggleRow
+            icon="notifications-outline"
+            label={t.settings.pushNotifications}
+            value={pushNotificationsEnabled}
+            onValueChange={togglePushNotifications}
+          />
+          <ToggleRow
+            icon="chatbubble-ellipses-outline"
+            label={t.settings.smsReceipts}
+            value={smsReceipts}
+            onValueChange={toggleSmsReceipts}
+          />
+          <ToggleRow
+            icon="mail-outline"
+            label={t.settings.emailReceipts}
+            value={emailReceipts}
+            onValueChange={toggleEmailReceipts}
+            divider={false}
+          />
+        </Card>
+
+        <SectionLabel label="Privacy" />
+        <Card style={styles.card}>
+          <ToggleRow
+            icon="location-outline"
+            label={t.settings.locationTracking}
+            value={locationTrackingEnabled}
+            onValueChange={toggleLocationTracking}
+            divider={false}
+          />
+        </Card>
+
+        <SectionLabel label="Preferences" />
+        <Card style={styles.card}>
           <Pressable style={styles.row} onPress={cycleLanguage} accessibilityRole="button">
-            <Text style={styles.rowLabel}>{t.settings.language}</Text>
+            <View style={styles.rowLeading}>
+              <IconBadge name="language-outline" />
+              <Text style={styles.rowLabel}>{t.settings.language}</Text>
+            </View>
             <View style={styles.rowValueSlot}>
               <Text style={styles.rowValue}>{languageLabels[language]}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </View>
           </Pressable>
-          <CheckboxRow label={t.settings.smsReceipts} checked={smsReceipts} onToggle={toggleSmsReceipts} />
-          <CheckboxRow label={t.settings.emailReceipts} checked={emailReceipts} onToggle={toggleEmailReceipts} />
-        </View>
+        </Card>
 
         <View style={styles.logoutWrap}>
           <Button label={t.settings.logOut} variant="outline" tone="danger" fullWidth onPress={() => router.push('/logout')} />

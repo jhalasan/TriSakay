@@ -8,20 +8,53 @@ export const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
+  },
+  headerBlock: {
+    gap: 2,
+    marginTop: spacing.md,
+    marginBottom: spacing.lg,
   },
   title: {
     ...typography.h1,
     color: colors.ink,
-    marginTop: spacing.md,
+  },
+  tagline: {
+    ...typography.caption,
+    color: colors.inkSoft,
+  },
+  sectionLabel: {
+    ...typography.label,
+    fontSize: 11,
+    color: colors.inkFaint,
+    marginBottom: spacing.sm,
+  },
+  card: {
+    marginBottom: spacing.lg,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm,
+  },
+  rowDivider: {
     borderBottomWidth: 1,
     borderBottomColor: colors.lineSoft,
+    marginBottom: spacing.sm,
+  },
+  rowLeading: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    flex: 1,
+  },
+  iconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentBlueSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   rowLabel: {
     ...typography.body,
@@ -36,20 +69,7 @@ export const styles = StyleSheet.create({
     ...typography.body,
     color: colors.inkSoft,
   },
-  checkbox: {
-    width: 22,
-    height: 22,
-    borderRadius: radius.sm,
-    borderWidth: 2,
-    borderColor: colors.lineStrong, // control state must clear 3:1
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  checkboxChecked: {
-    backgroundColor: colors.accentBlue,
-    borderColor: colors.accentBlue,
-  },
   logoutWrap: {
-    marginTop: spacing.lg,
+    marginTop: spacing.sm,
   },
 });
