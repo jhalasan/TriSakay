@@ -11,6 +11,8 @@ export const fil: Translations = {
     whereTo: 'Saan ka pupunta?',
     findingLocation: 'Hinahanap ang iyong lokasyon…',
     dragPinToSetPickup: 'Ilipat ang pin para itakda ang sakayan',
+    pickupAccessibilityLabel: 'Baguhin ang sakayan',
+    pickupFallback: 'Itakda ang sakayan',
     savedPlaces: 'Mga Naka-save na Lugar',
     noSavedPlacesTitle: 'Wala pang naka-save na lugar',
     noSavedPlacesMessage: 'Makikita rito ang mga lugar na iyong ise-save para sa mas mabilis na pag-book.',
@@ -102,5 +104,12 @@ export const fil: Translations = {
     tryDifferentSearchTerm: 'Subukan ang ibang termino, o maglagay na lang ng pin sa mapa.',
     typePlaceNameOrTapMap: 'Mag-type ng pangalan ng lugar, o pindutin ang mapa para maglagay ng pin.',
     confirmDestination: 'Kumpirmahin ang Destinasyon',
+  },
+  setPickup: {
+    tapOrDragPin: 'Pindutin o ilipat ang pin para itakda ang sakayan',
+    searchForPickup: 'Maghanap ng sakayan',
+    useCurrentLocation: 'Gamitin ang kasalukuyang lokasyon',
+    locatingCurrentLocation: 'Hinahanap…',
+    confirmPickup: 'Kumpirmahin ang Sakayan',
   },
 };

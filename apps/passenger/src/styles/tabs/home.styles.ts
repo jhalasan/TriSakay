@@ -33,6 +33,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
   },
+  pickupDivider: {
+    height: 1,
+    backgroundColor: colors.lineSoft,
+    marginVertical: spacing.xs,
+  },
   headerSearchBar: {
     flex: 1,
   },

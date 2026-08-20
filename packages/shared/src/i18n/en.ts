@@ -9,6 +9,8 @@ export const en = {
     whereTo: 'Where to?',
     findingLocation: 'Finding your location…',
     dragPinToSetPickup: 'Drag the pin to set pickup',
+    pickupAccessibilityLabel: 'Change pickup location',
+    pickupFallback: 'Set pickup location',
     savedPlaces: 'Saved places',
     noSavedPlacesTitle: 'No saved places yet',
     noSavedPlacesMessage: 'Places you save will appear here for one-tap booking.',
@@ -100,5 +102,12 @@ export const en = {
     tryDifferentSearchTerm: 'Try a different search term, or drop a pin on the map instead.',
     typePlaceNameOrTapMap: 'Type a place name, or tap the map to drop a pin.',
     confirmDestination: 'Confirm destination',
+  },
+  setPickup: {
+    tapOrDragPin: 'Tap or drag the pin to set pickup',
+    searchForPickup: 'Search for a pickup point',
+    useCurrentLocation: 'Use current location',
+    locatingCurrentLocation: 'Locating…',
+    confirmPickup: 'Confirm pickup',
   },
 } as const;

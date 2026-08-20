@@ -107,6 +107,14 @@ export default function HomeScreen() {
               {unreadCount > 0 && <View style={styles.bellDot} />}
             </Pressable>
           </View>
+          <View style={styles.pickupDivider} />
+          <MapSearchBar
+            variant="flat"
+            label={pickup?.label || t.home.pickupFallback}
+            disabled={!isGranted}
+            onPress={() => (isGranted ? router.push('/booking/set-pickup') : router.push('/location-permission'))}
+            accessibilityHint={t.home.pickupAccessibilityLabel}
+          />
         </Card>
         {!isGranted && <LocationRequiredNotice />}
       </View>
