@@ -6,6 +6,8 @@ export const en = {
   home: {
     profileAccessibilityLabel: 'Profile',
     notificationsAccessibilityLabel: 'Notifications',
+    ctaTitle: 'Request a Tricycle',
+    ctaSubtitle: 'Book a ride in a few taps',
     greetingMorning: 'Good morning',
     greetingAfternoon: 'Good afternoon',
     greetingEvening: 'Good evening',

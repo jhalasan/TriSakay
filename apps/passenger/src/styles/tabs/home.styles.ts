@@ -1,30 +1,17 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.bg,
   },
-  /**
-   * Absolute-fill on purpose: this must ignore the SafeAreaView's own top/
-   * bottom inset padding so the map itself runs edge-to-edge including
-   * behind the status bar — only the floating controls above it respect
-   * the inset, via their normal in-flow position.
-   */
-  mapFill: {
-    ...StyleSheet.absoluteFillObject,
-  },
-  topFloating: {
+  scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    gap: spacing.sm,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.lg,
   },
-  /**
-   * A solid card rather than bare text over the map: floating text directly
-   * on OSM tiles was illegible against light basemap areas regardless of
-   * text-shadow tricks. Avatar, search, and bell share one row so the panel
-   * reads as a single "control tower" rather than stacked pieces.
-   */
   headerCard: {
     padding: spacing.sm,
     borderTopWidth: 3,
@@ -47,12 +34,8 @@ export const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.accentGreenSoft,
   },
-  pickupDivider: {
-    height: 1,
-    backgroundColor: colors.lineSoft,
-    marginVertical: spacing.xs,
-  },
-  headerSearchBar: {
+  /** Pushes the bell to the row's far end now that the search bar (which used to fill this gap) lives on the Request a Tricycle screen instead. */
+  headerSpacer: {
     flex: 1,
   },
   bellButton: {
@@ -73,6 +56,47 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.danger,
     borderWidth: 2,
     borderColor: colors.panel,
+  },
+  /** Own pressed-state wrapper (rather than Button) since this is a full custom gradient card, not a text button. */
+  ctaWrap: {
+    borderRadius: radius.lg,
+  },
+  ctaPressed: {
+    opacity: 0.9,
+  },
+  ctaCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    ...elevation.card,
+  },
+  ctaMotif: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+  },
+  ctaIconBadge: {
+    width: 48,
+    height: 48,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  ctaTextSlot: {
+    flex: 1,
+    gap: 2,
+  },
+  ctaTitle: {
+    ...typography.h2,
+    color: colors.white,
+  },
+  ctaSubtitle: {
+    ...typography.caption,
+    color: colors.white,
+    opacity: 0.85,
   },
   sectionLabel: {
     ...typography.label,
