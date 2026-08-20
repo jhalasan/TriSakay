@@ -12,31 +12,81 @@ export const styles = StyleSheet.create({
     paddingBottom: spacing.xxxl,
     gap: spacing.lg,
   },
-  headerCard: {
-    padding: spacing.sm,
-    borderTopWidth: 3,
-    borderTopColor: colors.accentGreen,
+  /**
+   * Deeper `sheet` shadow (not `card`) — this panel anchors the whole page, so it should read as sitting highest.
+   * No padding here: GradientSurface paints its gradient via an absolutely-filled SVG, and RN resolves that
+   * fill's 0-offsets against the *padding* edge, not the outer edge — padding on this element would leave an
+   * unpainted strip around the card showing the page background through instead of the gradient. Padding lives
+   * on `heroPanelInner` instead, which sits fully inside the gradient's paint area.
+   */
+  heroPanel: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: radius.lg,
+    ...elevation.sheet,
   },
-  greeting: {
-    ...typography.bodyStrong,
-    color: colors.ink,
-    paddingHorizontal: spacing.xs,
-    marginBottom: spacing.xs,
+  heroPanelInner: {
+    padding: spacing.lg,
+    paddingTop: spacing.xl,
   },
-  headerRow: {
+  heroMotifTop: {
+    position: 'absolute',
+    top: -50,
+    right: -50,
+  },
+  heroMotifBottom: {
+    position: 'absolute',
+    bottom: -20,
+    left: -30,
+  },
+  heroTopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+    gap: spacing.md,
+  },
+  heroIdentityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
+    flex: 1,
   },
-  avatarRing: {
+  /** Two nested rings (translucent outer, brand-green hairline inner) so the avatar lifts off the gradient instead of sitting flush with it. */
+  avatarOuterRing: {
+    padding: 3,
+    borderRadius: radius.pill,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    ...elevation.card,
+  },
+  avatarInnerRing: {
     padding: 2,
     borderRadius: radius.pill,
-    borderWidth: 2,
+    borderWidth: 1.5,
     borderColor: colors.accentGreenSoft,
   },
-  /** Pushes the bell to the row's far end now that the search bar (which used to fill this gap) lives on the Request a Tricycle screen instead. */
-  headerSpacer: {
+  heroTextSlot: {
     flex: 1,
+    gap: 2,
+  },
+  heroGreetingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  heroGreetingLabel: {
+    ...typography.label,
+    color: colors.white,
+    opacity: 0.75,
+  },
+  heroName: {
+    ...typography.h1,
+    color: colors.white,
+  },
+  heroTagline: {
+    ...typography.caption,
+    color: colors.white,
+    opacity: 0.75,
+    marginTop: spacing.xs,
   },
   bellButton: {
     width: 40,
@@ -44,7 +94,9 @@ export const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: colors.accentBlueSoft,
+    backgroundColor: 'rgba(255,255,255,0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   bellDot: {
     position: 'absolute',
@@ -57,20 +109,24 @@ export const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: colors.panel,
   },
-  /** Own pressed-state wrapper (rather than Button) since this is a full custom gradient card, not a text button. */
+  /** Own pressed-state wrapper (rather than Button) since this is a full custom gradient card, not a text button. Negative top margin pulls it up under the hero's rounded bottom edge so the two panels read as one composed unit. */
   ctaWrap: {
     borderRadius: radius.lg,
+    marginTop: -spacing.md,
   },
   ctaPressed: {
     opacity: 0.9,
   },
+  /** No padding here — see the comment on `heroPanel`; padding lives on `ctaCardInner` instead. */
   ctaCard: {
+    borderRadius: radius.lg,
+    ...elevation.card,
+  },
+  ctaCardInner: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.md,
-    borderRadius: radius.lg,
     padding: spacing.lg,
-    ...elevation.card,
   },
   ctaMotif: {
     position: 'absolute',
