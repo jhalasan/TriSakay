@@ -9,6 +9,12 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
     minHeight: 64,
   },
+  pressableContent: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+  },
   leadingSlot: {
     alignItems: 'center',
     justifyContent: 'center',

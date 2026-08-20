@@ -14,8 +14,8 @@ export interface ListRowProps {
 }
 
 export function ListRow({ title, subtitle, leading, trailing, onPress, chevron, divider = true }: ListRowProps) {
-  const content = (
-    <View style={styles.row}>
+  const pressableContent = (
+    <>
       {leading && <View style={styles.leadingSlot}>{leading}</View>}
       <View style={styles.textSlot}>
         <Text style={styles.title} numberOfLines={1}>
@@ -27,20 +27,22 @@ export function ListRow({ title, subtitle, leading, trailing, onPress, chevron, 
           </Text>
         )}
       </View>
-      {trailing && <View style={styles.trailingSlot}>{trailing}</View>}
       {chevron && <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />}
-    </View>
+    </>
   );
 
   return (
     <View>
-      {onPress ? (
-        <Pressable onPress={onPress} accessibilityRole="button">
-          {content}
-        </Pressable>
-      ) : (
-        content
-      )}
+      <View style={styles.row}>
+        {onPress ? (
+          <Pressable style={styles.pressableContent} onPress={onPress} accessibilityRole="button">
+            {pressableContent}
+          </Pressable>
+        ) : (
+          pressableContent
+        )}
+        {trailing && <View style={styles.trailingSlot}>{trailing}</View>}
+      </View>
       {divider && <View style={styles.divider} />}
     </View>
   );
