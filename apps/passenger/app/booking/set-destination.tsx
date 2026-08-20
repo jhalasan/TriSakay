@@ -63,7 +63,7 @@ export default function SetDestinationScreen() {
   function handleConfirm() {
     if (!selected) return;
     setDropoff(selected);
-    router.push('/booking/confirm');
+    router.back();
   }
 
   return (

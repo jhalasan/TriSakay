@@ -70,6 +70,11 @@ export async function searchPlaces(query: string): Promise<LocationPoint[]> {
  * label rather than throwing: a rider mid-drag should still get a pin with
  * coordinates even where the OS geocoder has no address (open field, spotty
  * data), not a stalled screen.
+ *
+ * `label` carries the street/locality (not a hardcoded "Pickup point") so
+ * screens that display only `label` — the Request a Tricycle field, in
+ * particular — show a value that visibly changed rather than the same
+ * generic text before and after a successful fix.
  */
 export async function reverseGeocode(latitude: number, longitude: number): Promise<LocationPoint> {
   try {
@@ -77,14 +82,15 @@ export async function reverseGeocode(latitude: number, longitude: number): Promi
     if (result) {
       const street = [result.streetNumber, result.street].filter(Boolean).join(' ');
       const locality = [result.district, result.city ?? result.subregion].filter(Boolean).join(', ');
+      const label = street || locality || 'Pinned location';
       const address = [street, locality].filter(Boolean).join(', ') || 'Pinned location';
-      return { label: 'Pickup point', address, latitude, longitude };
+      return { label, address, latitude, longitude };
     }
   } catch {
     // Falls through to the coordinate-only label below.
   }
   return {
-    label: 'Pickup point',
+    label: 'Pinned location',
     address: `${latitude.toFixed(5)}, ${longitude.toFixed(5)}`,
     latitude,
     longitude,

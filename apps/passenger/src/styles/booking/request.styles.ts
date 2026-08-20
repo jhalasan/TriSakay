@@ -47,4 +47,26 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.lineSoft,
     marginVertical: spacing.xs,
   },
+  locationErrorText: {
+    ...typography.caption,
+    color: colors.danger,
+    paddingHorizontal: spacing.xs,
+    marginTop: -spacing.xs,
+  },
+  currentLocationButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentGreenSoft,
+  },
+  bottomFloating: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+  },
 });

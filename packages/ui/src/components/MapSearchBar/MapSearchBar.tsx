@@ -14,6 +14,8 @@ export interface MapSearchBarProps {
   onPress?: () => void;
   /** Only meaningful in label mode — dims the bar and drops the tap handler. */
   disabled?: boolean;
+  /** Only meaningful in label mode — replaces the default search glyph, e.g. a colored location pin for pickup/destination rows. */
+  icon?: React.ReactNode;
   /**
    * A live control (e.g. a `TextField`) in place of the static label —
    * for screens where the bar itself is the input, not a navigation trigger.
@@ -51,6 +53,7 @@ export function MapSearchBar({
   accessibilityHint,
   variant = 'floating',
   style,
+  icon,
 }: MapSearchBarProps) {
   return (
     <View
@@ -81,7 +84,7 @@ export function MapSearchBar({
             onPress={onPress}
             style={styles.labelPressable}
           >
-            <Ionicons name="search" size={18} color={colors.inkSoft} />
+            {icon ?? <Ionicons name="search" size={18} color={colors.inkSoft} />}
             <Text style={styles.label} numberOfLines={1}>
               {label}
             </Text>
