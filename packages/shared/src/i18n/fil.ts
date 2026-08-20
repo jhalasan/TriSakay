@@ -4,6 +4,8 @@ export const fil: Translations = {
   common: {
     gcash: 'GCash',
     cash: 'Cash',
+    cancel: 'Kanselahin',
+    delete: 'Tanggalin',
   },
   home: {
     profileAccessibilityLabel: 'Profile',
@@ -25,6 +27,19 @@ export const fil: Translations = {
     savedPlaces: 'Mga Naka-save na Lugar',
     noSavedPlacesTitle: 'Wala pang naka-save na lugar',
     noSavedPlacesMessage: 'Makikita rito ang mga lugar na iyong ise-save para sa mas mabilis na pag-book.',
+    savedPlacesErrorTitle: 'Hindi ma-load ang mga naka-save na lugar',
+    savedPlacesErrorMessage: 'May nagkamali. Subukang muli mamaya.',
+    deleteSavedPlaceTitle: 'Alisin ang naka-save na lugar na ito?',
+    deleteSavedPlaceMessage: 'Hindi na ito maibabalik.',
+    deleteSavedPlaceAccessibilityLabel: 'Alisin ang naka-save na lugar',
+  },
+  savePlace: {
+    title: 'I-save ang lugar na ito',
+    homeLabel: 'Tahanan',
+    workLabel: 'Trabaho',
+    saveAsPrefix: 'I-save bilang',
+    saveAccessibilityLabel: 'I-save ang lugar na ito',
+    savedAccessibilityLabel: 'Na-save na',
   },
   settings: {
     title: 'Mga Setting',

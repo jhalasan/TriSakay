@@ -2,6 +2,8 @@ export const en = {
   common: {
     gcash: 'GCash',
     cash: 'Cash',
+    cancel: 'Cancel',
+    delete: 'Delete',
   },
   home: {
     profileAccessibilityLabel: 'Profile',
@@ -23,6 +25,19 @@ export const en = {
     savedPlaces: 'Saved places',
     noSavedPlacesTitle: 'No saved places yet',
     noSavedPlacesMessage: 'Places you save will appear here for one-tap booking.',
+    savedPlacesErrorTitle: "Couldn't load saved places",
+    savedPlacesErrorMessage: 'Something went wrong. Try again later.',
+    deleteSavedPlaceTitle: 'Remove this saved place?',
+    deleteSavedPlaceMessage: 'This cannot be undone.',
+    deleteSavedPlaceAccessibilityLabel: 'Remove saved place',
+  },
+  savePlace: {
+    title: 'Save this place',
+    homeLabel: 'Home',
+    workLabel: 'Work',
+    saveAsPrefix: 'Save as',
+    saveAccessibilityLabel: 'Save this place',
+    savedAccessibilityLabel: 'Saved',
   },
   settings: {
     title: 'Settings',
