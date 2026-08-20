@@ -54,14 +54,15 @@ export const styles = StyleSheet.create({
   },
   routeRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: spacing.md,
   },
-  routeDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginTop: 6,
+  routeIconBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   routeTextSlot: {
     flex: 1,
@@ -75,10 +76,14 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkSoft,
   },
+  routeChangeLink: {
+    ...typography.buttonSmall,
+    color: colors.accentBluePressed,
+  },
   routeDivider: {
     height: 1,
     backgroundColor: colors.lineSoft,
-    marginLeft: 6,
+    marginLeft: 44,
   },
   sectionRow: {
     flexDirection: 'row',

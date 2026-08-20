@@ -220,19 +220,41 @@ export default function ConfirmScreen() {
         <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
           <Card variant="raised" style={styles.routeCard}>
             <View style={styles.routeRow}>
-              <View style={[styles.routeDot, { backgroundColor: colors.accentGreen }]} />
+              <View style={[styles.routeIconBadge, { backgroundColor: colors.accentGreenSoft }]}>
+                <Ionicons name="radio-button-on" size={16} color={colors.accentGreen} />
+              </View>
               <View style={styles.routeTextSlot}>
                 <Text style={styles.routeLabel}>{pickup?.label ?? t.confirm.pickupPointFallback}</Text>
-                <Text style={styles.routeAddress}>{pickup?.address ?? t.confirm.notSetYetFallback}</Text>
+                <Text style={styles.routeAddress} numberOfLines={1}>
+                  {pickup?.address ?? t.confirm.notSetYetFallback}
+                </Text>
               </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${t.confirm.change} ${t.confirm.pickupLocationLabel}`}
+                onPress={() => router.push('/booking/set-pickup')}
+              >
+                <Text style={styles.routeChangeLink}>{t.confirm.change}</Text>
+              </Pressable>
             </View>
             <View style={styles.routeDivider} />
             <View style={styles.routeRow}>
-              <View style={[styles.routeDot, { backgroundColor: colors.accentBlue }]} />
+              <View style={[styles.routeIconBadge, { backgroundColor: colors.accentBlueSoft }]}>
+                <Ionicons name="location" size={16} color={colors.accentBlue} />
+              </View>
               <View style={styles.routeTextSlot}>
                 <Text style={styles.routeLabel}>{dropoff.label}</Text>
-                <Text style={styles.routeAddress}>{dropoff.address}</Text>
+                <Text style={styles.routeAddress} numberOfLines={1}>
+                  {dropoff.address}
+                </Text>
               </View>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${t.confirm.change} ${t.confirm.destinationLabel}`}
+                onPress={() => router.push('/booking/set-destination')}
+              >
+                <Text style={styles.routeChangeLink}>{t.confirm.change}</Text>
+              </Pressable>
             </View>
           </Card>
 
