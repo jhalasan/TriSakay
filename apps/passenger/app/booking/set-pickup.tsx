@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, ListRow, MapOverlaySheet, MapSearchBar, OsmMap, TextField, colors } from '@trisakay/ui';
+import { SavePlaceSheet } from '../../src/components/SavePlaceSheet';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { reverseGeocode, searchPlaces } from '../../src/utils/geocode';
 import type { LocationPoint } from '../../src/types/booking';
@@ -33,6 +34,12 @@ export default function SetPickupScreen() {
   // directly" — only the latter needs its own always-visible result row,
   // since it has no corresponding list entry to highlight.
   const [pinDropped, setPinDropped] = useState(false);
+  const [placeToSave, setPlaceToSave] = useState<LocationPoint | null>(null);
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
+
+  function keyFor(point: LocationPoint) {
+    return `${point.latitude},${point.longitude}`;
+  }
 
   useEffect(() => {
     const q = query.trim();
@@ -151,6 +158,20 @@ export default function SetPickupScreen() {
                     />
                   </View>
                 }
+                trailing={
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={savedKeys.has(keyFor(item.point)) ? t.savePlace.savedAccessibilityLabel : t.savePlace.saveAccessibilityLabel}
+                    hitSlop={8}
+                    onPress={() => setPlaceToSave(item.point)}
+                  >
+                    <Ionicons
+                      name={savedKeys.has(keyFor(item.point)) ? 'bookmark' : 'bookmark-outline'}
+                      size={20}
+                      color={colors.accentBluePressed}
+                    />
+                  </Pressable>
+                }
                 onPress={() => handleSelectResult(item.point)}
               />
             )
@@ -158,6 +179,11 @@ export default function SetPickupScreen() {
         />
         <Button label={t.setPickup.confirmPickup} fullWidth disabled={!selected} onPress={handleConfirm} />
       </MapOverlaySheet>
+      <SavePlaceSheet
+        place={placeToSave}
+        onClose={() => setPlaceToSave(null)}
+        onSaved={(point) => setSavedKeys((prev) => new Set(prev).add(keyFor(point)))}
+      />
     </SafeAreaView>
   );
 }
