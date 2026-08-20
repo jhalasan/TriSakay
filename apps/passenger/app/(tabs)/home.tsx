@@ -46,9 +46,14 @@ export default function HomeScreen() {
     }, [])
   );
 
+  // Routes through /booking/request rather than straight to /booking/confirm —
+  // that screen is what resolves pickup (current-location fix on mount, or a
+  // manual pin drop). Jumping straight to Confirm with only dropoff set left
+  // pickup permanently "Not set yet" and the Request Ride button stuck
+  // disabled whenever the rider hadn't already gone through the normal flow.
   function handleShortcutPress(point: LocationPoint) {
     setDropoff(point);
-    router.push('/booking/confirm');
+    router.push('/booking/request');
   }
 
   async function performDeleteSavedPlace(id: string) {
