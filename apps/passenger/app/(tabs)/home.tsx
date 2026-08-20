@@ -1,17 +1,17 @@
+import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useFocusEffect, useRouter } from 'expo-router';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, BrandMotif, EmptyState, GradientSurface, colors } from '@trisakay/ui';
+import { Avatar, BrandMotif, EmptyState, GradientSurface, Spinner, colors } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
+import { useSavedPlacesStore } from '../../src/store/useSavedPlacesStore';
+import type { SavedPlaceRow } from '@trisakay/services';
 import type { LocationPoint } from '../../src/types/booking';
 import { styles } from '../../src/styles/tabs/home.styles';
-
-/** Saved places come from the rider's account. Empty until the backend lands. */
-const SHORTCUTS: { icon: keyof typeof Ionicons.glyphMap; point: LocationPoint }[] = [];
 
 function getGreeting(t: ReturnType<typeof useTranslation>) {
   const hour = new Date().getHours();
@@ -27,16 +27,50 @@ function getGreetingIcon(): keyof typeof Ionicons.glyphMap {
   return 'moon-outline';
 }
 
+const KIND_ICON: Record<SavedPlaceRow['kind'], keyof typeof Ionicons.glyphMap> = {
+  home: 'home-outline',
+  work: 'briefcase-outline',
+  custom: 'location-outline',
+};
+
 export default function HomeScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
   const setDropoff = useBookingStore((state) => state.setDropoff);
   const unreadCount = useNotificationsStore((state) => state.items.filter((n) => !n.read).length);
   const t = useTranslation();
+  const savedPlaces = useSavedPlacesStore((state) => state.items);
+  const savedPlacesLoading = useSavedPlacesStore((state) => state.loading);
+  const savedPlacesError = useSavedPlacesStore((state) => state.error);
+  const loadSavedPlaces = useSavedPlacesStore((state) => state.load);
+  const removeSavedPlace = useSavedPlacesStore((state) => state.remove);
+
+  useFocusEffect(
+    useCallback(() => {
+      void loadSavedPlaces();
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+  );
 
   function handleShortcutPress(point: LocationPoint) {
     setDropoff(point);
     router.push('/booking/confirm');
+  }
+
+  async function performDeleteSavedPlace(id: string) {
+    const { error } = await removeSavedPlace(id);
+    if (error) Alert.alert(t.home.savedPlacesErrorTitle, error);
+  }
+
+  function handleDeleteSavedPlace(item: SavedPlaceRow) {
+    Alert.alert(
+      t.home.deleteSavedPlaceTitle,
+      t.home.deleteSavedPlaceMessage,
+      [
+        { text: t.common.cancel, style: 'cancel' },
+        { text: t.common.delete, style: 'destructive', onPress: () => void performDeleteSavedPlace(item.id) },
+      ]
+    );
   }
 
   const firstName = user?.name?.trim().split(/\s+/)[0];
@@ -108,27 +142,39 @@ export default function HomeScreen() {
 
         <View>
           <Text style={styles.sectionLabel}>{t.home.savedPlaces}</Text>
-          {SHORTCUTS.length === 0 ? (
+          {savedPlacesLoading && savedPlaces.length === 0 ? (
+            <Spinner size="small" />
+          ) : savedPlacesError ? (
+            <EmptyState title={t.home.savedPlacesErrorTitle} message={t.home.savedPlacesErrorMessage} />
+          ) : savedPlaces.length === 0 ? (
             <EmptyState
               title={t.home.noSavedPlacesTitle}
               message={t.home.noSavedPlacesMessage}
             />
           ) : (
             <View style={styles.shortcuts}>
-              {SHORTCUTS.map((shortcut) => (
+              {savedPlaces.map((item) => (
                 <Pressable
-                  key={shortcut.point.label}
+                  key={item.id}
                   style={styles.shortcutRow}
-                  onPress={() => handleShortcutPress(shortcut.point)}
+                  onPress={() =>
+                    handleShortcutPress({
+                      label: item.label,
+                      address: item.address,
+                      latitude: item.latitude,
+                      longitude: item.longitude,
+                    })
+                  }
+                  onLongPress={() => handleDeleteSavedPlace(item)}
                   accessibilityRole="button"
                 >
                   <View style={styles.shortcutIcon}>
-                    <Ionicons name={shortcut.icon} size={20} color={colors.accentBluePressed} />
+                    <Ionicons name={KIND_ICON[item.kind]} size={20} color={colors.accentBluePressed} />
                   </View>
                   <View style={styles.shortcutTextSlot}>
-                    <Text style={styles.shortcutLabel}>{shortcut.point.label}</Text>
+                    <Text style={styles.shortcutLabel}>{item.label}</Text>
                     <Text style={styles.shortcutAddress} numberOfLines={1}>
-                      {shortcut.point.address}
+                      {item.address}
                     </Text>
                   </View>
                   <Ionicons name="chevron-forward" size={18} color={colors.inkFaint} />
