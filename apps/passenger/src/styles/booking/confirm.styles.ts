@@ -4,11 +4,50 @@ import { colors, radius, spacing, typography } from '@trisakay/ui';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.bg,
   },
-  scrollContent: {
+  /**
+   * Absolute-fill on purpose: this must ignore the SafeAreaView's own top
+   * inset padding so the map itself runs edge-to-edge including behind the
+   * status bar — only the floating header above it respects the inset, via
+   * its normal in-flow position. Matches Home/set-destination/set-pickup.
+   */
+  mapFill: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  topFloating: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxl,
+    paddingTop: spacing.sm,
+  },
+  /** A solid card rather than bare text over the map — floating text on OSM tiles is illegible against light basemap areas. */
+  headerBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    padding: spacing.sm,
+    borderTopWidth: 3,
+    borderTopColor: colors.accentGreen,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: radius.pill,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentBlueSoft,
+  },
+  headerTitle: {
+    ...typography.h2,
+    color: colors.ink,
+    flex: 1,
+  },
+  /** Caps the sheet's scrollable content so a generous strip of map stays visible above it. */
+  sheetScroll: {
+    maxHeight: 440,
+  },
+  sheetScrollContent: {
     gap: spacing.xl,
+    paddingBottom: spacing.md,
   },
   routeCard: {
     gap: spacing.md,
@@ -100,11 +139,7 @@ export const styles = StyleSheet.create({
     marginTop: spacing.xs,
   },
   footer: {
-    padding: spacing.lg,
-    paddingBottom: spacing.xl,
-    borderTopWidth: 1,
-    borderTopColor: colors.lineSoft,
-    backgroundColor: colors.panel,
+    gap: spacing.xs,
   },
   emptyState: {
     flex: 1,

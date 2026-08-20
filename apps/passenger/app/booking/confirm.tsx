@@ -2,12 +2,14 @@ import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createRideRequest, estimateFare, getFareDiscountRate, getMyDiscount } from '@trisakay/services';
 import { haversineDistanceKm } from '@trisakay/utils';
 import {
   Badge,
   Button,
   Card,
+  MapOverlaySheet,
   OsmMap,
   SegmentedControl,
   Stepper,
@@ -38,6 +40,7 @@ export default function ConfirmScreen() {
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setRideRequestId = useBookingStore((state) => state.setRideRequestId);
   const { isGranted } = useLocationPermission();
+  const insets = useSafeAreaInsets();
   const t = useTranslation();
   const [fareError, setFareError] = useState<string | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
@@ -127,6 +130,23 @@ export default function ConfirmScreen() {
     );
   }
 
+  const requestButton = (
+    <View style={styles.footer}>
+      <Button
+        label={t.confirm.requestRide}
+        fullWidth
+        loading={isRequesting}
+        disabled={!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady}
+        // Only while disabled — an enabled button must not announce a reason
+        // that no longer applies.
+        accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
+        onPress={handleRequestRide}
+      />
+      {requestError && <Text style={styles.requestError}>{requestError}</Text>}
+      <LocationRequiredNotice />
+    </View>
+  );
+
   async function handleRequestRide() {
     // A pending request already exists — this shouldn't be reachable in the
     // normal flow once router.replace() is used below, but guards against
@@ -164,107 +184,113 @@ export default function ConfirmScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <ScreenHeader title={t.confirm.title} />
-      <ScrollView contentContainerStyle={styles.scrollContent}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <View style={styles.mapFill}>
         <OsmMap
           variant="route"
           caption={t.confirm.routePreview}
-          height={180}
+          height="100%"
           // Midpoint of the trip — only the initial center while the route is
           // still loading; once it arrives the map fits the route bounds instead.
           latitude={midpoint?.latitude}
           longitude={midpoint?.longitude}
           zoom={14}
           interactive
+          edgeToEdge
           route={route?.geometry}
         />
+      </View>
 
-        <Card variant="raised" style={styles.routeCard}>
-          <View style={styles.routeRow}>
-            <View style={[styles.routeDot, { backgroundColor: colors.accentGreen }]} />
-            <View style={styles.routeTextSlot}>
-              <Text style={styles.routeLabel}>{pickup?.label ?? t.confirm.pickupPointFallback}</Text>
-              <Text style={styles.routeAddress}>{pickup?.address ?? t.confirm.notSetYetFallback}</Text>
-            </View>
-          </View>
-          <View style={styles.routeDivider} />
-          <View style={styles.routeRow}>
-            <View style={[styles.routeDot, { backgroundColor: colors.accentBlue }]} />
-            <View style={styles.routeTextSlot}>
-              <Text style={styles.routeLabel}>{dropoff.label}</Text>
-              <Text style={styles.routeAddress}>{dropoff.address}</Text>
-            </View>
-          </View>
+      <View style={styles.topFloating}>
+        <Card variant="raised" style={styles.headerBar}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+            style={styles.backButton}
+            onPress={() => router.back()}
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.accentBluePressed} />
+          </Pressable>
+          <Text style={styles.headerTitle}>{t.confirm.title}</Text>
         </Card>
+      </View>
 
-        <View style={styles.sectionRow}>
-          <Text style={styles.sectionLabel}>{t.confirm.seats}</Text>
-          <Stepper value={seats} onChange={setSeats} min={1} max={6} />
-        </View>
+      <MapOverlaySheet bottomInset={insets.bottom}>
+        <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
+          <Card variant="raised" style={styles.routeCard}>
+            <View style={styles.routeRow}>
+              <View style={[styles.routeDot, { backgroundColor: colors.accentGreen }]} />
+              <View style={styles.routeTextSlot}>
+                <Text style={styles.routeLabel}>{pickup?.label ?? t.confirm.pickupPointFallback}</Text>
+                <Text style={styles.routeAddress}>{pickup?.address ?? t.confirm.notSetYetFallback}</Text>
+              </View>
+            </View>
+            <View style={styles.routeDivider} />
+            <View style={styles.routeRow}>
+              <View style={[styles.routeDot, { backgroundColor: colors.accentBlue }]} />
+              <View style={styles.routeTextSlot}>
+                <Text style={styles.routeLabel}>{dropoff.label}</Text>
+                <Text style={styles.routeAddress}>{dropoff.address}</Text>
+              </View>
+            </View>
+          </Card>
 
-        <Card variant="raised" style={styles.fareCard}>
-          <View style={styles.fareLabelRow}>
-            <View style={styles.fareLabelWithInfo}>
-              <Text style={styles.fareLabel}>{t.confirm.estimatedFare}</Text>
+          <View style={styles.sectionRow}>
+            <Text style={styles.sectionLabel}>{t.confirm.seats}</Text>
+            <Stepper value={seats} onChange={setSeats} min={1} max={6} />
+          </View>
+
+          <Card variant="raised" style={styles.fareCard}>
+            <View style={styles.fareLabelRow}>
+              <View style={styles.fareLabelWithInfo}>
+                <Text style={styles.fareLabel}>{t.confirm.estimatedFare}</Text>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={t.confirm.viewFareMatrix}
+                  onPress={() => router.push('/profile/fare-matrix')}
+                >
+                  <Ionicons name="information-circle-outline" size={16} color={colors.inkFaint} />
+                </Pressable>
+              </View>
+              {discountApproved && (
+                <Badge label={`${discountRatePercent ?? 20}${t.confirm.discountAppliedSuffix}`} tone="green" />
+              )}
+            </View>
+            <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
+            {route && (<Text style={styles.fareNote}>{t.confirm.roadDistanceLabel} {route.distanceKm.toFixed(1)} km</Text>)}
+            <Text style={styles.fareNote}>
+              {fareError
+                ? t.confirm.couldNotReachFareService
+                : fare === null
+                  ? t.confirm.estimatingFare
+                  : t.confirm.fareConfirmedAtDropoff}
+            </Text>
+            {discountApproved === false && (
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={t.confirm.viewFareMatrix}
-                onPress={() => router.push('/profile/fare-matrix')}
+                onPress={() => router.push('/profile/apply-discount')}
               >
-                <Ionicons name="information-circle-outline" size={16} color={colors.inkFaint} />
+                <Text style={styles.discountLink}>{t.confirm.applyForDiscountPrompt}</Text>
               </Pressable>
-            </View>
-            {discountApproved && (
-              <Badge label={`${discountRatePercent ?? 20}${t.confirm.discountAppliedSuffix}`} tone="green" />
             )}
+          </Card>
+
+          <View>
+            <Text style={styles.sectionLabelSpaced}>{t.confirm.paymentMethod}</Text>
+            <SegmentedControl
+              options={[
+                { label: t.common.gcash, value: 'gcash' },
+                { label: t.common.cash, value: 'cash' },
+              ]}
+              value={paymentMethod}
+              onChange={setPaymentMethod}
+            />
           </View>
-          <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
-          {route && (<Text style={styles.fareNote}>{t.confirm.roadDistanceLabel} {route.distanceKm.toFixed(1)} km</Text>)}
-          <Text style={styles.fareNote}>
-            {fareError
-              ? t.confirm.couldNotReachFareService
-              : fare === null
-                ? t.confirm.estimatingFare
-                : t.confirm.fareConfirmedAtDropoff}
-          </Text>
-          {discountApproved === false && (
-            <Pressable
-              accessibilityRole="button"
-              onPress={() => router.push('/profile/apply-discount')}
-            >
-              <Text style={styles.discountLink}>{t.confirm.applyForDiscountPrompt}</Text>
-            </Pressable>
-          )}
-        </Card>
 
-        <View>
-          <Text style={styles.sectionLabelSpaced}>{t.confirm.paymentMethod}</Text>
-          <SegmentedControl
-            options={[
-              { label: t.common.gcash, value: 'gcash' },
-              { label: t.common.cash, value: 'cash' },
-            ]}
-            value={paymentMethod}
-            onChange={setPaymentMethod}
-          />
-        </View>
-      </ScrollView>
-
-      <View style={styles.footer}>
-        <Button
-          label={t.confirm.requestRide}
-          fullWidth
-          loading={isRequesting}
-          disabled={!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady}
-          // Only while disabled — an enabled button must not announce a reason
-          // that no longer applies.
-          accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
-          onPress={handleRequestRide}
-        />
-        {requestError && <Text style={styles.requestError}>{requestError}</Text>}
-        <LocationRequiredNotice />
-      </View>
-    </View>
+          {requestButton}
+        </ScrollView>
+      </MapOverlaySheet>
+    </SafeAreaView>
   );
 }
