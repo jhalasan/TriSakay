@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { colors } from '@trisakay/ui';
@@ -25,6 +25,10 @@ export function SavePlaceSheet({ place, onClose, onSaved }: SavePlaceSheetProps)
   const t = useTranslation();
   const [saving, setSaving] = useState<SavedPlaceKind | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (place === null) setError(null);
+  }, [place]);
 
   async function handleSave(kind: SavedPlaceKind) {
     if (!place || saving) return;

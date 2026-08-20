@@ -147,6 +147,52 @@ test('saveSavedPlace updates the existing row when saving "home" a second time',
   assert.equal(data?.id, 'existing-home-id');
 });
 
+test('saveSavedPlace inserts a new row when saving "home" for the first time', async () => {
+  let insertedRow: unknown = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({ data: null, error: null }),
+            }),
+          }),
+        }),
+        insert: (row: unknown) => {
+          insertedRow = row;
+          return {
+            select: () => ({
+              single: async () => ({ data: { id: 'new-home-id', ...(row as object) }, error: null }),
+            }),
+          };
+        },
+      }),
+    })
+  );
+
+  const { data, error } = await saveSavedPlace({
+    kind: 'home',
+    label: 'Home',
+    address: '123 First Save St',
+    latitude: 6.1,
+    longitude: 125.2,
+  });
+
+  assert.equal(error, null);
+  assert.deepEqual(insertedRow, {
+    user_id: 'u1',
+    kind: 'home',
+    label: 'Home',
+    address: '123 First Save St',
+    latitude: 6.1,
+    longitude: 125.2,
+  });
+  assert.equal(data?.id, 'new-home-id');
+});
+
 test('deleteSavedPlace scopes the delete to the signed-in user', async () => {
   const capturedFilters: { column: string; value: unknown }[] = [];
 
