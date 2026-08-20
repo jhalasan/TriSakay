@@ -132,11 +132,16 @@ This is the same nesting `ListRow` already tolerates for its built-in
 
 ### Listing and using (home.tsx)
 
-`SHORTCUTS` (currently a hardcoded `const [] = []`) is replaced by a
-`useState<SavedPlaceRow[]>([])` populated via `listSavedPlaces()` on
-screen focus (`useFocusEffect` from `expo-router`) rather than mount-only
-— saving a place on `set-destination.tsx` and navigating back to Home
-must show it without a global store. Icon per row is derived from `kind`
+`SHORTCUTS` (currently a hardcoded `const [] = []`) is replaced by a new
+`useSavedPlacesStore` (Zustand), mirroring the existing `useHistoryStore`
+shape exactly (`items`/`loading`/`error`/`load()`, same
+`apps/passenger/src/store/useHistoryStore.ts` pattern already used for
+Ride History) plus a `remove(id)` action. Home calls `load()` from
+`useFocusEffect` (`expo-router`, same as `history.tsx` already does) —
+saving a place on `set-destination.tsx` and navigating back to Home must
+show it, and a focus-triggered refetch is this codebase's established way
+to do that, not a one-off local-state pattern. Icon per row is derived
+from `kind`
 client-side (`home` → house icon, `work` → briefcase icon, `custom` →
 generic pin), not stored in the database — a presentation detail, not
 data.
