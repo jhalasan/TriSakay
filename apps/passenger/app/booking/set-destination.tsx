@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { FlatList, Text, View } from 'react-native';
+import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, EmptyState, ListRow, MapOverlaySheet, MapSearchBar, OsmMap, TextField, colors } from '@trisakay/ui';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -9,6 +9,7 @@ import { reverseGeocode, searchPlaces } from '../../src/utils/geocode';
 import type { LocationPoint } from '../../src/types/booking';
 import { styles } from '../../src/styles/booking/set-destination.styles';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { SavePlaceSheet } from '../../src/components/SavePlaceSheet';
 
 /** Keeps to roughly one Nominatim request per pause in typing, per its usage policy. */
 const SEARCH_DEBOUNCE_MS = 450;
@@ -28,6 +29,12 @@ export default function SetDestinationScreen() {
   // directly" — only the latter needs its own always-visible result row,
   // since it has no corresponding list entry to highlight.
   const [pinDropped, setPinDropped] = useState(false);
+  const [placeToSave, setPlaceToSave] = useState<LocationPoint | null>(null);
+  const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
+
+  function keyFor(point: LocationPoint) {
+    return `${point.latitude},${point.longitude}`;
+  }
 
   useEffect(() => {
     const q = query.trim();
@@ -116,6 +123,20 @@ export default function SetDestinationScreen() {
                   />
                 </View>
               }
+              trailing={
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={savedKeys.has(keyFor(item)) ? t.savePlace.savedAccessibilityLabel : t.savePlace.saveAccessibilityLabel}
+                  hitSlop={8}
+                  onPress={() => setPlaceToSave(item)}
+                >
+                  <Ionicons
+                    name={savedKeys.has(keyFor(item)) ? 'bookmark' : 'bookmark-outline'}
+                    size={20}
+                    color={colors.accentBluePressed}
+                  />
+                </Pressable>
+              }
               onPress={() => handleSelectResult(item)}
             />
           )}
@@ -134,6 +155,11 @@ export default function SetDestinationScreen() {
         />
         <Button label={t.setDestination.confirmDestination} fullWidth disabled={!selected} onPress={handleConfirm} />
       </MapOverlaySheet>
+      <SavePlaceSheet
+        place={placeToSave}
+        onClose={() => setPlaceToSave(null)}
+        onSaved={(point) => setSavedKeys((prev) => new Set(prev).add(keyFor(point)))}
+      />
     </SafeAreaView>
   );
 }
