@@ -18,6 +18,13 @@ import { styles } from '../../src/styles/tabs/home.styles';
 /** Saved places come from the rider's account. Empty until the backend lands. */
 const SHORTCUTS: { icon: keyof typeof Ionicons.glyphMap; point: LocationPoint }[] = [];
 
+function getGreeting(t: ReturnType<typeof useTranslation>) {
+  const hour = new Date().getHours();
+  if (hour < 12) return t.home.greetingMorning;
+  if (hour < 18) return t.home.greetingAfternoon;
+  return t.home.greetingEvening;
+}
+
 export default function HomeScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
@@ -62,6 +69,9 @@ export default function HomeScreen() {
       .finally(() => setLocating(false));
   }
 
+  const firstName = user?.name?.trim().split(/\s+/)[0];
+  const greeting = firstName ? `${getGreeting(t)}, ${firstName}` : getGreeting(t);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.mapFill}>
@@ -81,13 +91,16 @@ export default function HomeScreen() {
 
       <View style={styles.topFloating}>
         <Card variant="raised" style={styles.headerCard}>
+          <Text style={styles.greeting}>{greeting}</Text>
           <View style={styles.headerRow}>
             <Pressable
               accessibilityRole="button"
               accessibilityLabel={t.home.profileAccessibilityLabel}
               onPress={() => router.push('/(tabs)/profile')}
             >
-              <Avatar name={user?.name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="md" />
+              <View style={styles.avatarRing}>
+                <Avatar name={user?.name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="md" />
+              </View>
             </Pressable>
             <MapSearchBar
               variant="flat"
@@ -103,7 +116,7 @@ export default function HomeScreen() {
               style={styles.bellButton}
               onPress={() => router.push('/notifications')}
             >
-              <Ionicons name="notifications-outline" size={20} color={colors.ink} />
+              <Ionicons name="notifications-outline" size={20} color={colors.accentBluePressed} />
               {unreadCount > 0 && <View style={styles.bellDot} />}
             </Pressable>
           </View>

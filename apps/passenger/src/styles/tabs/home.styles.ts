@@ -27,11 +27,25 @@ export const styles = StyleSheet.create({
    */
   headerCard: {
     padding: spacing.sm,
+    borderTopWidth: 3,
+    borderTopColor: colors.accentGreen,
+  },
+  greeting: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+    paddingHorizontal: spacing.xs,
+    marginBottom: spacing.xs,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.sm,
+  },
+  avatarRing: {
+    padding: 2,
+    borderRadius: radius.pill,
+    borderWidth: 2,
+    borderColor: colors.accentGreenSoft,
   },
   pickupDivider: {
     height: 1,
@@ -47,6 +61,7 @@ export const styles = StyleSheet.create({
     borderRadius: radius.pill,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.accentBlueSoft,
   },
   bellDot: {
     position: 'absolute',

@@ -6,6 +6,9 @@ export const en = {
   home: {
     profileAccessibilityLabel: 'Profile',
     notificationsAccessibilityLabel: 'Notifications',
+    greetingMorning: 'Good morning',
+    greetingAfternoon: 'Good afternoon',
+    greetingEvening: 'Good evening',
     whereTo: 'Where to?',
     findingLocation: 'Finding your location…',
     dragPinToSetPickup: 'Drag the pin to set pickup',

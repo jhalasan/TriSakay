@@ -8,6 +8,9 @@ export const fil: Translations = {
   home: {
     profileAccessibilityLabel: 'Profile',
     notificationsAccessibilityLabel: 'Mga Abiso',
+    greetingMorning: 'Magandang umaga',
+    greetingAfternoon: 'Magandang hapon',
+    greetingEvening: 'Magandang gabi',
     whereTo: 'Saan ka pupunta?',
     findingLocation: 'Hinahanap ang iyong lokasyon…',
     dragPinToSetPickup: 'Ilipat ang pin para itakda ang sakayan',
