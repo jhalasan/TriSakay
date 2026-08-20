@@ -10,6 +10,7 @@ export * from './fare/index.ts';
 export * from './notifications/index.ts';
 export * from './payments/index.ts';
 export * from './ratings/index.ts';
+export * from './saved-places/index.ts';
 export * from './location/index.ts';
 export * from './storage/index.ts';
 export * from './trip-history/index.ts';
