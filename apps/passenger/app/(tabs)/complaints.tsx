@@ -1,6 +1,8 @@
 import { useCallback, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
 import { submitComplaint, type ComplaintCategory } from '@trisakay/services';
@@ -8,6 +10,20 @@ import { Button, Card, EmptyState, ListRow, Textarea, TextField, colors } from '
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { isNonEmpty } from '../../src/utils/validation';
 import { styles } from '../../src/styles/tabs/complaints.styles';
+
+const MAX_EVIDENCE_PHOTOS = 3;
+
+/**
+ * expo-file-system's `File` class is a no-op stub on web (every method warns
+ * and does nothing — see ExpoFileSystem.web.ts) even though it's the
+ * reliable read path on native. `fetch(uri).arrayBuffer()` is the flaky one
+ * on native (RN Android), but on web the picker's URI is a blob: URL that
+ * fetch reads fine, so branch rather than pick one for both platforms.
+ */
+async function readFileBytes(uri: string): Promise<ArrayBuffer> {
+  if (Platform.OS === 'web') return (await fetch(uri)).arrayBuffer();
+  return new File(uri).arrayBuffer();
+}
 
 const CATEGORY_LABEL: Record<ComplaintCategory, string> = {
   fare: 'Fare dispute',
@@ -37,9 +53,11 @@ export default function ComplaintsScreen() {
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
+  const [evidenceUris, setEvidenceUris] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submittedWarning, setSubmittedWarning] = useState<string | null>(null);
 
   const selectedRide = rides.find((ride) => ride.id === relatedTripId) ?? null;
   const canSubmit = !!relatedTripId && isNonEmpty(subject) && isNonEmpty(message);
@@ -49,7 +67,22 @@ export default function ComplaintsScreen() {
     setCategory('other');
     setSubject('');
     setMessage('');
+    setEvidenceUris([]);
     setSubmitted(false);
+    setSubmittedWarning(null);
+  }
+
+  async function handlePickEvidence() {
+    if (evidenceUris.length >= MAX_EVIDENCE_PHOTOS) return;
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) return;
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    if (result.canceled || !result.assets[0]) return;
+    setEvidenceUris((prev) => [...prev, result.assets[0].uri]);
+  }
+
+  function removeEvidence(index: number) {
+    setEvidenceUris((prev) => prev.filter((_, i) => i !== index));
   }
 
   async function handleSubmit() {
@@ -57,11 +90,16 @@ export default function ComplaintsScreen() {
     setSubmitting(true);
     setSubmitError(null);
 
-    const { error } = await submitComplaint({
+    const attachments = await Promise.all(
+      evidenceUris.map(async (uri) => ({ data: await readFileBytes(uri) }))
+    );
+
+    const { error, attachmentError } = await submitComplaint({
       subject,
       message,
       category,
       rideRequestId: relatedTripId ?? undefined,
+      attachments: attachments.length > 0 ? attachments : undefined,
     });
 
     setSubmitting(false);
@@ -71,6 +109,9 @@ export default function ComplaintsScreen() {
       return;
     }
 
+    setSubmittedWarning(
+      attachmentError ? `Your complaint was filed, but the evidence photos could not be attached (${attachmentError}).` : null
+    );
     setSubmitted(true);
   }
 
@@ -83,6 +124,7 @@ export default function ComplaintsScreen() {
             title="Complaint submitted"
             message="Our team will review this and follow up if needed."
           />
+          {submittedWarning && <Text style={styles.successWarning}>{submittedWarning}</Text>}
           <Button label="Submit another" variant="outline" tone="neutral" onPress={resetForm} />
         </View>
       </SafeAreaView>
@@ -169,6 +211,36 @@ export default function ComplaintsScreen() {
             value={message}
             onChangeText={setMessage}
           />
+
+          <View>
+            <Text style={styles.fieldLabel}>Evidence (optional)</Text>
+            <View style={styles.evidenceRow}>
+              {evidenceUris.map((uri, index) => (
+                <View key={uri} style={styles.evidenceThumbWrap}>
+                  <Image source={{ uri }} style={styles.evidenceThumb} resizeMode="cover" />
+                  <Pressable
+                    style={styles.evidenceRemove}
+                    onPress={() => removeEvidence(index)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Remove photo"
+                  >
+                    <Ionicons name="close" size={14} color={colors.white} />
+                  </Pressable>
+                </View>
+              ))}
+              {evidenceUris.length < MAX_EVIDENCE_PHOTOS && (
+                <Pressable
+                  style={styles.evidenceAddTile}
+                  onPress={handlePickEvidence}
+                  accessibilityRole="button"
+                  accessibilityLabel="Add evidence photo"
+                >
+                  <Ionicons name="camera-outline" size={22} color={colors.inkSoft} />
+                </Pressable>
+              )}
+            </View>
+            <Text style={styles.evidenceHint}>Up to {MAX_EVIDENCE_PHOTOS} photos.</Text>
+          </View>
 
           {submitError && <Text style={styles.error}>{submitError}</Text>}
 

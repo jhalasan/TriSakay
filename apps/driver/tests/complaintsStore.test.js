@@ -6,7 +6,12 @@ function fakeClient({ selectResult, insertResult }) {
     auth: { getSession: async () => ({ data: { session: { user: { id: 'driver1' } } } }) },
     from: () => ({
       select: () => ({ eq: () => ({ order: () => Promise.resolve(selectResult) }) }),
-      insert: async () => insertResult,
+      insert: () => ({
+        select: () => ({
+          single: async () =>
+            insertResult.error ? { data: null, error: insertResult.error } : { data: { id: 'c1' }, error: null },
+        }),
+      }),
     }),
   };
 }
@@ -66,9 +71,10 @@ test('submit() re-fetches from the backend on success instead of guessing the ne
   );
 
   useComplaintsStore.setState({ complaints: [], loading: false, error: null });
-  const ok = await useComplaintsStore.getState().submit('Overcharged', 'Details here');
+  const result = await useComplaintsStore.getState().submit('Overcharged', 'Details here');
 
-  assert.equal(ok, true);
+  assert.equal(result.ok, true);
+  assert.equal(result.attachmentError, null);
   assert.equal(useComplaintsStore.getState().complaints.length, 1);
   assert.equal(useComplaintsStore.getState().complaints[0].id, 'c1');
 });
@@ -80,9 +86,9 @@ test('submit() sets error and does not re-fetch when the insert fails', async ()
   __setSupabaseClientForTests(fakeClient({ insertResult: { error: { message: 'network error' } } }));
 
   useComplaintsStore.setState({ complaints: [], loading: false, error: null });
-  const ok = await useComplaintsStore.getState().submit('Overcharged', 'Details here');
+  const result = await useComplaintsStore.getState().submit('Overcharged', 'Details here');
 
-  assert.equal(ok, false);
+  assert.equal(result.ok, false);
   assert.equal(useComplaintsStore.getState().error, 'network error');
   assert.equal(useComplaintsStore.getState().complaints.length, 0);
 });

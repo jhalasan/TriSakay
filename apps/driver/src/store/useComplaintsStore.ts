@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { listMyComplaints, submitComplaint, type ComplaintDbStatus } from '@trisakay/services';
+import {
+  listMyComplaints,
+  submitComplaint,
+  type ComplaintAttachmentInput,
+  type ComplaintCategory,
+  type ComplaintDbStatus,
+} from '@trisakay/services';
 
 export type ComplaintStatus = 'open' | 'review' | 'closed';
 
@@ -21,7 +27,13 @@ interface ComplaintsState {
   loading: boolean;
   error: string | null;
   load: () => Promise<void>;
-  submit: (subject: string, message: string) => Promise<boolean>;
+  submit: (
+    subject: string,
+    message: string,
+    category?: ComplaintCategory,
+    rideRequestId?: string,
+    attachments?: ComplaintAttachmentInput[]
+  ) => Promise<{ ok: boolean; attachmentError: string | null }>;
 }
 
 export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
@@ -44,13 +56,19 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     });
   },
 
-  submit: async (subject, message) => {
+  submit: async (subject, message, category, rideRequestId, attachments) => {
     set({ error: null });
 
-    const { error } = await submitComplaint({ subject, message });
+    const { error, attachmentError } = await submitComplaint({
+      subject,
+      message,
+      category,
+      rideRequestId,
+      attachments,
+    });
     if (error) {
       set({ error });
-      return false;
+      return { ok: false, attachmentError: null };
     }
 
     // Re-fetch rather than optimistically prepending a local guess at the
@@ -58,6 +76,6 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     // mirrors: a fabricated local entry can drift from or duplicate what a
     // subsequent real load() returns.
     await get().load();
-    return true;
+    return { ok: true, attachmentError };
   },
 }));

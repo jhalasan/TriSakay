@@ -62,4 +62,53 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.xl,
     gap: spacing.lg,
   },
+  successWarning: {
+    ...typography.caption,
+    color: colors.danger,
+    textAlign: 'center',
+  },
+  evidenceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  evidenceThumbWrap: {
+    width: 84,
+    height: 84,
+  },
+  evidenceThumb: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.sm,
+  },
+  evidenceRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: colors.ink,
+    borderRadius: 999,
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  evidenceAddTile: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderStyle: 'dashed',
+    backgroundColor: colors.fill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  evidenceAddLabel: {
+    ...typography.caption,
+    color: colors.inkSoft,
+  },
+  evidenceHint: {
+    ...typography.caption,
+    color: colors.inkFaint,
+  },
 });

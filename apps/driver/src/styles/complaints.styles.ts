@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: { flex: 1 },
@@ -13,4 +13,75 @@ export const styles = StyleSheet.create({
   formGap: { gap: spacing.md },
   newToggleText: { ...typography.body, color: colors.accentBlue },
   error: { ...typography.caption, color: colors.danger },
+  fieldLabel: { ...typography.label, color: colors.inkSoft },
+  pickerField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    borderWidth: 1.5,
+    borderColor: colors.lineStrong,
+    borderRadius: radius.sm,
+    backgroundColor: colors.panel,
+    paddingHorizontal: spacing.md,
+    minHeight: 48,
+  },
+  pickerFieldText: { ...typography.body, color: colors.ink },
+  pickerFieldPlaceholder: { color: colors.inkFaint },
+  pickerEmpty: {
+    ...typography.body,
+    color: colors.inkSoft,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.lg,
+    textAlign: 'center',
+  },
+  pickerList: {
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.sm,
+    overflow: 'hidden',
+  },
+  evidenceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  evidenceThumbWrap: {
+    width: 84,
+    height: 84,
+  },
+  evidenceThumb: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.sm,
+  },
+  evidenceRemove: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: colors.ink,
+    borderRadius: 999,
+    width: 22,
+    height: 22,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  evidenceAddTile: {
+    width: 84,
+    height: 84,
+    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderStyle: 'dashed',
+    backgroundColor: colors.fill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  evidenceHint: {
+    ...typography.caption,
+    color: colors.inkFaint,
+  },
+  submittedWarning: {
+    ...typography.caption,
+    color: colors.danger,
+  },
 });
