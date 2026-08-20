@@ -415,6 +415,80 @@ export type Database = {
           },
         ]
       }
+      emergency_alerts: {
+        Row: {
+          counterpart_id: string | null
+          created_at: string
+          id: string
+          lat: number
+          lng: number
+          notes: string | null
+          reviewed_at: string | null
+          reviewed_by: string | null
+          ride_request_id: string | null
+          status: Database["public"]["Enums"]["emergency_status"]
+          triggered_by: string
+          triggered_role: Database["public"]["Enums"]["emergency_role"]
+        }
+        Insert: {
+          counterpart_id?: string | null
+          created_at?: string
+          id?: string
+          lat: number
+          lng: number
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          ride_request_id?: string | null
+          status?: Database["public"]["Enums"]["emergency_status"]
+          triggered_by: string
+          triggered_role: Database["public"]["Enums"]["emergency_role"]
+        }
+        Update: {
+          counterpart_id?: string | null
+          created_at?: string
+          id?: string
+          lat?: number
+          lng?: number
+          notes?: string | null
+          reviewed_at?: string | null
+          reviewed_by?: string | null
+          ride_request_id?: string | null
+          status?: Database["public"]["Enums"]["emergency_status"]
+          triggered_by?: string
+          triggered_role?: Database["public"]["Enums"]["emergency_role"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "emergency_alerts_counterpart_id_fkey"
+            columns: ["counterpart_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_ride_request_id_fkey"
+            columns: ["ride_request_id"]
+            isOneToOne: false
+            referencedRelation: "ride_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       fare_config: {
         Row: {
           base_fare: number
@@ -715,6 +789,47 @@ export type Database = {
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      saved_places: {
+        Row: {
+          address: string
+          created_at: string
+          id: string
+          kind: Database["public"]["Enums"]["saved_place_kind"]
+          label: string
+          latitude: number
+          longitude: number
+          user_id: string
+        }
+        Insert: {
+          address: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["saved_place_kind"]
+          label: string
+          latitude: number
+          longitude: number
+          user_id: string
+        }
+        Update: {
+          address?: string
+          created_at?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["saved_place_kind"]
+          label?: string
+          latitude?: number
+          longitude?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "saved_places_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
             referencedColumns: ["id"]
           },
         ]
@@ -1263,6 +1378,7 @@ export type Database = {
           passenger_name: string
         }[]
       }
+      is_account_active: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_cluster_authorized: {
         Args: {
@@ -1292,10 +1408,7 @@ export type Database = {
         Returns: undefined
       }
       submit_driver_documents: {
-        Args: {
-          p_documents: Json
-          p_plate_no: string
-        }
+        Args: { p_documents: Json; p_plate_no: string }
         Returns: string
       }
       update_fare_config: {
@@ -1303,7 +1416,7 @@ export type Database = {
           p_base_fare: number
           p_base_km: number
           p_discount_rate_percent: number
-          p_ordinance_ref: string | null
+          p_ordinance_ref: string
           p_rate_per_km: number
         }
         Returns: string
@@ -1337,6 +1450,8 @@ export type Database = {
         | "or_cr"
         | "franchise_permit"
         | "tricycle_photo"
+      emergency_role: "passenger" | "driver"
+      emergency_status: "logged" | "reviewed" | "closed"
       notification_type:
         | "ride_status"
         | "verification_status"
@@ -1344,6 +1459,7 @@ export type Database = {
         | "payment_status"
         | "discount_status"
         | "franchise_expiring"
+        | "emergency_alert"
       payment_method: "cash" | "gcash"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       ride_status:
@@ -1352,6 +1468,7 @@ export type Database = {
         | "ongoing"
         | "completed"
         | "cancelled"
+      saved_place_kind: "home" | "work" | "custom"
       tricycle_cluster: "red" | "white" | "apple_green" | "melting_pot"
       trip_status: "forming" | "active" | "completed" | "cancelled"
       user_role:
@@ -1519,6 +1636,8 @@ export const Constants = {
         "franchise_permit",
         "tricycle_photo",
       ],
+      emergency_role: ["passenger", "driver"],
+      emergency_status: ["logged", "reviewed", "closed"],
       notification_type: [
         "ride_status",
         "verification_status",
@@ -1526,10 +1645,12 @@ export const Constants = {
         "payment_status",
         "discount_status",
         "franchise_expiring",
+        "emergency_alert",
       ],
       payment_method: ["cash", "gcash"],
       payment_status: ["pending", "paid", "failed", "refunded"],
       ride_status: ["pending", "assigned", "ongoing", "completed", "cancelled"],
+      saved_place_kind: ["home", "work", "custom"],
       tricycle_cluster: ["red", "white", "apple_green", "melting_pot"],
       trip_status: ["forming", "active", "completed", "cancelled"],
       user_role: [

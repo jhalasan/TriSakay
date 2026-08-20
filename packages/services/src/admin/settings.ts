@@ -74,7 +74,7 @@ export async function updateAdminFareConfig(patch: UpdateAdminFareConfigInput): 
     p_base_km: patch.baseKm,
     p_rate_per_km: patch.ratePerKm,
     p_discount_rate_percent: current.discount_rate_percent,
-    p_ordinance_ref: current.ordinance_ref,
+    p_ordinance_ref: current.ordinance_ref ?? '',
   });
 
   return { error: error?.message ?? null };

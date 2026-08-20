@@ -112,6 +112,8 @@ create type payment_method as enum ('cash', 'gcash');
 -- 'gcash' is collected via the PayMongo gateway, kept in Test Mode only —
 -- no Live Mode activation for this prototype (see transactions table).
 
+create type saved_place_kind as enum ('home', 'work', 'custom');
+
 create type payment_status as enum (
   'pending',
   'paid',
@@ -627,6 +629,34 @@ create table public.notifications (
   is_read     boolean not null default false,
   created_at  timestamptz not null default now()
 );
+
+
+-- 3.5b saved_places -------------------------------------------------------
+-- A rider's saved pickup/destination shortcuts (one-tap re-booking from
+-- Home). 'home' and 'work' are singleton slots per rider — the partial
+-- unique index below enforces at most one of each as a DB-level safety
+-- net; the service layer implements "replace the existing one" as its
+-- normal-path behavior, not by relying on this index as an ON CONFLICT
+-- arbiter. 'custom' places are unlimited.
+create table public.saved_places (
+  id          uuid primary key default gen_random_uuid(),
+  user_id     uuid not null references public.users(id) on delete cascade,
+  kind        saved_place_kind not null default 'custom',
+  label       text not null,
+  address     text not null,
+  latitude    double precision not null,
+  longitude   double precision not null,
+  created_at  timestamptz not null default now()
+);
+
+create unique index idx_saved_places_singleton_kind
+  on public.saved_places (user_id, kind)
+  where kind in ('home', 'work');
+
+create index idx_saved_places_user on public.saved_places (user_id, created_at desc);
+
+comment on table public.saved_places is
+  'Rider-saved pickup/destination shortcuts for one-tap re-booking from Home. At most one home/work row per rider (idx_saved_places_singleton_kind); unlimited custom rows.';
 
 
 -- 3.6 user_consents -----------------------------------------------------
@@ -1384,6 +1414,7 @@ alter table public.account_actions  enable row level security;
 alter table public.fare_config      enable row level security;
 alter table public.system_settings  enable row level security;
 alter table public.notifications    enable row level security;
+alter table public.saved_places     enable row level security;
 alter table public.user_consents    enable row level security;
 alter table public.emergency_alerts enable row level security;
 
@@ -1588,6 +1619,10 @@ create policy settings_write_admin on public.system_settings
 
 -- 7.11 notifications --------------------------------------------------
 create policy notif_own on public.notifications
+  for all using (user_id = auth.uid()) with check (user_id = auth.uid());
+
+-- 7.11b saved_places -----------------------------------------------------
+create policy saved_places_own on public.saved_places
   for all using (user_id = auth.uid()) with check (user_id = auth.uid());
 
 -- 7.12 user_consents ---------------------------------------------------
