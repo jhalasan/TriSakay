@@ -60,7 +60,6 @@ export const styles = StyleSheet.create({
   /** Own pressed-state wrapper (rather than Button) since this is a full custom gradient card, not a text button. */
   ctaWrap: {
     borderRadius: radius.lg,
-    ...elevation.card,
   },
   ctaPressed: {
     opacity: 0.9,
@@ -71,6 +70,7 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radius.lg,
     padding: spacing.lg,
+    ...elevation.card,
   },
   ctaMotif: {
     position: 'absolute',
