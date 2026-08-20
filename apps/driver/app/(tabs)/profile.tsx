@@ -1,25 +1,40 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { File } from 'expo-file-system';
+import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { updateProfile } from '@trisakay/services';
+import { updateAvatarUrl, updateProfile, uploadAvatar } from '@trisakay/services';
 import { Avatar, BrandMotif, Card, GradientSurface, ListRow, StarRating, TextField, colors } from '@trisakay/ui';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useVerificationStore } from '../../src/store/useVerificationStore';
 import { styles } from '../../src/styles/tabs/profile.styles';
 
+/**
+ * expo-file-system's `File` class is a no-op stub on web — fetch(uri) is the
+ * fallback there since the picker's URI is a blob: URL fetch reads fine; on
+ * native File is the reliable path (fetch is flaky on some Android setups).
+ */
+async function readFileBytes(uri: string): Promise<ArrayBuffer> {
+  if (Platform.OS === 'web') return (await fetch(uri)).arrayBuffer();
+  return new File(uri).arrayBuffer();
+}
+
 export default function ProfileScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const rating = useDriverStore((state) => state.rating);
   const ratingCount = useDriverStore((state) => state.ratingCount);
   const isVerified = useVerificationStore((state) => state.status === 'approved');
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name ?? '');
+  const [phone, setPhone] = useState(user?.phone ?? '');
   const [saving, setSaving] = useState(false);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
   async function handleToggleEdit() {
     if (!isEditing) {
@@ -27,14 +42,52 @@ export default function ProfileScreen() {
       return;
     }
     setSaving(true);
-    const { error } = await updateProfile({ fullName: name });
+    const { error } = await updateProfile({ fullName: name, phone });
     setSaving(false);
     if (error) {
       Alert.alert('Could not save', error);
       return;
     }
-    await useAuthStore.getState().refreshProfile();
+    await refreshProfile();
     setIsEditing(false);
+  }
+
+  async function handleChangeAvatar() {
+    if (!user) return;
+
+    const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permission.granted) {
+      Alert.alert('Permission needed', 'Allow photo library access to change your profile picture.');
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled || !result.assets[0]) return;
+
+    setUploadingAvatar(true);
+    try {
+      const bytes = await readFileBytes(result.assets[0].uri);
+      const { publicUrl, error } = await uploadAvatar({ userId: user.id, data: bytes });
+      if (!publicUrl) {
+        Alert.alert('Could not upload photo', error ?? 'Please try again.');
+        return;
+      }
+      const { error: profileError } = await updateAvatarUrl(publicUrl);
+      if (profileError) {
+        Alert.alert('Could not save photo', profileError);
+        return;
+      }
+      await refreshProfile();
+    } catch (err) {
+      Alert.alert('Could not upload photo', err instanceof Error ? err.message : 'Please try again.');
+    } finally {
+      setUploadingAvatar(false);
+    }
   }
 
   return (
@@ -61,9 +114,24 @@ export default function ProfileScreen() {
         </GradientSurface>
 
         <View style={styles.identity}>
-          <View style={styles.avatarRing}>
-            <Avatar name={name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="xl" />
-          </View>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Change profile photo"
+            style={styles.avatarWrap}
+            disabled={uploadingAvatar}
+            onPress={handleChangeAvatar}
+          >
+            <View style={styles.avatarRing}>
+              <Avatar name={name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="xl" />
+            </View>
+            <View style={styles.avatarEditBadge}>
+              {uploadingAvatar ? (
+                <ActivityIndicator size="small" color={colors.white} />
+              ) : (
+                <Ionicons name="camera" size={14} color={colors.white} />
+              )}
+            </View>
+          </Pressable>
           {isEditing ? (
             <View style={styles.editFieldWrap}>
               <TextField value={name} onChangeText={setName} autoCapitalize="words" />
@@ -92,7 +160,7 @@ export default function ProfileScreen() {
         </View>
 
         <Card style={styles.detailsCard}>
-          <View style={styles.detailCol}>
+          <View style={styles.detailRow}>
             <View style={styles.detailLabelRow}>
               <Ionicons name="mail-outline" size={14} color={colors.inkSoft} />
               <Text style={styles.detailLabel}>Email</Text>
@@ -101,12 +169,22 @@ export default function ProfileScreen() {
               {user?.email ?? '—'}
             </Text>
           </View>
-          <View style={styles.detailCol}>
+          <View style={styles.detailDivider} />
+          <View style={styles.detailRow}>
             <View style={styles.detailLabelRow}>
               <Ionicons name="call-outline" size={14} color={colors.inkSoft} />
               <Text style={styles.detailLabel}>Phone</Text>
             </View>
-            <Text style={styles.detailValue}>{user?.phone ?? '—'}</Text>
+            {isEditing ? (
+              <TextField
+                value={phone}
+                onChangeText={setPhone}
+                keyboardType="phone-pad"
+                placeholder="09XX XXX XXXX"
+              />
+            ) : (
+              <Text style={styles.detailValue}>{user?.phone ?? '—'}</Text>
+            )}
           </View>
         </Card>
 

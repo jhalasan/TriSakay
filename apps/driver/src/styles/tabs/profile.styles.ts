@@ -38,11 +38,26 @@ export const styles = StyleSheet.create({
   },
   /** Pulled up over the hero/body seam so the avatar reads as floating. */
   identity: { alignItems: 'center', gap: spacing.xs, marginTop: -48 },
+  /** Non-clipping wrapper — the edit badge sits just outside the ring's own bounds. */
+  avatarWrap: { position: 'relative' },
   avatarRing: {
     padding: 4,
     borderRadius: 999,
     backgroundColor: colors.white,
     ...elevation.card,
+  },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.accentBlue,
+    borderWidth: 2,
+    borderColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editFieldWrap: { width: '100%', marginTop: spacing.sm },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs, marginTop: spacing.sm },
@@ -72,10 +87,14 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkSoft,
   },
-  detailsCard: { flexDirection: 'row', gap: spacing.xl },
-  detailCol: { flex: 1, gap: 2 },
+  detailsCard: { gap: spacing.md },
+  /** Stacked full-width rather than side-by-side columns — a bordered
+   * TextField (52px, min-height) sitting next to plain label text in a
+   * cramped half-width column read as overlapping/awkward in edit mode. */
+  detailRow: { gap: spacing.xs },
+  detailDivider: { height: 1, backgroundColor: colors.lineSoft },
   detailLabelRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   detailLabel: { ...typography.label, color: colors.inkSoft },
-  detailValue: { ...typography.body, color: colors.ink },
-  navGroup: { padding: 0, gap: spacing.xs },
+  detailValue: { ...typography.bodyStrong, color: colors.ink },
+  navGroup: { gap: spacing.xs },
 });
