@@ -34,7 +34,7 @@ test('subscribe(userId) populates items from the reconcile query on SUBSCRIBED',
         eq: () => ({
           order: () =>
             Promise.resolve({
-              data: [{ id: 'n1', title: 'Ride matched', message: 'A driver is on the way.', is_read: false, created_at: '2026-08-14T00:00:00.000Z' }],
+              data: [{ id: 'n1', title: 'Ride matched', message: 'A driver is on the way.', is_read: false, created_at: '2026-08-14T00:00:00.000Z', type: 'ride_status' }],
               error: null,
             }),
         }),
@@ -49,7 +49,7 @@ test('subscribe(userId) populates items from the reconcile query on SUBSCRIBED',
   await Promise.resolve();
 
   assert.deepEqual(useNotificationsStore.getState().items, [
-    { id: 'n1', title: 'Ride matched', body: 'A driver is on the way.', read: false, createdAt: '2026-08-14T00:00:00.000Z' },
+    { id: 'n1', title: 'Ride matched', body: 'A driver is on the way.', read: false, createdAt: '2026-08-14T00:00:00.000Z', type: 'ride_status' },
   ]);
 
   useNotificationsStore.getState().unsubscribe();
@@ -71,7 +71,7 @@ test('unsubscribe() clears items and tears down the channel', async () => {
         eq: () => ({
           order: () =>
             Promise.resolve({
-              data: [{ id: 'n1', title: 'x', message: 'y', is_read: false, created_at: 'now' }],
+              data: [{ id: 'n1', title: 'x', message: 'y', is_read: false, created_at: 'now', type: 'ride_status' }],
               error: null,
             }),
         }),
@@ -114,8 +114,8 @@ test('markAllRead() optimistically flips read locally, then writes through', asy
 
   useNotificationsStore.setState({
     items: [
-      { id: 'n1', title: 'a', body: 'b', read: false, createdAt: 'now' },
-      { id: 'n2', title: 'c', body: 'd', read: false, createdAt: 'now' },
+      { id: 'n1', title: 'a', body: 'b', read: false, createdAt: 'now', type: 'ride_status' },
+      { id: 'n2', title: 'c', body: 'd', read: false, createdAt: 'now', type: 'ride_status' },
     ],
     error: null,
   });
@@ -142,9 +142,67 @@ test('markAllRead() surfaces an error when the write fails', async () => {
     }),
   } as any);
 
-  const unreadItems = [{ id: 'n1', title: 'a', body: 'b', read: false, createdAt: 'now' }];
+  const unreadItems = [{ id: 'n1', title: 'a', body: 'b', read: false, createdAt: 'now', type: 'ride_status' as const }];
   useNotificationsStore.setState({ items: unreadItems, error: null });
   await useNotificationsStore.getState().markAllRead();
+
+  assert.equal(useNotificationsStore.getState().error, 'network error');
+  assert.deepEqual(useNotificationsStore.getState().items, unreadItems, 'failed write should roll back the optimistic read flip');
+});
+
+test('markRead(id) optimistically flips one item read, then writes through', async () => {
+  const { useNotificationsStore } = await import('../src/store/useNotificationsStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  let capturedId: string | null = null;
+  __setSupabaseClientForTests({
+    channel: () => {
+      throw new Error('channel not needed for this test');
+    },
+    removeChannel: () => {},
+    from: () => ({
+      update: () => ({
+        eq: (_col: string, id: string) => {
+          capturedId = id;
+          return Promise.resolve({ error: null });
+        },
+      }),
+    }),
+  } as any);
+
+  useNotificationsStore.setState({
+    items: [
+      { id: 'n1', title: 'a', body: 'b', read: false, createdAt: 'now', type: 'ride_status' },
+      { id: 'n2', title: 'c', body: 'd', read: false, createdAt: 'now', type: 'ride_status' },
+    ],
+    error: null,
+  });
+
+  await useNotificationsStore.getState().markRead('n1');
+
+  const items = useNotificationsStore.getState().items;
+  assert.equal(items.find((item) => item.id === 'n1')?.read, true);
+  assert.equal(items.find((item) => item.id === 'n2')?.read, false);
+  assert.equal(capturedId, 'n1');
+});
+
+test('markRead(id) surfaces an error and rolls back when the write fails', async () => {
+  const { useNotificationsStore } = await import('../src/store/useNotificationsStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    channel: () => {
+      throw new Error('channel not needed for this test');
+    },
+    removeChannel: () => {},
+    from: () => ({
+      update: () => ({ eq: () => Promise.resolve({ error: { message: 'network error' } }) }),
+    }),
+  } as any);
+
+  const unreadItems = [{ id: 'n1', title: 'a', body: 'b', read: false, createdAt: 'now', type: 'ride_status' as const }];
+  useNotificationsStore.setState({ items: unreadItems, error: null });
+  await useNotificationsStore.getState().markRead('n1');
 
   assert.equal(useNotificationsStore.getState().error, 'network error');
   assert.deepEqual(useNotificationsStore.getState().items, unreadItems, 'failed write should roll back the optimistic read flip');

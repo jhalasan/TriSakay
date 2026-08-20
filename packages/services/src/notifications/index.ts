@@ -26,6 +26,13 @@ export async function markAllNotificationsRead(): Promise<MarkAllNotificationsRe
   return { error: error?.message ?? null };
 }
 
+/** Marks a single notification read (RLS: `notif_own`, `user_id = auth.uid()`). */
+export async function markNotificationRead(id: string): Promise<MarkAllNotificationsReadResult> {
+  const { error } = await getSupabaseClient().from('notifications').update({ is_read: true }).eq('id', id);
+
+  return { error: error?.message ?? null };
+}
+
 /**
  * Live list of the signed-in user's own notifications, same refetch-on-any-
  * change shape as subscribeToPendingRideRequests in booking/index.ts — a
