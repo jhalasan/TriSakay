@@ -9,7 +9,7 @@ import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
 import { useSavedPlacesStore } from '../../src/store/useSavedPlacesStore';
-import type { SavedPlaceRow } from '@trisakay/services';
+import type { SavedPlaceIcon, SavedPlaceRow } from '@trisakay/services';
 import type { LocationPoint } from '../../src/types/booking';
 import { styles } from '../../src/styles/tabs/home.styles';
 
@@ -26,12 +26,6 @@ function getGreetingIcon(): keyof typeof Ionicons.glyphMap {
   if (hour < 18) return 'sunny-outline';
   return 'moon-outline';
 }
-
-const KIND_ICON: Record<SavedPlaceRow['kind'], keyof typeof Ionicons.glyphMap> = {
-  home: 'home-outline',
-  work: 'briefcase-outline',
-  custom: 'location-outline',
-};
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -169,7 +163,10 @@ export default function HomeScreen() {
                   accessibilityRole="button"
                 >
                   <View style={styles.shortcutIcon}>
-                    <Ionicons name={KIND_ICON[item.kind]} size={20} color={colors.accentBluePressed} />
+                    {/* `icon` is a free-text column guarded by the saved_places_icon_check
+                        constraint, so this cast is safe — the DB never holds a value outside
+                        SAVED_PLACE_ICONS. */}
+                    <Ionicons name={item.icon as SavedPlaceIcon} size={20} color={colors.accentBluePressed} />
                   </View>
                   <View style={styles.shortcutTextSlot}>
                     <Text style={styles.shortcutLabel}>{item.label}</Text>

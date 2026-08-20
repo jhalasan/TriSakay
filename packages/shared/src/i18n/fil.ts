@@ -35,9 +35,10 @@ export const fil: Translations = {
   },
   savePlace: {
     title: 'I-save ang lugar na ito',
-    homeLabel: 'Tahanan',
-    workLabel: 'Trabaho',
-    saveAsPrefix: 'I-save bilang',
+    nameLabel: 'Pangalan',
+    namePlaceholder: 'hal. Gym, Bahay ni Nanay',
+    iconLabel: 'Icon',
+    saveButton: 'I-save ang lugar',
     saveAccessibilityLabel: 'I-save ang lugar na ito',
     savedAccessibilityLabel: 'Na-save na',
   },

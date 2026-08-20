@@ -112,8 +112,6 @@ create type payment_method as enum ('cash', 'gcash');
 -- 'gcash' is collected via the PayMongo gateway, kept in Test Mode only —
 -- no Live Mode activation for this prototype (see transactions table).
 
-create type saved_place_kind as enum ('home', 'work', 'custom');
-
 create type payment_status as enum (
   'pending',
   'paid',
@@ -633,30 +631,31 @@ create table public.notifications (
 
 -- 3.5b saved_places -------------------------------------------------------
 -- A rider's saved pickup/destination shortcuts (one-tap re-booking from
--- Home). 'home' and 'work' are singleton slots per rider — the partial
--- unique index below enforces at most one of each as a DB-level safety
--- net; the service layer implements "replace the existing one" as its
--- normal-path behavior, not by relying on this index as an ON CONFLICT
--- arbiter. 'custom' places are unlimited.
+-- Home). Fully customizable and unlimited per rider — a free-form label
+-- plus an icon drawn from a curated set (saved_places_icon_check); no
+-- singleton slots.
 create table public.saved_places (
   id          uuid primary key default gen_random_uuid(),
   user_id     uuid not null references public.users(id) on delete cascade,
-  kind        saved_place_kind not null default 'custom',
   label       text not null,
+  icon        text not null default 'location-outline',
   address     text not null,
   latitude    double precision not null,
   longitude   double precision not null,
-  created_at  timestamptz not null default now()
-);
+  created_at  timestamptz not null default now(),
 
-create unique index idx_saved_places_singleton_kind
-  on public.saved_places (user_id, kind)
-  where kind in ('home', 'work');
+  constraint saved_places_icon_check check (
+    icon in (
+      'home-outline', 'briefcase-outline', 'school-outline', 'cart-outline',
+      'restaurant-outline', 'medkit-outline', 'people-outline', 'location-outline'
+    )
+  )
+);
 
 create index idx_saved_places_user on public.saved_places (user_id, created_at desc);
 
 comment on table public.saved_places is
-  'Rider-saved pickup/destination shortcuts for one-tap re-booking from Home. At most one home/work row per rider (idx_saved_places_singleton_kind); unlimited custom rows.';
+  'Rider-saved pickup/destination shortcuts for one-tap re-booking from Home. Fully customizable: free-form label + a curated icon (saved_places_icon_check), unlimited per rider.';
 
 
 -- 3.6 user_consents -----------------------------------------------------

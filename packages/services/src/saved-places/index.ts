@@ -1,8 +1,21 @@
 import { getSupabaseClient } from '../supabase/client.ts';
 import type { Database } from '../supabase/database.types.ts';
 
-export type SavedPlaceKind = Database['public']['Enums']['saved_place_kind'];
 export type SavedPlaceRow = Database['public']['Tables']['saved_places']['Row'];
+
+/** The curated set enforced by the `saved_places_icon_check` constraint — the only icon values a row can hold. */
+export const SAVED_PLACE_ICONS = [
+  'home-outline',
+  'briefcase-outline',
+  'school-outline',
+  'cart-outline',
+  'restaurant-outline',
+  'medkit-outline',
+  'people-outline',
+  'location-outline',
+] as const;
+
+export type SavedPlaceIcon = (typeof SAVED_PLACE_ICONS)[number];
 
 async function getSignedInUserId(): Promise<string | null> {
   const { data } = await getSupabaseClient().auth.getSession();
@@ -29,8 +42,8 @@ export async function listSavedPlaces(): Promise<ListSavedPlacesResult> {
 }
 
 export interface SaveSavedPlaceInput {
-  kind: SavedPlaceKind;
   label: string;
+  icon: SavedPlaceIcon;
   address: string;
   latitude: number;
   longitude: number;
@@ -41,48 +54,12 @@ export interface SaveSavedPlaceResult {
   error: string | null;
 }
 
-/**
- * Inserts a new saved place — except for 'home'/'work', which overwrite
- * whatever row of that kind already exists (queried, then updated by id)
- * rather than inserting a second one. Implemented as an explicit
- * select-then-write instead of a Postgres upsert: the uniqueness
- * constraint on (user_id, kind) is a *partial* index (only 'home'/'work'
- * rows), and supabase-js's `.upsert({ onConflict })` has no way to target
- * a partial index's WHERE predicate, so relying on it here would either
- * fail to find an arbiter or silently not apply to the rows that need it.
- */
+/** Inserts a new saved place. Unlimited per rider — there is no singleton slot to replace. */
 export async function saveSavedPlace(input: SaveSavedPlaceInput): Promise<SaveSavedPlaceResult> {
   const userId = await getSignedInUserId();
   if (!userId) return { data: null, error: 'Not signed in' };
-  const client = getSupabaseClient();
 
-  if (input.kind === 'custom') {
-    const { data, error } = await client
-      .from('saved_places')
-      .insert({ user_id: userId, ...input })
-      .select()
-      .single();
-    return { data: data ?? null, error: error?.message ?? null };
-  }
-
-  const { data: existing } = await client
-    .from('saved_places')
-    .select('id')
-    .eq('user_id', userId)
-    .eq('kind', input.kind)
-    .maybeSingle();
-
-  if (existing) {
-    const { data, error } = await client
-      .from('saved_places')
-      .update(input)
-      .eq('id', existing.id)
-      .select()
-      .single();
-    return { data: data ?? null, error: error?.message ?? null };
-  }
-
-  const { data, error } = await client
+  const { data, error } = await getSupabaseClient()
     .from('saved_places')
     .insert({ user_id: userId, ...input })
     .select()

@@ -797,8 +797,8 @@ export type Database = {
         Row: {
           address: string
           created_at: string
+          icon: string
           id: string
-          kind: Database["public"]["Enums"]["saved_place_kind"]
           label: string
           latitude: number
           longitude: number
@@ -807,8 +807,8 @@ export type Database = {
         Insert: {
           address: string
           created_at?: string
+          icon?: string
           id?: string
-          kind?: Database["public"]["Enums"]["saved_place_kind"]
           label: string
           latitude: number
           longitude: number
@@ -817,8 +817,8 @@ export type Database = {
         Update: {
           address?: string
           created_at?: string
+          icon?: string
           id?: string
-          kind?: Database["public"]["Enums"]["saved_place_kind"]
           label?: string
           latitude?: number
           longitude?: number
@@ -1468,7 +1468,6 @@ export type Database = {
         | "ongoing"
         | "completed"
         | "cancelled"
-      saved_place_kind: "home" | "work" | "custom"
       tricycle_cluster: "red" | "white" | "apple_green" | "melting_pot"
       trip_status: "forming" | "active" | "completed" | "cancelled"
       user_role:
@@ -1650,7 +1649,6 @@ export const Constants = {
       payment_method: ["cash", "gcash"],
       payment_status: ["pending", "paid", "failed", "refunded"],
       ride_status: ["pending", "assigned", "ongoing", "completed", "cancelled"],
-      saved_place_kind: ["home", "work", "custom"],
       tricycle_cluster: ["red", "white", "apple_green", "melting_pot"],
       trip_status: ["forming", "active", "completed", "cancelled"],
       user_role: [

@@ -23,18 +23,28 @@ export const styles = StyleSheet.create({
     color: colors.danger,
     marginBottom: spacing.sm,
   },
-  optionRow: {
+  iconSectionLabel: {
+    ...typography.label,
+    fontSize: 11,
+    color: colors.inkFaint,
+    marginTop: spacing.md,
+    marginBottom: spacing.sm,
+  },
+  iconRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+    marginBottom: spacing.lg,
+  },
+  iconOption: {
+    width: 44,
+    height: 44,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentBlueSoft,
     alignItems: 'center',
-    gap: spacing.md,
-    paddingVertical: spacing.md,
+    justifyContent: 'center',
   },
-  optionRowDisabled: {
-    opacity: 0.5,
-  },
-  optionLabel: {
-    ...typography.body,
-    color: colors.ink,
-    flex: 1,
+  iconOptionSelected: {
+    backgroundColor: colors.accentBlue,
   },
 });

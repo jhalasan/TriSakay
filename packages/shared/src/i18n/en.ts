@@ -33,9 +33,10 @@ export const en = {
   },
   savePlace: {
     title: 'Save this place',
-    homeLabel: 'Home',
-    workLabel: 'Work',
-    saveAsPrefix: 'Save as',
+    nameLabel: 'Name',
+    namePlaceholder: 'e.g. Gym, Mom’s house',
+    iconLabel: 'Icon',
+    saveButton: 'Save place',
     saveAccessibilityLabel: 'Save this place',
     savedAccessibilityLabel: 'Saved',
   },

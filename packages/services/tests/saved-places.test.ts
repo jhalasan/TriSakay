@@ -22,7 +22,7 @@ test('listSavedPlaces returns the signed-in user\'s own rows, newest first', asy
                   orderedBy = { column: column2, ascending: opts.ascending };
                   return Promise.resolve({
                     data: [
-                      { id: 'p1', kind: 'home', label: 'Home', address: '123 Main St', latitude: 6.1, longitude: 125.2, user_id: 'u1', created_at: 'now' },
+                      { id: 'p1', icon: 'home-outline', label: 'Home', address: '123 Main St', latitude: 6.1, longitude: 125.2, user_id: 'u1', created_at: 'now' },
                     ],
                     error: null,
                   });
@@ -41,7 +41,7 @@ test('listSavedPlaces returns the signed-in user\'s own rows, newest first', asy
   assert.deepEqual(capturedFilters, [{ column: 'user_id', value: 'u1' }]);
   assert.deepEqual(orderedBy, { column: 'created_at', ascending: false });
   assert.equal(data.length, 1);
-  assert.equal(data[0].kind, 'home');
+  assert.equal(data[0].icon, 'home-outline');
 });
 
 test('listSavedPlaces returns an error when there is no active session', async () => {
@@ -52,7 +52,7 @@ test('listSavedPlaces returns an error when there is no active session', async (
   assert.deepEqual(data, []);
 });
 
-test('saveSavedPlace inserts a new row for kind "custom"', async () => {
+test('saveSavedPlace inserts a new row', async () => {
   let insertedRow: unknown = null;
 
   __setSupabaseClientForTests(
@@ -75,8 +75,8 @@ test('saveSavedPlace inserts a new row for kind "custom"', async () => {
   );
 
   const { data, error } = await saveSavedPlace({
-    kind: 'custom',
     label: 'General Santos City Hall',
+    icon: 'location-outline',
     address: 'Jersey St, GenSan',
     latitude: 6.11,
     longitude: 125.17,
@@ -85,8 +85,8 @@ test('saveSavedPlace inserts a new row for kind "custom"', async () => {
   assert.equal(error, null);
   assert.deepEqual(insertedRow, {
     user_id: 'u1',
-    kind: 'custom',
     label: 'General Santos City Hall',
+    icon: 'location-outline',
     address: 'Jersey St, GenSan',
     latitude: 6.11,
     longitude: 125.17,
@@ -94,78 +94,18 @@ test('saveSavedPlace inserts a new row for kind "custom"', async () => {
   assert.equal(data?.id, 'p2');
 });
 
-test('saveSavedPlace updates the existing row when saving "home" a second time', async () => {
-  let updatedRow: unknown = null;
-  let updatedId: string | null = null;
+test('saveSavedPlace does not dedupe by icon — a second save is a second row', async () => {
+  const insertedRows: unknown[] = [];
 
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
       from: () => ({
-        select: () => ({
-          eq: () => ({
-            eq: () => ({
-              maybeSingle: async () => ({ data: { id: 'existing-home-id' }, error: null }),
-            }),
-          }),
-        }),
-        update: (row: unknown) => {
-          updatedRow = row;
-          return {
-            eq: (column: string, value: unknown) => {
-              assert.equal(column, 'id');
-              updatedId = value as string;
-              return {
-                select: () => ({
-                  single: async () => ({ data: { id: 'existing-home-id', ...(row as object) }, error: null }),
-                }),
-              };
-            },
-          };
-        },
-      }),
-    })
-  );
-
-  const { data, error } = await saveSavedPlace({
-    kind: 'home',
-    label: 'Home',
-    address: '456 New St',
-    latitude: 6.2,
-    longitude: 125.3,
-  });
-
-  assert.equal(error, null);
-  assert.equal(updatedId, 'existing-home-id');
-  assert.deepEqual(updatedRow, {
-    kind: 'home',
-    label: 'Home',
-    address: '456 New St',
-    latitude: 6.2,
-    longitude: 125.3,
-  });
-  assert.equal(data?.id, 'existing-home-id');
-});
-
-test('saveSavedPlace inserts a new row when saving "home" for the first time', async () => {
-  let insertedRow: unknown = null;
-
-  __setSupabaseClientForTests(
-    createFakeSupabaseClient({
-      getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
-      from: () => ({
-        select: () => ({
-          eq: () => ({
-            eq: () => ({
-              maybeSingle: async () => ({ data: null, error: null }),
-            }),
-          }),
-        }),
         insert: (row: unknown) => {
-          insertedRow = row;
+          insertedRows.push(row);
           return {
             select: () => ({
-              single: async () => ({ data: { id: 'new-home-id', ...(row as object) }, error: null }),
+              single: async () => ({ data: { id: `p${insertedRows.length}`, ...(row as object) }, error: null }),
             }),
           };
         },
@@ -173,24 +113,10 @@ test('saveSavedPlace inserts a new row when saving "home" for the first time', a
     })
   );
 
-  const { data, error } = await saveSavedPlace({
-    kind: 'home',
-    label: 'Home',
-    address: '123 First Save St',
-    latitude: 6.1,
-    longitude: 125.2,
-  });
+  await saveSavedPlace({ label: 'Gym', icon: 'briefcase-outline', address: 'A', latitude: 1, longitude: 1 });
+  await saveSavedPlace({ label: 'Gym 2', icon: 'briefcase-outline', address: 'B', latitude: 2, longitude: 2 });
 
-  assert.equal(error, null);
-  assert.deepEqual(insertedRow, {
-    user_id: 'u1',
-    kind: 'home',
-    label: 'Home',
-    address: '123 First Save St',
-    latitude: 6.1,
-    longitude: 125.2,
-  });
-  assert.equal(data?.id, 'new-home-id');
+  assert.equal(insertedRows.length, 2, 'each save inserts a new row instead of replacing a prior one');
 });
 
 test('deleteSavedPlace scopes the delete to the signed-in user', async () => {
