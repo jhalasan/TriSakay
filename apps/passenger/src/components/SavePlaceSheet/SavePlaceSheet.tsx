@@ -57,12 +57,7 @@ export function SavePlaceSheet({ place, onClose, onSaved }: SavePlaceSheetProps)
 
   return (
     <Modal visible={place !== null} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable
-        style={styles.backdrop}
-        onPress={onClose}
-        accessibilityRole="button"
-        accessibilityLabel={t.common.cancel}
-      >
+      <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
           <Text style={styles.title}>{t.savePlace.title}</Text>
           {error && <Text style={styles.errorText}>{error}</Text>}
