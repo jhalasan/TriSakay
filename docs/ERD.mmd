@@ -17,6 +17,7 @@ erDiagram
   USERS ||--o{ ACCOUNT_ACTIONS : "target of"
   COMPLAINTS o|--o{ ACCOUNT_ACTIONS : "resulted in (optional)"
   USERS ||--o{ NOTIFICATIONS : receives
+  USERS ||--o{ SAVED_PLACES : saves
   USERS ||--o{ USER_CONSENTS : accepts
   USERS ||--o{ EMERGENCY_ALERTS : triggers
   RIDE_REQUESTS o|--o{ EMERGENCY_ALERTS : "during (optional)"
@@ -222,6 +223,16 @@ erDiagram
     text message
     uuid ref_id
     boolean is_read
+    timestamp created_at
+  }
+  SAVED_PLACES {
+    uuid id PK
+    uuid user_id FK
+    saved_place_kind kind
+    text label
+    text address
+    double_precision latitude
+    double_precision longitude
     timestamp created_at
   }
   USER_CONSENTS {
