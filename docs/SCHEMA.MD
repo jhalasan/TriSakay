@@ -1474,7 +1474,8 @@ create policy discounts_read on public.passenger_discounts
   for select using (passenger_id = auth.uid() or public.is_pso());
 
 create policy discounts_review_supervisor on public.passenger_discounts
-  for update using (public.is_supervisor()) with check (public.is_supervisor());
+  for update using (public.is_supervisor())
+  with check (public.is_supervisor() and reviewed_by = auth.uid());
 
 -- 7.4 trips -----------------------------------------------------------
 create policy trips_driver_rw on public.trips
