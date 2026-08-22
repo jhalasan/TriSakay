@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { markAllNotificationsRead, subscribeToNotifications } from '../src/notifications/index.ts';
+import { markAllNotificationsRead, registerPushToken, subscribeToNotifications } from '../src/notifications/index.ts';
 
 test('markAllNotificationsRead updates only the signed-in user\'s unread rows', async () => {
   let capturedUpdate: any = null;
@@ -47,6 +47,67 @@ test('markAllNotificationsRead returns an error when there is no active session'
   __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
 
   const { error } = await markAllNotificationsRead();
+  assert.equal(error, 'Not signed in');
+});
+
+test('registerPushToken writes the token to the signed-in user\'s own row', async () => {
+  let capturedTable: string | null = null;
+  let capturedUpdate: any = null;
+  let capturedFilter: { column: string; value: unknown } | null = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
+      from: (table) => {
+        capturedTable = table;
+        return {
+          update: (row: unknown) => {
+            capturedUpdate = row;
+            return {
+              eq: (column: string, value: unknown) => {
+                capturedFilter = { column, value };
+                return Promise.resolve({ error: null });
+              },
+            };
+          },
+        };
+      },
+    })
+  );
+
+  const { error } = await registerPushToken('ExponentPushToken[abc123]');
+
+  assert.equal(error, null);
+  assert.equal(capturedTable, 'users');
+  assert.deepEqual(capturedUpdate, { push_token: 'ExponentPushToken[abc123]' });
+  assert.deepEqual(capturedFilter, { column: 'id', value: 'u1' });
+});
+
+test('registerPushToken(null) clears the stored token (disabling push notifications)', async () => {
+  let capturedUpdate: any = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
+      from: () => ({
+        update: (row: unknown) => {
+          capturedUpdate = row;
+          return { eq: () => Promise.resolve({ error: null }) };
+        },
+      }),
+    })
+  );
+
+  const { error } = await registerPushToken(null);
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedUpdate, { push_token: null });
+});
+
+test('registerPushToken returns an error when there is no active session', async () => {
+  __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
+
+  const { error } = await registerPushToken('ExponentPushToken[abc123]');
   assert.equal(error, 'Not signed in');
 });
 

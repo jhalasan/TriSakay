@@ -33,6 +33,26 @@ export async function markNotificationRead(id: string): Promise<MarkAllNotificat
   return { error: error?.message ?? null };
 }
 
+export interface RegisterPushTokenResult {
+  error: string | null;
+}
+
+/**
+ * Saves (or clears, when `token` is null) the signed-in user's Expo push
+ * token — `users_update_self` RLS already permits writing any column on
+ * one's own row, same as updateProfile(). This only stores the token; no
+ * server-side code sends a push yet (that's a separate Edge Function/
+ * trigger reacting to a `notifications` insert, not built here).
+ */
+export async function registerPushToken(token: string | null): Promise<RegisterPushTokenResult> {
+  const userId = await getSignedInUserId();
+  if (!userId) return { error: 'Not signed in' };
+
+  const { error } = await getSupabaseClient().from('users').update({ push_token: token }).eq('id', userId);
+
+  return { error: error?.message ?? null };
+}
+
 /**
  * Live list of the signed-in user's own notifications, same refetch-on-any-
  * change shape as subscribeToPendingRideRequests in booking/index.ts — a

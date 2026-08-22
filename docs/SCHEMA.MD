@@ -179,6 +179,7 @@ create table public.users (
   role          user_role   not null default 'passenger',
   status        account_status not null default 'active',
   avatar_url    text,
+  push_token    text,          -- Expo push token (FR-7 device push); null while unregistered or disabled
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
 

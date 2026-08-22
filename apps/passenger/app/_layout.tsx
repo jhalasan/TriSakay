@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors, fontFamily } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
+import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
@@ -206,6 +207,7 @@ function RootLayoutNav() {
   const consentStatus = useConsentStore((state) => state.status);
   useConsentSync(sessionUserId);
   useNotificationsSync(sessionUserId);
+  usePushNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 
