@@ -1,7 +1,7 @@
-import '../lib/supabase';
+import '../lib/supabase.ts';
 import { create } from 'zustand';
 import { getConsentStatus, recordConsent } from '@trisakay/services';
-import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 
 export type ConsentGateStatus = 'unknown' | 'checking' | 'accepted' | 'required';
 
@@ -54,10 +54,9 @@ export const useConsentStore = create<ConsentState>()((set) => {
         error = UNVERIFIED_MESSAGE;
       }
 
-      if (epoch !== requestEpoch) {
-        set({ error: UNVERIFIED_MESSAGE });
-        return false;
-      }
+      // Matches check()'s stale-epoch guard above: bail silently rather than
+      // overwriting whatever state a newer accept()/check() call already set.
+      if (epoch !== requestEpoch) return false;
 
       if (error) {
         set({ error });

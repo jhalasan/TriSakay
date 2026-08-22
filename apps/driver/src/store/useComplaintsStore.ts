@@ -34,6 +34,7 @@ interface ComplaintsState {
     rideRequestId?: string,
     attachments?: ComplaintAttachmentInput[]
   ) => Promise<{ ok: boolean; attachmentError: string | null }>;
+  reset: () => void;
 }
 
 export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
@@ -78,4 +79,6 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     await get().load();
     return { ok: true, attachmentError };
   },
+
+  reset: () => set({ complaints: [], loading: false, error: null }),
 }));

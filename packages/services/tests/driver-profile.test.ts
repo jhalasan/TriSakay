@@ -65,7 +65,10 @@ test('getDriverVerificationStatus returns an error when there is no active sessi
   assert.equal(error, 'Not signed in');
 });
 
-function driverEarningsView(rows: { total_collected: number }[] | null, selectError?: string) {
+function driverEarningsView(
+  rows: { earning_date: string; rides_completed: number; total_collected: number }[] | null,
+  selectError?: string
+) {
   let capturedColumn: string | null = null;
   let capturedValue: unknown = null;
   const query = {
@@ -73,16 +76,21 @@ function driverEarningsView(rows: { total_collected: number }[] | null, selectEr
     eq: (column: string, value: unknown) => {
       capturedColumn = column;
       capturedValue = value;
-      return selectError
-        ? Promise.resolve({ data: null, error: { message: selectError } })
-        : Promise.resolve({ data: rows, error: null });
+      return query;
     },
+    order: () =>
+      selectError
+        ? Promise.resolve({ data: null, error: { message: selectError } })
+        : Promise.resolve({ data: rows, error: null }),
   };
   return { query, getCapturedFilter: () => ({ column: capturedColumn, value: capturedValue }) };
 }
 
-test('getDriverEarnings sums total_collected across every row, scoped to the signed-in driver', async () => {
-  const { query, getCapturedFilter } = driverEarningsView([{ total_collected: 45 }, { total_collected: 30 }]);
+test('getDriverEarnings sums total_collected across every row and returns the daily breakdown, scoped to the signed-in driver', async () => {
+  const { query, getCapturedFilter } = driverEarningsView([
+    { earning_date: '2026-08-19', rides_completed: 2, total_collected: 45 },
+    { earning_date: '2026-08-20', rides_completed: 1, total_collected: 30 },
+  ]);
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       getSession: async () => SESSION,
@@ -90,13 +98,17 @@ test('getDriverEarnings sums total_collected across every row, scoped to the sig
     })
   );
 
-  const { totalTracked, error } = await getDriverEarnings();
+  const { totalTracked, breakdown, error } = await getDriverEarnings();
   assert.equal(error, null);
   assert.equal(totalTracked, 75);
+  assert.deepEqual(breakdown, [
+    { date: '2026-08-19', ridesCompleted: 2, totalCollected: 45 },
+    { date: '2026-08-20', ridesCompleted: 1, totalCollected: 30 },
+  ]);
   assert.deepEqual(getCapturedFilter(), { column: 'driver_id', value: 'u1' });
 });
 
-test('getDriverEarnings reports 0 when the driver has no completed/paid rides yet', async () => {
+test('getDriverEarnings reports 0 and an empty breakdown when the driver has no completed/paid rides yet', async () => {
   const { query } = driverEarningsView([]);
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
@@ -105,12 +117,13 @@ test('getDriverEarnings reports 0 when the driver has no completed/paid rides ye
     })
   );
 
-  const { totalTracked, error } = await getDriverEarnings();
+  const { totalTracked, breakdown, error } = await getDriverEarnings();
   assert.equal(error, null);
   assert.equal(totalTracked, 0);
+  assert.deepEqual(breakdown, []);
 });
 
-test('getDriverEarnings surfaces a query error instead of guessing a total', async () => {
+test('getDriverEarnings surfaces a query error instead of guessing a total or breakdown', async () => {
   const { query } = driverEarningsView(null, 'network down');
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
@@ -119,8 +132,9 @@ test('getDriverEarnings surfaces a query error instead of guessing a total', asy
     })
   );
 
-  const { totalTracked, error } = await getDriverEarnings();
+  const { totalTracked, breakdown, error } = await getDriverEarnings();
   assert.equal(totalTracked, null);
+  assert.equal(breakdown, null);
   assert.equal(error, 'network down');
 });
 
@@ -129,8 +143,9 @@ test('getDriverEarnings returns an error when there is no active session', async
     createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) })
   );
 
-  const { totalTracked, error } = await getDriverEarnings();
+  const { totalTracked, breakdown, error } = await getDriverEarnings();
   assert.equal(totalTracked, null);
+  assert.equal(breakdown, null);
   assert.equal(error, 'Not signed in');
 });
 

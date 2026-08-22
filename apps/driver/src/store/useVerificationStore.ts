@@ -1,10 +1,17 @@
-import '../lib/supabase';
+import '../lib/supabase.ts';
 import { create } from 'zustand';
-import { getDriverVerificationStatus, type VerificationStatus } from '@trisakay/services';
-import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout';
+import { getDriverVerificationStatus } from '@trisakay/services';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 
-/** Collapses the four DB statuses into what the app gate cares about: only 'approved' unblocks entry. */
-export type VerificationGateStatus = 'unknown' | 'checking' | 'approved' | 'pending' | 'rejected';
+/**
+ * Mirrors the four DB statuses directly rather than collapsing 'unsubmitted'
+ * into 'pending' — the gate (useProtectedRoute) still treats anything but
+ * 'approved' as "not cleared to enter yet", but verification-pending.tsx
+ * needs to tell the two apart: 'unsubmitted' means the driver never got to
+ * upload documents (e.g. registered on the check_email path) and shows an
+ * upload form there instead of "your documents are under review" copy.
+ */
+export type VerificationGateStatus = 'unknown' | 'checking' | 'approved' | 'unsubmitted' | 'pending' | 'rejected';
 
 const TIMEOUT_MESSAGE = 'Verification check timed out';
 
@@ -13,12 +20,6 @@ interface VerificationState {
   error: string | null;
   check: () => Promise<void>;
   reset: () => void;
-}
-
-function toGateStatus(status: VerificationStatus): VerificationGateStatus {
-  if (status === 'approved') return 'approved';
-  if (status === 'rejected') return 'rejected';
-  return 'pending'; // 'unsubmitted' | 'pending' both read as "not cleared to enter yet"
 }
 
 export const useVerificationStore = create<VerificationState>()((set) => {
@@ -41,7 +42,7 @@ export const useVerificationStore = create<VerificationState>()((set) => {
           return;
         }
 
-        set({ status: toGateStatus(status), error: null });
+        set({ status, error: null });
       } catch {
         if (epoch !== requestEpoch) return;
         set({ status: 'pending', error: TIMEOUT_MESSAGE });

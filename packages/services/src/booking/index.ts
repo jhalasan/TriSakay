@@ -373,60 +373,80 @@ export function subscribeToPendingRideRequests(
   };
 }
 
-export interface CompleteTripResult {
+export interface CompleteRideLegResult {
   error: string | null;
 }
 
 /**
- * Closes out a trip via the complete_trip RPC: marks it completed and marks
- * its ride request completed, both in one transaction. Replaces the old
- * two-independent-UPDATE version — that could partially apply on a dropped
- * connection, and neither UPDATE checked whether it actually matched a row,
- * so an RLS-filtered no-op (e.g. a stale tripId from a different driver)
- * used to report success while leaving the DB untouched.
- *
- * Every trip created by acceptRideRequest currently holds exactly one ride
- * request — both driver screens block a second accept while a trip is active
- * — so this always closes the whole trip; pooling multiple requests onto one
- * trip is not yet supported end-to-end.
+ * FR-2.5c mid-trip pickup — closes out ONE passenger's leg via the
+ * complete_ride_leg RPC, leaving the trip itself (and any other passenger
+ * still aboard) untouched. Replaces the old completeTrip(), which forced the
+ * whole trip to completed together with its one ride request — that only
+ * ever worked because a trip could hold exactly one passenger at a time; now
+ * that acceptRideRequest() can attach multiple, ending the whole trip on any
+ * one passenger's drop-off would have force-ended everyone else's ride too.
+ * See end_trip() below for closing the trip session itself.
  */
-export async function completeTrip(tripId: string, rideRequestId: string): Promise<CompleteTripResult> {
-  const { error } = await getSupabaseClient().rpc('complete_trip', {
+export async function completeRideLeg(tripId: string, rideRequestId: string): Promise<CompleteRideLegResult> {
+  const { error } = await getSupabaseClient().rpc('complete_ride_leg', {
     p_trip_id: tripId,
     p_ride_request_id: rideRequestId,
   });
 
-  if (error) return { error: "Couldn't close out the trip. Please try again." };
+  if (error) return { error: "Couldn't close out this passenger's ride. Please try again." };
   return { error: null };
 }
 
-export interface CancelTripResult {
+export interface CancelRideLegResult {
   error: string | null;
 }
 
-/** Cancels a trip via the cancel_trip RPC — same transactional guarantee as completeTrip above. */
-export async function cancelTrip(tripId: string, rideRequestId: string, reason: string): Promise<CancelTripResult> {
-  const { error } = await getSupabaseClient().rpc('cancel_trip', {
+/** Cancels ONE passenger's leg via the cancel_ride_leg RPC — same reasoning as completeRideLeg above. */
+export async function cancelRideLeg(tripId: string, rideRequestId: string, reason: string): Promise<CancelRideLegResult> {
+  const { error } = await getSupabaseClient().rpc('cancel_ride_leg', {
     p_trip_id: tripId,
     p_ride_request_id: rideRequestId,
     p_reason: reason,
   });
 
-  if (error) return { error: "Couldn't cancel the trip. Please try again." };
+  if (error) return { error: "Couldn't cancel this passenger's ride. Please try again." };
 
   return { error: null };
 }
 
-export interface ActiveTripForDriver {
-  tripId: string;
+export interface EndTripResult {
+  error: string | null;
+}
+
+/**
+ * The driver's explicit "done for now" action (FR-2.5c). `trips.status =
+ * 'active'` means "out working," independent of current passenger count —
+ * this RPC is the only thing that ends it, and the DB itself refuses (not
+ * just the UI disabling the button) while any passenger is still
+ * assigned/ongoing on the trip.
+ */
+export async function endTrip(tripId: string): Promise<EndTripResult> {
+  const { error } = await getSupabaseClient().rpc('end_trip', { p_trip_id: tripId });
+
+  if (error) return { error: error.message };
+  return { error: null };
+}
+
+export interface ActiveTripPassenger {
   rideRequestId: string;
   seats: number;
   paymentMethod: Database['public']['Enums']['payment_method'];
   fare: number | null;
-  startedAt: string;
+  passengerId: string;
   passengerName: string | null;
   passengerAvatarUrl: string | null;
   cashConfirmed: boolean;
+}
+
+export interface ActiveTripForDriver {
+  tripId: string;
+  startedAt: string;
+  passengers: ActiveTripPassenger[];
 }
 
 export interface GetActiveTripForDriverResult {
@@ -440,30 +460,41 @@ export interface GetActiveTripForDriverResult {
  * memory of the trip while the backend still has it `active` — the driver
  * could never complete/cancel it from the UI, and acceptRideRequest's
  * active-trip check would keep blocking them from accepting anything new.
- * Calls the get_active_trip_for_driver RPC (security definer — same
- * passenger-name/avatar join trick as getTripPassengerInfo, scoped to
- * auth.uid() internally like listDriverTripHistory). No active trip is a
- * normal state, returned as `{ data: null, error: null }`, not an error.
+ *
+ * Two calls, not one: get_active_trip_for_driver() returns just the trip
+ * "header" (0 or 1 row); if a trip exists, get_active_trip_passengers()
+ * returns every currently assigned/ongoing leg on it (0..N rows — an active
+ * trip can have nobody aboard right now, per FR-2.5c's "stay parked between
+ * pickups" model). A single combined call couldn't represent that: zero
+ * passenger rows would be indistinguishable from no active trip at all.
+ * No active trip is a normal state, returned as `{ data: null, error: null }`.
  */
 export async function getActiveTripForDriver(): Promise<GetActiveTripForDriverResult> {
-  const { data, error } = await getSupabaseClient().rpc('get_active_trip_for_driver');
+  const { data: tripRows, error: tripError } = await getSupabaseClient().rpc('get_active_trip_for_driver');
+  if (tripError) return { data: null, error: tripError.message };
 
-  if (error) return { data: null, error: error.message };
+  const trip = Array.isArray(tripRows) ? tripRows[0] : null;
+  if (!trip) return { data: null, error: null };
 
-  const row = Array.isArray(data) ? data[0] : null;
-  if (!row) return { data: null, error: null };
+  const { data: passengerRows, error: passengersError } = await getSupabaseClient().rpc('get_active_trip_passengers', {
+    p_trip_id: trip.trip_id,
+  });
+  if (passengersError) return { data: null, error: passengersError.message };
 
   return {
     data: {
-      tripId: row.trip_id,
-      rideRequestId: row.ride_request_id,
-      seats: row.seats_requested,
-      paymentMethod: row.preferred_method,
-      fare: row.estimated_fare,
-      startedAt: row.started_at,
-      passengerName: row.passenger_name,
-      passengerAvatarUrl: row.avatar_url,
-      cashConfirmed: row.cash_confirmed,
+      tripId: trip.trip_id,
+      startedAt: trip.started_at,
+      passengers: (passengerRows ?? []).map((row) => ({
+        rideRequestId: row.ride_request_id,
+        seats: row.seats_requested,
+        paymentMethod: row.preferred_method,
+        fare: row.estimated_fare,
+        passengerId: row.passenger_id,
+        passengerName: row.passenger_name,
+        passengerAvatarUrl: row.avatar_url,
+        cashConfirmed: row.cash_confirmed,
+      })),
     },
     error: null,
   };

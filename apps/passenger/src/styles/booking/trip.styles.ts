@@ -52,4 +52,13 @@ export const styles = StyleSheet.create({
     gap: spacing.lg,
     padding: spacing.xl,
   },
+  sosBlock: {
+    gap: spacing.xs,
+    alignItems: 'center',
+  },
+  sosCaption: {
+    ...typography.caption,
+    color: colors.inkSoft,
+    textAlign: 'center',
+  },
 });

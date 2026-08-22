@@ -7,6 +7,7 @@ interface HistoryState {
   loading: boolean;
   error: string | null;
   load: () => Promise<void>;
+  reset: () => void;
 }
 
 export const useHistoryStore = create<HistoryState>()((set) => ({
@@ -34,4 +35,6 @@ export const useHistoryStore = create<HistoryState>()((set) => ({
       })),
     });
   },
+
+  reset: () => set({ trips: [], loading: false, error: null }),
 }));

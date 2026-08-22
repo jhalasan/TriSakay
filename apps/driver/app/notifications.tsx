@@ -1,6 +1,7 @@
 import { FlatList, Text, View } from 'react-native';
 import { EmptyState } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
+import { useTranslation } from '../src/hooks/useTranslation';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
 import { styles } from '../src/styles/notifications.styles';
 
@@ -9,6 +10,7 @@ function formatDate(iso: string) {
 }
 
 export default function NotificationsScreen() {
+  const t = useTranslation();
   const items = useNotificationsStore((state) => state.items);
   const error = useNotificationsStore((state) => state.error);
   const markAllRead = useNotificationsStore((state) => state.markAllRead);
@@ -16,10 +18,10 @@ export default function NotificationsScreen() {
   return (
     <View style={styles.container}>
       <ScreenHeader
-        title="Notifications"
+        title={t.driver.notifications.title}
         right={
           <Text style={styles.markReadText} onPress={markAllRead}>
-            Mark all read
+            {t.driver.notifications.markAllRead}
           </Text>
         }
       />
@@ -28,7 +30,7 @@ export default function NotificationsScreen() {
         data={items}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
-        ListEmptyComponent={<EmptyState title="You're all caught up" message="No notifications yet." />}
+        ListEmptyComponent={<EmptyState title={t.driver.notifications.emptyTitle} message={t.driver.notifications.emptyMessage} />}
         renderItem={({ item }) => (
           <View style={styles.row}>
             <View style={styles.dotSlot}>{!item.read && <View style={styles.unreadDot} />}</View>

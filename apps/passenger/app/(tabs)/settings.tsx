@@ -76,10 +76,10 @@ export default function SettingsScreen() {
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.headerBlock}>
           <Text style={styles.title}>{t.settings.title}</Text>
-          <Text style={styles.tagline}>Manage how TriSakay works for you.</Text>
+          <Text style={styles.tagline}>{t.settings.tagline}</Text>
         </View>
 
-        <SectionLabel label="Notifications" />
+        <SectionLabel label={t.settings.sectionNotifications} />
         <Card style={styles.card}>
           <ToggleRow
             icon="notifications-outline"
@@ -102,7 +102,7 @@ export default function SettingsScreen() {
           />
         </Card>
 
-        <SectionLabel label="Privacy" />
+        <SectionLabel label={t.settings.sectionPrivacy} />
         <Card style={styles.card}>
           <ToggleRow
             icon="location-outline"
@@ -113,7 +113,7 @@ export default function SettingsScreen() {
           />
         </Card>
 
-        <SectionLabel label="Preferences" />
+        <SectionLabel label={t.settings.sectionPreferences} />
         <Card style={styles.card}>
           <Pressable style={styles.row} onPress={cycleLanguage} accessibilityRole="button">
             <View style={styles.rowLeading}>

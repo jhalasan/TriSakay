@@ -3,3 +3,9 @@ export interface SettlementLogEntry {
   amount: number;
   loggedAt: string;
 }
+
+export interface DailyEarning {
+  date: string;
+  ridesCompleted: number;
+  totalCollected: number;
+}

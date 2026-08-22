@@ -92,3 +92,19 @@ test('submit() sets error and does not re-fetch when the insert fails', async ()
   assert.equal(useComplaintsStore.getState().error, 'network error');
   assert.equal(useComplaintsStore.getState().complaints.length, 0);
 });
+
+test('reset() clears complaints, loading, and error back to initial state', async () => {
+  const { useComplaintsStore } = await import('../src/store/useComplaintsStore.ts');
+
+  useComplaintsStore.setState({
+    complaints: [{ id: 'c1', subject: 'x', status: 'open' }],
+    loading: true,
+    error: 'stale error',
+  });
+
+  useComplaintsStore.getState().reset();
+
+  assert.deepEqual(useComplaintsStore.getState().complaints, []);
+  assert.equal(useComplaintsStore.getState().loading, false);
+  assert.equal(useComplaintsStore.getState().error, null);
+});

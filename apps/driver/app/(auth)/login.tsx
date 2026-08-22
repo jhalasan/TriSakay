@@ -2,12 +2,14 @@ import { useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { BrandMotif, Button, GradientSurface, TextField } from '@trisakay/ui';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isValidEmail, isValidPassword } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/login.styles';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const t = useTranslation();
   const login = useAuthStore((state) => state.login);
   const authError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
@@ -20,8 +22,8 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     const nextErrors: typeof errors = {};
-    if (!isValidEmail(email)) nextErrors.email = 'Enter a valid email address.';
-    if (!isValidPassword(password)) nextErrors.password = 'Password must be at least 6 characters.';
+    if (!isValidEmail(email)) nextErrors.email = t.driver.login.enterValidEmail;
+    if (!isValidPassword(password)) nextErrors.password = t.driver.login.passwordMinLength;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -49,12 +51,12 @@ export default function LoginScreen() {
 
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Log in to start driving.</Text>
+          <Text style={styles.title}>{t.driver.login.welcomeBack}</Text>
+          <Text style={styles.subtitle}>{t.driver.login.subtitle}</Text>
 
           <View style={styles.fields}>
             <TextField
-              label="Email"
+              label={t.driver.login.email}
               placeholder="you@example.com"
               value={email}
               onChangeText={setEmail}
@@ -64,7 +66,7 @@ export default function LoginScreen() {
               autoComplete="email"
             />
             <TextField
-              label="Password"
+              label={t.driver.login.password}
               placeholder="••••••••"
               value={password}
               onChangeText={setPassword}
@@ -78,20 +80,20 @@ export default function LoginScreen() {
 
           <View style={styles.forgotLink}>
             <Text style={styles.forgotLinkText} onPress={() => router.push('/(auth)/forgot-password')}>
-              Forgot password?
+              {t.driver.login.forgotPassword}
             </Text>
           </View>
 
-          <Button label="Log in" onPress={handleLogin} loading={submitting || awaitingGate} fullWidth />
+          <Button label={t.driver.login.logIn} onPress={handleLogin} loading={submitting || awaitingGate} fullWidth />
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
+            <Text style={styles.dividerText}>{t.driver.login.or}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           <Button
-            label="Register as driver"
+            label={t.driver.login.registerAsDriver}
             variant="outline"
             tone="neutral"
             fullWidth

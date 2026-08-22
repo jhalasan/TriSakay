@@ -2,25 +2,31 @@ import { useEffect, useMemo, useState } from 'react';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Badge, Button, EmptyState, ListRow } from '@trisakay/ui';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/tabs/history.styles';
 
 type FilterMode = 'all' | 'done' | 'cancelled';
 
-const FILTER_LABEL: Record<FilterMode, string> = { all: 'Filter', done: 'Done', cancelled: 'Cancelled' };
-const NEXT_FILTER: Record<FilterMode, FilterMode> = { all: 'done', done: 'cancelled', cancelled: 'all' };
-
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
 }
 
 export default function HistoryScreen() {
+  const t = useTranslation();
   const trips = useHistoryStore((state) => state.trips);
   const loading = useHistoryStore((state) => state.loading);
   const historyError = useHistoryStore((state) => state.error);
   const load = useHistoryStore((state) => state.load);
   const [filter, setFilter] = useState<FilterMode>('all');
+
+  const FILTER_LABEL: Record<FilterMode, string> = {
+    all: t.driver.history.filterAll,
+    done: t.driver.history.filterDone,
+    cancelled: t.driver.history.filterCancelled,
+  };
+  const NEXT_FILTER: Record<FilterMode, FilterMode> = { all: 'done', done: 'cancelled', cancelled: 'all' };
 
   useEffect(() => {
     void load();
@@ -34,7 +40,7 @@ export default function HistoryScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Trip history</Text>
+        <Text style={styles.title}>{t.driver.history.title}</Text>
         <Button
           label={FILTER_LABEL[filter]}
           size="sm"
@@ -52,16 +58,19 @@ export default function HistoryScreen() {
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         ListEmptyComponent={
-          loading ? null : <EmptyState title="No trips yet" message="Your completed trips will show up here." />
+          loading ? null : <EmptyState title={t.driver.history.emptyTitle} message={t.driver.history.emptyMessage} />
         }
         renderItem={({ item }) => (
           <ListRow
-            title={item.passengerName || 'Passenger'}
+            title={item.passengerName || t.driver.history.passengerFallback}
             subtitle={formatDate(item.date)}
             leading={<Avatar name={item.passengerName ?? undefined} size="md" />}
             trailing={
               <View style={styles.trailingSlot}>
-                <Badge label={item.status === 'done' ? 'Done' : 'Cancel'} tone={item.status === 'done' ? 'green' : 'danger'} />
+                <Badge
+                  label={item.status === 'done' ? t.driver.history.done : t.driver.history.filterCancelled}
+                  tone={item.status === 'done' ? 'green' : 'danger'}
+                />
                 <Text style={styles.fareText}>{item.fare !== null ? formatCurrency(item.fare) : '—'}</Text>
               </View>
             }

@@ -6,11 +6,13 @@ import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION, submitDriverDocuments, ty
 import { BrandMotif, Button, Card, Checkbox, GradientSurface, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { DocumentUploadRow } from '../../src/components/DocumentUploadRow';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConsentStore } from '../../src/store/useConsentStore';
 import { useDocumentsStore } from '../../src/store/useDocumentsStore';
 import { DISCLOSURES, POLICY_BODY } from '../../src/content/legalCopy';
-import { DOCUMENT_LABEL, DOCUMENT_TYPES } from '../../src/types/document';
+import { DOCUMENT_TYPES } from '../../src/types/document';
+import { interpolate } from '../../src/utils/interpolate';
 import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/register.styles';
 
@@ -22,13 +24,19 @@ interface FormState {
   confirmPassword: string;
 }
 
-const STEP_TITLE: Record<1 | 2, string> = {
-  1: 'Register as driver',
-  2: 'Documents & tricycle',
-};
-
 export default function RegisterScreen() {
   const router = useRouter();
+  const t = useTranslation();
+  const STEP_TITLE: Record<1 | 2, string> = {
+    1: t.driver.register.stepTitleAccount,
+    2: t.driver.register.stepTitleDocuments,
+  };
+  const DOCUMENT_LABEL: Record<(typeof DOCUMENT_TYPES)[number], string> = {
+    drivers_license: t.driver.documents.driversLicense,
+    or_cr: t.driver.documents.orCr,
+    franchise_permit: t.driver.documents.franchisePermit,
+    tricycle_photo: t.driver.documents.tricyclePhoto,
+  };
   const register = useAuthStore((state) => state.register);
   const authError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
@@ -54,11 +62,11 @@ export default function RegisterScreen() {
 
   function handleNext() {
     const nextErrors: Partial<FormState> = {};
-    if (!isNonEmpty(form.name)) nextErrors.name = 'Enter your full name.';
-    if (!isValidEmail(form.email)) nextErrors.email = 'Enter a valid email address.';
-    if (!isNonEmpty(form.phone)) nextErrors.phone = 'Enter a contact number.';
-    if (!isValidPassword(form.password)) nextErrors.password = 'Password must be at least 6 characters.';
-    if (form.confirmPassword !== form.password) nextErrors.confirmPassword = 'Passwords do not match.';
+    if (!isNonEmpty(form.name)) nextErrors.name = t.driver.register.enterFullName;
+    if (!isValidEmail(form.email)) nextErrors.email = t.driver.register.enterValidEmail;
+    if (!isNonEmpty(form.phone)) nextErrors.phone = t.driver.register.enterContactNumber;
+    if (!isValidPassword(form.password)) nextErrors.password = t.driver.register.passwordMinLength;
+    if (form.confirmPassword !== form.password) nextErrors.confirmPassword = t.driver.register.passwordsDoNotMatch;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     setStep(2);
@@ -79,7 +87,7 @@ export default function RegisterScreen() {
 
   async function handleSubmit() {
     if (!isNonEmpty(plateNo)) {
-      setPlateNoError('Enter your tricycle plate number.');
+      setPlateNoError(t.driver.register.enterPlateNumber);
       return;
     }
     setPlateNoError(undefined);
@@ -93,8 +101,7 @@ export default function RegisterScreen() {
       return;
     }
 
-    const reviewNote =
-      "Your documents are under review. We'll send you a text message or email once your account is approved to go online.";
+    const reviewNote = t.driver.register.documentsSubmittedMessage;
 
     if (outcome === 'check_email') {
       // No live session yet — RLS requires an authenticated driver to
@@ -103,8 +110,8 @@ export default function RegisterScreen() {
       // implying the upload above already happened.
       setSubmitting(false);
       Alert.alert(
-        'Check your email',
-        `We sent a confirmation link to ${form.email}. Confirm it, then log in and upload your documents from there.`,
+        t.driver.register.checkEmailTitle,
+        interpolate(t.driver.register.checkEmailMessage, { email: form.email }),
         [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
       );
       return;
@@ -127,19 +134,19 @@ export default function RegisterScreen() {
       // Supabase error — without this catch, setSubmitting(false) below
       // never runs and the button spins forever even though the account
       // was already created.
-      uploadError = 'Could not read one of your selected files.';
+      uploadError = t.driver.register.couldNotReadFile;
     }
     setSubmitting(false);
 
     if (uploadError) {
       Alert.alert(
-        'Registered, but documents failed to upload',
-        `${uploadError}\n\nPlease try registering again so your documents are on file for review.`
+        t.driver.register.registeredButFailedTitle,
+        interpolate(t.driver.register.registeredButFailedMessage, { error: uploadError })
       );
       return;
     }
 
-    Alert.alert('Documents submitted', reviewNote);
+    Alert.alert(t.driver.register.documentsSubmittedTitle, reviewNote);
   }
 
   return (
@@ -147,7 +154,7 @@ export default function RegisterScreen() {
       <ScreenHeader title={STEP_TITLE[step]} onBack={step === 2 ? () => setStep(1) : undefined} />
 
       <View style={styles.stepWrap}>
-        <Text style={styles.stepLabel}>Step {step} of 2</Text>
+        <Text style={styles.stepLabel}>{interpolate(t.driver.register.stepLabel, { step })}</Text>
         <View style={styles.stepTrack}>
           <View style={[styles.stepSegment, styles.stepSegmentActive]} />
           <View style={[styles.stepSegment, step === 2 && styles.stepSegmentActive]} />
@@ -169,16 +176,16 @@ export default function RegisterScreen() {
           </GradientSurface>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <TextField
-              label="Full name"
-              placeholder="Juan Dela Cruz"
+              label={t.driver.register.fullName}
+              placeholder={t.driver.register.fullNamePlaceholder}
               value={form.name}
               onChangeText={(v) => update('name', v)}
               error={errors.name}
               autoCapitalize="words"
             />
             <TextField
-              label="Email"
-              placeholder="you@example.com"
+              label={t.driver.register.email}
+              placeholder={t.driver.register.emailPlaceholder}
               value={form.email}
               onChangeText={(v) => update('email', v)}
               error={errors.email}
@@ -186,15 +193,15 @@ export default function RegisterScreen() {
               keyboardType="email-address"
             />
             <TextField
-              label="Phone number"
-              placeholder="09XX XXX XXXX"
+              label={t.driver.register.phone}
+              placeholder={t.driver.register.phonePlaceholder}
               value={form.phone}
               onChangeText={(v) => update('phone', v)}
               error={errors.phone}
               keyboardType="phone-pad"
             />
             <TextField
-              label="Password"
+              label={t.driver.register.password}
               placeholder="••••••••"
               value={form.password}
               onChangeText={(v) => update('password', v)}
@@ -202,7 +209,7 @@ export default function RegisterScreen() {
               secureTextEntry
             />
             <TextField
-              label="Confirm password"
+              label={t.driver.register.confirmPassword}
               placeholder="••••••••"
               value={form.confirmPassword}
               onChangeText={(v) => update('confirmPassword', v)}
@@ -210,18 +217,16 @@ export default function RegisterScreen() {
               secureTextEntry
             />
 
-            <Button label="Next" onPress={handleNext} fullWidth />
+            <Button label={t.driver.register.next} onPress={handleNext} fullWidth />
           </ScrollView>
         </>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <Text style={styles.stepIntro}>
-            Upload these so a PSO reviewer can verify your franchise before you go online.
-          </Text>
+          <Text style={styles.stepIntro}>{t.driver.register.documentsIntro}</Text>
 
           <TextField
-            label="Tricycle plate number"
-            placeholder="e.g. GSC-1187"
+            label={t.driver.register.plateNumber}
+            placeholder={t.driver.register.plateNumberPlaceholder}
             value={plateNo}
             onChangeText={(v) => {
               setPlateNo(v);
@@ -242,7 +247,7 @@ export default function RegisterScreen() {
             />
           ))}
 
-          <Text style={styles.stepIntro}>Please read and accept these before your account is created.</Text>
+          <Text style={styles.stepIntro}>{t.driver.register.acceptTermsIntro}</Text>
           <Text style={styles.version}>
             Terms {CURRENT_TOS_VERSION} · Privacy {CURRENT_PRIVACY_VERSION}
           </Text>
@@ -253,7 +258,7 @@ export default function RegisterScreen() {
             </Text>
           ))}
 
-          <Text style={styles.sectionLabel}>What we collect &amp; share</Text>
+          <Text style={styles.sectionLabel}>{t.driver.register.whatWeCollect}</Text>
           <Card style={styles.disclosureCard}>
             {DISCLOSURES.map((item, index) => (
               <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
@@ -263,16 +268,12 @@ export default function RegisterScreen() {
             ))}
           </Card>
 
-          <Checkbox
-            checked={termsChecked}
-            onChange={setTermsChecked}
-            label="I have read and accept the Terms of Service and Privacy Policy, and confirm I am a licensed tricycle driver"
-          />
+          <Checkbox checked={termsChecked} onChange={setTermsChecked} label={t.driver.register.acceptTerms} />
 
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
           <Button
-            label="Register"
+            label={t.driver.register.registerButton}
             onPress={handleSubmit}
             loading={submitting || awaitingGate}
             disabled={!isNonEmpty(plateNo) || !allDocumentsUploaded || !termsChecked}

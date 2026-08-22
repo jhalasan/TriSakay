@@ -11,6 +11,7 @@ import { getRidesPerDay, getTripStatusBreakdown } from '../src/services/dashboar
 import { getSignedDocumentUrl } from '../src/services/documents.ts';
 import { addPsoUser, disablePsoUser, enablePsoUser, listPsoUsers } from '../src/services/psoUsers.ts';
 import { getFareConfig, getFeatureToggles, getSystemSettings, updateFareConfig } from '../src/services/settings.ts';
+import { listEmergencyAlerts, markAlertReviewed } from '../src/services/emergency.ts';
 
 /**
  * Drivers/Passengers now go through @trisakay/services against real
@@ -233,6 +234,66 @@ test('complaints service: status transitions and DH directive (FR-4.3a)', async 
 
   await recordDhDirective(complaint.id, 'Contact both parties.');
   assert.equal((await listComplaints()).data.find((c) => c.id === complaint.id)?.dhDirective, 'Contact both parties.');
+});
+
+function fakeEmergencyClient() {
+  const alerts = [
+    {
+      id: 'alert1',
+      ride_request_id: 'rr1',
+      triggered_by: 'd1',
+      triggered_role: 'driver',
+      counterpart_id: 'p1',
+      lat: 6.1128,
+      lng: 125.1717,
+      status: 'logged',
+      reviewed_by: null as string | null,
+      reviewed_at: null as string | null,
+      notes: null as string | null,
+      created_at: '2026-08-21T03:00:00.000Z',
+    },
+  ];
+  const users = [
+    { id: 'd1', full_name: 'Ferdinand Amaro' },
+    { id: 'p1', full_name: 'Maria Fe Santos' },
+    { id: 'supervisor1', full_name: 'Rina Cabuslay' },
+  ];
+
+  return {
+    from: (table: string) => {
+      if (table === 'emergency_alerts') {
+        return {
+          select: () => ({ order: async () => ({ data: alerts, error: null }) }),
+          update: (patch: Record<string, unknown>) => ({
+            eq: async (_col: string, id: string) => {
+              const a = alerts.find((row) => row.id === id);
+              if (a) Object.assign(a, patch);
+              return { error: null };
+            },
+          }),
+        };
+      }
+      if (table === 'users') return { select: () => ({ in: async () => ({ data: users, error: null }) }) };
+      throw new Error(`unexpected table ${table}`);
+    },
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'supervisor1' } } } }) },
+  } as any;
+}
+
+test('emergency service: lists alerts with resolved names and marks one reviewed (FR-12.4/12.5)', async () => {
+  __setSupabaseClientForTests(fakeEmergencyClient());
+
+  const alert = (await listEmergencyAlerts()).data[0];
+  assert.equal(alert.triggeredByName, 'Ferdinand Amaro');
+  assert.equal(alert.counterpartName, 'Maria Fe Santos');
+  assert.equal(alert.status, 'logged');
+
+  await markAlertReviewed(alert.id, 'Contacted both parties, no further action.');
+
+  const reviewed = (await listEmergencyAlerts()).data.find((a) => a.id === alert.id);
+  assert.equal(reviewed?.status, 'reviewed');
+  assert.equal(reviewed?.reviewedByName, 'Rina Cabuslay');
+  assert.equal(reviewed?.notes, 'Contacted both parties, no further action.');
 });
 
 test('monitoring service resolves on-duty drivers, splitting active trips from idle ones', async () => {

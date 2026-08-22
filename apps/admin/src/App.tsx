@@ -11,6 +11,7 @@ import { Complaints } from './routes/Complaints';
 import { Reports } from './routes/Reports';
 import { RatingOversight } from './routes/RatingOversight';
 import { DiscountReview } from './routes/DiscountReview';
+import { EmergencyAlerts } from './routes/EmergencyAlerts';
 import { PsoUsers } from './routes/PsoUsers';
 import { SystemSettings } from './routes/SystemSettings';
 import { useSessionStore } from './store/useSessionStore';
@@ -70,6 +71,7 @@ export default function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="rating-oversight" element={<RatingOversight />} />
           <Route path="discounts" element={<DiscountReview />} />
+          <Route path="emergency-alerts" element={<EmergencyAlerts />} />
           <Route
             path="pso-users"
             element={

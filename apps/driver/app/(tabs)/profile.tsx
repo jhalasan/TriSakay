@@ -7,6 +7,7 @@ import { ActivityIndicator, Alert, Platform, Pressable, ScrollView, Text, View }
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateAvatarUrl, updateProfile, uploadAvatar } from '@trisakay/services';
 import { Avatar, BrandMotif, Card, GradientSurface, ListRow, StarRating, TextField, colors } from '@trisakay/ui';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useVerificationStore } from '../../src/store/useVerificationStore';
@@ -24,6 +25,7 @@ async function readFileBytes(uri: string): Promise<ArrayBuffer> {
 
 export default function ProfileScreen() {
   const router = useRouter();
+  const t = useTranslation();
   const user = useAuthStore((state) => state.user);
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const rating = useDriverStore((state) => state.rating);
@@ -45,7 +47,7 @@ export default function ProfileScreen() {
     const { error } = await updateProfile({ fullName: name, phone });
     setSaving(false);
     if (error) {
-      Alert.alert('Could not save', error);
+      Alert.alert(t.driver.profile.couldNotSaveTitle, error);
       return;
     }
     await refreshProfile();
@@ -57,7 +59,7 @@ export default function ProfileScreen() {
 
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Allow photo library access to change your profile picture.');
+      Alert.alert(t.driver.profile.permissionNeededTitle, t.driver.profile.permissionNeededMessage);
       return;
     }
 
@@ -74,17 +76,17 @@ export default function ProfileScreen() {
       const bytes = await readFileBytes(result.assets[0].uri);
       const { publicUrl, error } = await uploadAvatar({ userId: user.id, data: bytes });
       if (!publicUrl) {
-        Alert.alert('Could not upload photo', error ?? 'Please try again.');
+        Alert.alert(t.driver.profile.couldNotUploadPhotoTitle, error ?? t.driver.profile.pleaseTryAgain);
         return;
       }
       const { error: profileError } = await updateAvatarUrl(publicUrl);
       if (profileError) {
-        Alert.alert('Could not save photo', profileError);
+        Alert.alert(t.driver.profile.couldNotSavePhotoTitle, profileError);
         return;
       }
       await refreshProfile();
     } catch (err) {
-      Alert.alert('Could not upload photo', err instanceof Error ? err.message : 'Please try again.');
+      Alert.alert(t.driver.profile.couldNotUploadPhotoTitle, err instanceof Error ? err.message : t.driver.profile.pleaseTryAgain);
     } finally {
       setUploadingAvatar(false);
     }
@@ -96,10 +98,10 @@ export default function ProfileScreen() {
         <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
           <BrandMotif size={180} color={colors.white} opacity={0.1} style={styles.motif} />
           <View style={styles.heroTopRow}>
-            <Text style={styles.heroLabel}>Profile</Text>
+            <Text style={styles.heroLabel}>{t.driver.profile.title}</Text>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel={isEditing ? 'Save changes' : 'Edit profile'}
+              accessibilityLabel={isEditing ? t.driver.profile.saveChanges : t.driver.profile.editProfile}
               style={styles.editButton}
               disabled={saving}
               onPress={handleToggleEdit}
@@ -116,7 +118,7 @@ export default function ProfileScreen() {
         <View style={styles.identity}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Change profile photo"
+            accessibilityLabel={t.driver.profile.changePhoto}
             style={styles.avatarWrap}
             disabled={uploadingAvatar}
             onPress={handleChangeAvatar}
@@ -139,21 +141,26 @@ export default function ProfileScreen() {
           ) : (
             <>
               <View style={styles.nameRow}>
-                <Text style={styles.name}>{name || 'Driver'}</Text>
+                <Text style={styles.name}>{name || t.driver.profile.driverFallback}</Text>
                 {isVerified && (
                   <View style={styles.verifiedBadge}>
                     <Ionicons name="checkmark-circle" size={13} color={colors.accentGreen} />
-                    <Text style={styles.verifiedBadgeText}>Verified</Text>
+                    <Text style={styles.verifiedBadgeText}>{t.driver.profile.verified}</Text>
                   </View>
                 )}
               </View>
               {ratingCount > 0 && rating !== null && (
-                <View style={styles.ratingPill}>
+                <Pressable
+                  style={styles.ratingPill}
+                  onPress={() => router.push('/ratings')}
+                  accessibilityRole="button"
+                  accessibilityLabel={t.driver.profile.viewMyRatings}
+                >
                   <StarRating value={Math.round(rating)} size={14} />
                   <Text style={styles.ratingPillText}>
                     {rating.toFixed(1)} ({ratingCount})
                   </Text>
-                </View>
+                </Pressable>
               )}
             </>
           )}
@@ -163,7 +170,7 @@ export default function ProfileScreen() {
           <View style={styles.detailRow}>
             <View style={styles.detailLabelRow}>
               <Ionicons name="mail-outline" size={14} color={colors.inkSoft} />
-              <Text style={styles.detailLabel}>Email</Text>
+              <Text style={styles.detailLabel}>{t.driver.profile.email}</Text>
             </View>
             <Text style={styles.detailValue} numberOfLines={1}>
               {user?.email ?? '—'}
@@ -173,14 +180,14 @@ export default function ProfileScreen() {
           <View style={styles.detailRow}>
             <View style={styles.detailLabelRow}>
               <Ionicons name="call-outline" size={14} color={colors.inkSoft} />
-              <Text style={styles.detailLabel}>Phone</Text>
+              <Text style={styles.detailLabel}>{t.driver.profile.phone}</Text>
             </View>
             {isEditing ? (
               <TextField
                 value={phone}
                 onChangeText={setPhone}
                 keyboardType="phone-pad"
-                placeholder="09XX XXX XXXX"
+                placeholder={t.driver.profile.phonePlaceholder}
               />
             ) : (
               <Text style={styles.detailValue}>{user?.phone ?? '—'}</Text>
@@ -190,13 +197,19 @@ export default function ProfileScreen() {
 
         <Card style={styles.navGroup}>
           <ListRow
-            title="Complaints"
+            title={t.driver.profile.myRatings}
+            leading={<Ionicons name="star-outline" size={20} color={colors.accentBlue} />}
+            onPress={() => router.push('/ratings')}
+            chevron
+          />
+          <ListRow
+            title={t.driver.profile.complaints}
             leading={<Ionicons name="alert-circle-outline" size={20} color={colors.accentBlue} />}
             onPress={() => router.push('/complaints')}
             chevron
           />
           <ListRow
-            title="Settings"
+            title={t.driver.profile.settings}
             leading={<Ionicons name="settings-outline" size={20} color={colors.accentBlue} />}
             onPress={() => router.push('/profile/settings')}
             chevron

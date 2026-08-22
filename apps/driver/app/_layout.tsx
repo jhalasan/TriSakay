@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Poppins_400Regular,
   Poppins_600SemiBold,
@@ -13,9 +13,14 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors, fontFamily } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
+import { useComplaintsStore } from '../src/store/useComplaintsStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
+import { useDocumentsStore } from '../src/store/useDocumentsStore';
 import { useDriverStore } from '../src/store/useDriverStore';
+import { useEarningsStore } from '../src/store/useEarningsStore';
+import { useHistoryStore } from '../src/store/useHistoryStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
+import { useRatingsStore } from '../src/store/useRatingsStore';
 import { useRequestsStore } from '../src/store/useRequestsStore';
 import { useTripStore } from '../src/store/useTripStore';
 import { useVerificationStore, type VerificationGateStatus } from '../src/store/useVerificationStore';
@@ -118,6 +123,30 @@ function useVerificationSync(sessionUserId: string | null) {
   }, [sessionUserId, check, reset]);
 }
 
+/**
+ * `useDocumentsStore` only stages picked-but-not-yet-uploaded document URIs
+ * locally (register.tsx step 2 and verification-pending.tsx's resume-upload
+ * form both write to it) — without this reset, a second driver signing in
+ * on the same device after a first driver logged out (or their session
+ * expired) would see that first driver's staged document previews and could
+ * submit them under their own account.
+ *
+ * Only resets on a non-null -> null transition (logout / session end), not
+ * on null -> id (login/registration establishing a session) — register.tsx's
+ * own handleSubmit stages files *before* calling register(), and that call
+ * is what flips sessionUserId from null to the new id; resetting on that
+ * transition would wipe the very files it's about to upload.
+ */
+function useDocumentsSync(sessionUserId: string | null) {
+  const reset = useDocumentsStore((state) => state.reset);
+  const previousSessionUserId = useRef<string | null>(null);
+
+  useEffect(() => {
+    if (previousSessionUserId.current !== null && sessionUserId === null) reset();
+    previousSessionUserId.current = sessionUserId;
+  }, [sessionUserId, reset]);
+}
+
 function useAvailabilitySync(sessionUserId: string | null) {
   const checkAvailability = useDriverStore((state) => state.checkAvailability);
 
@@ -125,7 +154,11 @@ function useAvailabilitySync(sessionUserId: string | null) {
     if (sessionUserId === null) {
       // Covers a session ending without going through app/logout.tsx (e.g.
       // token expiry) — that screen already handles the normal path itself.
-      useDriverStore.setState({ isAvailable: false });
+      // todayEarnings/todayTrips are reset here too, not just isAvailable —
+      // recordCompletedTrip() only ever increments them, and without this a
+      // second driver logging in on the same device would inherit the first
+      // driver's leftover "today" tally on Dashboard's stat tiles.
+      useDriverStore.setState({ isAvailable: false, todayEarnings: 0, todayTrips: 0 });
       useRequestsStore.getState().unsubscribe();
       return;
     }
@@ -162,6 +195,30 @@ function useTripSync(sessionUserId: string | null) {
     }
     void hydrate();
   }, [sessionUserId, hydrate, reset]);
+}
+
+/**
+ * Complaints/History/Earnings/Ratings tab screens only ever `load()` once on
+ * mount (`useEffect(() => { void load(); }, [])`), and React Navigation's
+ * tab screens stay mounted across a logout that doesn't unmount them — so
+ * without this, a second driver logging in on the same device would see the
+ * first driver's leftover complaints/trip history/earnings/ratings until
+ * they happened to pull-to-refresh. Unlike useDocumentsSync, these stores
+ * hold nothing that needs to survive a null -> id transition, so a plain
+ * reset on every sessionUserId change (not just logout) is safe here.
+ */
+function useDriverDataSync(sessionUserId: string | null) {
+  const resetComplaints = useComplaintsStore((state) => state.reset);
+  const resetHistory = useHistoryStore((state) => state.reset);
+  const resetEarnings = useEarningsStore((state) => state.reset);
+  const resetRatings = useRatingsStore((state) => state.reset);
+
+  useEffect(() => {
+    resetComplaints();
+    resetHistory();
+    resetEarnings();
+    resetRatings();
+  }, [sessionUserId, resetComplaints, resetHistory, resetEarnings, resetRatings]);
 }
 
 /**
@@ -220,6 +277,8 @@ function RootLayoutNav() {
   const verificationStatus = useVerificationStore((state) => state.status);
   useConsentSync(sessionUserId);
   useVerificationSync(sessionUserId);
+  useDocumentsSync(sessionUserId);
+  useDriverDataSync(sessionUserId);
   useAvailabilitySync(sessionUserId);
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);

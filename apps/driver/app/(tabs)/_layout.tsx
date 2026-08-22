@@ -1,8 +1,11 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import { colors, spacing, typography } from '@trisakay/ui';
+import { useTranslation } from '../../src/hooks/useTranslation';
 
 export default function TabsLayout() {
+  const t = useTranslation();
+
   return (
     <Tabs
       screenOptions={{
@@ -21,23 +24,23 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="dashboard"
-        options={{ title: 'Dashboard', tabBarIcon: ({ color, size }) => <Ionicons name="speedometer" size={size} color={color} /> }}
+        options={{ title: t.driver.tabs.dashboard, tabBarIcon: ({ color, size }) => <Ionicons name="speedometer" size={size} color={color} /> }}
       />
       <Tabs.Screen
         name="requests"
-        options={{ title: 'Requests', tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} /> }}
+        options={{ title: t.driver.tabs.requests, tabBarIcon: ({ color, size }) => <Ionicons name="list" size={size} color={color} /> }}
       />
       <Tabs.Screen
         name="history"
-        options={{ title: 'History', tabBarIcon: ({ color, size }) => <Ionicons name="time" size={size} color={color} /> }}
+        options={{ title: t.driver.tabs.history, tabBarIcon: ({ color, size }) => <Ionicons name="time" size={size} color={color} /> }}
       />
       <Tabs.Screen
         name="earnings"
-        options={{ title: 'Earnings', tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} /> }}
+        options={{ title: t.driver.tabs.earnings, tabBarIcon: ({ color, size }) => <Ionicons name="wallet" size={size} color={color} /> }}
       />
       <Tabs.Screen
         name="profile"
-        options={{ title: 'Profile', tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }}
+        options={{ title: t.driver.tabs.profile, tabBarIcon: ({ color, size }) => <Ionicons name="person" size={size} color={color} /> }}
       />
     </Tabs>
   );

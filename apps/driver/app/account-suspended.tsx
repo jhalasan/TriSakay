@@ -4,22 +4,13 @@ import { useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, colors } from '@trisakay/ui';
+import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { styles } from '../src/styles/account-suspended.styles';
 
-const COPY = {
-  suspended: {
-    title: 'Your account has been suspended',
-    body: 'A PSO staff member has suspended your account. Visit the PSO office for details and next steps before you can accept rides again.',
-  },
-  deactivated: {
-    title: 'Your account has been deactivated',
-    body: 'A PSO staff member has deactivated your account. Visit the PSO office for details and next steps.',
-  },
-} as const;
-
 export default function AccountSuspendedScreen() {
   const router = useRouter();
+  const t = useTranslation();
   const accountStatus = useAuthStore((state) => state.user?.accountStatus);
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const [refreshing, setRefreshing] = useState(false);
@@ -30,7 +21,10 @@ export default function AccountSuspendedScreen() {
     setRefreshing(false);
   }
 
-  const copy = COPY[accountStatus === 'deactivated' ? 'deactivated' : 'suspended'];
+  const copy =
+    accountStatus === 'deactivated'
+      ? { title: t.driver.accountSuspended.deactivatedTitle, body: t.driver.accountSuspended.deactivatedBody }
+      : { title: t.driver.accountSuspended.suspendedTitle, body: t.driver.accountSuspended.suspendedBody };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -42,8 +36,15 @@ export default function AccountSuspendedScreen() {
         <Text style={styles.body}>{copy.body}</Text>
 
         <View style={styles.actions}>
-          <Button label="Refresh status" variant="outline" tone="neutral" loading={refreshing} onPress={handleRefresh} fullWidth />
-          <Button label="Log out" variant="ghost" tone="neutral" onPress={() => router.push('/logout')} fullWidth />
+          <Button
+            label={t.driver.accountSuspended.refreshStatus}
+            variant="outline"
+            tone="neutral"
+            loading={refreshing}
+            onPress={handleRefresh}
+            fullWidth
+          />
+          <Button label={t.driver.accountSuspended.logOut} variant="ghost" tone="neutral" onPress={() => router.push('/logout')} fullWidth />
         </View>
       </ScrollView>
     </SafeAreaView>

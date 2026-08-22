@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { submitRating } from '../src/ratings/index.ts';
+import { listMyRatingsAsDriver, submitRating } from '../src/ratings/index.ts';
 
 const SESSION = { data: { session: { user: { id: 'passenger1' } } } };
 
@@ -145,4 +145,82 @@ test('submitRating passes an untranslated error through verbatim', async () => {
 
   const { error } = await submitRating({ rideRequestId: 'rr1', driverId: 'driver1', stars: 5 });
   assert.equal(error, 'network error');
+});
+
+const DRIVER_SESSION = { data: { session: { user: { id: 'driver1' } } } };
+
+function driverRatingsTable(rows: unknown[] | null, selectError?: string) {
+  let capturedColumn: string | null = null;
+  let capturedValue: unknown = null;
+  const query = {
+    select: () => query,
+    eq: (column: string, value: unknown) => {
+      capturedColumn = column;
+      capturedValue = value;
+      return query;
+    },
+    order: () => query,
+    limit: () =>
+      selectError
+        ? Promise.resolve({ data: null, error: { message: selectError } })
+        : Promise.resolve({ data: rows, error: null }),
+  };
+  return { query, getCapturedFilter: () => ({ column: capturedColumn, value: capturedValue }) };
+}
+
+test('listMyRatingsAsDriver maps rows and scopes the read to the signed-in driver', async () => {
+  const { query, getCapturedFilter } = driverRatingsTable([
+    { id: 'r1', ride_request_id: 'rr1', stars: 5, comment: 'Great ride!', created_at: '2026-08-20T00:00:00.000Z' },
+    { id: 'r2', ride_request_id: 'rr2', stars: 4, comment: null, created_at: '2026-08-18T00:00:00.000Z' },
+  ]);
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => DRIVER_SESSION,
+      from: (table) => (table === 'ratings' ? query : {}),
+    })
+  );
+
+  const { data, error } = await listMyRatingsAsDriver();
+  assert.equal(error, null);
+  assert.deepEqual(data, [
+    { id: 'r1', rideRequestId: 'rr1', stars: 5, comment: 'Great ride!', createdAt: '2026-08-20T00:00:00.000Z' },
+    { id: 'r2', rideRequestId: 'rr2', stars: 4, comment: null, createdAt: '2026-08-18T00:00:00.000Z' },
+  ]);
+  assert.deepEqual(getCapturedFilter(), { column: 'driver_id', value: 'driver1' });
+});
+
+test('listMyRatingsAsDriver returns an empty array when the driver has no ratings yet', async () => {
+  const { query } = driverRatingsTable([]);
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => DRIVER_SESSION,
+      from: (table) => (table === 'ratings' ? query : {}),
+    })
+  );
+
+  const { data, error } = await listMyRatingsAsDriver();
+  assert.equal(error, null);
+  assert.deepEqual(data, []);
+});
+
+test('listMyRatingsAsDriver surfaces a query error instead of guessing', async () => {
+  const { query } = driverRatingsTable(null, 'network down');
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => DRIVER_SESSION,
+      from: (table) => (table === 'ratings' ? query : {}),
+    })
+  );
+
+  const { data, error } = await listMyRatingsAsDriver();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'network down');
+});
+
+test('listMyRatingsAsDriver returns an error when there is no active session', async () => {
+  __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
+
+  const { data, error } = await listMyRatingsAsDriver();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'Not signed in');
 });

@@ -4,6 +4,8 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-na
 import { requestPasswordReset, signOut, updatePassword, verifyPasswordReset } from '@trisakay/services';
 import { Button, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
+import { useTranslation } from '../src/hooks/useTranslation';
+import { interpolate } from '../src/utils/interpolate';
 import { isValidPassword } from '../src/utils/validation';
 import { styles } from '../src/styles/auth/reset-password.styles';
 
@@ -15,6 +17,7 @@ interface FormErrors {
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const t = useTranslation();
   const { email } = useLocalSearchParams<{ email?: string }>();
 
   const [code, setCode] = useState('');
@@ -29,12 +32,10 @@ export default function ResetPasswordScreen() {
   if (!email) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title="Reset password" />
+        <ScreenHeader title={t.driver.resetPassword.title} />
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.intro}>
-            We couldn't find the email for this reset. Please start again from the login screen.
-          </Text>
-          <Button label="Back to login" fullWidth onPress={() => router.replace('/(auth)/login')} />
+          <Text style={styles.intro}>{t.driver.resetPassword.noEmailFound}</Text>
+          <Button label={t.driver.resetPassword.backToLogin} fullWidth onPress={() => router.replace('/(auth)/login')} />
         </ScrollView>
       </View>
     );
@@ -50,9 +51,9 @@ export default function ResetPasswordScreen() {
 
   async function handleSubmit() {
     const nextErrors: FormErrors = {};
-    if (code.trim().length === 0) nextErrors.code = 'Enter the code we emailed you.';
-    if (!isValidPassword(password)) nextErrors.password = 'Password must be at least 6 characters.';
-    if (confirmPassword !== password) nextErrors.confirmPassword = "Passwords don't match.";
+    if (code.trim().length === 0) nextErrors.code = t.driver.resetPassword.enterCode;
+    if (!isValidPassword(password)) nextErrors.password = t.driver.resetPassword.passwordMinLength;
+    if (confirmPassword !== password) nextErrors.confirmPassword = t.driver.resetPassword.passwordsDontMatch;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -62,7 +63,7 @@ export default function ResetPasswordScreen() {
     const { error: verifyError } = await verifyPasswordReset({ email: email!, token: code.trim() });
     if (verifyError) {
       setSubmitting(false);
-      setFormError('That code is invalid or has expired. Request a new one below.');
+      setFormError(t.driver.resetPassword.codeInvalid);
       return;
     }
 
@@ -74,7 +75,7 @@ export default function ResetPasswordScreen() {
       // sign it back out so the reset stays all-or-nothing, then let the
       // driver retry with a fresh code rather than land half-authenticated.
       await signOut();
-      setFormError("Couldn't update your password. Request a new code and try again.");
+      setFormError(t.driver.resetPassword.couldNotUpdatePassword);
       return;
     }
 
@@ -84,11 +85,11 @@ export default function ResetPasswordScreen() {
   if (done) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title="Reset password" showBack={false} />
+        <ScreenHeader title={t.driver.resetPassword.title} showBack={false} />
         <ScrollView contentContainerStyle={styles.content}>
-          <Text style={styles.successTitle}>Password updated</Text>
-          <Text style={styles.successBody}>You're signed in with your new password.</Text>
-          <Button label="Continue" fullWidth onPress={() => router.replace('/(tabs)/dashboard')} />
+          <Text style={styles.successTitle}>{t.driver.resetPassword.passwordUpdatedTitle}</Text>
+          <Text style={styles.successBody}>{t.driver.resetPassword.passwordUpdatedBody}</Text>
+          <Button label={t.driver.resetPassword.continueButton} fullWidth onPress={() => router.replace('/(tabs)/dashboard')} />
         </ScrollView>
       </View>
     );
@@ -96,13 +97,13 @@ export default function ResetPasswordScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScreenHeader title="Reset password" />
+      <ScreenHeader title={t.driver.resetPassword.title} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
-        <Text style={styles.intro}>Enter the code we sent to {email} and choose a new password.</Text>
+        <Text style={styles.intro}>{interpolate(t.driver.resetPassword.introWithEmail, { email })}</Text>
 
         <View style={styles.fields}>
           <TextField
-            label="Code"
+            label={t.driver.resetPassword.code}
             placeholder="123456"
             value={code}
             onChangeText={setCode}
@@ -110,7 +111,7 @@ export default function ResetPasswordScreen() {
             keyboardType="number-pad"
           />
           <TextField
-            label="New password"
+            label={t.driver.resetPassword.newPassword}
             placeholder="••••••••"
             value={password}
             onChangeText={setPassword}
@@ -119,7 +120,7 @@ export default function ResetPasswordScreen() {
             autoComplete="password-new"
           />
           <TextField
-            label="Confirm new password"
+            label={t.driver.resetPassword.confirmNewPassword}
             placeholder="••••••••"
             value={confirmPassword}
             onChangeText={setConfirmPassword}
@@ -130,12 +131,12 @@ export default function ResetPasswordScreen() {
         </View>
 
         <Text style={styles.resendLink} onPress={resending ? undefined : handleResend}>
-          <Text style={styles.resendLinkText}>{resending ? 'Sending…' : 'Resend code'}</Text>
+          <Text style={styles.resendLinkText}>{resending ? t.driver.resetPassword.sending : t.driver.resetPassword.resendCode}</Text>
         </Text>
 
         {formError && <Text style={styles.authError}>{formError}</Text>}
 
-        <Button label="Reset password" fullWidth loading={submitting} onPress={handleSubmit} />
+        <Button label={t.driver.resetPassword.resetPasswordButton} fullWidth loading={submitting} onPress={handleSubmit} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

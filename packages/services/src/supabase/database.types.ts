@@ -1296,13 +1296,13 @@ export type Database = {
         Returns: Database["public"]["Enums"]["user_role"]
       }
       business_days_since: { Args: { p_start: string }; Returns: number }
-      cancel_trip: {
+      cancel_ride_leg: {
         Args: { p_reason: string; p_ride_request_id: string; p_trip_id: string }
         Returns: {
           ride_request_id: string
         }[]
       }
-      complete_trip: {
+      complete_ride_leg: {
         Args: { p_ride_request_id: string; p_trip_id: string }
         Returns: {
           ride_request_id: string
@@ -1316,8 +1316,21 @@ export type Database = {
         }
         Returns: number
       }
+      end_trip: {
+        Args: { p_trip_id: string }
+        Returns: {
+          trip_id: string
+        }[]
+      }
       get_active_trip_for_driver: {
         Args: never
+        Returns: {
+          started_at: string
+          trip_id: string
+        }[]
+      }
+      get_active_trip_passengers: {
+        Args: { p_trip_id: string }
         Returns: {
           avatar_url: string
           cash_confirmed: boolean
@@ -1327,8 +1340,6 @@ export type Database = {
           preferred_method: Database["public"]["Enums"]["payment_method"]
           ride_request_id: string
           seats_requested: number
-          started_at: string
-          trip_id: string
         }[]
       }
       get_driver_trip_history: {

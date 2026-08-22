@@ -22,4 +22,13 @@ export const styles = StyleSheet.create({
   body: { ...typography.body, color: colors.inkSoft, textAlign: 'center' },
   error: { ...typography.caption, color: colors.danger, textAlign: 'center' },
   actions: { width: '100%', gap: spacing.sm, marginTop: spacing.md },
+  uploadScroll: { flex: 1 },
+  uploadScrollContent: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xl,
+    paddingBottom: spacing.xxxl,
+    gap: spacing.md,
+  },
+  centerSelf: { alignSelf: 'center' },
+  logoutFooter: { padding: spacing.xl, paddingTop: 0 },
 });

@@ -17,6 +17,7 @@ const CORE_ITEMS: NavItem[] = [
   { to: '/reports', label: 'Reports & Analytics' },
   { to: '/rating-oversight', label: 'Rating Oversight' },
   { to: '/discounts', label: 'Fare Discounts' },
+  { to: '/emergency-alerts', label: 'Emergency Alerts' },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [

@@ -17,4 +17,15 @@ config.resolver.extraNodeModules = {
   '@trisakay/utils': path.resolve(workspaceRoot, 'packages/utils/src'),
 };
 
+// zustand/middleware's ESM build (zustand/esm/middleware.mjs, bundled with
+// its `devtools` middleware) references `import.meta.env`, which throws
+// "Cannot use 'import.meta' outside a module" the instant the web bundle
+// runs — Metro serves it as a classic script, not an ES module. The CJS
+// build (middleware.js) has no `import.meta` at all. Metro's default
+// package-exports resolution prefers the ESM build for the web platform;
+// disabling it falls back to `main`, which points at the CJS build.
+// Only useSettingsStore.ts (persist/createJSONStorage) imports from
+// zustand/middleware, so this is the only reason this app needs it.
+config.resolver.unstable_enablePackageExports = false;
+
 module.exports = config;

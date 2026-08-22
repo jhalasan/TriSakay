@@ -1,9 +1,9 @@
-import '../lib/supabase';
+import '../lib/supabase.ts';
 import { create } from 'zustand';
 import * as authService from '@trisakay/services';
 import type { PublicUser } from '@trisakay/services';
 import type { User } from '../types/user';
-import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 
 type AuthSession = Awaited<ReturnType<typeof authService.getSession>>;
 

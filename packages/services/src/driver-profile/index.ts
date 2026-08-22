@@ -59,6 +59,12 @@ export async function getDriverRatingSummary(): Promise<{
   return { ratingAvg: data.rating_avg, ratingCount: data.rating_count, error: null };
 }
 
+export interface DriverDailyEarning {
+  date: string;
+  ridesCompleted: number;
+  totalCollected: number;
+}
+
 /**
  * Sums `v_driver_earnings.total_collected` (a security_invoker view — the
  * underlying `trips`/`transactions` RLS already scopes it to the caller's
@@ -67,18 +73,33 @@ export async function getDriverRatingSummary(): Promise<{
  * transaction actually reached `status = 'paid'` (the view's own join
  * condition), so a GCash ride the webhook hasn't confirmed yet is correctly
  * excluded — this is "tracked", not a promise of settled money.
+ *
+ * The view is already grouped one row per day (`earning_date`), so the same
+ * query doubles as the chart's daily breakdown — no second round trip.
  */
-export async function getDriverEarnings(): Promise<{ totalTracked: number | null; error: string | null }> {
+export async function getDriverEarnings(): Promise<{
+  totalTracked: number | null;
+  breakdown: DriverDailyEarning[] | null;
+  error: string | null;
+}> {
   const userId = await getSignedInUserId();
-  if (!userId) return { totalTracked: null, error: 'Not signed in' };
+  if (!userId) return { totalTracked: null, breakdown: null, error: 'Not signed in' };
 
   const { data, error } = await getSupabaseClient()
     .from('v_driver_earnings')
-    .select('total_collected')
-    .eq('driver_id', userId);
+    .select('earning_date, rides_completed, total_collected')
+    .eq('driver_id', userId)
+    .order('earning_date', { ascending: true });
 
-  if (error) return { totalTracked: null, error: error.message };
+  if (error) return { totalTracked: null, breakdown: null, error: error.message };
 
-  const totalTracked = (data ?? []).reduce((sum, row) => sum + (row.total_collected ?? 0), 0);
-  return { totalTracked, error: null };
+  const rows = data ?? [];
+  const totalTracked = rows.reduce((sum, row) => sum + (row.total_collected ?? 0), 0);
+  const breakdown = rows.map((row) => ({
+    date: row.earning_date ?? '',
+    ridesCompleted: row.rides_completed ?? 0,
+    totalCollected: row.total_collected ?? 0,
+  }));
+
+  return { totalTracked, breakdown, error: null };
 }

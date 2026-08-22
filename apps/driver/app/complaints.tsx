@@ -7,8 +7,10 @@ import { useFocusEffect } from 'expo-router';
 import type { ComplaintCategory } from '@trisakay/services';
 import { Badge, Button, Card, EmptyState, ListRow, Textarea, TextField, colors, type BadgeTone } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
+import { useTranslation } from '../src/hooks/useTranslation';
 import { useComplaintsStore, type ComplaintStatus } from '../src/store/useComplaintsStore';
 import { useHistoryStore } from '../src/store/useHistoryStore';
+import { interpolate } from '../src/utils/interpolate';
 import { isNonEmpty } from '../src/utils/validation';
 import { styles } from '../src/styles/complaints.styles';
 
@@ -30,21 +32,25 @@ async function readFileBytes(uri: string): Promise<ArrayBuffer> {
   return new File(uri).arrayBuffer();
 }
 
-const STATUS_LABEL: Record<ComplaintStatus, string> = { open: 'Open', review: 'Review', closed: 'Closed' };
 const STATUS_TONE: Record<ComplaintStatus, BadgeTone> = { open: 'blue', review: 'neutral', closed: 'green' };
 
-const CATEGORY_LABEL: Record<ComplaintCategory, string> = {
-  fare: 'Fare dispute',
-  conduct: 'Passenger conduct',
-  safety: 'Safety concern',
-  low_rating: 'Low rating',
-  vehicle_condition: 'Vehicle condition',
-  other: 'Other',
-};
-
-const CATEGORY_OPTIONS = Object.keys(CATEGORY_LABEL) as ComplaintCategory[];
+const CATEGORY_OPTIONS: ComplaintCategory[] = ['fare', 'conduct', 'safety', 'low_rating', 'vehicle_condition', 'other'];
 
 export default function ComplaintsScreen() {
+  const t = useTranslation();
+  const STATUS_LABEL: Record<ComplaintStatus, string> = {
+    open: t.driver.complaints.statusOpen,
+    review: t.driver.complaints.statusReview,
+    closed: t.driver.complaints.statusClosed,
+  };
+  const CATEGORY_LABEL: Record<ComplaintCategory, string> = {
+    fare: t.driver.complaints.categoryFareDispute,
+    conduct: t.driver.complaints.categoryConduct,
+    safety: t.driver.complaints.categorySafety,
+    low_rating: t.driver.complaints.categoryLowRating,
+    vehicle_condition: t.driver.complaints.categoryVehicleCondition,
+    other: t.driver.complaints.categoryOther,
+  };
   const complaints = useComplaintsStore((state) => state.complaints);
   const loading = useComplaintsStore((state) => state.loading);
   const complaintsError = useComplaintsStore((state) => state.error);
@@ -120,14 +126,14 @@ export default function ComplaintsScreen() {
     resetForm();
     setComposing(false);
     if (attachmentError) {
-      setSubmittedWarning(`Your complaint was filed, but the evidence photos could not be attached (${attachmentError}).`);
+      setSubmittedWarning(interpolate(t.driver.complaints.attachmentWarning, { error: attachmentError }));
     }
   }
 
   return (
     <View style={styles.container}>
       <ScreenHeader
-        title="Complaints"
+        title={t.driver.complaints.title}
         right={
           <Text
             onPress={() => {
@@ -136,7 +142,7 @@ export default function ComplaintsScreen() {
             }}
             style={styles.newToggleText}
           >
-            {composing ? 'Cancel' : 'New'}
+            {composing ? t.common.cancel : t.driver.complaints.new}
           </Text>
         }
       />
@@ -149,7 +155,7 @@ export default function ComplaintsScreen() {
           {composing ? (
             <View style={styles.formGap}>
               <View>
-                <Text style={styles.fieldLabel}>Category</Text>
+                <Text style={styles.fieldLabel}>{t.driver.complaints.category}</Text>
                 <Pressable
                   style={styles.pickerField}
                   onPress={() => setCategoryPickerOpen((prev) => !prev)}
@@ -179,7 +185,7 @@ export default function ComplaintsScreen() {
               </View>
 
               <View>
-                <Text style={styles.fieldLabel}>Related trip (optional)</Text>
+                <Text style={styles.fieldLabel}>{t.driver.complaints.relatedTrip}</Text>
                 <Pressable
                   style={styles.pickerField}
                   onPress={() => setTripPickerOpen((prev) => !prev)}
@@ -187,8 +193,8 @@ export default function ComplaintsScreen() {
                 >
                   <Text style={[styles.pickerFieldText, !selectedTrip && styles.pickerFieldPlaceholder]} numberOfLines={1}>
                     {selectedTrip
-                      ? `${selectedTrip.passengerName ?? 'Passenger'} · ${formatDate(selectedTrip.date)}`
-                      : 'Select a past trip'}
+                      ? `${selectedTrip.passengerName ?? t.driver.complaints.passengerFallback} · ${formatDate(selectedTrip.date)}`
+                      : t.driver.complaints.selectPastTrip}
                   </Text>
                   <Ionicons name={tripPickerOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.inkSoft} />
                 </Pressable>
@@ -196,12 +202,12 @@ export default function ComplaintsScreen() {
                 {tripPickerOpen && (
                   <Card style={styles.pickerList}>
                     {trips.length === 0 ? (
-                      <Text style={styles.pickerEmpty}>No past trips to report on yet.</Text>
+                      <Text style={styles.pickerEmpty}>{t.driver.complaints.noTripsYet}</Text>
                     ) : (
                       trips.map((trip, index) => (
                         <ListRow
                           key={trip.id}
-                          title={trip.passengerName || 'Passenger'}
+                          title={trip.passengerName || t.driver.complaints.passengerFallback}
                           subtitle={formatDate(trip.date)}
                           onPress={() => {
                             setRelatedTripId(trip.id);
@@ -215,11 +221,21 @@ export default function ComplaintsScreen() {
                 )}
               </View>
 
-              <TextField label="Subject" placeholder="What's this about?" value={subject} onChangeText={setSubject} />
-              <Textarea label="Message" placeholder="Describe what happened" value={message} onChangeText={setMessage} />
+              <TextField
+                label={t.driver.complaints.subject}
+                placeholder={t.driver.complaints.subjectPlaceholder}
+                value={subject}
+                onChangeText={setSubject}
+              />
+              <Textarea
+                label={t.driver.complaints.message}
+                placeholder={t.driver.complaints.messagePlaceholder}
+                value={message}
+                onChangeText={setMessage}
+              />
 
               <View>
-                <Text style={styles.fieldLabel}>Evidence (optional)</Text>
+                <Text style={styles.fieldLabel}>{t.driver.complaints.evidence}</Text>
                 <View style={styles.evidenceRow}>
                   {evidenceUris.map((uri, index) => (
                     <View key={uri} style={styles.evidenceThumbWrap}>
@@ -245,17 +261,17 @@ export default function ComplaintsScreen() {
                     </Pressable>
                   )}
                 </View>
-                <Text style={styles.evidenceHint}>Up to {MAX_EVIDENCE_PHOTOS} photos.</Text>
+                <Text style={styles.evidenceHint}>{interpolate(t.driver.complaints.evidenceHint, { count: MAX_EVIDENCE_PHOTOS })}</Text>
               </View>
 
               {complaintsError && <Text style={styles.error}>{complaintsError}</Text>}
-              <Button label="Submit complaint" fullWidth disabled={!canSubmit} loading={submitting} onPress={handleSubmit} />
+              <Button label={t.driver.complaints.submit} fullWidth disabled={!canSubmit} loading={submitting} onPress={handleSubmit} />
             </View>
           ) : complaints.length === 0 ? (
             loading ? null : (
               <>
                 {submittedWarning && <Text style={styles.submittedWarning}>{submittedWarning}</Text>}
-                <EmptyState title="No complaints" message="Complaints you submit will appear here." />
+                <EmptyState title={t.driver.complaints.noComplaintsTitle} message={t.driver.complaints.noComplaintsMessage} />
               </>
             )
           ) : (

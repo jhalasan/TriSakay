@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Animated, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { subscribeToRideRequestStatus } from '@trisakay/services';
-import { Badge, Button, EmptyState, GradientSurface, OsmMap, motion, spacing } from '@trisakay/ui';
+import { Badge, Button, EmptyState, GradientSurface, HoldToConfirmButton, OsmMap, motion, spacing } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -120,6 +120,15 @@ export default function TripScreen() {
         <DriverInfoCard driver={driver} />
         {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
         <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
+
+        <View style={styles.sosBlock}>
+          <HoldToConfirmButton
+            label={t.trip.sosButton}
+            fullWidth
+            onConfirm={() => router.push('/booking/emergency')}
+          />
+          <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
+        </View>
       </Animated.View>
     </View>
   );

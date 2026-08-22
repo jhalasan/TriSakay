@@ -7,6 +7,7 @@ export * from './Checkbox';
 export * from './ConfirmModal';
 export * from './EmptyState';
 export * from './GradientSurface';
+export * from './HoldToConfirmButton';
 export * from './ListRow';
 export * from './MapOverlaySheet';
 export * from './MapPlaceholder';

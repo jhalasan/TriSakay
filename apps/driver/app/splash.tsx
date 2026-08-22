@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Text, View } from 'react-native';
 import { BrandMotif, GradientSurface } from '@trisakay/ui';
+import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { wait } from '../src/mocks/delay';
@@ -48,6 +49,7 @@ function waitUntilConsentResolved(): Promise<ConsentGateStatus> {
 
 export default function SplashScreen() {
   const router = useRouter();
+  const t = useTranslation();
 
   useEffect(() => {
     let cancelled = false;
@@ -89,7 +91,7 @@ export default function SplashScreen() {
             accessibilityLabel="TriSakay"
           />
         </View>
-        <Text style={styles.subtitle}>Drive with TriSakay</Text>
+        <Text style={styles.subtitle}>{t.driver.splash.subtitle}</Text>
         <ActivityIndicator color="#FFFFFF" style={styles.loader} />
       </View>
     </GradientSurface>

@@ -3,11 +3,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge, EmptyState } from '@trisakay/ui';
 import { RequestCard } from '../../src/components/RequestCard';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useRequestsStore } from '../../src/store/useRequestsStore';
 import { styles } from '../../src/styles/tabs/requests.styles';
 
 export default function RequestsScreen() {
+  const t = useTranslation();
   const isAvailable = useDriverStore((state) => state.isAvailable);
   const pending = useRequestsStore((state) => state.pending);
   const requestError = useRequestsStore((state) => state.error);
@@ -17,8 +19,8 @@ export default function RequestsScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.header}>
-        <Text style={styles.title}>Ride requests</Text>
-        {isAvailable && <Badge label="Along route" tone="blue" />}
+        <Text style={styles.title}>{t.driver.requests.title}</Text>
+        {isAvailable && <Badge label={t.driver.requests.alongRoute} tone="blue" />}
       </View>
 
       {requestError && <Text style={styles.error}>{requestError}</Text>}
@@ -29,8 +31,8 @@ export default function RequestsScreen() {
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
           <EmptyState
-            title={isAvailable ? 'No requests right now' : "You're offline"}
-            message={isAvailable ? 'New ride requests will appear here.' : 'Go online from the Dashboard to start receiving requests.'}
+            title={isAvailable ? t.driver.requests.noRequestsTitle : t.driver.requests.offlineTitle}
+            message={isAvailable ? t.driver.requests.noRequestsMessage : t.driver.requests.offlineMessage}
           />
         }
         renderItem={({ item }) => (

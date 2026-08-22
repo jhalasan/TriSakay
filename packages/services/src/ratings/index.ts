@@ -73,3 +73,48 @@ export async function submitRating({
     return { error: 'Something went wrong — please try again.' };
   }
 }
+
+export interface DriverRatingEntry {
+  id: string;
+  rideRequestId: string;
+  stars: number;
+  comment: string | null;
+  createdAt: string;
+}
+
+export interface ListDriverRatingsResult {
+  data: DriverRatingEntry[];
+  error: string | null;
+}
+
+/**
+ * Reads the signed-in driver's own individual ratings directly — unlike trip
+ * history or passenger info, `ratings_read` RLS already permits `driver_id =
+ * auth.uid()` (docs/SCHEMA.MD §7.7), so this needs no security-definer RPC.
+ * No passenger name is surfaced: FR-10 only requires the running average be
+ * visible to the driver — per-rating passenger identity was never in scope.
+ */
+export async function listMyRatingsAsDriver(limit = 50): Promise<ListDriverRatingsResult> {
+  const userId = await getSignedInUserId();
+  if (!userId) return { data: [], error: 'Not signed in' };
+
+  const { data, error } = await getSupabaseClient()
+    .from('ratings')
+    .select('id, ride_request_id, stars, comment, created_at')
+    .eq('driver_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(limit);
+
+  if (error) return { data: [], error: error.message };
+
+  return {
+    data: (data ?? []).map((row) => ({
+      id: row.id,
+      rideRequestId: row.ride_request_id,
+      stars: row.stars,
+      comment: row.comment,
+      createdAt: row.created_at,
+    })),
+    error: null,
+  };
+}

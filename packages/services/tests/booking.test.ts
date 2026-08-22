@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeTrip, cancelTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -1054,29 +1054,43 @@ test('getTripPassengerInfo returns null data with no error on an empty result se
   assert.equal(error, null);
 });
 
-test('getActiveTripForDriver maps the RPC row into ActiveTripForDriver', async () => {
-  let capturedFn: string | null = null;
-  let capturedArgs: any = null;
+test('getActiveTripForDriver combines the trip header with every passenger leg', async () => {
+  const capturedCalls: { fn: string; args: any }[] = [];
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       rpc: async (fn, args) => {
-        capturedFn = fn;
-        capturedArgs = args;
-        return {
-          data: [{
-            trip_id: 'trip1',
-            ride_request_id: 'rr1',
-            seats_requested: 2,
-            preferred_method: 'cash',
-            estimated_fare: 55,
-            started_at: '2026-08-10T00:00:00.000Z',
-            passenger_id: 'p1',
-            passenger_name: 'Maria Clara',
-            avatar_url: 'https://example.com/p1.jpg',
-            cash_confirmed: false,
-          }],
-          error: null,
-        };
+        capturedCalls.push({ fn, args });
+        if (fn === 'get_active_trip_for_driver') {
+          return { data: [{ trip_id: 'trip1', started_at: '2026-08-10T00:00:00.000Z' }], error: null };
+        }
+        if (fn === 'get_active_trip_passengers') {
+          return {
+            data: [
+              {
+                ride_request_id: 'rr1',
+                seats_requested: 2,
+                preferred_method: 'cash',
+                estimated_fare: 55,
+                passenger_id: 'p1',
+                passenger_name: 'Maria Clara',
+                avatar_url: 'https://example.com/p1.jpg',
+                cash_confirmed: false,
+              },
+              {
+                ride_request_id: 'rr2',
+                seats_requested: 1,
+                preferred_method: 'gcash',
+                estimated_fare: 20,
+                passenger_id: 'p2',
+                passenger_name: 'Juan Pablo',
+                avatar_url: null,
+                cash_confirmed: false,
+              },
+            ],
+            error: null,
+          };
+        }
+        throw new Error(`unexpected rpc ${fn}`);
       },
     })
   );
@@ -1084,25 +1098,62 @@ test('getActiveTripForDriver maps the RPC row into ActiveTripForDriver', async (
   const { data, error } = await getActiveTripForDriver();
 
   assert.equal(error, null);
-  assert.equal(capturedFn, 'get_active_trip_for_driver');
-  assert.deepEqual(capturedArgs, undefined);
+  assert.equal(capturedCalls[0].fn, 'get_active_trip_for_driver');
+  assert.equal(capturedCalls[1].fn, 'get_active_trip_passengers');
+  assert.deepEqual(capturedCalls[1].args, { p_trip_id: 'trip1' });
   assert.deepEqual(data, {
     tripId: 'trip1',
-    rideRequestId: 'rr1',
-    seats: 2,
-    paymentMethod: 'cash',
-    fare: 55,
     startedAt: '2026-08-10T00:00:00.000Z',
-    passengerName: 'Maria Clara',
-    passengerAvatarUrl: 'https://example.com/p1.jpg',
-    cashConfirmed: false,
+    passengers: [
+      {
+        rideRequestId: 'rr1',
+        seats: 2,
+        paymentMethod: 'cash',
+        fare: 55,
+        passengerId: 'p1',
+        passengerName: 'Maria Clara',
+        passengerAvatarUrl: 'https://example.com/p1.jpg',
+        cashConfirmed: false,
+      },
+      {
+        rideRequestId: 'rr2',
+        seats: 1,
+        paymentMethod: 'gcash',
+        fare: 20,
+        passengerId: 'p2',
+        passengerName: 'Juan Pablo',
+        passengerAvatarUrl: null,
+        cashConfirmed: false,
+      },
+    ],
   });
 });
 
-test('getActiveTripForDriver surfaces an RPC error', async () => {
+test('getActiveTripForDriver returns an active trip with an empty passengers array — not confused with no trip at all', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      rpc: async () => ({ data: null, error: { message: 'network error' } }),
+      rpc: async (fn) => {
+        if (fn === 'get_active_trip_for_driver') {
+          return { data: [{ trip_id: 'trip1', started_at: '2026-08-10T00:00:00.000Z' }], error: null };
+        }
+        if (fn === 'get_active_trip_passengers') return { data: [], error: null };
+        throw new Error(`unexpected rpc ${fn}`);
+      },
+    })
+  );
+
+  const { data, error } = await getActiveTripForDriver();
+  assert.equal(error, null);
+  assert.deepEqual(data, { tripId: 'trip1', startedAt: '2026-08-10T00:00:00.000Z', passengers: [] });
+});
+
+test('getActiveTripForDriver surfaces a trip-header RPC error without calling the passengers RPC', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn) => {
+        if (fn === 'get_active_trip_for_driver') return { data: null, error: { message: 'network error' } };
+        throw new Error('must not fetch passengers when the trip-header call failed');
+      },
     })
   );
 
@@ -1114,7 +1165,10 @@ test('getActiveTripForDriver surfaces an RPC error', async () => {
 test('getActiveTripForDriver returns null data with no error when there is no active trip', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      rpc: async () => ({ data: [], error: null }),
+      rpc: async (fn) => {
+        if (fn === 'get_active_trip_for_driver') return { data: [], error: null };
+        throw new Error('must not fetch passengers when there is no active trip');
+      },
     })
   );
 
@@ -1180,7 +1234,7 @@ test('listDriverTripHistory surfaces an RPC error with an empty list', async () 
   assert.equal(error, 'network error');
 });
 
-test('completeTrip calls the complete_trip RPC with the trip and ride request ids', async () => {
+test('completeRideLeg calls the complete_ride_leg RPC with the trip and ride request ids', async () => {
   let capturedFn: string | null = null;
   let capturedArgs: any = null;
 
@@ -1194,25 +1248,25 @@ test('completeTrip calls the complete_trip RPC with the trip and ride request id
     })
   );
 
-  const { error } = await completeTrip('trip1', 'rr1');
+  const { error } = await completeRideLeg('trip1', 'rr1');
 
   assert.equal(error, null);
-  assert.equal(capturedFn, 'complete_trip');
+  assert.equal(capturedFn, 'complete_ride_leg');
   assert.deepEqual(capturedArgs, { p_trip_id: 'trip1', p_ride_request_id: 'rr1' });
 });
 
-test('completeTrip surfaces a friendly error when the RPC fails', async () => {
+test('completeRideLeg surfaces a friendly error when the RPC fails', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       rpc: async () => ({ data: null, error: { message: 'No active trip found for this driver to complete' } }),
     })
   );
 
-  const { error } = await completeTrip('trip1', 'rr1');
-  assert.equal(error, "Couldn't close out the trip. Please try again.");
+  const { error } = await completeRideLeg('trip1', 'rr1');
+  assert.equal(error, "Couldn't close out this passenger's ride. Please try again.");
 });
 
-test('cancelTrip calls the cancel_trip RPC with the trip id, ride request id, and reason', async () => {
+test('cancelRideLeg calls the cancel_ride_leg RPC with the trip id, ride request id, and reason', async () => {
   let capturedFn: string | null = null;
   let capturedArgs: any = null;
 
@@ -1226,22 +1280,54 @@ test('cancelTrip calls the cancel_trip RPC with the trip id, ride request id, an
     })
   );
 
-  const { error } = await cancelTrip('trip1', 'rr1', 'Passenger no-show');
+  const { error } = await cancelRideLeg('trip1', 'rr1', 'Passenger no-show');
 
   assert.equal(error, null);
-  assert.equal(capturedFn, 'cancel_trip');
+  assert.equal(capturedFn, 'cancel_ride_leg');
   assert.deepEqual(capturedArgs, { p_trip_id: 'trip1', p_ride_request_id: 'rr1', p_reason: 'Passenger no-show' });
 });
 
-test('cancelTrip surfaces a friendly error when the RPC fails', async () => {
+test('cancelRideLeg surfaces a friendly error when the RPC fails', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       rpc: async () => ({ data: null, error: { message: 'No active trip found for this driver to cancel' } }),
     })
   );
 
-  const { error } = await cancelTrip('trip1', 'rr1', 'Passenger no-show');
-  assert.equal(error, "Couldn't cancel the trip. Please try again.");
+  const { error } = await cancelRideLeg('trip1', 'rr1', 'Passenger no-show');
+  assert.equal(error, "Couldn't cancel this passenger's ride. Please try again.");
+});
+
+test('endTrip calls the end_trip RPC with the trip id', async () => {
+  let capturedFn: string | null = null;
+  let capturedArgs: any = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn, args) => {
+        capturedFn = fn;
+        capturedArgs = args;
+        return { data: [{ trip_id: 'trip1' }], error: null };
+      },
+    })
+  );
+
+  const { error } = await endTrip('trip1');
+
+  assert.equal(error, null);
+  assert.equal(capturedFn, 'end_trip');
+  assert.deepEqual(capturedArgs, { p_trip_id: 'trip1' });
+});
+
+test('endTrip surfaces the RPC error verbatim (e.g. "passenger still active")', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: null, error: { message: 'Cannot end trip -- 1 passenger(s) still active' } }),
+    })
+  );
+
+  const { error } = await endTrip('trip1');
+  assert.equal(error, 'Cannot end trip -- 1 passenger(s) still active');
 });
 
 test('getTripDriverInfo maps the RPC row into TripDriverInfo', async () => {

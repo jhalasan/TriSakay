@@ -8,6 +8,7 @@ import { Avatar, Badge, Toggle, colors } from '@trisakay/ui';
 import { RequestCard } from '../../src/components/RequestCard';
 import { StatTile } from '../../src/components/StatTile';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
@@ -18,6 +19,7 @@ import { styles } from '../../src/styles/tabs/dashboard.styles';
 
 export default function DashboardScreen() {
   const router = useRouter();
+  const t = useTranslation();
   const user = useAuthStore((state) => state.user);
 
   const isAvailable = useDriverStore((state) => state.isAvailable);
@@ -65,7 +67,7 @@ export default function DashboardScreen() {
         const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
         coords = { lat: position.coords.latitude, lng: position.coords.longitude };
       } catch {
-        useDriverStore.setState({ error: 'Could not get your location. Make sure location services are turned on.' });
+        useDriverStore.setState({ error: t.driver.dashboard.locationError });
         setTogglingAvailability(false);
         return;
       }
@@ -92,12 +94,12 @@ export default function DashboardScreen() {
           <Avatar name={user?.name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="lg" />
           <View style={styles.nameSlot}>
             <Text style={styles.name} numberOfLines={1}>
-              {user?.name ?? 'Driver'}
+              {user?.name ?? t.driver.dashboard.driverFallback}
             </Text>
           </View>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Notifications"
+            accessibilityLabel={t.driver.dashboard.notificationsAccessibilityLabel}
             style={styles.bellButton}
             onPress={() => router.push('/notifications')}
           >
@@ -108,22 +110,26 @@ export default function DashboardScreen() {
         </View>
 
         <View style={styles.statusRow}>
-          <Text style={styles.statusLabel}>{isAvailable ? 'You are online' : 'You are offline'}</Text>
-          <Badge label={isAvailable ? 'Online' : 'Offline'} tone={isAvailable ? 'green' : 'neutral'} dot />
+          <Text style={styles.statusLabel}>{isAvailable ? t.driver.dashboard.online : t.driver.dashboard.offline}</Text>
+          <Badge
+            label={isAvailable ? t.driver.dashboard.onlineBadge : t.driver.dashboard.offlineBadge}
+            tone={isAvailable ? 'green' : 'neutral'}
+            dot
+          />
         </View>
 
         {availabilityError && <Text style={styles.error}>{availabilityError}</Text>}
 
         <View style={styles.statGrid}>
-          <StatTile label="Earnings today" value={formatCurrency(todayEarnings)} />
-          <StatTile label="Trips today" value={String(todayTrips)} />
-          <StatTile label="Rating" value={ratingCount > 0 && rating !== null ? rating.toFixed(1) : '—'} />
-          <StatTile label="Accept rate" value={acceptRate !== null ? `${Math.round(acceptRate * 100)}%` : '—'} />
+          <StatTile label={t.driver.dashboard.earningsToday} value={formatCurrency(todayEarnings)} />
+          <StatTile label={t.driver.dashboard.tripsToday} value={String(todayTrips)} />
+          <StatTile label={t.driver.dashboard.rating} value={ratingCount > 0 && rating !== null ? rating.toFixed(1) : '—'} />
+          <StatTile label={t.driver.dashboard.acceptRate} value={acceptRate !== null ? `${Math.round(acceptRate * 100)}%` : '—'} />
         </View>
 
         {incoming && (
           <View>
-            <Text style={styles.sectionLabel}>Incoming request</Text>
+            <Text style={styles.sectionLabel}>{t.driver.dashboard.incomingRequest}</Text>
             <RequestCard request={incoming} onAccept={() => handleAccept(incoming.id)} onDecline={() => decline(incoming.id)} />
           </View>
         )}
@@ -131,7 +137,7 @@ export default function DashboardScreen() {
         {requestError && <Text style={styles.error}>{requestError}</Text>}
 
         {isAvailable && !incoming && (
-          <Text style={styles.offlineNote}>Listening for ride requests…</Text>
+          <Text style={styles.offlineNote}>{t.driver.dashboard.listeningForRequests}</Text>
         )}
       </ScrollView>
     </SafeAreaView>

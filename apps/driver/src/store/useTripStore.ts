@@ -1,26 +1,60 @@
 import { create } from 'zustand';
-import { completeTrip, cancelTrip, getActiveTripForDriver } from '@trisakay/services/src/booking/index.ts';
+import {
+  cancelRideLeg,
+  completeRideLeg,
+  endTrip as endTripRpc,
+  getActiveTripForDriver,
+} from '@trisakay/services/src/booking/index.ts';
 import { confirmCashPayment } from '@trisakay/services/src/payments/index.ts';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 import type { PendingRequest } from '../types/request.ts';
-import type { ActiveTrip } from '../types/trip.ts';
+import type { ActivePassenger, ActiveTrip } from '../types/trip.ts';
+
+function passengerFromRequest(request: PendingRequest): ActivePassenger {
+  return {
+    id: request.id,
+    passengerId: null,
+    passengerName: null,
+    passengerAvatarUrl: null,
+    seats: request.seats,
+    paymentMethod: request.paymentMethod,
+    fare: request.fare,
+    cashConfirmed: false,
+  };
+}
 
 interface TripState {
   current: ActiveTrip | null;
   error: string | null;
+  /** Starts a new trip session from the first accepted request. */
   startTrip: (request: PendingRequest, tripId: string) => void;
-  /** Populated by a follow-up fetch after startTrip — see getTripPassengerInfo in dashboard.tsx's handleAccept. */
-  setPassengerInfo: (name: string | null, avatarUrl: string | null) => void;
-  confirmCash: (driverId: string) => Promise<boolean>;
-  complete: () => Promise<ActiveTrip | null>;
-  cancel: (reason: string) => Promise<ActiveTrip | null>;
+  /**
+   * FR-2.5c mid-trip pickup — appends a newly-accepted request onto the
+   * CURRENT trip session. acceptRideRequest() already attaches it to the
+   * existing trip server-side; this just mirrors that client-side. No-op if
+   * there's no active trip — use startTrip() for the first passenger.
+   */
+  addPassenger: (request: PendingRequest) => void;
+  /** Populated by a follow-up fetch after startTrip/addPassenger — see getTripPassengerInfo in useAcceptRideRequest.ts. Matched by rideRequestId since multiple passengers can be in flight at once. */
+  setPassengerInfo: (rideRequestId: string, passengerId: string | null, name: string | null, avatarUrl: string | null) => void;
+  confirmCash: (rideRequestId: string, driverId: string) => Promise<boolean>;
+  /** FR-2.5c — completes ONE passenger's leg; the trip and any other passenger aboard stay untouched. */
+  completePassenger: (rideRequestId: string) => Promise<ActivePassenger | null>;
+  /** FR-2.5c — cancels ONE passenger's leg; the trip and any other passenger aboard stay untouched. */
+  cancelPassenger: (rideRequestId: string, reason: string) => Promise<ActivePassenger | null>;
+  /**
+   * The driver's explicit "done for now" action. Only succeeds once the
+   * passenger list is empty — mirrored client-side so the button can be
+   * disabled correctly, but the DB itself is the real enforcement (end_trip
+   * RPC refuses regardless of what the client thinks the list looks like).
+   */
+  endTrip: () => Promise<boolean>;
   /**
    * Rehydrates `current` from the backend on app boot — without this, an app
    * restart mid-trip (OS kill, force-quit) leaves `current` null forever,
-   * even though the backend still has the trip `active`: the driver could
-   * never reach Complete/Cancel from the UI again. No-ops (leaves `current`
-   * untouched) on failure/timeout, same reasoning as useDriverStore's
-   * checkAvailability/checkRating.
+   * even though the backend still has the trip `active`. No-ops (leaves
+   * `current` untouched) on failure/timeout, same reasoning as
+   * useDriverStore's checkAvailability/checkRating.
    */
   hydrate: () => Promise<void>;
   /** Clears trip state on logout/session change — without this, a new driver signing in on the same device could inherit the previous driver's in-progress trip. */
@@ -37,66 +71,112 @@ export const useTripStore = create<TripState>()((set, get) => {
     startTrip: (request, tripId) =>
       set({
         current: {
-          id: request.id,
           tripId,
-          passengerName: null,
-          passengerAvatarUrl: null,
-          seats: request.seats,
-          paymentMethod: request.paymentMethod,
-          fare: request.fare,
-          cashConfirmed: false,
           startedAt: new Date().toISOString(),
+          passengers: [passengerFromRequest(request)],
         },
         error: null,
       }),
 
-    setPassengerInfo: (name, avatarUrl) =>
+    addPassenger: (request) =>
       set((state) =>
-        state.current ? { current: { ...state.current, passengerName: name, passengerAvatarUrl: avatarUrl } } : state
+        state.current
+          ? { current: { ...state.current, passengers: [...state.current.passengers, passengerFromRequest(request)] } }
+          : state
       ),
 
-    confirmCash: async (driverId) => {
-      const trip = get().current;
-      if (!trip || trip.cashConfirmed) return false;
+    setPassengerInfo: (rideRequestId, passengerId, name, avatarUrl) =>
+      set((state) =>
+        state.current
+          ? {
+              current: {
+                ...state.current,
+                passengers: state.current.passengers.map((p) =>
+                  p.id === rideRequestId ? { ...p, passengerId, passengerName: name, passengerAvatarUrl: avatarUrl } : p
+                ),
+              },
+            }
+          : state
+      ),
 
-      const { error } = await confirmCashPayment(trip.id, driverId);
+    confirmCash: async (rideRequestId, driverId) => {
+      const passenger = get().current?.passengers.find((p) => p.id === rideRequestId);
+      if (!passenger || passenger.cashConfirmed) return false;
+
+      const { error } = await confirmCashPayment(rideRequestId, driverId);
       if (error) {
         set({ error });
         return false;
       }
 
       set((state) =>
-        state.current ? { current: { ...state.current, cashConfirmed: true }, error: null } : state
+        state.current
+          ? {
+              current: {
+                ...state.current,
+                passengers: state.current.passengers.map((p) => (p.id === rideRequestId ? { ...p, cashConfirmed: true } : p)),
+              },
+              error: null,
+            }
+          : state
       );
       return true;
     },
 
-    complete: async () => {
+    completePassenger: async (rideRequestId) => {
       const trip = get().current;
-      if (!trip) return null;
+      const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
+      if (!trip || !passenger) return null;
 
-      const { error } = await completeTrip(trip.tripId, trip.id);
+      const { error } = await completeRideLeg(trip.tripId, rideRequestId);
       if (error) {
         set({ error });
         return null;
       }
 
-      set({ current: null, error: null });
-      return trip;
+      set((state) =>
+        state.current
+          ? { current: { ...state.current, passengers: state.current.passengers.filter((p) => p.id !== rideRequestId) }, error: null }
+          : state
+      );
+      return passenger;
     },
 
-    cancel: async (reason) => {
+    cancelPassenger: async (rideRequestId, reason) => {
       const trip = get().current;
-      if (!trip) return null;
+      const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
+      if (!trip || !passenger) return null;
 
-      const { error } = await cancelTrip(trip.tripId, trip.id, reason);
+      const { error } = await cancelRideLeg(trip.tripId, rideRequestId, reason);
       if (error) {
         set({ error });
         return null;
       }
 
+      set((state) =>
+        state.current
+          ? { current: { ...state.current, passengers: state.current.passengers.filter((p) => p.id !== rideRequestId) }, error: null }
+          : state
+      );
+      return passenger;
+    },
+
+    endTrip: async () => {
+      const trip = get().current;
+      if (!trip) return false;
+      if (trip.passengers.length > 0) {
+        set({ error: 'Complete or cancel every passenger before ending the trip.' });
+        return false;
+      }
+
+      const { error } = await endTripRpc(trip.tripId);
+      if (error) {
+        set({ error });
+        return false;
+      }
+
       set({ current: null, error: null });
-      return trip;
+      return true;
     },
 
     hydrate: async () => {
@@ -110,15 +190,18 @@ export const useTripStore = create<TripState>()((set, get) => {
         if (epoch !== hydrateEpoch || error || !data) return;
         set({
           current: {
-            id: data.rideRequestId,
             tripId: data.tripId,
-            passengerName: data.passengerName,
-            passengerAvatarUrl: data.passengerAvatarUrl,
-            seats: data.seats,
-            paymentMethod: data.paymentMethod,
-            fare: data.fare,
-            cashConfirmed: data.cashConfirmed,
             startedAt: data.startedAt,
+            passengers: data.passengers.map((p) => ({
+              id: p.rideRequestId,
+              passengerId: p.passengerId,
+              passengerName: p.passengerName,
+              passengerAvatarUrl: p.passengerAvatarUrl,
+              seats: p.seats,
+              paymentMethod: p.paymentMethod,
+              fare: p.fare,
+              cashConfirmed: p.cashConfirmed,
+            })),
           },
           error: null,
         });
