@@ -30,7 +30,8 @@
     "react": "19.1.0",
     "react-dom": "19.1.0"
   },
+  "//dependencies": "Every hoisted expo-* package (expo-notifications, expo-font, expo-constants, etc.) declares a wildcard peerDependency on 'expo'. With no expo pinned at root, npm's peer auto-install resolved the newest published version (57.x) here — a different SDK than the ~54.0.36 every app pins locally — which fragmented expo-modules-core into two incompatible copies and broke type resolution for anything hoisted. Pinning it to match keeps a single consistent expo-modules-core.",
   "dependencies": {
-    "expo": "^57.0.9"
+    "expo": "~54.0.36"
   }
 }
