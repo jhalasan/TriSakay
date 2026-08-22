@@ -18,3 +18,24 @@
   color: var(--ink-soft);
   text-transform: uppercase;
 }
+
+.subsection {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--sp-md);
+}
+
+.subsectionTitle {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.readOnlyNote {
+  font-size: 11px;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--sp-sm);
+}

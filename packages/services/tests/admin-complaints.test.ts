@@ -1,7 +1,13 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { listComplaintsForAdmin, recordDhDirectiveForAdmin, setComplaintStatusForAdmin } from '../src/admin/complaints.ts';
+import {
+  listComplaintsForAdmin,
+  recordComplaintResolutionForAdmin,
+  recordDhDirectiveForAdmin,
+  scheduleComplaintMediationForAdmin,
+  setComplaintStatusForAdmin,
+} from '../src/admin/complaints.ts';
 
 const SESSION = { session: { user: { id: 'staff1' } } };
 
@@ -15,6 +21,9 @@ function fakeClient() {
       subject: 'Driver refused agreed fare',
       status: 'open',
       dh_directive: null as string | null,
+      mediation_meeting_at: null as string | null,
+      mediation_location: null as string | null,
+      resolution_notes: null as string | null,
       created_at: '2026-08-01T00:00:00.000Z',
     },
   ];
@@ -43,6 +52,22 @@ function fakeClient() {
       throw new Error(`unexpected table ${table}`);
     },
     auth: { getSession: async () => ({ data: SESSION }) },
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      const c = complaints.find((row) => row.id === args.p_complaint_id);
+      if (!c) return { error: { message: 'Complaint not found' } };
+      if (fn === 'schedule_complaint_mediation') {
+        c.mediation_meeting_at = args.p_meeting_at as string;
+        c.mediation_location = (args.p_location as string | null) ?? null;
+        c.status = 'mediation_scheduled';
+        return { error: null };
+      }
+      if (fn === 'record_complaint_resolution') {
+        c.status = args.p_status as string;
+        c.resolution_notes = (args.p_notes as string | null) ?? null;
+        return { error: null };
+      }
+      throw new Error(`unexpected rpc ${fn}`);
+    },
   } as any;
 }
 
@@ -60,6 +85,9 @@ test('listComplaintsForAdmin resolves submitter/accused names and passes categor
       category: 'fare',
       status: 'open',
       dhDirective: null,
+      mediationMeetingAt: null,
+      mediationLocation: null,
+      resolutionNotes: null,
       createdAt: '2026-08-01T00:00:00.000Z',
     },
   ]);
@@ -107,4 +135,45 @@ test('recordDhDirectiveForAdmin returns an error when there is no active session
 
   const { error } = await recordDhDirectiveForAdmin('cmp1', 'Contact both parties.');
   assert.equal(error, 'Not signed in');
+});
+
+test('scheduleComplaintMediationForAdmin calls the schedule_complaint_mediation RPC and flips status to mediation_scheduled', async () => {
+  __setSupabaseClientForTests(fakeClient());
+
+  const { error } = await scheduleComplaintMediationForAdmin('cmp1', '2026-09-01T09:00:00.000Z', 'PSO Office');
+  assert.equal(error, null);
+
+  const { data } = await listComplaintsForAdmin();
+  assert.equal(data[0].status, 'mediation_scheduled');
+  assert.equal(data[0].mediationMeetingAt, '2026-09-01T09:00:00.000Z');
+  assert.equal(data[0].mediationLocation, 'PSO Office');
+});
+
+test('scheduleComplaintMediationForAdmin surfaces an RPC error (e.g. non-Supervisor caller)', async () => {
+  __setSupabaseClientForTests({
+    rpc: async () => ({ error: { message: 'Only a PSO Supervisor or Admin may schedule mediation' } }),
+  } as any);
+
+  const { error } = await scheduleComplaintMediationForAdmin('cmp1', '2026-09-01T09:00:00.000Z', null);
+  assert.equal(error, 'Only a PSO Supervisor or Admin may schedule mediation');
+});
+
+test('recordComplaintResolutionForAdmin calls the record_complaint_resolution RPC and sets the final status', async () => {
+  __setSupabaseClientForTests(fakeClient());
+
+  const { error } = await recordComplaintResolutionForAdmin('cmp1', 'resolved', 'Fare refunded at mediation.');
+  assert.equal(error, null);
+
+  const { data } = await listComplaintsForAdmin();
+  assert.equal(data[0].status, 'resolved');
+  assert.equal(data[0].resolutionNotes, 'Fare refunded at mediation.');
+});
+
+test('recordComplaintResolutionForAdmin surfaces an RPC error (e.g. non-Supervisor caller)', async () => {
+  __setSupabaseClientForTests({
+    rpc: async () => ({ error: { message: 'Only a PSO Supervisor or Admin may record a complaint resolution' } }),
+  } as any);
+
+  const { error } = await recordComplaintResolutionForAdmin('cmp1', 'dismissed', null);
+  assert.equal(error, 'Only a PSO Supervisor or Admin may record a complaint resolution');
 });

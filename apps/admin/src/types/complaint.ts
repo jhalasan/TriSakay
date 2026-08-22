@@ -23,6 +23,9 @@ export interface ComplaintRow {
   category: ComplaintCategory;
   status: ComplaintStatus;
   dhDirective: string | null; // FR-4.3a Department Head directive
+  mediationMeetingAt: string | null; // FR-4.5 MTFRB meeting date/time
+  mediationLocation: string | null; // FR-4.5, typically the PSO office
+  resolutionNotes: string | null; // FR-4.6 mediation outcome / settlement details
   businessDaysElapsed: number; // feeds the FR-4.8 3-day ARTA flag
   createdAt: string;
 }

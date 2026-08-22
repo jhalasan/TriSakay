@@ -4,7 +4,13 @@ import { __setSupabaseClientForTests } from '@trisakay/services';
 import { flagDriver, listDrivers, reactivateDriver, suspendDriver } from '../src/services/drivers.ts';
 import { blockPassenger, listPassengers, unblockPassenger } from '../src/services/passengers.ts';
 import { approveVerification, listVerificationCases, rejectVerification, updateVerificationCase } from '../src/services/verification.ts';
-import { listComplaints, recordDhDirective, setComplaintStatus } from '../src/services/complaints.ts';
+import {
+  listComplaints,
+  recordComplaintResolution,
+  recordDhDirective,
+  scheduleComplaintMediation,
+  setComplaintStatus,
+} from '../src/services/complaints.ts';
 import { listActiveTricycles, getActiveTricycleLocations } from '../src/services/monitoring.ts';
 import { getReportSummary, listTransactions, getRidesRevenueOverTime, getPeakHourHistogram, dateRangeSinceIso } from '../src/services/reports.ts';
 import { getRidesPerDay, getTripStatusBreakdown } from '../src/services/dashboard.ts';
@@ -196,6 +202,9 @@ function fakeComplaintsClient() {
       subject: 'Driver refused agreed fare',
       status: 'open',
       dh_directive: null as string | null,
+      mediation_meeting_at: null as string | null,
+      mediation_location: null as string | null,
+      resolution_notes: null as string | null,
       created_at: '2026-08-01T00:00:00.000Z',
     },
   ];
@@ -222,6 +231,22 @@ function fakeComplaintsClient() {
       throw new Error(`unexpected table ${table}`);
     },
     auth: { getSession: async () => ({ data: { session: { user: { id: 'staff1' } } } }) },
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      const c = complaints.find((row) => row.id === args.p_complaint_id);
+      if (!c) return { error: { message: 'Complaint not found' } };
+      if (fn === 'schedule_complaint_mediation') {
+        c.mediation_meeting_at = args.p_meeting_at as string;
+        c.mediation_location = (args.p_location as string | null) ?? null;
+        c.status = 'mediation_scheduled';
+        return { error: null };
+      }
+      if (fn === 'record_complaint_resolution') {
+        c.status = args.p_status as string;
+        c.resolution_notes = (args.p_notes as string | null) ?? null;
+        return { error: null };
+      }
+      throw new Error(`unexpected rpc ${fn}`);
+    },
   } as any;
 }
 
@@ -234,6 +259,22 @@ test('complaints service: status transitions and DH directive (FR-4.3a)', async 
 
   await recordDhDirective(complaint.id, 'Contact both parties.');
   assert.equal((await listComplaints()).data.find((c) => c.id === complaint.id)?.dhDirective, 'Contact both parties.');
+});
+
+test('complaints service: mediation scheduling and outcome recording (FR-4.5/4.6)', async () => {
+  __setSupabaseClientForTests(fakeComplaintsClient());
+
+  const complaint = (await listComplaints()).data[0];
+  await scheduleComplaintMediation(complaint.id, '2026-09-01T09:00:00.000Z', 'PSO Office');
+  const scheduled = (await listComplaints()).data.find((c) => c.id === complaint.id);
+  assert.equal(scheduled?.status, 'mediation_scheduled');
+  assert.equal(scheduled?.mediationMeetingAt, '2026-09-01T09:00:00.000Z');
+  assert.equal(scheduled?.mediationLocation, 'PSO Office');
+
+  await recordComplaintResolution(complaint.id, 'resolved', 'Fare refunded at mediation.');
+  const resolved = (await listComplaints()).data.find((c) => c.id === complaint.id);
+  assert.equal(resolved?.status, 'resolved');
+  assert.equal(resolved?.resolutionNotes, 'Fare refunded at mediation.');
 });
 
 function fakeEmergencyClient() {

@@ -2,9 +2,11 @@ import { useEffect, useMemo, useState } from 'react';
 import { TableToolbar } from '../components/TableToolbar';
 import { Select } from '../components/Select';
 import { Textarea } from '../components/Textarea';
+import { TextField } from '../components/TextField';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
+import { RoleGate } from '../components/RoleGate';
 import { useComplaintsStore } from '../store/useComplaintsStore';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { titleCaseLabel } from '../lib/format';
@@ -39,10 +41,26 @@ const ALL_STATUSES: { label: string; value: ComplaintStatus }[] = [
 
 /** Wireframe screen 7 "Complaints management" — two-step flow per FR-4.3-4.8: PSO Staff triage, then a Department Head directive (FR-4.3a). */
 export function Complaints() {
-  const { complaints, loading, search, statusFilter, page, fetch, setSearch, setStatusFilter, updateStatus, setDhDirective } =
-    useComplaintsStore();
+  const {
+    complaints,
+    loading,
+    search,
+    statusFilter,
+    page,
+    fetch,
+    setSearch,
+    setStatusFilter,
+    updateStatus,
+    setDhDirective,
+    scheduleMediation,
+    recordResolution,
+  } = useComplaintsStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [directiveDraft, setDirectiveDraft] = useState('');
+  const [meetingAtDraft, setMeetingAtDraft] = useState('');
+  const [meetingLocationDraft, setMeetingLocationDraft] = useState('');
+  const [resolutionStatusDraft, setResolutionStatusDraft] = useState<'resolved' | 'dismissed'>('resolved');
+  const [resolutionNotesDraft, setResolutionNotesDraft] = useState('');
 
   useEffect(() => {
     fetch();
@@ -62,6 +80,10 @@ export function Complaints() {
   function openReview(c: ComplaintRow) {
     setSelectedId(c.id);
     setDirectiveDraft(c.dhDirective ?? '');
+    setMeetingAtDraft(c.mediationMeetingAt ? c.mediationMeetingAt.slice(0, 16) : '');
+    setMeetingLocationDraft(c.mediationLocation ?? '');
+    setResolutionStatusDraft('resolved');
+    setResolutionNotesDraft(c.resolutionNotes ?? '');
   }
 
   const columns: DataTableColumn<ComplaintRow>[] = [
@@ -147,6 +169,90 @@ export function Complaints() {
           >
             Save Directive
           </Button>
+
+          {selected.status === 'escalated' && (
+            <RoleGate
+              min="supervisor"
+              fallback={<div className={styles.readOnlyNote}>Schedule Mediation — PSO Supervisor &amp; Administrator only.</div>}
+            >
+              <div className={styles.subsection}>
+                <div className={styles.subsectionTitle}>Schedule Mediation (FR-4.5)</div>
+                <TextField
+                  label="Meeting date/time"
+                  type="datetime-local"
+                  value={meetingAtDraft}
+                  onChange={(e) => setMeetingAtDraft(e.target.value)}
+                />
+                <TextField
+                  label="Location"
+                  value={meetingLocationDraft}
+                  onChange={(e) => setMeetingLocationDraft(e.target.value)}
+                  placeholder="e.g. PSO Office, City Hall"
+                />
+                <Button
+                  variant="solid"
+                  tone="primary"
+                  size="sm"
+                  disabled={!meetingAtDraft}
+                  onClick={() => scheduleMediation(selected.id, new Date(meetingAtDraft).toISOString(), meetingLocationDraft)}
+                  style={{ alignSelf: 'flex-start' }}
+                >
+                  Schedule Mediation
+                </Button>
+              </div>
+            </RoleGate>
+          )}
+
+          {selected.mediationMeetingAt && (
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Mediation Meeting</span>
+              <span style={{ fontSize: 13 }}>
+                {new Date(selected.mediationMeetingAt).toLocaleString('en-PH')}
+                {selected.mediationLocation ? ` — ${selected.mediationLocation}` : ''}
+              </span>
+            </div>
+          )}
+
+          {selected.status === 'mediation_scheduled' && (
+            <RoleGate
+              min="supervisor"
+              fallback={<div className={styles.readOnlyNote}>Record Outcome — PSO Supervisor &amp; Administrator only.</div>}
+            >
+              <div className={styles.subsection}>
+                <div className={styles.subsectionTitle}>Record Outcome (FR-4.6)</div>
+                <Select
+                  value={resolutionStatusDraft}
+                  onChange={(e) => setResolutionStatusDraft(e.target.value as 'resolved' | 'dismissed')}
+                  options={[
+                    { label: 'Resolved', value: 'resolved' },
+                    { label: 'Dismissed', value: 'dismissed' },
+                  ]}
+                />
+                <Textarea
+                  label="Outcome / settlement details"
+                  value={resolutionNotesDraft}
+                  onChange={(e) => setResolutionNotesDraft(e.target.value)}
+                  placeholder="e.g. Parties agreed to a fare refund at the MTFRB mediation meeting."
+                />
+                <Button
+                  variant="solid"
+                  tone="primary"
+                  size="sm"
+                  onClick={() => recordResolution(selected.id, resolutionStatusDraft, resolutionNotesDraft)}
+                  style={{ alignSelf: 'flex-start' }}
+                >
+                  Save Outcome
+                </Button>
+              </div>
+            </RoleGate>
+          )}
+
+          {selected.resolutionNotes && ['resolved', 'dismissed'].includes(selected.status) && (
+            <div className={styles.field}>
+              <span className={styles.fieldLabel}>Resolution Notes</span>
+              <span style={{ fontSize: 13 }}>{selected.resolutionNotes}</span>
+            </div>
+          )}
         </div>
       )}
     </div>

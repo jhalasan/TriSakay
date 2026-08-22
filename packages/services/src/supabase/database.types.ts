@@ -1418,6 +1418,22 @@ export type Database = {
         }
         Returns: undefined
       }
+      record_complaint_resolution: {
+        Args: {
+          p_complaint_id: string
+          p_notes?: string
+          p_status: Database["public"]["Enums"]["complaint_status"]
+        }
+        Returns: undefined
+      }
+      schedule_complaint_mediation: {
+        Args: {
+          p_complaint_id: string
+          p_location?: string
+          p_meeting_at: string
+        }
+        Returns: undefined
+      }
       submit_driver_documents: {
         Args: { p_documents: Json; p_plate_no: string }
         Returns: string

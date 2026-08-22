@@ -1,5 +1,11 @@
 import { create } from 'zustand';
-import { listComplaints, recordDhDirective, setComplaintStatus } from '../services/complaints';
+import {
+  listComplaints,
+  recordComplaintResolution,
+  recordDhDirective,
+  scheduleComplaintMediation,
+  setComplaintStatus,
+} from '../services/complaints';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 
 interface ComplaintsState {
@@ -15,6 +21,8 @@ interface ComplaintsState {
   setPage: (page: number) => void;
   updateStatus: (id: string, status: ComplaintStatus) => Promise<void>;
   setDhDirective: (id: string, directive: string) => Promise<void>;
+  scheduleMediation: (id: string, meetingAt: string, location: string) => Promise<void>;
+  recordResolution: (id: string, status: 'resolved' | 'dismissed', notes: string) => Promise<void>;
 }
 
 export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
@@ -43,6 +51,18 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
 
   setDhDirective: async (id, directive) => {
     const { error } = await recordDhDirective(id, directive);
+    if (error) return set({ error });
+    await get().fetch();
+  },
+
+  scheduleMediation: async (id, meetingAt, location) => {
+    const { error } = await scheduleComplaintMediation(id, meetingAt, location);
+    if (error) return set({ error });
+    await get().fetch();
+  },
+
+  recordResolution: async (id, status, notes) => {
+    const { error } = await recordComplaintResolution(id, status, notes);
     if (error) return set({ error });
     await get().fetch();
   },

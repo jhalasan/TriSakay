@@ -12,6 +12,9 @@ export interface AdminComplaintRow {
   category: AdminComplaintCategory;
   status: AdminComplaintStatus;
   dhDirective: string | null;
+  mediationMeetingAt: string | null;
+  mediationLocation: string | null;
+  resolutionNotes: string | null;
   createdAt: string;
 }
 
@@ -35,7 +38,9 @@ export async function listComplaintsForAdmin(): Promise<ListComplaintsForAdminRe
 
   const { data, error } = await client
     .from('complaints')
-    .select('id, submitted_by, against_user_id, category, subject, status, dh_directive, created_at')
+    .select(
+      'id, submitted_by, against_user_id, category, subject, status, dh_directive, mediation_meeting_at, mediation_location, resolution_notes, created_at',
+    )
     .order('created_at', { ascending: false });
 
   if (error) return { data: [], error: error.message };
@@ -55,6 +60,9 @@ export async function listComplaintsForAdmin(): Promise<ListComplaintsForAdminRe
     category: c.category,
     status: c.status,
     dhDirective: c.dh_directive,
+    mediationMeetingAt: c.mediation_meeting_at,
+    mediationLocation: c.mediation_location,
+    resolutionNotes: c.resolution_notes,
     createdAt: c.created_at,
   }));
 
@@ -91,6 +99,44 @@ export async function recordDhDirectiveForAdmin(id: string, directive: string): 
     .from('complaints')
     .update({ dh_directive: directive, dh_reviewed_by: reviewerId, dh_reviewed_at: new Date().toISOString() })
     .eq('id', id);
+
+  return { error: error?.message ?? null };
+}
+
+/**
+ * FR-4.5 — PSO Supervisor/Admin schedules an MTFRB mediation meeting.
+ * Goes through the schedule_complaint_mediation RPC rather than a direct
+ * update: complaints_triage_staff RLS (is_pso()) would let any PSO Staff
+ * write these columns directly, but FR-4.5 restricts this step to
+ * Supervisor+ — same reasoning as perform_verification_decision.
+ */
+export async function scheduleComplaintMediationForAdmin(
+  id: string,
+  meetingAt: string,
+  location: string | null,
+): Promise<AdminComplaintWriteResult> {
+  const client = getSupabaseClient();
+  const { error } = await client.rpc('schedule_complaint_mediation', {
+    p_complaint_id: id,
+    p_meeting_at: meetingAt,
+    p_location: location ?? undefined,
+  });
+
+  return { error: error?.message ?? null };
+}
+
+/** FR-4.6 — PSO Supervisor/Admin records the mediation outcome/settlement details. Supervisor+ only, same reasoning as scheduleComplaintMediationForAdmin above. */
+export async function recordComplaintResolutionForAdmin(
+  id: string,
+  status: Extract<AdminComplaintStatus, 'resolved' | 'dismissed'>,
+  notes: string | null,
+): Promise<AdminComplaintWriteResult> {
+  const client = getSupabaseClient();
+  const { error } = await client.rpc('record_complaint_resolution', {
+    p_complaint_id: id,
+    p_status: status,
+    p_notes: notes ?? undefined,
+  });
 
   return { error: error?.message ?? null };
 }
