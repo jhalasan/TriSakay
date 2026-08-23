@@ -1,0 +1,6 @@
+# Claude Code tooling — .claude/skills/* are Windows symlinks pointing
+# into .agents/skills/*, and EAS's archiver fails trying to recreate
+# them (EPERM without Windows Developer Mode / admin). Neither is app
+# source, safe to exclude from builds.
+.claude/
+.agents/

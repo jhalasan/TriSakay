@@ -78,6 +78,13 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
     // rider could confirm it (mirrors the same fix in apps/driver's layout).
     if (root === 'logout') return;
 
+    // The first-launch walkthrough and its follow-on landing screen both run
+    // before authentication even applies — splash.tsx and walkthrough.tsx are
+    // the only things that route here, and they already decide whether this
+    // rider needs to see them. Bouncing either to login on every render would
+    // make their own router.replace() calls immediately undone by this effect.
+    if (root === 'walkthrough' || root === 'landing') return;
+
     // Verifying the emailed reset code establishes a real session mid-flow
     // (see packages/services/src/auth's verifyPasswordReset), which would
     // otherwise flip isAuthenticated and bounce this screen to Home before
@@ -222,6 +229,8 @@ function RootLayoutNav() {
           }}
         >
           <Stack.Screen name="index" />
+          <Stack.Screen name="walkthrough" />
+          <Stack.Screen name="landing" />
           <Stack.Screen name="consent" />
           <Stack.Screen name="reset-password" />
           <Stack.Screen

@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { BrandMotif, Button, GradientSurface, TextField } from '@trisakay/ui';
+import { HAS_SIGNED_IN_KEY } from '../../src/constants/walkthrough';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isValidEmail, isValidPassword } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/login.styles';
@@ -32,6 +34,23 @@ export default function LoginScreen() {
   const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
+  // null while unresolved (the one frame before AsyncStorage answers) — the
+  // title/subtitle below render a reserved-space placeholder in that frame
+  // rather than flashing "Welcome back" then swapping to the first-visit copy.
+  const [hasSignedIn, setHasSignedIn] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    AsyncStorage.getItem(HAS_SIGNED_IN_KEY)
+      .catch(() => null)
+      .then((value) => {
+        if (!cancelled) setHasSignedIn(value !== null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   async function handleLogin() {
     const nextErrors: typeof errors = {};
     if (!isValidEmail(email)) nextErrors.email = 'Enter a valid email address.';
@@ -44,6 +63,14 @@ export default function LoginScreen() {
     await login(email, password);
     setSubmitting(false);
   }
+
+  const title = hasSignedIn === null ? ' ' : hasSignedIn ? 'Welcome back' : 'Welcome to TriSakay';
+  const subtitle =
+    hasSignedIn === null
+      ? ' '
+      : hasSignedIn
+        ? 'Log in to book your next ride.'
+        : 'Log in to book your first ride.';
 
   return (
     <View style={styles.screen}>
@@ -63,8 +90,8 @@ export default function LoginScreen() {
 
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <Text style={styles.title}>Welcome back</Text>
-          <Text style={styles.subtitle}>Log in to book your next ride.</Text>
+          <Text style={styles.title}>{title}</Text>
+          <Text style={styles.subtitle}>{subtitle}</Text>
 
           <View style={styles.fields}>
             <TextField

@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { ActivityIndicator, Image, Text, View } from 'react-native';
 import { getActiveRideForPassenger, getTripDriverInfo } from '@trisakay/services';
@@ -8,6 +9,7 @@ import { useBookingStore } from '../src/store/useBookingStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { wait } from '../src/mocks/delay';
 import { styles } from '../src/styles/splash.styles';
+import { WALKTHROUGH_SEEN_KEY } from '../src/constants/walkthrough';
 
 /**
  * Re-hydrates useBookingStore from the passenger's own most recent
@@ -129,7 +131,8 @@ export default function SplashScreen() {
       if (cancelled) return;
 
       if (!useAuthStore.getState().isAuthenticated) {
-        router.replace('/(auth)/login');
+        const walkthroughSeen = await AsyncStorage.getItem(WALKTHROUGH_SEEN_KEY).catch(() => null);
+        router.replace(walkthroughSeen ? '/(auth)/login' : '/walkthrough');
         return;
       }
 

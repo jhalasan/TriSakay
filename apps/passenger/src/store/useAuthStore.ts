@@ -1,7 +1,9 @@
 import '../lib/supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { create } from 'zustand';
 import * as authService from '@trisakay/services';
 import type { PublicUser } from '@trisakay/services';
+import { HAS_SIGNED_IN_KEY } from '../constants/walkthrough';
 import type { User } from '../types/user';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout';
 
@@ -70,6 +72,12 @@ export const useAuthStore = create<AuthState>()((set) => {
     // fetch — that window is exactly when a second sign-in would otherwise be
     // judged against the previous user's consent verdict.
     set({ sessionUserId: session.user.id });
+
+    // Marks this device as having completed a real sign-in at least once —
+    // login.tsx reads it back to decide "Welcome back" vs. a first-visit
+    // greeting. Fire-and-forget, same fail-open discipline as the profile
+    // fetch below: a storage failure must never affect the auth flow itself.
+    void AsyncStorage.setItem(HAS_SIGNED_IN_KEY, '1').catch(() => {});
 
     // Timed, not merely try/caught. A profile fetch that hangs rather than
     // fails is the dangerous case: it never rejects, so `.catch()` never runs,
