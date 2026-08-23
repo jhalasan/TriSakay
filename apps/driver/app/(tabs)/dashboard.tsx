@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
@@ -35,28 +35,14 @@ export default function DashboardScreen() {
 
   const unreadCount = useNotificationsStore((state) => state.items.filter((item) => !item.read).length);
 
+  // Subscription lifetime is owned session-wide by useRequestsSync
+  // (app/_layout.tsx), tied to isAvailable — Dashboard just reads the result.
   const pending = useRequestsStore((state) => state.pending);
   const requestError = useRequestsStore((state) => state.error);
-  const subscribe = useRequestsStore((state) => state.subscribe);
-  const unsubscribe = useRequestsStore((state) => state.unsubscribe);
   const decline = useRequestsStore((state) => state.decline);
 
-  const handleAccept = useAcceptRideRequest();
+  const { acceptRideRequest, acceptingId } = useAcceptRideRequest();
   const activeTrip = useTripStore((state) => state.current);
-
-  // Tied to isAvailable itself (not the toggle handler) so a driver who was
-  // online before an app restart gets resubscribed here too, once
-  // useAvailabilitySync (app/_layout.tsx) re-syncs isAvailable on boot —
-  // otherwise the request board would stay silent even though the backend
-  // still considers them available and matchable.
-  useEffect(() => {
-    if (!user) return;
-    if (isAvailable) {
-      subscribe(user.id);
-    } else {
-      unsubscribe();
-    }
-  }, [isAvailable, user, subscribe, unsubscribe]);
 
   async function handleToggleAvailable(next: boolean) {
     setTogglingAvailability(true);
@@ -130,7 +116,12 @@ export default function DashboardScreen() {
         {incoming && (
           <View>
             <Text style={styles.sectionLabel}>{t.driver.dashboard.incomingRequest}</Text>
-            <RequestCard request={incoming} onAccept={() => handleAccept(incoming.id)} onDecline={() => decline(incoming.id)} />
+            <RequestCard
+              request={incoming}
+              accepting={acceptingId === incoming.id}
+              onAccept={() => acceptRideRequest(incoming.id)}
+              onDecline={() => decline(incoming.id)}
+            />
           </View>
         )}
 

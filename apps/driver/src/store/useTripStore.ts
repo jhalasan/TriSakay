@@ -6,6 +6,7 @@ import {
   getActiveTripForDriver,
 } from '@trisakay/services/src/booking/index.ts';
 import { confirmCashPayment } from '@trisakay/services/src/payments/index.ts';
+import { getTranslations } from '../utils/getTranslations.ts';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 import type { PendingRequest } from '../types/request.ts';
 import type { ActivePassenger, ActiveTrip } from '../types/trip.ts';
@@ -102,81 +103,105 @@ export const useTripStore = create<TripState>()((set, get) => {
     confirmCash: async (rideRequestId, driverId) => {
       const passenger = get().current?.passengers.find((p) => p.id === rideRequestId);
       if (!passenger || passenger.cashConfirmed) return false;
+      const fallbackMessage = getTranslations().driver.errors.cashConfirmFailed;
 
-      const { error } = await confirmCashPayment(rideRequestId, driverId);
-      if (error) {
-        set({ error });
+      try {
+        const { error } = await withTimeout(confirmCashPayment(rideRequestId, driverId), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return false;
+        }
+
+        set((state) =>
+          state.current
+            ? {
+                current: {
+                  ...state.current,
+                  passengers: state.current.passengers.map((p) => (p.id === rideRequestId ? { ...p, cashConfirmed: true } : p)),
+                },
+                error: null,
+              }
+            : state
+        );
+        return true;
+      } catch {
+        set({ error: fallbackMessage });
         return false;
       }
-
-      set((state) =>
-        state.current
-          ? {
-              current: {
-                ...state.current,
-                passengers: state.current.passengers.map((p) => (p.id === rideRequestId ? { ...p, cashConfirmed: true } : p)),
-              },
-              error: null,
-            }
-          : state
-      );
-      return true;
     },
 
     completePassenger: async (rideRequestId) => {
       const trip = get().current;
       const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
       if (!trip || !passenger) return null;
+      const fallbackMessage = getTranslations().driver.errors.completePassengerFailed;
 
-      const { error } = await completeRideLeg(trip.tripId, rideRequestId);
-      if (error) {
-        set({ error });
+      try {
+        const { error } = await withTimeout(completeRideLeg(trip.tripId, rideRequestId), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return null;
+        }
+
+        set((state) =>
+          state.current
+            ? { current: { ...state.current, passengers: state.current.passengers.filter((p) => p.id !== rideRequestId) }, error: null }
+            : state
+        );
+        return passenger;
+      } catch {
+        set({ error: fallbackMessage });
         return null;
       }
-
-      set((state) =>
-        state.current
-          ? { current: { ...state.current, passengers: state.current.passengers.filter((p) => p.id !== rideRequestId) }, error: null }
-          : state
-      );
-      return passenger;
     },
 
     cancelPassenger: async (rideRequestId, reason) => {
       const trip = get().current;
       const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
       if (!trip || !passenger) return null;
+      const fallbackMessage = getTranslations().driver.errors.cancelPassengerFailed;
 
-      const { error } = await cancelRideLeg(trip.tripId, rideRequestId, reason);
-      if (error) {
-        set({ error });
+      try {
+        const { error } = await withTimeout(cancelRideLeg(trip.tripId, rideRequestId, reason), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return null;
+        }
+
+        set((state) =>
+          state.current
+            ? { current: { ...state.current, passengers: state.current.passengers.filter((p) => p.id !== rideRequestId) }, error: null }
+            : state
+        );
+        return passenger;
+      } catch {
+        set({ error: fallbackMessage });
         return null;
       }
-
-      set((state) =>
-        state.current
-          ? { current: { ...state.current, passengers: state.current.passengers.filter((p) => p.id !== rideRequestId) }, error: null }
-          : state
-      );
-      return passenger;
     },
 
     endTrip: async () => {
       const trip = get().current;
       if (!trip) return false;
       if (trip.passengers.length > 0) {
-        set({ error: 'Complete or cancel every passenger before ending the trip.' });
+        set({ error: getTranslations().driver.errors.endTripBlocked });
         return false;
       }
+      const fallbackMessage = getTranslations().driver.errors.endTripFailed;
 
-      const { error } = await endTripRpc(trip.tripId);
-      if (error) {
-        set({ error });
+      try {
+        const { error } = await withTimeout(endTripRpc(trip.tripId), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return false;
+        }
+
+        set({ current: null, error: null });
+        return true;
+      } catch {
+        set({ error: fallbackMessage });
         return false;
       }
-
-      set({ current: null, error: null });
-      return true;
     },
 
     hydrate: async () => {

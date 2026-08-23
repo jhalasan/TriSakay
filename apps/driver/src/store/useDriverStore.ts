@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { getDriverAvailability, getDriverRatingSummary, updateDriverAvailability } from '@trisakay/services';
+import { getTranslations } from '../utils/getTranslations.ts';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 
 interface DriverState {
@@ -45,15 +46,21 @@ export const useDriverStore = create<DriverState>()((set) => {
 
     setAvailable: async (value, coords) => {
       set({ error: null });
+      const fallbackMessage = getTranslations().driver.errors.availabilityUpdateFailed;
 
-      const { error } = await updateDriverAvailability(value, coords);
-      if (error) {
-        set({ error });
+      try {
+        const { error } = await withTimeout(updateDriverAvailability(value, coords), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return false;
+        }
+
+        set({ isAvailable: value });
+        return true;
+      } catch {
+        set({ error: fallbackMessage });
         return false;
       }
-
-      set({ isAvailable: value });
-      return true;
     },
 
     checkAvailability: async () => {

@@ -152,6 +152,7 @@ export default function ComplaintsScreen() {
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         >
+          {complaintsError && <Text style={styles.error}>{complaintsError}</Text>}
           {composing ? (
             <View style={styles.formGap}>
               <View>
@@ -244,7 +245,7 @@ export default function ComplaintsScreen() {
                         style={styles.evidenceRemove}
                         onPress={() => removeEvidence(index)}
                         accessibilityRole="button"
-                        accessibilityLabel="Remove photo"
+                        accessibilityLabel={t.driver.complaints.removePhotoAccessibilityLabel}
                       >
                         <Ionicons name="close" size={14} color={colors.white} />
                       </Pressable>
@@ -255,7 +256,7 @@ export default function ComplaintsScreen() {
                       style={styles.evidenceAddTile}
                       onPress={handlePickEvidence}
                       accessibilityRole="button"
-                      accessibilityLabel="Add evidence photo"
+                      accessibilityLabel={t.driver.complaints.addEvidencePhotoAccessibilityLabel}
                     >
                       <Ionicons name="camera-outline" size={22} color={colors.inkSoft} />
                     </Pressable>
@@ -264,7 +265,6 @@ export default function ComplaintsScreen() {
                 <Text style={styles.evidenceHint}>{interpolate(t.driver.complaints.evidenceHint, { count: MAX_EVIDENCE_PHOTOS })}</Text>
               </View>
 
-              {complaintsError && <Text style={styles.error}>{complaintsError}</Text>}
               <Button label={t.driver.complaints.submit} fullWidth disabled={!canSubmit} loading={submitting} onPress={handleSubmit} />
             </View>
           ) : complaints.length === 0 ? (

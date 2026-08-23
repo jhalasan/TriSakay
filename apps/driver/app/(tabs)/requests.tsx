@@ -14,7 +14,7 @@ export default function RequestsScreen() {
   const pending = useRequestsStore((state) => state.pending);
   const requestError = useRequestsStore((state) => state.error);
   const decline = useRequestsStore((state) => state.decline);
-  const handleAccept = useAcceptRideRequest();
+  const { acceptRideRequest, acceptingId } = useAcceptRideRequest();
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -36,7 +36,12 @@ export default function RequestsScreen() {
           />
         }
         renderItem={({ item }) => (
-          <RequestCard request={item} onAccept={() => handleAccept(item.id)} onDecline={() => decline(item.id)} />
+          <RequestCard
+            request={item}
+            accepting={acceptingId === item.id}
+            onAccept={() => acceptRideRequest(item.id)}
+            onDecline={() => decline(item.id)}
+          />
         )}
       />
     </SafeAreaView>

@@ -6,6 +6,8 @@ export const styles = StyleSheet.create({
   mapFill: { ...StyleSheet.absoluteFillObject },
   statusBadgeWrap: { position: 'absolute', top: spacing.xxl, left: spacing.lg },
   content: { gap: spacing.lg },
+  passengerScroll: { flexShrink: 1 },
+  passengerScrollContent: { gap: spacing.lg, paddingBottom: spacing.xs },
   passengerCard: { gap: spacing.sm },
   passengerRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   passengerName: { ...typography.bodyStrong, color: colors.ink },
@@ -19,5 +21,4 @@ export const styles = StyleSheet.create({
   sosBlock: { gap: spacing.xs, alignItems: 'center' },
   sosCaption: { ...typography.caption, color: colors.inkSoft },
   sectionLabel: { ...typography.label, color: colors.inkSoft, marginTop: spacing.sm },
-  offlineNote: { ...typography.caption, color: colors.inkSoft },
 });

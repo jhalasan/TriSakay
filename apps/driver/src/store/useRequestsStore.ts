@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { acceptRideRequest, subscribeToPendingRideRequests } from '@trisakay/services/src/booking/index.ts';
 import type { RideRequestRow } from '@trisakay/services/src/booking/index.ts';
+import { getTranslations } from '../utils/getTranslations.ts';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 import type { PendingRequest, AcceptedRequest } from '../types/request.ts';
 
 interface RequestsState {
@@ -54,15 +56,21 @@ export const useRequestsStore = create<RequestsState>()((set, get) => ({
   accept: async (id, driverId) => {
     const request = get().pending.find((item) => item.id === id);
     if (!request) return undefined;
+    const fallbackMessage = getTranslations().driver.errors.acceptRideFailed;
 
-    const { error, tripId } = await acceptRideRequest(driverId, id);
-    if (error || !tripId) {
-      set({ error: error ?? "Couldn't assign this ride. Please try again." });
+    try {
+      const { error, tripId } = await withTimeout(acceptRideRequest(driverId, id), REQUEST_TIMEOUT_MS, fallbackMessage);
+      if (error || !tripId) {
+        set({ error: error ?? fallbackMessage });
+        return undefined;
+      }
+
+      set((state) => ({ pending: state.pending.filter((item) => item.id !== id), error: null }));
+      return { ...request, tripId };
+    } catch {
+      set({ error: fallbackMessage });
       return undefined;
     }
-
-    set((state) => ({ pending: state.pending.filter((item) => item.id !== id), error: null }));
-    return { ...request, tripId };
   },
 
   decline: (id) => {

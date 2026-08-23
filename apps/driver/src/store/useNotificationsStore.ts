@@ -1,9 +1,9 @@
 import { create } from 'zustand';
-import { markAllNotificationsRead, subscribeToNotifications, type NotificationRow } from '@trisakay/services';
+import { markAllNotificationsRead, markNotificationRead, subscribeToNotifications, type NotificationRow } from '@trisakay/services';
 import type { NotificationItem } from '../types/notification';
 
 function toItem(row: NotificationRow): NotificationItem {
-  return { id: row.id, title: row.title, body: row.message, read: row.is_read, createdAt: row.created_at };
+  return { id: row.id, title: row.title, body: row.message, read: row.is_read, createdAt: row.created_at, type: row.type };
 }
 
 let stopRealtime: (() => void) | null = null;
@@ -14,6 +14,7 @@ interface NotificationsState {
   subscribe: (userId: string) => void;
   unsubscribe: () => void;
   markAllRead: () => Promise<void>;
+  markRead: (id: string) => Promise<void>;
 }
 
 export const useNotificationsStore = create<NotificationsState>()((set, get) => ({
@@ -45,6 +46,14 @@ export const useNotificationsStore = create<NotificationsState>()((set, get) => 
     set({ items: previousItems.map((item) => ({ ...item, read: true })) });
 
     const { error } = await markAllNotificationsRead();
+    if (error) set({ items: previousItems, error });
+  },
+
+  markRead: async (id) => {
+    const previousItems = get().items;
+    set({ items: previousItems.map((item) => (item.id === id ? { ...item, read: true } : item)) });
+
+    const { error } = await markNotificationRead(id);
     if (error) set({ items: previousItems, error });
   },
 }));

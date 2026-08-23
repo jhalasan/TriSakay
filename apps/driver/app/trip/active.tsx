@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Redirect, useRouter } from 'expo-router';
-import { Text, View } from 'react-native';
+import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar, Badge, Button, Card, ConfirmModal, HoldToConfirmButton, MapOverlaySheet, OsmMap, Toggle } from '@trisakay/ui';
+import { Avatar, Badge, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, Toggle } from '@trisakay/ui';
 import { RequestCard } from '../../src/components/RequestCard';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -27,31 +27,35 @@ export default function ActiveTripScreen() {
   const endTrip = useTripStore((state) => state.endTrip);
   const recordCompletedTrip = useDriverStore((state) => state.recordCompletedTrip);
 
+  // FR-2.5c mid-trip pickup — the request board stays live for as long as
+  // the trip is active, not just pre-trip like Dashboard's. Subscription
+  // lifetime is owned session-wide by useRequestsSync (app/_layout.tsx), tied
+  // to isAvailable (which is also what the backend's matching function gates
+  // on), so this screen just reads pending/error/decline like Dashboard does.
   const pending = useRequestsStore((state) => state.pending);
   const requestError = useRequestsStore((state) => state.error);
-  const subscribe = useRequestsStore((state) => state.subscribe);
-  const unsubscribe = useRequestsStore((state) => state.unsubscribe);
   const decline = useRequestsStore((state) => state.decline);
-  const handleAccept = useAcceptRideRequest();
+  const { acceptRideRequest, acceptingId } = useAcceptRideRequest();
 
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [confirmingCashId, setConfirmingCashId] = useState<string | null>(null);
-  const [completingId, setCompletingId] = useState<string | null>(null);
+  // A Set, not a single id — completing one passenger must not block
+  // completing a DIFFERENT passenger on the same trip at the same time
+  // (FR-2.5c passengers are independently completable). The single-id
+  // version silently swallowed taps on any other passenger's Complete
+  // button while one was already in flight, with no visual feedback.
+  const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
   const [confirmingEndTrip, setConfirmingEndTrip] = useState(false);
   const [endingTrip, setEndingTrip] = useState(false);
 
-  // FR-2.5c mid-trip pickup — the request board stays live for as long as
-  // the trip is active, not just pre-trip like Dashboard's. Matching only
-  // ever returns candidates while the driver is available (is_available may
-  // already be true from before the trip started) with remaining seats, so
-  // this simply surfaces nothing if the driver went offline or the trip is
-  // already at capacity — no separate check needed here.
-  useEffect(() => {
-    if (!user) return;
-    subscribe(user.id);
-    return () => unsubscribe();
-  }, [user, subscribe, unsubscribe]);
+  const { height: windowHeight } = useWindowDimensions();
+  // Bounds the sheet so it can never grow past the viewport — with it
+  // unbounded, 3+ simultaneous passengers pushed the top card(s) above y=0
+  // with no way to scroll to them (confirmed live). The passenger list below
+  // scrolls internally within this bound; SOS and End Trip stay outside the
+  // ScrollView so they're always reachable without scrolling.
+  const sheetMaxHeight = Math.max(320, windowHeight - insets.top - 96);
 
   if (!trip) {
     return <Redirect href="/(tabs)/dashboard" />;
@@ -68,10 +72,14 @@ export default function ActiveTripScreen() {
   }
 
   async function handleComplete(passenger: ActivePassenger) {
-    if (completingId) return;
-    setCompletingId(passenger.id);
+    if (completingIds.has(passenger.id)) return;
+    setCompletingIds((prev) => new Set(prev).add(passenger.id));
     const closed = await completePassenger(passenger.id);
-    setCompletingId(null);
+    setCompletingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(passenger.id);
+      return next;
+    });
     // Trip history/earnings both read fresh from the backend on their own
     // tabs — recordCompletedTrip is only Dashboard's local today-stat tally.
     if (closed) recordCompletedTrip(closed.fare ?? 0);
@@ -107,12 +115,16 @@ export default function ActiveTripScreen() {
         />
       </View>
 
-      <MapOverlaySheet bottomInset={insets.bottom} style={styles.content}>
-        {!hasPassengers && <Text style={styles.offlineNote}>{t.driver.tripActive.noPassengersNote}</Text>}
+      <MapOverlaySheet bottomInset={insets.bottom} maxHeight={sheetMaxHeight} style={styles.content}>
+        <ScrollView style={styles.passengerScroll} contentContainerStyle={styles.passengerScrollContent} showsVerticalScrollIndicator>
+        {!hasPassengers && (
+          <EmptyState title={t.driver.tripActive.onlineNoPassengers} message={t.driver.tripActive.noPassengersNote} />
+        )}
 
         {trip.passengers.map((passenger) => {
           const isCash = passenger.paymentMethod === 'cash';
-          const canComplete = (!isCash || passenger.cashConfirmed) && completingId !== passenger.id;
+          const isCompleting = completingIds.has(passenger.id);
+          const canComplete = (!isCash || passenger.cashConfirmed) && !isCompleting;
 
           return (
             <Card key={passenger.id} style={styles.passengerCard}>
@@ -151,6 +163,7 @@ export default function ActiveTripScreen() {
                     variant="outline"
                     tone="danger"
                     fullWidth
+                    disabled={isCompleting}
                     onPress={() => setCancellingId(passenger.id)}
                   />
                 </View>
@@ -159,7 +172,7 @@ export default function ActiveTripScreen() {
                     label={t.driver.tripActive.complete}
                     fullWidth
                     disabled={!canComplete}
-                    loading={completingId === passenger.id}
+                    loading={isCompleting}
                     onPress={() => handleComplete(passenger)}
                   />
                 </View>
@@ -171,9 +184,15 @@ export default function ActiveTripScreen() {
         {incoming && (
           <View>
             <Text style={styles.sectionLabel}>{t.driver.tripActive.compatibleRequest}</Text>
-            <RequestCard request={incoming} onAccept={() => handleAccept(incoming.id)} onDecline={() => decline(incoming.id)} />
+            <RequestCard
+              request={incoming}
+              accepting={acceptingId === incoming.id}
+              onAccept={() => acceptRideRequest(incoming.id)}
+              onDecline={() => decline(incoming.id)}
+            />
           </View>
         )}
+        </ScrollView>
 
         {(tripError || requestError) && <Text style={styles.error}>{tripError ?? requestError}</Text>}
 

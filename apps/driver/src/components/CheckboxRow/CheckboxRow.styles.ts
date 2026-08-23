@@ -10,6 +10,9 @@ export const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.lineSoft,
   },
+  rowLast: {
+    borderBottomWidth: 0,
+  },
   label: {
     ...typography.body,
     color: colors.ink,

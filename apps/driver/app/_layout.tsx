@@ -158,12 +158,38 @@ function useAvailabilitySync(sessionUserId: string | null) {
       // recordCompletedTrip() only ever increments them, and without this a
       // second driver logging in on the same device would inherit the first
       // driver's leftover "today" tally on Dashboard's stat tiles.
+      // (useRequestsSync below owns unsubscribing the request board itself.)
       useDriverStore.setState({ isAvailable: false, todayEarnings: 0, todayTrips: 0 });
-      useRequestsStore.getState().unsubscribe();
       return;
     }
     void checkAvailability();
   }, [sessionUserId, checkAvailability]);
+}
+
+/**
+ * Owns the request-board Realtime subscription for the whole session — Dashboard
+ * and trip/active.tsx both used to subscribe/unsubscribe independently on their
+ * own mount/unmount, but they share one underlying subscription singleton
+ * (useRequestsStore), and Dashboard stays mounted underneath a pushed
+ * /trip/active screen. When trip/active unmounted (e.g. after ending a trip) its
+ * cleanup tore down the subscription out from under Dashboard, which never
+ * noticed since its own effect deps (isAvailable/user) hadn't changed — the
+ * driver silently stopped receiving new requests until toggling availability or
+ * restarting the app. Tying subscription lifetime to `isAvailable` alone (which
+ * is also what the backend's matching function itself gates on) gives it a
+ * single owner; Dashboard/trip screens now only read `pending`/`error`/`decline`.
+ */
+function useRequestsSync(sessionUserId: string | null, isAvailable: boolean) {
+  const subscribe = useRequestsStore((state) => state.subscribe);
+  const unsubscribe = useRequestsStore((state) => state.unsubscribe);
+
+  useEffect(() => {
+    if (sessionUserId === null || !isAvailable) {
+      unsubscribe();
+      return;
+    }
+    subscribe(sessionUserId);
+  }, [sessionUserId, isAvailable, subscribe, unsubscribe]);
 }
 
 function useRatingSync(sessionUserId: string | null) {
@@ -273,6 +299,7 @@ function RootLayoutNav() {
   const accountStatus = useAuthStore((state) => state.user?.accountStatus);
   const accountBlocked = accountStatus === 'suspended' || accountStatus === 'deactivated';
   const hasActiveTrip = useTripStore((state) => state.current !== null);
+  const isAvailable = useDriverStore((state) => state.isAvailable);
   const consentStatus = useConsentStore((state) => state.status);
   const verificationStatus = useVerificationStore((state) => state.status);
   useConsentSync(sessionUserId);
@@ -280,6 +307,7 @@ function RootLayoutNav() {
   useDocumentsSync(sessionUserId);
   useDriverDataSync(sessionUserId);
   useAvailabilitySync(sessionUserId);
+  useRequestsSync(sessionUserId, isAvailable);
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);
   useNotificationsSync(sessionUserId);
