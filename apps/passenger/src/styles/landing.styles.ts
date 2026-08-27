@@ -1,60 +1,54 @@
-import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { Dimensions, StyleSheet } from 'react-native';
+import { colors, moderateScale, spacing, typography } from '@trisakay/ui';
+
+const deviceWidth = Dimensions.get('window').width;
+const scale = (value: number) => moderateScale(value, deviceWidth);
 
 export const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
   },
-  hero: {
-    flex: 0.56,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   motif: {
     position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginTop: -130,
-    marginLeft: -130,
+    top: -scale(100),
+    right: -scale(160),
   },
-  heroImage: {
-    width: '86%',
-    height: '76%',
-  },
-  /** Pulled up over the hero/body boundary, same floating-badge treatment as splash.tsx's lockup — the mark is navy/green ink and disappears on a dark background otherwise. */
-  badgeWrap: {
-    alignItems: 'center',
-    marginTop: -44,
-  },
-  badge: {
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    paddingVertical: spacing.lg,
-    paddingHorizontal: spacing.xxl,
-    ...elevation.card,
+  header: {
+    paddingTop: scale(36),
+    paddingHorizontal: scale(32),
   },
   logo: {
-    width: 176,
-    height: 98,
+    width: scale(150),
+    height: scale(84),
   },
-  body: {
-    flex: 0.44,
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.xl,
-    justifyContent: 'space-between',
-  },
-  copy: {
-    alignItems: 'center',
-  },
-  tagline: {
-    ...typography.h2,
+  headline: {
+    ...typography.displayLg,
     color: colors.ink,
-    textAlign: 'center',
     marginTop: spacing.lg,
   },
+  headlineAccent: {
+    color: colors.accentGreen,
+  },
+  body: {
+    ...typography.body,
+    color: colors.inkSoft,
+    marginTop: spacing.sm,
+  },
+  trikeBand: {
+    flex: 1,
+    overflow: 'hidden',
+  },
+  trikeImage: {
+    position: 'absolute',
+    bottom: scale(14),
+    alignSelf: 'center',
+    width: scale(300),
+    height: scale(240),
+  },
   actions: {
+    paddingHorizontal: scale(32),
+    paddingBottom: scale(24),
     gap: spacing.md,
-    paddingBottom: spacing.lg,
   },
 });

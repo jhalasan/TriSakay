@@ -45,4 +45,37 @@ export const elevation = {
     android: { elevation: 12 },
     default: {},
   }),
+  /** Free-floating cards over a map/illustration ground (splash lockup, walkthrough fare card) — a softer, wider spread than `card`. */
+  floatingCard: Platform.select({
+    ios: {
+      shadowColor: colors.accentBlue,
+      shadowOffset: { width: 0, height: 14 },
+      shadowOpacity: 0.16,
+      shadowRadius: 40,
+    },
+    android: { elevation: 8 },
+    default: {},
+  }),
+  /** Map-illustration label chips. */
+  chip: Platform.select({
+    ios: {
+      shadowColor: colors.accentBlue,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.14,
+      shadowRadius: 12,
+    },
+    android: { elevation: 2 },
+    default: {},
+  }),
+  /** Map pickup/drop-off pins. */
+  pin: Platform.select({
+    ios: {
+      shadowColor: colors.accentBlue,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.24,
+      shadowRadius: 10,
+    },
+    android: { elevation: 3 },
+    default: {},
+  }),
 } as const;

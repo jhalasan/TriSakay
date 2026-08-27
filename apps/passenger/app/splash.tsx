@@ -1,15 +1,62 @@
 import { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
-import { ActivityIndicator, Image, Text, View } from 'react-native';
+import { Image, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  Extrapolation,
+  interpolate,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { getActiveRideForPassenger, getTripDriverInfo } from '@trisakay/services';
-import { BrandMotif, GradientSurface } from '@trisakay/ui';
+import { PopEntrance } from '../src/components/PopEntrance';
+import { MapGround } from '../src/components/MapGround';
+import { SplashIllustration } from '../src/components/illustrations';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useBookingStore } from '../src/store/useBookingStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { wait } from '../src/mocks/delay';
 import { styles } from '../src/styles/splash.styles';
 import { WALKTHROUGH_SEEN_KEY } from '../src/constants/walkthrough';
+
+/**
+ * The looping indeterminate sweep on the splash loading bar: the indicator
+ * grows then shrinks (6% → 62% → 6% of the track) while sliding left-to-right
+ * (0% → 94%) over each 1.7s pass, then jumps back to the start — matching
+ * the source's `om-load` keyframe rather than a simple back-and-forth slide.
+ */
+function LoadingBar() {
+  const reducedMotion = useReducedMotion();
+  const progress = useSharedValue(reducedMotion ? 0.5 : 0);
+
+  useEffect(() => {
+    if (reducedMotion) return;
+    progress.value = withDelay(
+      900,
+      withRepeat(withTiming(1, { duration: 1700, easing: Easing.linear }), -1, false),
+    );
+  }, [progress, reducedMotion]);
+
+  const animatedStyle = useAnimatedStyle(() => {
+    const widthPct = interpolate(progress.value, [0, 0.5, 1], [6, 62, 6], Extrapolation.CLAMP);
+    const marginLeftPct = interpolate(progress.value, [0, 1], [0, 94], Extrapolation.CLAMP);
+    return {
+      width: `${widthPct}%`,
+      left: `${marginLeftPct}%`,
+    };
+  });
+
+  return (
+    <View style={styles.loadingBar}>
+      <Animated.View style={[styles.loadingIndicator, animatedStyle]} />
+    </View>
+  );
+}
 
 /**
  * Re-hydrates useBookingStore from the passenger's own most recent
@@ -165,20 +212,22 @@ export default function SplashScreen() {
   }, [router]);
 
   return (
-    <GradientSurface token="hero" direction="vertical" style={styles.gradient}>
-      <View style={styles.container}>
-        <BrandMotif size={360} color="#FFFFFF" opacity={0.08} style={styles.motif} />
-        <View style={styles.badge}>
+    <View style={styles.root}>
+      <MapGround style={styles.illustration}>
+        <SplashIllustration />
+      </MapGround>
+      <View style={styles.content} pointerEvents="none">
+        <PopEntrance delayMs={350} durationMs={700} style={styles.card}>
           <Image
             source={require('../../../assets/brand/trisakay-lockup.png')}
             style={styles.logo}
             resizeMode="contain"
             accessibilityLabel="TriSakay"
           />
-        </View>
-        <Text style={styles.subtitle}>Book a tricycle, hassle-free</Text>
-        <ActivityIndicator color="#FFFFFF" style={styles.loader} />
+          <Text style={styles.subtitle}>Your ride is just a tap away</Text>
+        </PopEntrance>
       </View>
-    </GradientSurface>
+      <LoadingBar />
+    </View>
   );
 }

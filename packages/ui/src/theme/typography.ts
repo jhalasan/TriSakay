@@ -58,6 +58,13 @@ export const typography = {
     fontFamily: fontFamily.extrabold,
     letterSpacing: -0.8,
   },
+  /** The landing screen's headline only — one size up from `display`. */
+  displayLg: {
+    fontSize: scaleFont(36),
+    lineHeight: scaleFont(42),
+    fontFamily: fontFamily.extrabold,
+    letterSpacing: -1.1,
+  },
   h1: { fontSize: scaleFont(27), lineHeight: scaleFont(33), fontFamily: fontFamily.bold, letterSpacing: -0.4 },
   h2: { fontSize: scaleFont(20), lineHeight: scaleFont(26), fontFamily: fontFamily.bold, letterSpacing: -0.2 },
   h3: { fontSize: scaleFont(17), lineHeight: scaleFont(23), fontFamily: fontFamily.semibold },
@@ -73,6 +80,8 @@ export const typography = {
   },
   button: { fontSize: scaleFont(16), lineHeight: scaleFont(20), fontFamily: fontFamily.bold },
   buttonSmall: { fontSize: scaleFont(14), lineHeight: scaleFont(18), fontFamily: fontFamily.semibold },
+  /** Map-illustration label chips (e.g. "Pickup", "PSO verified"). */
+  chip: { fontSize: scaleFont(12), lineHeight: scaleFont(16), fontFamily: fontFamily.semibold },
 } satisfies Record<string, TypeStyle>;
 
 export type TypographyToken = keyof typeof typography;

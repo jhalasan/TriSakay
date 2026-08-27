@@ -6,7 +6,10 @@ const deviceWidth = Dimensions.get('window').width;
 export const radius = {
   sm: moderateScale(8, deviceWidth),
   md: moderateScale(12, deviceWidth),
+  card: moderateScale(16, deviceWidth),
   lg: moderateScale(20, deviceWidth),
+  /** Bottom-sheet-style surfaces whose top corners round over a full-bleed band above them (e.g. the walkthrough copy sheet). */
+  sheetTop: moderateScale(28, deviceWidth),
   // Never scaled down: this only exists to force a full pill/circle radius,
   // and must stay far larger than any element it's applied to at any width.
   pill: 999,

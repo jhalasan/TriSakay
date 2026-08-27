@@ -1,89 +1,85 @@
-import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { Dimensions, StyleSheet } from 'react-native';
+import { colors, elevation, moderateScale, radius, spacing, typography } from '@trisakay/ui';
+
+const deviceWidth = Dimensions.get('window').width;
+const scale = (value: number) => moderateScale(value, deviceWidth);
+
+export const MAP_BAND_HEIGHT = scale(516);
+export const DOT_INACTIVE_WIDTH = scale(8);
+export const DOT_ACTIVE_WIDTH = scale(22);
 
 export const styles = StyleSheet.create({
   root: {
     flex: 1,
     backgroundColor: colors.bg,
   },
+  slide: {
+    flex: 1,
+  },
+  mapBand: {
+    height: MAP_BAND_HEIGHT,
+    overflow: 'hidden',
+  },
+  counterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: scale(8),
+    paddingHorizontal: scale(24),
+    zIndex: 2,
+  },
+  counter: {
+    ...typography.label,
+    color: colors.inkSoft,
+  },
   skip: {
-    position: 'absolute',
-    top: spacing.sm,
-    right: spacing.lg,
-    zIndex: 10,
     minHeight: 44,
     minWidth: 44,
     alignItems: 'flex-end',
     justifyContent: 'center',
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.md,
   },
   skipLabel: {
-    ...typography.bodyStrong,
-    color: colors.white,
+    ...typography.buttonSmall,
+    color: colors.accentBlue,
   },
-  slide: {
+  skipHidden: {
+    opacity: 0,
+  },
+  illustrationArea: {
     flex: 1,
   },
-  hero: {
-    flex: 0.56,
-    alignItems: 'center',
-    justifyContent: 'center',
+  sheet: {
+    flex: 1,
+    marginTop: -scale(28),
+    borderTopLeftRadius: radius.sheetTop,
+    borderTopRightRadius: radius.sheetTop,
+    backgroundColor: colors.white,
+    paddingTop: scale(26),
+    paddingHorizontal: scale(24),
+    ...elevation.sheet,
   },
-  motif: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginTop: -150,
-    marginLeft: -150,
-  },
-  iconBadge: {
-    width: 116,
-    height: 116,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255, 255, 255, 0.14)',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.32)',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  /** Verified-driver slide only — green is reserved for positive/verified status (DESIGN.md), so this is the one badge on the whole flow that earns it. */
-  iconBadgeVerified: {
-    backgroundColor: colors.accentGreenSoft,
-    borderColor: colors.accentGreenSoft,
+  headline: {
+    ...typography.display,
+    color: colors.ink,
   },
   body: {
-    flex: 0.44,
-    paddingHorizontal: spacing.xxl,
-    paddingTop: spacing.xxl,
-    alignItems: 'center',
-  },
-  title: {
-    ...typography.h1,
-    color: colors.ink,
-    textAlign: 'center',
-  },
-  subtitle: {
     ...typography.body,
     color: colors.inkSoft,
-    textAlign: 'center',
     marginTop: spacing.sm,
-    maxWidth: 320,
   },
-  chrome: {
-    paddingHorizontal: spacing.xl,
-    paddingTop: spacing.lg,
-    paddingBottom: spacing.xl,
+  ctaRow: {
+    marginTop: 'auto',
+    paddingBottom: scale(14),
   },
   dots: {
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
     gap: spacing.sm,
-    marginBottom: spacing.lg,
+    paddingBottom: scale(22),
   },
   dot: {
-    height: 8,
+    height: DOT_INACTIVE_WIDTH,
     borderRadius: radius.pill,
     backgroundColor: colors.line,
   },

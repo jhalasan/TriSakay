@@ -1,45 +1,56 @@
-import { StyleSheet } from 'react-native';
-import { elevation, radius, spacing, typography } from '@trisakay/ui';
+import { Dimensions, StyleSheet } from 'react-native';
+import { colors, elevation, moderateScale, radius, typography } from '@trisakay/ui';
+
+const deviceWidth = Dimensions.get('window').width;
+const scale = (value: number) => moderateScale(value, deviceWidth);
+
+export const LOADING_BAR_WIDTH = scale(120);
 
 export const styles = StyleSheet.create({
-  gradient: {
+  root: {
     flex: 1,
   },
-  container: {
-    flex: 1,
+  illustration: {
+    ...StyleSheet.absoluteFillObject,
+  },
+  content: {
+    ...StyleSheet.absoluteFillObject,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: spacing.xxl,
   },
-  motif: {
-    position: 'absolute',
-    top: '50%',
-    left: '50%',
-    marginTop: -180,
-    marginLeft: -180,
-  },
-  /**
-   * The lockup is navy/green ink drawn for a light background — it would
-   * disappear against the navy hero, so it floats on its own white plate
-   * rather than sitting directly on the gradient.
-   */
-  badge: {
-    backgroundColor: '#FFFFFF',
+  card: {
+    backgroundColor: colors.white,
     borderRadius: radius.lg,
-    paddingVertical: spacing.xl,
-    paddingHorizontal: spacing.xxl,
-    ...elevation.card,
+    paddingVertical: scale(28),
+    paddingHorizontal: scale(32),
+    alignItems: 'center',
+    ...elevation.floatingCard,
   },
   logo: {
-    width: 220,
-    height: 123,
+    width: scale(196),
+    height: scale(110),
   },
   subtitle: {
     ...typography.body,
-    color: 'rgba(255, 255, 255, 0.82)',
-    marginTop: spacing.xl,
+    color: colors.inkSoft,
+    marginTop: scale(12),
   },
-  loader: {
-    marginTop: spacing.xxl,
+  loadingBar: {
+    position: 'absolute',
+    bottom: scale(64),
+    alignSelf: 'center',
+    width: LOADING_BAR_WIDTH,
+    height: scale(3),
+    borderRadius: radius.pill,
+    backgroundColor: colors.line,
+    overflow: 'hidden',
+  },
+  loadingIndicator: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    left: 0,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentGreen,
   },
 });

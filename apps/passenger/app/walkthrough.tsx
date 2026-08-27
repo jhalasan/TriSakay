@@ -1,160 +1,160 @@
-import { useRef, useState } from 'react';
-import { Ionicons } from '@expo/vector-icons';
+import { useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
+import { Pressable, Text, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, {
+  Extrapolation,
+  interpolate,
+  interpolateColor,
+  useAnimatedScrollHandler,
+  useAnimatedStyle,
+  useSharedValue,
+  type SharedValue,
+} from 'react-native-reanimated';
+import { Button, colors, moderateScale } from '@trisakay/ui';
+import { MapGround } from '../src/components/MapGround';
 import {
-  Animated,
-  Pressable,
-  Text,
-  View,
-  useWindowDimensions,
-  type NativeSyntheticEvent,
-  type NativeScrollEvent,
-} from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, BrandMotif, GradientSurface, colors } from '@trisakay/ui';
-import { WALKTHROUGH_SEEN_KEY } from '../src/constants/walkthrough';
-import { styles } from '../src/styles/walkthrough.styles';
+  WalkthroughFareIllustration,
+  WalkthroughRouteIllustration,
+  WalkthroughVerifiedIllustration,
+} from '../src/components/illustrations';
+import {
+  WALKTHROUGH_SEEN_KEY,
+  WALKTHROUGH_SLIDES,
+  type WalkthroughIllustration,
+  type WalkthroughSlide,
+} from '../src/constants/walkthrough';
+import { DOT_ACTIVE_WIDTH, DOT_INACTIVE_WIDTH, styles } from '../src/styles/walkthrough.styles';
 
-interface Slide {
-  icon: keyof typeof Ionicons.glyphMap;
-  title: string;
-  subtitle: string;
-  /** Verified-driver slide only — see iconBadgeVerified in walkthrough.styles.ts. */
-  verified?: boolean;
+const ILLUSTRATIONS: Record<WalkthroughIllustration, () => React.JSX.Element> = {
+  route: WalkthroughRouteIllustration,
+  fare: WalkthroughFareIllustration,
+  verified: WalkthroughVerifiedIllustration,
+};
+
+const AnimatedFlatList = Animated.FlatList<WalkthroughSlide>;
+
+function Dot({ index, width, scrollX }: { index: number; width: number; scrollX: SharedValue<number> }) {
+  const style = useAnimatedStyle(() => {
+    const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
+    return {
+      width: interpolate(scrollX.value, inputRange, [DOT_INACTIVE_WIDTH, DOT_ACTIVE_WIDTH, DOT_INACTIVE_WIDTH], Extrapolation.CLAMP),
+      backgroundColor: interpolateColor(scrollX.value, inputRange, [colors.line, colors.accentBlue, colors.line]),
+    };
+  });
+
+  return <Animated.View style={[styles.dot, style]} />;
 }
 
-const SLIDES: Slide[] = [
-  {
-    icon: 'car-sport',
-    title: 'Book a Ride Easily',
-    subtitle: 'Request a tricycle in seconds. Set your pickup and drop-off, and a nearby driver will be on the way.',
-  },
-  {
-    icon: 'receipt-outline',
-    title: 'Fare Transparency',
-    subtitle:
-      'Know your fare before you ride. Pricing follows the approved fare matrix, with a full breakdown shown before you confirm.',
-  },
-  {
-    icon: 'shield-checkmark',
-    title: 'Travel Safely with Verified Drivers',
-    subtitle: 'Every driver is verified by the PSO. Track your ride in real time, from pickup to drop-off.',
-    verified: true,
-  },
-];
-
-const AnimatedFlatList = Animated.FlatList<Slide>;
-
 function Slide({
-  icon,
-  title,
-  subtitle,
-  verified,
+  slide,
   index,
   width,
   scrollX,
-}: Slide & { index: number; width: number; scrollX: Animated.Value }) {
-  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-  const scale = scrollX.interpolate({ inputRange, outputRange: [0.8, 1, 0.8], extrapolate: 'clamp' });
-  const opacity = scrollX.interpolate({ inputRange, outputRange: [0.5, 1, 0.5], extrapolate: 'clamp' });
+  topInset,
+  bottomInset,
+  onNext,
+  onSkip,
+}: {
+  slide: WalkthroughSlide;
+  index: number;
+  width: number;
+  scrollX: SharedValue<number>;
+  topInset: number;
+  bottomInset: number;
+  onNext: () => void;
+  onSkip: () => void;
+}) {
+  const isLast = index === WALKTHROUGH_SLIDES.length - 1;
+  const Illustration = ILLUSTRATIONS[slide.illustration];
 
   return (
     <View style={[styles.slide, { width }]}>
-      <GradientSurface token="hero" direction="vertical" style={styles.hero}>
-        <BrandMotif size={300} color="#FFFFFF" opacity={0.08} style={styles.motif} />
-        <Animated.View
-          style={[styles.iconBadge, verified && styles.iconBadgeVerified, { transform: [{ scale }], opacity }]}
-        >
-          <Ionicons name={icon} size={48} color={verified ? colors.accentGreenPressed : colors.white} />
-        </Animated.View>
-      </GradientSurface>
-      <View style={styles.body}>
-        <Text style={styles.title}>{title}</Text>
-        <Text style={styles.subtitle}>{subtitle}</Text>
+      <MapGround style={styles.mapBand}>
+        <View style={{ height: topInset }} />
+        <View style={styles.counterRow}>
+          <Text style={styles.counter}>{`Step ${String(index + 1).padStart(2, '0')} of 03`}</Text>
+          <Pressable onPress={onSkip} disabled={isLast} hitSlop={8} accessibilityRole="button" style={styles.skip}>
+            <Text style={[styles.skipLabel, isLast && styles.skipHidden]}>Skip</Text>
+          </Pressable>
+        </View>
+        <View style={styles.illustrationArea}>
+          <Illustration />
+        </View>
+      </MapGround>
+
+      <View style={styles.sheet}>
+        <Text style={styles.headline}>{slide.title}</Text>
+        <Text style={styles.body}>{slide.subtitle}</Text>
+        <View style={styles.ctaRow}>
+          <Button
+            label={isLast ? 'Get Started' : 'Next'}
+            onPress={isLast ? onSkip : onNext}
+            fullWidth
+            accessibilityRole="button"
+          />
+        </View>
+        <View style={styles.dots}>
+          {WALKTHROUGH_SLIDES.map((_, dotIndex) => (
+            <Dot key={dotIndex} index={dotIndex} width={width} scrollX={scrollX} />
+          ))}
+        </View>
+        <View style={{ height: bottomInset }} />
       </View>
     </View>
   );
 }
 
-function Dot({ index, width, scrollX }: { index: number; width: number; scrollX: Animated.Value }) {
-  const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-  const dotWidth = scrollX.interpolate({ inputRange, outputRange: [8, 22, 8], extrapolate: 'clamp' });
-  const backgroundColor = scrollX.interpolate({
-    inputRange,
-    outputRange: [colors.line, colors.accentBlue, colors.line],
-    extrapolate: 'clamp',
-  });
-
-  return <Animated.View style={[styles.dot, { width: dotWidth, backgroundColor }]} />;
-}
-
 export default function WalkthroughScreen() {
   const router = useRouter();
   const { width } = useWindowDimensions();
-  const listRef = useRef<Animated.FlatList<Slide>>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const [activeIndex, setActiveIndex] = useState(0);
-  const isLast = activeIndex === SLIDES.length - 1;
+  const insets = useSafeAreaInsets();
+  const listRef = useRef<Animated.FlatList<WalkthroughSlide>>(null);
+  const scrollX = useSharedValue(0);
+
+  const topInset = Math.max(insets.top, moderateScale(44, width));
+  const bottomInset = Math.max(insets.bottom, moderateScale(34, width));
 
   const finish = () => {
     void AsyncStorage.setItem(WALKTHROUGH_SEEN_KEY, '1');
     router.replace('/landing');
   };
 
-  const goNext = () => {
-    if (isLast) {
-      finish();
-      return;
-    }
-    listRef.current?.scrollToOffset({ offset: (activeIndex + 1) * width, animated: true });
+  const goNext = (index: number) => {
+    listRef.current?.scrollToOffset({ offset: (index + 1) * width, animated: true });
   };
 
-  const onScroll = Animated.event([{ nativeEvent: { contentOffset: { x: scrollX } } }], {
-    useNativeDriver: false,
+  const onScroll = useAnimatedScrollHandler((event) => {
+    scrollX.value = event.contentOffset.x;
   });
 
-  const onMomentumScrollEnd = (event: NativeSyntheticEvent<NativeScrollEvent>) => {
-    const nextIndex = Math.round(event.nativeEvent.contentOffset.x / width);
-    setActiveIndex(nextIndex);
-  };
-
   return (
-    <SafeAreaView style={styles.root} edges={['top', 'bottom']}>
-      {!isLast && (
-        <Pressable style={styles.skip} onPress={finish} hitSlop={8} accessibilityRole="button">
-          <Text style={styles.skipLabel}>Skip</Text>
-        </Pressable>
-      )}
-
+    <View style={styles.root}>
       <AnimatedFlatList
         ref={listRef}
-        data={SLIDES}
+        data={WALKTHROUGH_SLIDES}
         horizontal
         pagingEnabled
         showsHorizontalScrollIndicator={false}
         bounces={false}
-        keyExtractor={(item) => item.title}
+        keyExtractor={(item) => item.illustration}
         onScroll={onScroll}
         scrollEventThrottle={16}
-        onMomentumScrollEnd={onMomentumScrollEnd}
-        renderItem={({ item, index }) => <Slide {...item} index={index} width={width} scrollX={scrollX} />}
+        renderItem={({ item, index }) => (
+          <Slide
+            slide={item}
+            index={index}
+            width={width}
+            scrollX={scrollX}
+            topInset={topInset}
+            bottomInset={bottomInset}
+            onNext={() => goNext(index)}
+            onSkip={finish}
+          />
+        )}
         getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
       />
-
-      <View style={styles.chrome}>
-        <View style={styles.dots}>
-          {SLIDES.map((slide, index) => (
-            <Dot key={slide.title} index={index} width={width} scrollX={scrollX} />
-          ))}
-        </View>
-        <Button
-          label={isLast ? 'Get Started' : 'Next'}
-          onPress={goNext}
-          fullWidth
-          accessibilityRole="button"
-        />
-      </View>
-    </SafeAreaView>
+    </View>
   );
 }

@@ -9,3 +9,29 @@ export const WALKTHROUGH_SEEN_KEY = 'trisakay_walkthrough_seen';
  * and a first-visit greeting.
  */
 export const HAS_SIGNED_IN_KEY = 'trisakay_has_signed_in';
+
+export type WalkthroughIllustration = 'route' | 'fare' | 'verified';
+
+export interface WalkthroughSlide {
+  illustration: WalkthroughIllustration;
+  title: string;
+  subtitle: string;
+}
+
+export const WALKTHROUGH_SLIDES: WalkthroughSlide[] = [
+  {
+    illustration: 'route',
+    title: 'Book a ride\nin seconds',
+    subtitle: 'Set your pickup and drop-off. A nearby verified driver is on the way.',
+  },
+  {
+    illustration: 'fare',
+    title: 'Know the fare\nbefore you go',
+    subtitle: 'Pricing follows the approved fare matrix, broken down in full before you confirm. No haggling.',
+  },
+  {
+    illustration: 'verified',
+    title: 'Every driver,\nverified',
+    subtitle: 'Checked by the PSO before they can accept a ride. Track your trip in real time, pickup to drop-off.',
+  },
+];

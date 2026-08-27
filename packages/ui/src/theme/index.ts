@@ -5,6 +5,7 @@ export * from './typography';
 export * from './elevation';
 export * from './motion';
 export * from './gradients';
+export * from './scale';
 
 import { colors } from './colors';
 import { spacing } from './spacing';
