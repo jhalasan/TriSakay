@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import type { StyleProp, ViewStyle } from 'react-native';
 import Animated, {
   Easing,
@@ -28,10 +29,12 @@ export function PulseRing({ size, color, durationMs, style }: PulseRingProps) {
   const scale = useSharedValue(reducedMotion ? 1 : 0.9);
   const opacity = useSharedValue(reducedMotion ? 1 : 0.55);
 
-  if (!reducedMotion) {
-    scale.value = withRepeat(withTiming(1.9, { duration: durationMs, easing: Easing.out(Easing.ease) }), -1, false);
-    opacity.value = withRepeat(withTiming(0, { duration: durationMs, easing: Easing.out(Easing.ease) }), -1, false);
-  }
+  useEffect(() => {
+    if (!reducedMotion) {
+      scale.value = withRepeat(withTiming(1.9, { duration: durationMs, easing: Easing.out(Easing.ease) }), -1, false);
+      opacity.value = withRepeat(withTiming(0, { duration: durationMs, easing: Easing.out(Easing.ease) }), -1, false);
+    }
+  }, [reducedMotion, durationMs, scale, opacity]);
 
   const animatedStyle = useAnimatedStyle(() => ({
     transform: [{ scale: scale.value }],
