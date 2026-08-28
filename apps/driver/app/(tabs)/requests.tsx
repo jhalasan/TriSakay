@@ -1,7 +1,6 @@
 import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Badge, EmptyState } from '@trisakay/ui';
-import { RequestCard } from '../../src/components/RequestCard';
+import { Badge, EmptyState, RequestCard } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useDriverStore } from '../../src/store/useDriverStore';
@@ -41,6 +40,16 @@ export default function RequestsScreen() {
             accepting={acceptingId === item.id}
             onAccept={() => acceptRideRequest(item.id)}
             onDecline={() => decline(item.id)}
+            copy={{
+              decline: t.driver.requestCard.decline,
+              accept: t.driver.requestCard.accept,
+              newRideRequest: t.driver.requestCard.newRideRequest,
+              seatsSingular: t.driver.requestCard.seatsSingular,
+              seatsPlural: t.driver.requestCard.seatsPlural,
+              pickupLabel: t.driver.requestCard.pickupLabel,
+              dropoffLabel: t.driver.requestCard.dropoffLabel,
+              pickupAwaySuffix: t.driver.requestCard.pickupAwaySuffix,
+            }}
           />
         )}
       />

@@ -2,8 +2,7 @@ import { useState } from 'react';
 import { Redirect, useRouter } from 'expo-router';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar, Badge, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, Toggle } from '@trisakay/ui';
-import { RequestCard } from '../../src/components/RequestCard';
+import { Avatar, Badge, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, RequestCard, Toggle } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -189,6 +188,16 @@ export default function ActiveTripScreen() {
               accepting={acceptingId === incoming.id}
               onAccept={() => acceptRideRequest(incoming.id)}
               onDecline={() => decline(incoming.id)}
+              copy={{
+                decline: t.driver.requestCard.decline,
+                accept: t.driver.requestCard.accept,
+                newRideRequest: t.driver.requestCard.newRideRequest,
+                seatsSingular: t.driver.requestCard.seatsSingular,
+                seatsPlural: t.driver.requestCard.seatsPlural,
+                pickupLabel: t.driver.requestCard.pickupLabel,
+                dropoffLabel: t.driver.requestCard.dropoffLabel,
+                pickupAwaySuffix: t.driver.requestCard.pickupAwaySuffix,
+              }}
             />
           </View>
         )}
