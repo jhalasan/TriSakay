@@ -17,6 +17,7 @@ export * from './PulseRing';
 export * from './SegmentedControl';
 export * from './Spinner';
 export * from './StarRating';
+export * from './StatTile';
 export * from './Stepper';
 export * from './Textarea';
 export * from './TextField';
