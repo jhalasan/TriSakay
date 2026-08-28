@@ -13,6 +13,7 @@ export * from './MapOverlaySheet';
 export * from './MapPlaceholder';
 export * from './MapSearchBar';
 export * from './OsmMap';
+export * from './PulseRing';
 export * from './SegmentedControl';
 export * from './Spinner';
 export * from './StarRating';

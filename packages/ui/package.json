@@ -15,6 +15,7 @@
     "@expo/vector-icons": "*",
     "react": "*",
     "react-native": "*",
+    "react-native-reanimated": "*",
     "react-native-svg": "*",
     "react-native-webview": "*"
   },
@@ -23,6 +24,7 @@
     "@expo/vector-icons": { "optional": true },
     "react": { "optional": true },
     "react-native": { "optional": true },
+    "react-native-reanimated": { "optional": true },
     "react-native-svg": { "optional": true },
     "react-native-webview": { "optional": true }
   },
