@@ -20,21 +20,11 @@
   },
   "//peerDependenciesMeta": "Marked optional so npm does not auto-install these peers here. Auto-install resolved @expo/vector-icons' own unbounded peer (expo-font >=14.0.4) to expo-font@57, duplicating the native module against Expo SDK 54's expo-font@14. The consuming Expo app always supplies these.",
   "peerDependenciesMeta": {
-    "@expo/vector-icons": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "react-native": {
-      "optional": true
-    },
-    "react-native-svg": {
-      "optional": true
-    },
-    "react-native-webview": {
-      "optional": true
-    }
+    "@expo/vector-icons": { "optional": true },
+    "react": { "optional": true },
+    "react-native": { "optional": true },
+    "react-native-svg": { "optional": true },
+    "react-native-webview": { "optional": true }
   },
   "devDependencies": {
     "tsx": "^4.23.12"

@@ -8,6 +8,7 @@ export const radius = {
   md: moderateScale(12, deviceWidth),
   card: moderateScale(16, deviceWidth),
   lg: moderateScale(20, deviceWidth),
+  /** Bottom-sheet-style surfaces whose top corners round over a full-bleed band above them (e.g. the walkthrough copy sheet). */
   sheetTop: moderateScale(28, deviceWidth),
   // TriSakay Home redesign steps not covered by the names above.
   xs: moderateScale(11, deviceWidth),
@@ -17,6 +18,8 @@ export const radius = {
   xl2: moderateScale(24, deviceWidth),
   /** The full-bleed hero surface's bottom-corner radius — named for what it's for, not its number, since it's a one-off structural value rather than a general step. */
   heroBottom: moderateScale(30, deviceWidth),
+  // Never scaled down: this only exists to force a full pill/circle radius,
+  // and must stay far larger than any element it's applied to at any width.
   pill: 999,
 } as const;
 
