@@ -27,6 +27,8 @@ export const colors = {
   accentBlue: '#002E60', // 13.46:1 with white — primary actions, brand navy
   accentBluePressed: '#002043',
   accentBlueSoft: '#E3EDF7',
+  /** Deepest navy stop in the redesign's hero/duty-console gradients — same hue as accentBlue, no new contrast pairing (never sits behind text on its own). */
+  accentBlueDeep: '#001A38',
 
   accentGreen: '#477434', // 5.50:1 with white — positive/complete status only, brand green
   accentGreenPressed: '#3B602B',

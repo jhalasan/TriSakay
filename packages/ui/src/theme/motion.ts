@@ -14,6 +14,10 @@ export const motion = {
     settle: 320,
     /** The ride-status pulse. */
     pulse: 1400,
+    /** Driver duty-console online status dot. */
+    pulseStatus: 2000,
+    /** Driver "Listening for requests" panel circle. */
+    pulseListening: 2400,
   },
   easing: {
     /** Exponential ease-out: fast start, soft landing. */

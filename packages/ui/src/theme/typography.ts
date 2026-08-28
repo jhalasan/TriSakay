@@ -68,9 +68,37 @@ export const typography = {
   h1: { fontSize: scaleFont(27), lineHeight: scaleFont(33), fontFamily: fontFamily.bold, letterSpacing: -0.4 },
   h2: { fontSize: scaleFont(20), lineHeight: scaleFont(26), fontFamily: fontFamily.bold, letterSpacing: -0.2 },
   h3: { fontSize: scaleFont(17), lineHeight: scaleFont(23), fontFamily: fontFamily.semibold },
+  /** Passenger Home's greeting name. One step below `display`. */
+  h1b: { fontSize: scaleFont(28), lineHeight: scaleFont(32), fontFamily: fontFamily.extrabold, letterSpacing: -0.7 },
+  /** Driver duty-console "Go online" CTA title weight/size. */
+  h2b: { fontSize: scaleFont(22), lineHeight: scaleFont(25), fontFamily: fontFamily.bold, letterSpacing: -0.3 },
+  /** "Listening for requests" panel title. */
+  h3b: { fontSize: scaleFont(19), lineHeight: scaleFont(25), fontFamily: fontFamily.bold },
+  /** Request-card stop values (pickup/dropoff address lines). */
+  bodyLg: { fontSize: scaleFont(15), lineHeight: scaleFont(21), fontFamily: fontFamily.semibold },
+  /** Request-card meta text, driver duty-console meta line. */
+  bodySm: { fontSize: scaleFont(14), lineHeight: scaleFont(20), fontFamily: fontFamily.semibold },
   body: { fontSize: scaleFont(16), lineHeight: scaleFont(24), fontFamily: fontFamily.regular },
   bodyStrong: { fontSize: scaleFont(16), lineHeight: scaleFont(24), fontFamily: fontFamily.semibold },
   caption: { fontSize: scaleFont(13), lineHeight: scaleFont(18), fontFamily: fontFamily.regular },
+  /** Stats-strip values, listening-panel body copy. */
+  labelSm: { fontSize: scaleFont(11), lineHeight: scaleFont(15), fontFamily: fontFamily.regular },
+  /** Stats-strip labels. */
+  labelXs: {
+    fontSize: scaleFont(10),
+    lineHeight: scaleFont(14),
+    fontFamily: fontFamily.bold,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+  },
+  /** Section eyebrows ("SAVED PLACES", "INCOMING REQUEST", "YOU'RE ONLINE") — same shape as `label` but with the redesign's slightly wider tracking. */
+  eyebrow: {
+    fontSize: scaleFont(12),
+    lineHeight: scaleFont(16),
+    fontFamily: fontFamily.bold,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+  },
   label: {
     fontSize: scaleFont(12),
     lineHeight: scaleFont(16),
