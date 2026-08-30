@@ -11,6 +11,7 @@ import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors, fontFamily } from '@trisakay/ui';
+import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useComplaintsStore } from '../src/store/useComplaintsStore';
@@ -308,6 +309,7 @@ function RootLayoutNav() {
   useDriverDataSync(sessionUserId);
   useAvailabilitySync(sessionUserId);
   useRequestsSync(sessionUserId, isAvailable);
+  useDriverLocationSync(sessionUserId, isAvailable);
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);
   useNotificationsSync(sessionUserId);
