@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Keyboard, Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, ListRow, MapOverlaySheet, MapSearchBar, OsmMap, TextField, colors } from '@trisakay/ui';
 import { SavePlaceSheet } from '../../src/components/SavePlaceSheet';
@@ -36,6 +36,10 @@ export default function SetPickupScreen() {
   const [pinDropped, setPinDropped] = useState(false);
   const [placeToSave, setPlaceToSave] = useState<LocationPoint | null>(null);
   const [savedKeys, setSavedKeys] = useState<Set<string>>(new Set());
+  // Drives the compact suggestion strip under the search bar — visible only
+  // while the keyboard is up, so the rider can confirm what they're typing
+  // without the full bottom sheet (which the keyboard can cover).
+  const [searchFocused, setSearchFocused] = useState(false);
 
   function keyFor(point: LocationPoint) {
     return `${point.latitude},${point.longitude}`;
@@ -60,6 +64,7 @@ export default function SetPickupScreen() {
   function handleSelectResult(point: LocationPoint) {
     setPinDropped(false);
     setSelected(point);
+    Keyboard.dismiss();
   }
 
   function handleMapPoint(point: { latitude: number; longitude: number }) {
@@ -79,6 +84,7 @@ export default function SetPickupScreen() {
       .then((point) => {
         setPinDropped(false);
         setSelected(point);
+        Keyboard.dismiss();
       })
       .catch(() => {
         // No GPS fix available — the rider can still search or drop a pin by hand.
@@ -117,8 +123,41 @@ export default function SetPickupScreen() {
             value={query}
             onChangeText={setQuery}
             autoFocus
+            onFocus={() => setSearchFocused(true)}
+            onBlur={() => setSearchFocused(false)}
           />
         </MapSearchBar>
+
+        {searchFocused && query.trim().length >= 2 && (
+          <View style={styles.suggestStripShadowWrap}>
+            <View style={styles.suggestStrip}>
+              {searching ? (
+                <Text style={styles.suggestHint}>{t.setDestination.searching}</Text>
+              ) : results.length === 0 ? (
+                <Text style={styles.suggestHint}>{t.setDestination.noMatches}</Text>
+              ) : (
+                results.slice(0, 4).map((item, index) => (
+                  <Pressable
+                    key={`${item.label}-${index}`}
+                    style={[styles.suggestRow, index === 0 && styles.suggestRowFirst]}
+                    onPress={() => handleSelectResult(item)}
+                    accessibilityRole="button"
+                  >
+                    <Ionicons name="location-outline" size={15} color={colors.inkSoft} />
+                    <View style={styles.suggestRowTextSlot}>
+                      <Text style={styles.suggestRowTitle} numberOfLines={1}>
+                        {item.label}
+                      </Text>
+                      <Text style={styles.suggestRowAddress} numberOfLines={1} ellipsizeMode="tail">
+                        {item.address}
+                      </Text>
+                    </View>
+                  </Pressable>
+                ))
+              )}
+            </View>
+          </View>
+        )}
       </View>
 
       <MapOverlaySheet maxHeight={360} bottomInset={insets.bottom}>

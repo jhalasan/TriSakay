@@ -1,4 +1,5 @@
-import { StyleSheet, View, type ViewProps } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View, type LayoutChangeEvent, type ViewProps } from 'react-native';
 import Svg, { Defs, LinearGradient, Line, Pattern, Rect, Stop } from 'react-native-svg';
 import { gradients, type GradientToken } from '../../theme';
 
@@ -39,9 +40,22 @@ export function GradientSurface({
   const patternId = `${id}-texture`;
   const end = direction === 'diagonal' ? { x2: '100%', y2: '100%' } : { x2: '0%', y2: '100%' };
 
+  // react-native-svg can't reliably resolve percentage width/height when this
+  // container's own size is intrinsic (set by its children rather than a
+  // fixed style) — the fill then locks in a stale, too-short measurement and
+  // the bottom of the surface (e.g. the passenger Home stats row) renders
+  // past the edge of the gradient. Measuring the laid-out box and feeding
+  // the Svg real pixel dimensions keeps the fill exactly the size of its
+  // content on any device or content length.
+  const [size, setSize] = useState({ width: 0, height: 0 });
+  function handleLayout(event: LayoutChangeEvent) {
+    const { width, height } = event.nativeEvent.layout;
+    setSize((prev) => (prev.width === width && prev.height === height ? prev : { width, height }));
+  }
+
   return (
-    <View style={[styles.container, style]} {...viewProps}>
-      <Svg style={StyleSheet.absoluteFillObject} width="100%" height="100%">
+    <View style={[styles.container, style]} onLayout={handleLayout} {...viewProps}>
+      <Svg style={StyleSheet.absoluteFillObject} width={size.width || '100%'} height={size.height || '100%'}>
         <Defs>
           {!solid && (
             <LinearGradient id={id} x1="0%" y1="0%" {...end}>
