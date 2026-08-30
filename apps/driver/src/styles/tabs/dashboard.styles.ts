@@ -67,11 +67,17 @@ export const styles = StyleSheet.create({
   earningsEyebrowOffline: { ...typography.bodySm, fontSize: 11, lineHeight: 15, letterSpacing: 0.9, color: colors.inkSoft, marginTop: spacing.tight14 },
   earningsAmountOffline: { fontSize: 40, lineHeight: 46, fontFamily: 'Poppins_800ExtraBold', letterSpacing: -1.2, color: colors.ink },
   metaTextOffline: { ...typography.bodySm, color: colors.inkSoft },
-  goOnlineButton: {
+  // Shadow lives on this outer wrapper, never on the GradientSurface's own
+  // style — see listeningPanelShadowWrap above for why.
+  goOnlineButtonShadowWrap: {
     marginTop: spacing.lg,
+    borderRadius: radius.sm2,
+    backgroundColor: colors.accentBlue,
+    ...elevation.button,
+  },
+  goOnlineButton: {
     minHeight: 52,
     borderRadius: radius.sm2,
-    ...elevation.button,
   },
   goOnlineInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, height: '100%' },
   goOnlineText: { ...typography.h3b, fontSize: 16, lineHeight: 20, color: colors.white },
@@ -92,6 +98,19 @@ export const styles = StyleSheet.create({
   countdownChip: { backgroundColor: colors.dangerSoft, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   countdownChipText: { ...typography.bodySm, fontSize: 11, lineHeight: 16, color: colors.danger },
 
+  // Shadow lives on this outer wrapper, never on the same view as
+  // overflow:'hidden' + borderRadius — combining them on Android makes the
+  // elevation shadow render as an unclipped rectangle that bleeds past the
+  // rounded corners and shows a ghosted duplicate of the clipped content.
+  listeningPanelShadowWrap: {
+    borderRadius: radius.xl2,
+    backgroundColor: colors.white,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 24,
+    elevation: 4,
+  },
   listeningPanel: {
     borderRadius: radius.xl2,
     backgroundColor: colors.white,
@@ -100,11 +119,6 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
-    shadowColor: colors.accentBlue,
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.1,
-    shadowRadius: 24,
-    elevation: 4,
   },
   listeningMotif: { position: 'absolute', top: -30, right: -30 },
   listeningIconHost: { width: 74, height: 74, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },

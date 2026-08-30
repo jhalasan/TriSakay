@@ -95,78 +95,82 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <GradientSurface token="hero" direction="diagonal" texture textureOpacity={0.05} style={styles.heroPanel}>
-          <BrandMotif size={230} color={colors.white} opacity={0.12} style={styles.heroMotifTop} />
-          <SafeAreaView edges={['top']}>
-            <View style={styles.heroRow}>
-              <View style={styles.heroTopRow}>
-                <View style={styles.heroIdentityRow}>
+        <View style={styles.heroShadowWrap}>
+          <GradientSurface token="hero" direction="diagonal" style={styles.heroPanel}>
+            <BrandMotif size={230} color={colors.white} opacity={0.12} style={styles.heroMotifTop} />
+            <SafeAreaView edges={['top']}>
+              <View style={styles.heroRow}>
+                <View style={styles.heroTopRow}>
+                  <View style={styles.heroIdentityRow}>
+                    <Pressable
+                      accessibilityRole="button"
+                      accessibilityLabel={t.home.profileAccessibilityLabel}
+                      onPress={() => router.push('/(tabs)/profile')}
+                    >
+                      <View style={styles.avatarOuterRing}>
+                        <View style={styles.avatarInnerRing}>
+                          <Avatar name={user?.name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="lg" />
+                        </View>
+                      </View>
+                    </Pressable>
+                    <View style={styles.heroTextSlot}>
+                      <View style={styles.heroGreetingRow}>
+                        <Ionicons name={getGreetingIcon()} size={14} color={colors.white} style={{ opacity: 0.75 }} />
+                        <Text style={styles.heroGreetingLabel}>{getGreeting(t)}</Text>
+                      </View>
+                      <Text style={styles.heroName} numberOfLines={1}>
+                        {firstName ?? user?.name ?? t.home.ctaTitle}
+                      </Text>
+                      <Text style={styles.heroTagline}>{t.home.heroTagline}</Text>
+                    </View>
+                  </View>
                   <Pressable
                     accessibilityRole="button"
-                    accessibilityLabel={t.home.profileAccessibilityLabel}
-                    onPress={() => router.push('/(tabs)/profile')}
+                    accessibilityLabel={t.home.notificationsAccessibilityLabel}
+                    style={styles.bellButton}
+                    hitSlop={4}
+                    onPress={() => router.push('/notifications')}
                   >
-                    <View style={styles.avatarOuterRing}>
-                      <View style={styles.avatarInnerRing}>
-                        <Avatar name={user?.name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="lg" />
-                      </View>
-                    </View>
+                    <Ionicons name="notifications-outline" size={20} color={colors.white} />
+                    {unreadCount > 0 && <View style={styles.bellDot} />}
                   </Pressable>
-                  <View style={styles.heroTextSlot}>
-                    <View style={styles.heroGreetingRow}>
-                      <Ionicons name={getGreetingIcon()} size={14} color={colors.white} style={{ opacity: 0.75 }} />
-                      <Text style={styles.heroGreetingLabel}>{getGreeting(t)}</Text>
-                    </View>
-                    <Text style={styles.heroName} numberOfLines={1}>
-                      {firstName ?? user?.name ?? t.home.ctaTitle}
-                    </Text>
-                    <Text style={styles.heroTagline}>{t.home.heroTagline}</Text>
-                  </View>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t.home.notificationsAccessibilityLabel}
-                  style={styles.bellButton}
-                  hitSlop={4}
-                  onPress={() => router.push('/notifications')}
-                >
-                  <Ionicons name="notifications-outline" size={20} color={colors.white} />
-                  {unreadCount > 0 && <View style={styles.bellDot} />}
-                </Pressable>
               </View>
+            </SafeAreaView>
+            <View style={styles.statsStrip}>
+              <StatTile tone="onNavy" bare label={t.home.statsTripsLabel} value={tripsValue} />
+              <View style={styles.statsDivider} />
+              <StatTile tone="onNavy" bare label={t.home.statsDiscountLabel} value={discountValue} />
             </View>
-          </SafeAreaView>
-          <View style={styles.statsStrip}>
-            <StatTile tone="onNavy" bare label={t.home.statsTripsLabel} value={tripsValue} />
-            <View style={styles.statsDivider} />
-            <StatTile tone="onNavy" bare label={t.home.statsDiscountLabel} value={discountValue} />
-          </View>
-        </GradientSurface>
+          </GradientSurface>
+        </View>
 
         <View style={styles.content}>
           <Pressable accessibilityRole="button" accessibilityLabel={t.home.ctaTitle} onPress={() => router.push('/booking/request')}>
-            <GradientSurface solid={colors.accentGreen} texture textureOpacity={0.06} style={styles.ctaCard}>
-              <BrandMotif size={150} color={colors.white} opacity={0.14} style={styles.ctaMotif} />
-              <View style={styles.ctaCardInner}>
-                <View style={styles.ctaIconBadge}>
-                  <Image source={require('../../../../assets/trike-white.png')} style={styles.trikeMark} resizeMode="contain" />
-                </View>
-                <View style={styles.ctaTextSlot}>
-                  <Text style={styles.ctaTitle}>{t.home.ctaTitle}</Text>
-                  {nearbyCount != null ? (
-                    <View style={styles.ctaChipRow}>
-                      <View style={styles.ctaChip}>
-                        <Text style={styles.ctaChipText}>{t.home.ctaFareChipPrefix}</Text>
+            <View style={styles.ctaCardShadowWrap}>
+              <GradientSurface solid={colors.accentGreen} style={styles.ctaCard}>
+                <BrandMotif size={150} color={colors.white} opacity={0.14} style={styles.ctaMotif} />
+                <View style={styles.ctaCardInner}>
+                  <View style={styles.ctaIconBadge}>
+                    <Image source={require('../../../../assets/trike-white.png')} style={styles.trikeMark} resizeMode="contain" />
+                  </View>
+                  <View style={styles.ctaTextSlot}>
+                    <Text style={styles.ctaTitle}>{t.home.ctaTitle}</Text>
+                    {nearbyCount != null ? (
+                      <View style={styles.ctaChipRow}>
+                        <View style={styles.ctaChip}>
+                          <Text style={styles.ctaChipText}>{t.home.ctaFareChipPrefix}</Text>
+                        </View>
+                        <Text style={styles.ctaNearbyText}>· {t.home.ctaNearbySuffix.replace('{count}', String(nearbyCount))}</Text>
                       </View>
-                      <Text style={styles.ctaNearbyText}>· {t.home.ctaNearbySuffix.replace('{count}', String(nearbyCount))}</Text>
-                    </View>
-                  ) : (
-                    <Text style={styles.ctaSubtitle}>{t.home.ctaSubtitle}</Text>
-                  )}
+                    ) : (
+                      <Text style={styles.ctaSubtitle}>{t.home.ctaSubtitle}</Text>
+                    )}
+                  </View>
+                  <Ionicons name="chevron-forward" size={22} color={colors.white} />
                 </View>
-                <Ionicons name="chevron-forward" size={22} color={colors.white} />
-              </View>
-            </GradientSurface>
+              </GradientSurface>
+            </View>
           </Pressable>
 
           <View>

@@ -130,7 +130,7 @@ export default function DashboardScreen() {
         </View>
 
         {isAvailable ? (
-          <GradientSurface token="hero" direction="vertical" texture textureOpacity={0.05} style={styles.consoleOnline}>
+          <GradientSurface token="hero" direction="vertical" style={styles.consoleOnline}>
             <BrandMotif size={210} color={colors.white} opacity={0.12} style={styles.consoleMotif} />
             <View style={styles.statusRow}>
               <View style={styles.statusLeft}>
@@ -209,12 +209,14 @@ export default function DashboardScreen() {
               onPress={() => handleToggleAvailable(true)}
               disabled={togglingAvailability}
             >
-              <GradientSurface token="button" direction="diagonal" style={styles.goOnlineButton}>
-                <View style={styles.goOnlineInner}>
-                  <Ionicons name="power" size={19} color={colors.white} />
-                  <Text style={styles.goOnlineText}>{t.driver.dashboard.goOnline}</Text>
-                </View>
-              </GradientSurface>
+              <View style={styles.goOnlineButtonShadowWrap}>
+                <GradientSurface token="button" direction="diagonal" style={styles.goOnlineButton}>
+                  <View style={styles.goOnlineInner}>
+                    <Ionicons name="power" size={19} color={colors.white} />
+                    <Text style={styles.goOnlineText}>{t.driver.dashboard.goOnline}</Text>
+                  </View>
+                </GradientSurface>
+              </View>
             </Pressable>
           </View>
         )}
@@ -265,18 +267,20 @@ export default function DashboardScreen() {
         {showListening && (
           <View>
             <Text style={styles.sectionLabel}>{t.driver.dashboard.listeningEyebrow}</Text>
-            <View style={styles.listeningPanel}>
-              <BrandMotif size={230} color={colors.accentBlue} opacity={0.045} style={styles.listeningMotif} />
-              <View style={styles.listeningIconHost}>
-                <PulseRing size={74} color={colors.accentBlueSoft} durationMs={2400} style={{ position: 'absolute' }} />
-                <View style={styles.listeningIconCircle}>
-                  <Ionicons name="radio-outline" size={32} color={colors.accentBlue} />
+            <View style={styles.listeningPanelShadowWrap}>
+              <View style={styles.listeningPanel}>
+                <BrandMotif size={230} color={colors.accentBlue} opacity={0.045} style={styles.listeningMotif} />
+                <View style={styles.listeningIconHost}>
+                  <PulseRing size={74} color={colors.accentBlueSoft} durationMs={2400} style={{ position: 'absolute' }} />
+                  <View style={styles.listeningIconCircle}>
+                    <Ionicons name="radio-outline" size={32} color={colors.accentBlue} />
+                  </View>
                 </View>
+                <Text style={styles.listeningTitle}>{t.driver.dashboard.listeningTitle}</Text>
+                <Text style={styles.listeningMessage}>
+                  {t.driver.dashboard.listeningMessage.replace('{area}', 'Poblacion')}
+                </Text>
               </View>
-              <Text style={styles.listeningTitle}>{t.driver.dashboard.listeningTitle}</Text>
-              <Text style={styles.listeningMessage}>
-                {t.driver.dashboard.listeningMessage.replace('{area}', 'Poblacion')}
-              </Text>
             </View>
           </View>
         )}
