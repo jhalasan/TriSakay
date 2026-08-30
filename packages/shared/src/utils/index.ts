@@ -4,3 +4,5 @@ import { APP_NAMES } from '../constants/index.ts';
 export function getAppName(app: AppType) {
   return APP_NAMES[app];
 }
+
+export * from './geo.ts';
