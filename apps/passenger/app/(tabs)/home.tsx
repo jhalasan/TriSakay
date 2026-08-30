@@ -127,6 +127,7 @@ export default function HomeScreen() {
                   accessibilityRole="button"
                   accessibilityLabel={t.home.notificationsAccessibilityLabel}
                   style={styles.bellButton}
+                  hitSlop={4}
                   onPress={() => router.push('/notifications')}
                 >
                   <Ionicons name="notifications-outline" size={20} color={colors.white} />
