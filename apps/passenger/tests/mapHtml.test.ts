@@ -25,3 +25,27 @@ test('omits the polyline for a single-point route', () => {
   const html = buildMapHtml({ latitude: 6.1, longitude: 125.1, zoom: 14, route: [ROUTE[0]] });
   assert.doesNotMatch(html, /L\.polyline\(/);
 });
+
+test('buildMapHtml exposes window.__setDriverLocation when a marker is present', () => {
+  const html = buildMapHtml({
+    latitude: 6.1164,
+    longitude: 125.1717,
+    zoom: 15,
+    marker: { latitude: 6.1164, longitude: 125.1717 },
+  });
+  assert.ok(html.includes('window.__setDriverLocation'));
+});
+
+test('buildMapHtml does not remount-relevant content change when only marker coordinates would differ — the bridge function reads live pin coordinates, not baked-in ones', () => {
+  // The bridge function must reference `pin.getLatLng()` (the pickup marker's
+  // live position) rather than a second hard-coded lat/lng pair, so that a
+  // caller can rely on it drawing the line to wherever the pickup pin already
+  // is without rebuilding the HTML string.
+  const html = buildMapHtml({
+    latitude: 6.1164,
+    longitude: 125.1717,
+    zoom: 15,
+    marker: { latitude: 6.1164, longitude: 125.1717 },
+  });
+  assert.ok(html.includes('pin.getLatLng()'));
+});

@@ -136,6 +136,39 @@ export function buildMapHtml({
 `
       : '';
 
+  // Built conditionally, same reasoning as routeScript: without a pickup pin
+  // to draw a line to, this bridge is meaningless, and its absence must be
+  // provable from the generated HTML by string content alone (no L.polyline(
+  // reference at all when there is no marker).
+  const driverMarkerScript = marker
+    ? `
+      var driverMarker = null;
+      var driverLine = null;
+      var driverIcon = L.divIcon({
+        className: '',
+        html: '<div style="width:22px;height:22px;border-radius:50%;background:${colors.accentGreen};border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
+        iconSize: [22, 22],
+        iconAnchor: [11, 11],
+      });
+      window.__setDriverLocation = function (lat, lng) {
+        if (!pin) return; // no fixed pickup point to draw a line to
+        var pinPos = pin.getLatLng();
+        var point = [lat, lng];
+        if (!driverMarker) {
+          driverMarker = L.marker(point, { icon: driverIcon }).addTo(map);
+          driverLine = L.polyline([point, [pinPos.lat, pinPos.lng]], { color: '${colors.accentGreen}', weight: 4, dashArray: '6,6', opacity: 0.85 }).addTo(map);
+        } else {
+          driverMarker.setLatLng(point);
+          driverLine.setLatLngs([point, [pinPos.lat, pinPos.lng]]);
+        }
+      };
+      window.__clearDriverLocation = function () {
+        if (driverMarker) { map.removeLayer(driverMarker); driverMarker = null; }
+        if (driverLine) { map.removeLayer(driverLine); driverLine = null; }
+      };
+`
+    : '';
+
   // Anchored on the city centre rather than this screen's centre, so every
   // interactive map roams the same, predictable box.
   const south = DEFAULT_CENTER.latitude - ROAM_DEGREES;
@@ -246,6 +279,7 @@ ${routeScript}
         var pos = pin.getLatLng();
         post({ type: 'marker-moved', latitude: pos.lat, longitude: pos.lng });
       });
+${driverMarkerScript}
     }
 
     var TAP_TO_PLACE = ${tapToPlace ? 'true' : 'false'};

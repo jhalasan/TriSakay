@@ -63,6 +63,15 @@ export interface OsmMapProps {
   tapToPlace?: boolean;
   /** Draws a suggested route line and frames it. See mapHtml's `route` option. */
   route?: { latitude: number; longitude: number }[] | null;
+  /**
+   * A second, independently-moving marker (the matched driver's live
+   * position) plus a connecting line to the fixed `marker` pin. Updated via
+   * injectJavaScript, NOT baked into the memoized HTML `source` — unlike
+   * `marker`'s own coordinates, this is expected to change every few seconds
+   * and must never remount the WebView / re-fetch tiles. Requires `marker`
+   * to also be set; a no-op otherwise.
+   */
+  liveDriverMarker?: { latitude: number; longitude: number } | null;
   onReady?: () => void;
   /** Squares off the container corners for maps that run to the screen edges, instead of the default rounded-card look. */
   edgeToEdge?: boolean;
@@ -84,6 +93,7 @@ export function OsmMap({
   onMarkerMove,
   tapToPlace = false,
   route = null,
+  liveDriverMarker = null,
   onReady,
   edgeToEdge = false,
 }: OsmMapProps) {
@@ -196,6 +206,17 @@ export function OsmMap({
   const handleRecenter = useCallback(() => {
     webViewRef.current?.injectJavaScript(RECENTER_JS);
   }, []);
+
+  useEffect(() => {
+    if (state !== 'ready') return;
+    if (liveDriverMarker) {
+      webViewRef.current?.injectJavaScript(
+        `window.__setDriverLocation && window.__setDriverLocation(${liveDriverMarker.latitude}, ${liveDriverMarker.longitude}); true;`
+      );
+    } else {
+      webViewRef.current?.injectJavaScript('window.__clearDriverLocation && window.__clearDriverLocation(); true;');
+    }
+  }, [state, liveDriverMarker?.latitude, liveDriverMarker?.longitude]);
 
   return (
     <View style={[styles.container, { height }, edgeToEdge && styles.edgeToEdge]}>
