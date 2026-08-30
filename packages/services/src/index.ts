@@ -4,6 +4,7 @@ export * from './booking/index.ts';
 export * from './complaints/index.ts';
 export * from './consents/index.ts';
 export * from './discount/index.ts';
+export * from './discovery/index.ts';
 export * from './driver-documents/index.ts';
 export * from './driver-profile/index.ts';
 export * from './emergency/index.ts';
