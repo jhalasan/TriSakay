@@ -21,6 +21,7 @@ export default function ActiveTripScreen() {
   const trip = useTripStore((state) => state.current);
   const tripError = useTripStore((state) => state.error);
   const confirmCash = useTripStore((state) => state.confirmCash);
+  const startPassenger = useTripStore((state) => state.startPassenger);
   const completePassenger = useTripStore((state) => state.completePassenger);
   const cancelPassenger = useTripStore((state) => state.cancelPassenger);
   const endTrip = useTripStore((state) => state.endTrip);
@@ -45,6 +46,7 @@ export default function ActiveTripScreen() {
   // version silently swallowed taps on any other passenger's Complete
   // button while one was already in flight, with no visual feedback.
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
+  const [startingIds, setStartingIds] = useState<Set<string>>(new Set());
   const [confirmingEndTrip, setConfirmingEndTrip] = useState(false);
   const [endingTrip, setEndingTrip] = useState(false);
 
@@ -68,6 +70,17 @@ export default function ActiveTripScreen() {
     setConfirmingCashId(passengerId);
     await confirmCash(passengerId, user.id);
     setConfirmingCashId(null);
+  }
+
+  async function handleStart(passengerId: string) {
+    if (startingIds.has(passengerId)) return;
+    setStartingIds((prev) => new Set(prev).add(passengerId));
+    await startPassenger(passengerId);
+    setStartingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(passengerId);
+      return next;
+    });
   }
 
   async function handleComplete(passenger: ActivePassenger) {
@@ -123,7 +136,8 @@ export default function ActiveTripScreen() {
         {trip.passengers.map((passenger) => {
           const isCash = passenger.paymentMethod === 'cash';
           const isCompleting = completingIds.has(passenger.id);
-          const canComplete = (!isCash || passenger.cashConfirmed) && !isCompleting;
+          const isStarting = startingIds.has(passenger.id);
+          const canComplete = passenger.status === 'ongoing' && (!isCash || passenger.cashConfirmed) && !isCompleting;
 
           return (
             <Card key={passenger.id} style={styles.passengerCard}>
@@ -162,19 +176,30 @@ export default function ActiveTripScreen() {
                     variant="outline"
                     tone="danger"
                     fullWidth
-                    disabled={isCompleting}
+                    disabled={isCompleting || isStarting}
                     onPress={() => setCancellingId(passenger.id)}
                   />
                 </View>
-                <View style={styles.actionButton}>
-                  <Button
-                    label={t.driver.tripActive.complete}
-                    fullWidth
-                    disabled={!canComplete}
-                    loading={isCompleting}
-                    onPress={() => handleComplete(passenger)}
-                  />
-                </View>
+                {passenger.status === 'assigned' ? (
+                  <View style={styles.actionButton}>
+                    <Button
+                      label={t.driver.tripActive.start}
+                      fullWidth
+                      loading={isStarting}
+                      onPress={() => handleStart(passenger.id)}
+                    />
+                  </View>
+                ) : (
+                  <View style={styles.actionButton}>
+                    <Button
+                      label={t.driver.tripActive.complete}
+                      fullWidth
+                      disabled={!canComplete}
+                      loading={isCompleting}
+                      onPress={() => handleComplete(passenger)}
+                    />
+                  </View>
+                )}
               </View>
             </Card>
           );

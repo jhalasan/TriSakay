@@ -419,6 +419,7 @@ export const en = {
       compatibleRequest: 'Compatible request',
       confirmCashReceived: 'Confirm cash received',
       gcashAutoConfirmed: 'GCash payment confirms automatically.',
+      start: 'Start',
       complete: 'Complete',
       cancelPassengerTitle: 'Cancel this passenger?',
       cancelPassengerMessage: "This passenger's ride will be logged as cancelled.",

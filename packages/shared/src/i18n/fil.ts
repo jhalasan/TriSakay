@@ -422,6 +422,7 @@ export const fil: Translations = {
       compatibleRequest: 'Angkop na Request',
       confirmCashReceived: 'Kumpirmahin na Natanggap ang Cash',
       gcashAutoConfirmed: 'Awtomatikong nakukumpirma ang GCash payment.',
+      start: 'Simulan',
       complete: 'Tapusin',
       cancelPassengerTitle: 'Kanselahin ang pasaherong ito?',
       cancelPassengerMessage: 'Itatala ang biyahe ng pasaherong ito bilang kinansela.',
