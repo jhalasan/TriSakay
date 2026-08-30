@@ -228,7 +228,10 @@ Deno.serve(async (req: Request) => {
             r.detourRatio <= settings.detour_ratio_max,
         )
         .sort((a, b) => a.bearingDiffDeg - b.bearingDiffDeg || a.distanceKm - b.distanceKm)
-        .map(({ bearingDiffDeg: _b, distanceKm: _d, detourRatio: _r, ...row }) => row);
+        .map(({ bearingDiffDeg: _b, distanceKm, detourRatio: _r, ...row }) => ({
+          ...row,
+          distance_meters: Math.round(distanceKm * 1000),
+        }));
     } else {
       data = hardFiltered;
     }

@@ -1,14 +1,5 @@
-export type PaymentMethod = 'cash' | 'gcash';
-
-export interface PendingRequest {
-  id: string;
-  seats: number;
-  paymentMethod: PaymentMethod;
-  pickupLabel: string | null;
-  dropoffLabel: string | null;
-  fare: number | null;
-  createdAt: string;
-}
+export type { PaymentMethod, PendingRequest } from '@trisakay/ui';
+import type { PendingRequest } from '@trisakay/ui';
 
 export interface AcceptedRequest extends PendingRequest {
   tripId: string;
