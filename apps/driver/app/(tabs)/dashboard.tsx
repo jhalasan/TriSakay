@@ -2,9 +2,9 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { Pressable, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, GradientSurface, PulseRing, RequestCard, colors } from '@trisakay/ui';
+import { Avatar, BrandMotif, GradientSurface, PulseRing, RequestCard, colors } from '@trisakay/ui';
 import type { PendingRequest } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useDriverUnit } from '../../src/hooks/useDriverUnit';
@@ -103,7 +103,7 @@ export default function DashboardScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.scrollContent}>
+      <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.identityRow}>
           <Avatar name={user?.name} source={user?.avatarUrl ? { uri: user.avatarUrl } : undefined} size="md" />
           <View style={styles.identityTextSlot}>
@@ -131,7 +131,7 @@ export default function DashboardScreen() {
 
         {isAvailable ? (
           <GradientSurface token="hero" direction="vertical" texture textureOpacity={0.05} style={styles.consoleOnline}>
-            <View style={styles.consoleMotif} />
+            <BrandMotif size={210} color={colors.white} opacity={0.12} style={styles.consoleMotif} />
             <View style={styles.statusRow}>
               <View style={styles.statusLeft}>
                 <View style={styles.pulseHost}>
@@ -262,6 +262,7 @@ export default function DashboardScreen() {
           <View>
             <Text style={styles.identityName}>{t.driver.dashboard.listeningEyebrow}</Text>
             <View style={styles.listeningPanel}>
+              <BrandMotif size={230} color={colors.accentBlue} opacity={0.045} style={styles.listeningMotif} />
               <View style={styles.listeningIconHost}>
                 <PulseRing size={74} color={colors.accentBlueSoft} durationMs={2400} style={{ position: 'absolute' }} />
                 <View style={styles.listeningIconCircle}>
@@ -275,7 +276,7 @@ export default function DashboardScreen() {
             </View>
           </View>
         )}
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
