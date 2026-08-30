@@ -109,6 +109,8 @@ export const fil: Translations = {
     backToHome: 'Bumalik sa Home',
     mapCaption: 'Mapa · ruta ng biyahe',
     driverAssigned: 'May Nakatalagang Driver',
+    tripInProgressCaption: 'Ongoing na ang biyahe',
+    tripInProgress: 'Ongoing na ang biyahe',
     noInAppCallNotice: 'Walang tawag o mensahe sa app — personal na pag-uusap na lang.',
     sosButton: 'Emergency SOS',
     sosCaption: 'Pindutin at hawakan kung ikaw ay nasa agarang panganib',

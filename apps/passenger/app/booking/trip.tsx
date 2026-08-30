@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { Animated, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { subscribeToRideRequestStatus } from '@trisakay/services';
+import { subscribeToDriverLocation, subscribeToRideRequestStatus, type DriverLocation } from '@trisakay/services';
+import { ASSUMED_TRICYCLE_SPEED_KMH, estimateEtaMinutes, haversineKm } from '@trisakay/shared';
 import { Badge, Button, EmptyState, GradientSurface, HoldToConfirmButton, OsmMap, motion, spacing } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -19,6 +20,8 @@ export default function TripScreen() {
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const reset = useBookingStore((state) => state.reset);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  const [rideStatus, setRideStatus] = useState<'assigned' | 'ongoing'>('assigned');
+  const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
   // Same exit-guard pattern as finding-driver.tsx: reset() clears
   // rideRequestId, which would otherwise re-fire this effect a second time
   // before the component finishes unmounting from the first navigate-away.
@@ -52,7 +55,9 @@ export default function TripScreen() {
       rideRequestId,
       (row) => {
         if (cancelled || hasExitedRef.current) return;
-        if (row.status === 'completed') {
+        if (row.status === 'ongoing') {
+          setRideStatus('ongoing');
+        } else if (row.status === 'completed') {
           hasExitedRef.current = true;
           setTripStatus('awaiting_payment');
           router.replace('/booking/payment');
@@ -74,6 +79,25 @@ export default function TripScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rideRequestId]);
 
+  useEffect(() => {
+    if (rideStatus !== 'assigned' || !driver?.id) {
+      setDriverLocation(null);
+      return;
+    }
+    const unsubscribe = subscribeToDriverLocation(driver.id, setDriverLocation);
+    return unsubscribe;
+  }, [rideStatus, driver?.id]);
+
+  const etaMinutes =
+    driverLocation && pickup
+      ? estimateEtaMinutes(
+          haversineKm(driverLocation.lat, driverLocation.lng, pickup.latitude, pickup.longitude),
+          ASSUMED_TRICYCLE_SPEED_KMH,
+        )
+      : null;
+
+  const driverForCard = driver ? { ...driver, etaMinutes } : driver;
+
   if (!driver) {
     return (
       <View style={styles.container}>
@@ -90,18 +114,24 @@ export default function TripScreen() {
       <View style={styles.mapFill}>
         <OsmMap
           variant="route"
-          caption={t.trip.mapCaption}
+          caption={rideStatus === 'assigned' ? t.trip.mapCaption : t.trip.tripInProgressCaption}
           height="100%"
           latitude={pickup?.latitude}
           longitude={pickup?.longitude}
           zoom={15}
           interactive
           edgeToEdge
+          marker={pickup ? { latitude: pickup.latitude, longitude: pickup.longitude } : null}
+          liveDriverMarker={
+            rideStatus === 'assigned' && driverLocation
+              ? { latitude: driverLocation.lat, longitude: driverLocation.lng }
+              : null
+          }
         />
       </View>
 
       <View style={styles.statusBadgeWrap}>
-        <Badge label={t.trip.driverAssigned} tone="blue" dot />
+        <Badge label={rideStatus === 'assigned' ? t.trip.driverAssigned : t.trip.tripInProgress} tone="blue" dot />
       </View>
 
       <Animated.View
@@ -117,7 +147,7 @@ export default function TripScreen() {
         ]}
       >
         <GradientSurface token="brand" direction="diagonal" style={styles.sheetAccent} />
-        <DriverInfoCard driver={driver} />
+        <DriverInfoCard driver={driverForCard} />
         {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
         <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
 

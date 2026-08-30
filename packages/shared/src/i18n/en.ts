@@ -107,6 +107,8 @@ export const en = {
     backToHome: 'Back to Home',
     mapCaption: 'Map · trip route',
     driverAssigned: 'Driver assigned',
+    tripInProgressCaption: 'Trip in progress',
+    tripInProgress: 'Trip in progress',
     noInAppCallNotice: 'No in-app call or message — coordination is in person.',
     sosButton: 'Emergency SOS',
     sosCaption: "Press and hold if you're in immediate danger",
