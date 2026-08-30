@@ -26,6 +26,7 @@ Deno.serve(async (req) => {
     const { data: settings } = await supabase
       .from('system_settings')
       .select('search_radius_km')
+      .eq('is_active', true)
       .limit(1)
       .maybeSingle();
     const radiusKm = settings?.search_radius_km ?? 3;
