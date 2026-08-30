@@ -16,24 +16,38 @@ const TIME_INTERVAL_MS = 8000;
 export function useDriverLocationSync(sessionUserId: string | null, isAvailable: boolean): void {
   const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
+  // Bumped by every start()/stop() call. A start() call captures the
+  // generation in force when it begins and re-checks it after each await —
+  // if a later start()/stop() has since begun, this call's result is stale
+  // and must be discarded (removed, not stored) rather than racing the ref.
+  const generationRef = useRef(0);
 
   useEffect(() => {
     let cancelled = false;
 
     async function start() {
       if (subscriptionRef.current) return;
-      const { status } = await Location.getForegroundPermissionsAsync();
-      if (status !== 'granted' || cancelled) return;
+      const myGeneration = ++generationRef.current;
 
-      subscriptionRef.current = await Location.watchPositionAsync(
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted' || cancelled || myGeneration !== generationRef.current) return;
+
+      const subscription = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, distanceInterval: DISTANCE_INTERVAL_METERS, timeInterval: TIME_INTERVAL_MS },
         (position) => {
           void pushDriverLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
         }
       );
+
+      if (cancelled || myGeneration !== generationRef.current) {
+        subscription.remove();
+        return;
+      }
+      subscriptionRef.current = subscription;
     }
 
     function stop() {
+      generationRef.current += 1;
       subscriptionRef.current?.remove();
       subscriptionRef.current = null;
     }
