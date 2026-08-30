@@ -33,6 +33,27 @@ export async function getDriverVerificationStatus(): Promise<{
   return { status: data.verification_status, error: null };
 }
 
+export interface DriverUnitResult {
+  bodyNo: string | null;
+  verificationStatus: VerificationStatus | null;
+  error: string | null;
+}
+
+/** Backs the Dashboard identity row's "PSO verified · Body no. {n}" line — body_no lives on `tricycles`, keyed by driver_id, not on driver_profiles. */
+export async function getDriverUnit(): Promise<DriverUnitResult> {
+  const userId = await getSignedInUserId();
+  if (!userId) return { bodyNo: null, verificationStatus: null, error: 'Not signed in' };
+
+  const { data, error } = await getSupabaseClient()
+    .from('tricycles')
+    .select('body_no, verification_status')
+    .eq('driver_id', userId)
+    .maybeSingle();
+
+  if (error) return { bodyNo: null, verificationStatus: null, error: error.message };
+  return { bodyNo: data?.body_no ?? null, verificationStatus: data?.verification_status ?? null, error: null };
+}
+
 /**
  * Reads `driver_profiles.rating_avg`/`rating_count` for the signed-in
  * driver — shown on both Dashboard's stat tile and Profile, so this is
