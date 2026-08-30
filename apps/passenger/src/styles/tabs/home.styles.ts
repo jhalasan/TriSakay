@@ -2,92 +2,31 @@ import { StyleSheet } from 'react-native';
 import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  scrollContent: {
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
-  },
-  /**
-   * Deeper `sheet` shadow (not `card`) — this panel anchors the whole page, so it should read as sitting highest.
-   * No padding here: GradientSurface paints its gradient via an absolutely-filled SVG, and RN resolves that
-   * fill's 0-offsets against the *padding* edge, not the outer edge — padding on this element would leave an
-   * unpainted strip around the card showing the page background through instead of the gradient. Padding lives
-   * on `heroPanelInner` instead, which sits fully inside the gradient's paint area.
-   */
+  container: { flex: 1, backgroundColor: colors.bg },
+  scrollContent: { paddingBottom: spacing.tight44 * 1.7, gap: spacing.lg },
+
   heroPanel: {
     position: 'relative',
     overflow: 'hidden',
-    borderRadius: radius.lg,
-    ...elevation.sheet,
+    borderBottomLeftRadius: radius.heroBottom,
+    borderBottomRightRadius: radius.heroBottom,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
+    shadowRadius: 30,
+    elevation: 10,
   },
-  heroPanelInner: {
-    padding: spacing.lg,
-    paddingTop: spacing.xl,
-  },
-  heroMotifTop: {
-    position: 'absolute',
-    top: -50,
-    right: -50,
-  },
-  heroMotifBottom: {
-    position: 'absolute',
-    bottom: -20,
-    left: -30,
-  },
-  heroTopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
-    gap: spacing.md,
-  },
-  heroIdentityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    flex: 1,
-  },
-  /** Two nested rings (translucent outer, brand-green hairline inner) so the avatar lifts off the gradient instead of sitting flush with it. */
-  avatarOuterRing: {
-    padding: 3,
-    borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.22)',
-    ...elevation.card,
-  },
-  avatarInnerRing: {
-    padding: 2,
-    borderRadius: radius.pill,
-    borderWidth: 1.5,
-    borderColor: colors.accentGreenSoft,
-  },
-  heroTextSlot: {
-    flex: 1,
-    gap: 2,
-  },
-  heroGreetingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  heroGreetingLabel: {
-    ...typography.label,
-    color: colors.white,
-    opacity: 0.75,
-  },
-  heroName: {
-    ...typography.h1,
-    color: colors.white,
-  },
-  heroTagline: {
-    ...typography.caption,
-    color: colors.white,
-    opacity: 0.75,
-    marginTop: spacing.xs,
-  },
+  heroMotifTop: { position: 'absolute', top: -46, right: -52 },
+  heroRow: { paddingHorizontal: spacing.tight18, paddingBottom: spacing.tight22, gap: spacing.tight14 },
+  heroTopRow: { flexDirection: 'row', alignItems: 'flex-start', justifyContent: 'space-between', gap: spacing.md },
+  heroIdentityRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
+  avatarOuterRing: { padding: 3, borderRadius: radius.pill, backgroundColor: 'rgba(255,255,255,0.22)' },
+  avatarInnerRing: { padding: 2, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.accentGreenSoft },
+  heroTextSlot: { flex: 1, gap: 2 },
+  heroGreetingRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  heroGreetingLabel: { ...typography.eyebrow, color: colors.white, opacity: 0.8 },
+  heroName: { ...typography.h1b, color: colors.white },
+  heroTagline: { ...typography.caption, color: colors.white, opacity: 0.72, marginTop: spacing.xs },
   bellButton: {
     width: 40,
     height: 40,
@@ -107,89 +46,93 @@ export const styles = StyleSheet.create({
     borderRadius: 5,
     backgroundColor: colors.danger,
     borderWidth: 2,
-    borderColor: colors.panel,
+    borderColor: colors.accentBlueDeep,
   },
-  /** Own pressed-state wrapper (rather than Button) since this is a full custom gradient card, not a text button. Negative top margin pulls it up under the hero's rounded bottom edge so the two panels read as one composed unit. */
-  ctaWrap: {
-    borderRadius: radius.lg,
-    marginTop: -spacing.md,
-  },
-  ctaPressed: {
-    opacity: 0.9,
-  },
-  /** No padding here — see the comment on `heroPanel`; padding lives on `ctaCardInner` instead. */
-  ctaCard: {
-    borderRadius: radius.lg,
-    ...elevation.card,
-  },
-  ctaCardInner: {
+
+  statsStrip: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    padding: spacing.lg,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+    paddingHorizontal: spacing.tight18,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.lg,
   },
-  ctaMotif: {
-    position: 'absolute',
-    top: -30,
-    right: -30,
-  },
+  statsDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.14)', marginHorizontal: spacing.md },
+
+  content: { paddingHorizontal: spacing.lg, gap: spacing.lg },
+
+  ctaCard: { borderRadius: radius.lg2, ...elevation.card },
+  ctaMotif: { position: 'absolute', top: -34, right: -30 },
+  ctaCardInner: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, padding: spacing.tight18 },
   ctaIconBadge: {
-    width: 48,
-    height: 48,
+    width: 52,
+    height: 52,
     borderRadius: radius.pill,
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  ctaTextSlot: {
-    flex: 1,
-    gap: 2,
+  trikeMark: { width: 30, height: 30 },
+  ctaTextSlot: { flex: 1, gap: 4 },
+  ctaTitle: { ...typography.h2b, color: colors.white },
+  ctaChipRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  ctaChip: {
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    borderRadius: radius.pill,
+    paddingHorizontal: spacing.sm,
+    paddingVertical: 2,
   },
-  ctaTitle: {
-    ...typography.h2,
-    color: colors.white,
-  },
-  ctaSubtitle: {
-    ...typography.caption,
-    color: colors.white,
-    opacity: 0.85,
-  },
-  sectionLabel: {
-    ...typography.label,
-    color: colors.inkSoft,
-    marginBottom: spacing.md,
-  },
-  shortcuts: {
-    gap: spacing.md,
-  },
+  ctaChipText: { ...typography.chip, color: colors.white },
+  ctaNearbyText: { ...typography.chip, color: colors.white, opacity: 0.8 },
+  ctaSubtitle: { ...typography.caption, color: colors.white, opacity: 0.85 },
+
+  sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+  sectionLabel: { ...typography.eyebrow, color: colors.inkSoft },
+  manageLink: { ...typography.chip, color: colors.accentBlue },
+
+  shortcuts: { gap: spacing.tight10 },
   shortcutRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.md,
-    borderRadius: radius.md,
+    gap: spacing.tight14,
+    borderRadius: radius.card,
     paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-    backgroundColor: colors.fill,
-    minHeight: 68,
+    paddingVertical: spacing.tight14,
+    backgroundColor: colors.white,
+    minHeight: 70,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
   },
-  shortcutIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.sm,
+  shortcutIcon: { width: 42, height: 42, borderRadius: radius.md, alignItems: 'center', justifyContent: 'center' },
+  shortcutTextSlot: { flex: 1, gap: 2 },
+  shortcutLabel: { ...typography.bodyStrong, color: colors.ink },
+  shortcutAddress: { ...typography.caption, color: colors.inkSoft },
+
+  emptyPanel: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.line,
+    borderRadius: radius.md3,
+    padding: spacing.tight34,
+    alignItems: 'center',
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  emptyMotif: { position: 'absolute', top: -20, right: -20 },
+  emptyIconTile: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.sm2,
     backgroundColor: colors.accentBlueSoft,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: spacing.md,
   },
-  shortcutTextSlot: {
-    flex: 1,
-    gap: 2,
-  },
-  shortcutLabel: {
-    ...typography.bodyStrong,
-    color: colors.ink,
-  },
-  shortcutAddress: {
-    ...typography.caption,
-    color: colors.inkSoft,
-  },
+  emptyTitle: { ...typography.h3, color: colors.ink, textAlign: 'center' },
+  emptyMessage: { ...typography.caption, color: colors.inkSoft, textAlign: 'center', marginTop: spacing.xs },
 });
