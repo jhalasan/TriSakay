@@ -35,6 +35,10 @@ export const useHistoryStore = create<HistoryState>()((set) => ({
         status: item.status === 'completed' ? 'done' : 'cancelled',
         paymentMethod: item.paymentMethod,
         paymentStatus: item.paymentStatus,
+        distanceKm: item.distanceKm,
+        discountApplied: item.discountApplied,
+        discountPercent: item.discountPercent,
+        cancelReason: item.cancelReason,
       })),
     });
   },

@@ -10,6 +10,10 @@ export interface PassengerTripHistoryItem {
   paymentMethod: 'cash' | 'gcash' | null;
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | null;
   date: string;
+  distanceKm: number | null;
+  discountApplied: boolean;
+  discountPercent: number | null;
+  cancelReason: string | null;
 }
 
 export interface ListPassengerTripHistoryResult {
@@ -39,6 +43,10 @@ export async function listPassengerTripHistory(limit = 50): Promise<ListPassenge
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
     date: row.completed_at ?? row.cancelled_at ?? row.requested_at,
+    distanceKm: row.distance_km,
+    discountApplied: row.discount_applied ?? false,
+    discountPercent: row.discount_percent,
+    cancelReason: row.cancel_reason,
   }));
 
   return { data: rows, error: null };

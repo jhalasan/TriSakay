@@ -8,4 +8,8 @@ export interface RideHistoryItem {
   status: 'done' | 'cancelled';
   paymentMethod: 'cash' | 'gcash' | null;
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | null;
+  distanceKm: number | null;
+  discountApplied: boolean;
+  discountPercent: number | null;
+  cancelReason: string | null;
 }

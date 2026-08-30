@@ -911,7 +911,11 @@ returns table (
   payment_status  payment_status,
   requested_at    timestamptz,
   completed_at    timestamptz,
-  cancelled_at    timestamptz
+  cancelled_at    timestamptz,
+  distance_km       numeric,
+  discount_applied  boolean,
+  discount_percent  numeric,
+  cancel_reason     text
 )
 language plpgsql
 stable
@@ -931,7 +935,11 @@ begin
     tx.status,
     rr.requested_at,
     rr.completed_at,
-    rr.cancelled_at
+    rr.cancelled_at,
+    rr.distance_km,
+    rr.discount_applied,
+    rr.discount_percent,
+    rr.cancel_reason
   from public.ride_requests rr
   left join public.trips t on t.id = rr.trip_id
   left join public.users u on u.id = t.driver_id

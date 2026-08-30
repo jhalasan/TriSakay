@@ -26,6 +26,10 @@ test('listPassengerTripHistory maps a full RPC row and picks the right date', as
               requested_at: '2026-08-09T23:00:00.000Z',
               completed_at: '2026-08-10T00:00:00.000Z',
               cancelled_at: null,
+              distance_km: 3.4,
+              discount_applied: true,
+              discount_percent: 20,
+              cancel_reason: null,
             },
           ],
           error: null,
@@ -50,6 +54,10 @@ test('listPassengerTripHistory maps a full RPC row and picks the right date', as
       paymentMethod: 'gcash',
       paymentStatus: 'paid',
       date: '2026-08-10T00:00:00.000Z',
+      distanceKm: 3.4,
+      discountApplied: true,
+      discountPercent: 20,
+      cancelReason: null,
     },
   ]);
 });
@@ -71,6 +79,10 @@ test('listPassengerTripHistory handles a cancelled-before-assignment row with no
             requested_at: '2026-08-07T23:00:00.000Z',
             completed_at: null,
             cancelled_at: '2026-08-08T00:00:00.000Z',
+            distance_km: null,
+            discount_applied: false,
+            discount_percent: null,
+            cancel_reason: 'No drivers available',
           },
         ],
         error: null,
@@ -92,6 +104,10 @@ test('listPassengerTripHistory handles a cancelled-before-assignment row with no
       paymentMethod: null,
       paymentStatus: null,
       date: '2026-08-08T00:00:00.000Z',
+      distanceKm: null,
+      discountApplied: false,
+      discountPercent: null,
+      cancelReason: 'No drivers available',
     },
   ]);
 });

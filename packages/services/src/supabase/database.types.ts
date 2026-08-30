@@ -1360,9 +1360,13 @@ export type Database = {
       get_passenger_trip_history: {
         Args: { p_limit?: number }
         Returns: {
+          cancel_reason: string
           cancelled_at: string
           completed_at: string
           dest_label: string
+          discount_applied: boolean
+          discount_percent: number
+          distance_km: number
           driver_name: string
           fare: number
           payment_method: Database["public"]["Enums"]["payment_method"]
