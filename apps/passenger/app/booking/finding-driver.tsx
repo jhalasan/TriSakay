@@ -54,6 +54,7 @@ export default function FindingDriverScreen() {
         plateNumber: data?.plateNo ?? '',
         rating: data?.ratingAvg ?? null,
         etaMinutes: null,
+        avatarUrl: data?.avatarUrl ?? null,
       });
       setTripStatus('matched');
       router.replace('/booking/trip');

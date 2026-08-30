@@ -16,7 +16,11 @@ export function DriverInfoCard({ driver }: DriverInfoCardProps) {
   return (
     <Card variant="raised" style={styles.card}>
       <View style={styles.topRow}>
-        <Avatar name={driver.name} size="lg" />
+        <Avatar
+          name={driver.name}
+          source={driver.avatarUrl ? { uri: driver.avatarUrl } : undefined}
+          size="lg"
+        />
         <View style={styles.textSlot}>
           <Text style={styles.name}>{driver.name || 'Driver assigned'}</Text>
           {driver.rating !== null && <StarRating value={Math.round(driver.rating)} size={16} />}
