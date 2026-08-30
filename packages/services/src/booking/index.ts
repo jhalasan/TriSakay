@@ -397,6 +397,21 @@ export async function completeRideLeg(tripId: string, rideRequestId: string): Pr
   return { error: null };
 }
 
+export interface StartRideLegResult {
+  error: string | null;
+}
+
+/** Marks ONE passenger's leg picked up (assigned -> ongoing). Must precede completeRideLeg for that same leg. */
+export async function startRideLeg(tripId: string, rideRequestId: string): Promise<StartRideLegResult> {
+  const { error } = await getSupabaseClient().rpc('start_ride_leg', {
+    p_trip_id: tripId,
+    p_ride_request_id: rideRequestId,
+  });
+
+  if (error) return { error: "Couldn't start this passenger's ride. Please try again." };
+  return { error: null };
+}
+
 export interface CancelRideLegResult {
   error: string | null;
 }
@@ -441,6 +456,7 @@ export interface ActiveTripPassenger {
   passengerName: string | null;
   passengerAvatarUrl: string | null;
   cashConfirmed: boolean;
+  status: Database['public']['Enums']['ride_status'];
 }
 
 export interface ActiveTripForDriver {
@@ -494,6 +510,7 @@ export async function getActiveTripForDriver(): Promise<GetActiveTripForDriverRe
         passengerName: row.passenger_name,
         passengerAvatarUrl: row.avatar_url,
         cashConfirmed: row.cash_confirmed,
+        status: row.status,
       })),
     },
     error: null,

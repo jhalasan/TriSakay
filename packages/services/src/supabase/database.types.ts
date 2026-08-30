@@ -1343,6 +1343,7 @@ export type Database = {
           preferred_method: Database["public"]["Enums"]["payment_method"]
           ride_request_id: string
           seats_requested: number
+          status: Database["public"]["Enums"]["ride_status"]
         }[]
       }
       get_driver_trip_history: {
@@ -1440,6 +1441,12 @@ export type Database = {
           p_meeting_at: string
         }
         Returns: undefined
+      }
+      start_ride_leg: {
+        Args: { p_ride_request_id: string; p_trip_id: string }
+        Returns: {
+          ride_request_id: string
+        }[]
       }
       submit_driver_documents: {
         Args: { p_documents: Json; p_plate_no: string }

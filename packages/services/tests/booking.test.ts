@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver, startRideLeg } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -1075,6 +1075,7 @@ test('getActiveTripForDriver combines the trip header with every passenger leg',
                 passenger_name: 'Maria Clara',
                 avatar_url: 'https://example.com/p1.jpg',
                 cash_confirmed: false,
+                status: 'ongoing',
               },
               {
                 ride_request_id: 'rr2',
@@ -1085,6 +1086,7 @@ test('getActiveTripForDriver combines the trip header with every passenger leg',
                 passenger_name: 'Juan Pablo',
                 avatar_url: null,
                 cash_confirmed: false,
+                status: 'assigned',
               },
             ],
             error: null,
@@ -1114,6 +1116,7 @@ test('getActiveTripForDriver combines the trip header with every passenger leg',
         passengerName: 'Maria Clara',
         passengerAvatarUrl: 'https://example.com/p1.jpg',
         cashConfirmed: false,
+        status: 'ongoing',
       },
       {
         rideRequestId: 'rr2',
@@ -1124,6 +1127,7 @@ test('getActiveTripForDriver combines the trip header with every passenger leg',
         passengerName: 'Juan Pablo',
         passengerAvatarUrl: null,
         cashConfirmed: false,
+        status: 'assigned',
       },
     ],
   });
@@ -1296,6 +1300,73 @@ test('cancelRideLeg surfaces a friendly error when the RPC fails', async () => {
 
   const { error } = await cancelRideLeg('trip1', 'rr1', 'Passenger no-show');
   assert.equal(error, "Couldn't cancel this passenger's ride. Please try again.");
+});
+
+test('startRideLeg calls the start_ride_leg RPC with the trip id and ride request id', async () => {
+  let capturedFn: string | null = null;
+  let capturedArgs: any = null;
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn, args) => {
+        capturedFn = fn;
+        capturedArgs = args;
+        return { data: [{ ride_request_id: 'rr1' }], error: null };
+      },
+    })
+  );
+
+  const { error } = await startRideLeg('trip1', 'rr1');
+
+  assert.equal(error, null);
+  assert.equal(capturedFn, 'start_ride_leg');
+  assert.deepEqual(capturedArgs, { p_trip_id: 'trip1', p_ride_request_id: 'rr1' });
+});
+
+test('startRideLeg surfaces a friendly error when the RPC fails', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: null, error: { message: 'Ride request not found for this trip' } }),
+    })
+  );
+
+  const { error } = await startRideLeg('trip1', 'rr1');
+  assert.equal(error, "Couldn't start this passenger's ride. Please try again.");
+});
+
+test('getActiveTripForDriver maps each passenger row\'s status field', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn) => {
+        if (fn === 'get_active_trip_for_driver') {
+          return { data: [{ trip_id: 't1', started_at: '2026-08-30T00:00:00Z' }], error: null };
+        }
+        if (fn === 'get_active_trip_passengers') {
+          return {
+            data: [
+              {
+                ride_request_id: 'rr1',
+                seats_requested: 1,
+                preferred_method: 'cash',
+                estimated_fare: 20,
+                passenger_id: 'p1',
+                passenger_name: 'Ana',
+                avatar_url: null,
+                cash_confirmed: false,
+                status: 'ongoing',
+              },
+            ],
+            error: null,
+          };
+        }
+        throw new Error(`unexpected rpc ${fn}`);
+      },
+    })
+  );
+
+  const { data, error } = await getActiveTripForDriver();
+  assert.equal(error, null);
+  assert.equal(data?.passengers[0]?.status, 'ongoing');
 });
 
 test('endTrip calls the end_trip RPC with the trip id', async () => {
