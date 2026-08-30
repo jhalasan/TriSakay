@@ -3,10 +3,10 @@ import { colors, elevation, radius, spacing, typography } from '../../theme';
 
 export const styles = StyleSheet.create({
   // --- compact variant (unchanged from the pre-redesign component) ---
-  card: { padding: spacing.md, gap: spacing.md },
-  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  card: { gap: spacing.md },
+  topRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   route: { flex: 1, ...typography.bodyStrong, color: colors.ink },
-  actions: { flexDirection: 'row', gap: spacing.sm },
+  actions: { flexDirection: 'row', gap: spacing.md },
   actionButton: { flex: 1 },
 
   // --- incoming variant ---
