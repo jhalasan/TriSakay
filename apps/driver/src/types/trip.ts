@@ -12,6 +12,8 @@ export interface ActivePassenger {
   paymentMethod: PaymentMethod;
   fare: number | null;
   cashConfirmed: boolean;
+  /** 'assigned' (needs Start) or 'ongoing' (picked up, needs Complete). */
+  status: 'assigned' | 'ongoing';
 }
 
 /**

@@ -19,6 +19,7 @@ function passenger(id, overrides = {}) {
     paymentMethod: 'cash',
     fare: 45,
     cashConfirmed: false,
+    status: 'assigned',
     ...overrides,
   };
 }
@@ -275,6 +276,60 @@ test('cancelPassenger() on an unknown ride request returns null without calling 
   assert.equal(await useTripStore.getState().cancelPassenger('req-unknown', 'reason'), null);
 });
 
+test('startPassenger marks the named passenger ongoing on success, leaves others untouched', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests(fakeClientWithSuccess());
+
+  useTripStore.setState({
+    current: { tripId: 'trip-9', startedAt: 'now', passengers: [passenger('rr1'), passenger('rr2')] },
+    error: null,
+  });
+
+  const ok = await useTripStore.getState().startPassenger('rr1');
+
+  assert.equal(ok, true);
+  const current = useTripStore.getState().current;
+  assert.equal(current.passengers.find((p) => p.id === 'rr1').status, 'ongoing');
+  assert.equal(current.passengers.find((p) => p.id === 'rr2').status, 'assigned');
+  assert.equal(useTripStore.getState().error, null);
+});
+
+test('startPassenger surfaces the error and leaves status unchanged on failure', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    channel: () => { throw new Error('channel not needed for this test'); },
+    removeChannel: () => {},
+    rpc: async () => ({ data: null, error: { message: 'boom' } }),
+  });
+
+  useTripStore.setState({
+    current: { tripId: 'trip-9', startedAt: 'now', passengers: [passenger('rr1')] },
+    error: null,
+  });
+
+  const ok = await useTripStore.getState().startPassenger('rr1');
+
+  assert.equal(ok, false);
+  assert.equal(useTripStore.getState().current.passengers[0].status, 'assigned');
+  assert.equal(useTripStore.getState().error, "Couldn't start this passenger's ride. Please try again.");
+});
+
+test('passengerFromRequest defaults a freshly accepted passenger to status "assigned"', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+
+  useTripStore.setState({ current: null, error: null });
+  useTripStore.getState().startTrip(
+    { id: 'req-9', seats: 2, paymentMethod: 'cash', pickupLabel: null, dropoffLabel: null, fare: 45, createdAt: 'now' },
+    'trip-9',
+  );
+
+  assert.equal(useTripStore.getState().current.passengers[0].status, 'assigned');
+});
+
 test('endTrip() succeeds and clears current once the passenger list is empty', async () => {
   const { useTripStore } = await import('../src/store/useTripStore.ts');
   const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
@@ -359,7 +414,7 @@ test('hydrate() populates current with every passenger leg the backend returns',
       if (fn === 'get_active_trip_passengers') {
         return {
           data: [
-            { ride_request_id: 'req-9', seats_requested: 2, preferred_method: 'cash', estimated_fare: 45, passenger_id: 'p1', passenger_name: 'Juan Dela Cruz', avatar_url: 'https://example.com/a.jpg', cash_confirmed: false },
+            { ride_request_id: 'req-9', seats_requested: 2, preferred_method: 'cash', estimated_fare: 45, passenger_id: 'p1', passenger_name: 'Juan Dela Cruz', avatar_url: 'https://example.com/a.jpg', cash_confirmed: false, status: 'assigned' },
           ],
           error: null,
         };

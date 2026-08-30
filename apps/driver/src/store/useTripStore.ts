@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import {
   cancelRideLeg,
   completeRideLeg,
+  startRideLeg,
   endTrip as endTripRpc,
   getActiveTripForDriver,
 } from '@trisakay/services/src/booking/index.ts';
@@ -21,6 +22,7 @@ function passengerFromRequest(request: PendingRequest): ActivePassenger {
     paymentMethod: request.paymentMethod,
     fare: request.fare,
     cashConfirmed: false,
+    status: 'assigned',
   };
 }
 
@@ -39,6 +41,8 @@ interface TripState {
   /** Populated by a follow-up fetch after startTrip/addPassenger — see getTripPassengerInfo in useAcceptRideRequest.ts. Matched by rideRequestId since multiple passengers can be in flight at once. */
   setPassengerInfo: (rideRequestId: string, passengerId: string | null, name: string | null, avatarUrl: string | null) => void;
   confirmCash: (rideRequestId: string, driverId: string) => Promise<boolean>;
+  /** Marks one passenger's leg picked up (assigned -> ongoing); Complete is unreachable before this succeeds. */
+  startPassenger: (rideRequestId: string) => Promise<boolean>;
   /** FR-2.5c — completes ONE passenger's leg; the trip and any other passenger aboard stay untouched. */
   completePassenger: (rideRequestId: string) => Promise<ActivePassenger | null>;
   /** FR-2.5c — cancels ONE passenger's leg; the trip and any other passenger aboard stay untouched. */
@@ -118,6 +122,37 @@ export const useTripStore = create<TripState>()((set, get) => {
                 current: {
                   ...state.current,
                   passengers: state.current.passengers.map((p) => (p.id === rideRequestId ? { ...p, cashConfirmed: true } : p)),
+                },
+                error: null,
+              }
+            : state
+        );
+        return true;
+      } catch {
+        set({ error: fallbackMessage });
+        return false;
+      }
+    },
+
+    startPassenger: async (rideRequestId) => {
+      const trip = get().current;
+      const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
+      if (!trip || !passenger || passenger.status !== 'assigned') return false;
+      const fallbackMessage = getTranslations().driver.errors.startPassengerFailed;
+
+      try {
+        const { error } = await withTimeout(startRideLeg(trip.tripId, rideRequestId), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return false;
+        }
+
+        set((state) =>
+          state.current
+            ? {
+                current: {
+                  ...state.current,
+                  passengers: state.current.passengers.map((p) => (p.id === rideRequestId ? { ...p, status: 'ongoing' } : p)),
                 },
                 error: null,
               }
@@ -226,6 +261,7 @@ export const useTripStore = create<TripState>()((set, get) => {
               paymentMethod: p.paymentMethod,
               fare: p.fare,
               cashConfirmed: p.cashConfirmed,
+              status: p.status,
             })),
           },
           error: null,

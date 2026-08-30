@@ -502,6 +502,7 @@ export const en = {
     errors: {
       availabilityUpdateFailed: "Couldn't update your availability. Please try again.",
       cashConfirmFailed: "Couldn't confirm the cash payment. Please try again.",
+      startPassengerFailed: "Couldn't start this passenger's ride. Please try again.",
       completePassengerFailed: "Couldn't complete this passenger's ride. Please try again.",
       cancelPassengerFailed: "Couldn't cancel this passenger's ride. Please try again.",
       endTripFailed: "Couldn't end the trip. Please try again.",

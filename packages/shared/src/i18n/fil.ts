@@ -505,6 +505,7 @@ export const fil: Translations = {
     errors: {
       availabilityUpdateFailed: 'Hindi ma-update ang iyong availability. Pakisubukang muli.',
       cashConfirmFailed: 'Hindi makumpirma ang cash payment. Pakisubukang muli.',
+      startPassengerFailed: 'Hindi masimulan ang biyahe ng pasaherong ito. Pakisubukang muli.',
       completePassengerFailed: 'Hindi matapos ang biyahe ng pasaherong ito. Pakisubukang muli.',
       cancelPassengerFailed: 'Hindi makansela ang biyahe ng pasaherong ito. Pakisubukang muli.',
       endTripFailed: 'Hindi matapos ang biyahe. Pakisubukang muli.',
