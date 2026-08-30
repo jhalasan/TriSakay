@@ -19,6 +19,11 @@ function toPendingRequest(row: RideRequestRow): PendingRequest {
     id: row.id,
     seats: row.seats_requested,
     paymentMethod: row.preferred_method,
+    // TODO(migration): once supabase/migrations/20260830_add_ride_requests_expires_at.sql
+    // is applied and database.types.ts is regenerated, add
+    // pickupDistanceMeters: row.distance_meters ?? null and
+    // expiresAt: row.expires_at ?? null here — RideRequestRow doesn't carry
+    // those columns yet, so adding them now would be a type error.
     pickupLabel: row.pickup_label,
     dropoffLabel: row.dest_label,
     fare: row.estimated_fare,

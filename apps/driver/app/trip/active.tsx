@@ -197,6 +197,8 @@ export default function ActiveTripScreen() {
                 pickupLabel: t.driver.requestCard.pickupLabel,
                 dropoffLabel: t.driver.requestCard.dropoffLabel,
                 pickupAwaySuffix: t.driver.requestCard.pickupAwaySuffix,
+                paymentMethodCash: t.driver.requestCard.paymentMethodCash,
+                paymentMethodGcash: t.driver.requestCard.paymentMethodGcash,
               }}
             />
           </View>

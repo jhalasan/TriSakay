@@ -17,6 +17,8 @@ export interface RequestCardCopy {
   pickupLabel: string;
   dropoffLabel: string;
   pickupAwaySuffix: string;
+  paymentMethodCash: string;
+  paymentMethodGcash: string;
 }
 
 export interface RequestCardProps {
@@ -34,10 +36,19 @@ export function formatPickupLabel(distanceMeters: number | null, awaySuffix = 'm
   return `${pickupWord} · ${Math.round(distanceMeters)} ${awaySuffix}`;
 }
 
-/** "CASH · 2 SEATS" / "GCASH · 1 SEAT" — the incoming-card header band label. */
-export function formatPaymentSeatsLabel(paymentMethod: string, seats: number): string {
-  const seatWord = seats === 1 ? 'SEAT' : 'SEATS';
-  return `${paymentMethod.toUpperCase()} · ${seats} ${seatWord}`;
+/**
+ * "Cash · 2 seats" / "GCash · 1 seat" — the incoming-card header band label.
+ * Uppercasing is applied by `styles.headerBandLabel` (via `typography.eyebrow`),
+ * not here, so this stays locale-agnostic and takes translated copy as input.
+ */
+export function formatPaymentSeatsLabel(
+  paymentMethod: string,
+  seats: number,
+  copy: Pick<RequestCardCopy, 'seatsSingular' | 'seatsPlural' | 'paymentMethodCash' | 'paymentMethodGcash'>,
+): string {
+  const seatWord = seats === 1 ? copy.seatsSingular : copy.seatsPlural;
+  const paymentWord = paymentMethod === 'gcash' ? copy.paymentMethodGcash : copy.paymentMethodCash;
+  return `${paymentWord} · ${seats} ${seatWord}`;
 }
 
 export function RequestCard({ request, onAccept, onDecline, accepting = false, variant = 'compact', copy }: RequestCardProps) {
@@ -74,7 +85,7 @@ export function RequestCard({ request, onAccept, onDecline, accepting = false, v
       <View style={styles.headerBand}>
         <View style={styles.headerBandLeft}>
           <Ionicons name="cash-outline" size={18} color={colors.accentGreenPressed} />
-          <Text style={styles.headerBandLabel}>{formatPaymentSeatsLabel(request.paymentMethod, request.seats)}</Text>
+          <Text style={styles.headerBandLabel}>{formatPaymentSeatsLabel(request.paymentMethod, request.seats, copy)}</Text>
         </View>
         <Text style={styles.fare}>{fareLabel}</Text>
       </View>

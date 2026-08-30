@@ -1,4 +1,9 @@
-import { createClient } from 'jsr:@supabase/supabase-js@2';
+import { createClient } from 'npm:@supabase/supabase-js@2';
+
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const EARTH_RADIUS_KM = 6371;
 
@@ -11,11 +16,22 @@ function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): nu
   return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-Deno.serve(async (req) => {
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+  });
+}
+
+Deno.serve(async (req: Request) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
   try {
     const { lat, lng } = await req.json();
     if (typeof lat !== 'number' || typeof lng !== 'number') {
-      return new Response(JSON.stringify({ error: 'lat/lng required' }), { status: 400 });
+      return json({ error: 'lat/lng required' }, 400);
     }
 
     const supabase = createClient(
@@ -38,14 +54,14 @@ Deno.serve(async (req) => {
       .not('current_lat', 'is', null)
       .not('current_lng', 'is', null);
 
-    if (error) return new Response(JSON.stringify({ error: error.message }), { status: 500 });
+    if (error) return json({ error: error.message }, 500);
 
     const count = (drivers ?? []).filter(
       (d) => haversineKm(lat, lng, d.current_lat!, d.current_lng!) <= radiusKm,
     ).length;
 
-    return new Response(JSON.stringify({ count }), { headers: { 'Content-Type': 'application/json' } });
+    return json({ count });
   } catch (err) {
-    return new Response(JSON.stringify({ error: String(err) }), { status: 500 });
+    return json({ error: String(err) }, 500);
   }
 });

@@ -194,11 +194,13 @@ export default function DashboardScreen() {
             </View>
 
             <Text style={styles.earningsEyebrowOffline}>{t.driver.dashboard.earningsTodayEyebrow}</Text>
-            <Text style={styles.earningsAmountOffline}>{formatCurrency(0)}</Text>
+            <Text style={styles.earningsAmountOffline}>{formatCurrency(todayEarnings)}</Text>
 
             <View style={styles.metaRow}>
-              <Text style={styles.metaTextOffline}>{t.driver.dashboard.statTrips.replace('{count}', '0')}</Text>
-              <Text style={styles.metaTextOffline}>{t.driver.dashboard.noRatingsYet}</Text>
+              <Text style={styles.metaTextOffline}>{t.driver.dashboard.statTrips.replace('{count}', String(todayTrips))}</Text>
+              <Text style={styles.metaTextOffline}>
+                {ratingCount > 0 && rating !== null ? t.driver.dashboard.statRating.replace('{rating}', rating.toFixed(1)) : t.driver.dashboard.noRatingsYet}
+              </Text>
             </View>
 
             <Pressable
@@ -229,7 +231,7 @@ export default function DashboardScreen() {
         {isAvailable && incoming && !requestExpired && (
           <View>
             <View style={styles.requestSectionHeader}>
-              <Text style={styles.identityName}>{t.driver.dashboard.incomingRequestEyebrow}</Text>
+              <Text style={styles.sectionLabel}>{t.driver.dashboard.incomingRequestEyebrow}</Text>
               {countdown !== null && (
                 <View style={styles.countdownChip}>
                   <Text style={styles.countdownChipText}>{countdown}s</Text>
@@ -251,6 +253,8 @@ export default function DashboardScreen() {
                 pickupLabel: t.driver.requestCard.pickupLabel,
                 dropoffLabel: t.driver.requestCard.dropoffLabel,
                 pickupAwaySuffix: t.driver.requestCard.pickupAwaySuffix,
+                paymentMethodCash: t.driver.requestCard.paymentMethodCash,
+                paymentMethodGcash: t.driver.requestCard.paymentMethodGcash,
               }}
             />
           </View>
@@ -260,7 +264,7 @@ export default function DashboardScreen() {
 
         {showListening && (
           <View>
-            <Text style={styles.identityName}>{t.driver.dashboard.listeningEyebrow}</Text>
+            <Text style={styles.sectionLabel}>{t.driver.dashboard.listeningEyebrow}</Text>
             <View style={styles.listeningPanel}>
               <BrandMotif size={230} color={colors.accentBlue} opacity={0.045} style={styles.listeningMotif} />
               <View style={styles.listeningIconHost}>

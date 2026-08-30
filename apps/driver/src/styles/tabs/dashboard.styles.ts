@@ -87,6 +87,7 @@ export const styles = StyleSheet.create({
   offlineStripText: { flex: 1, ...typography.caption, fontSize: 13, lineHeight: 19, color: colors.inkSoft },
 
   // --- request slot ---
+  sectionLabel: { ...typography.eyebrow, color: colors.inkSoft },
   requestSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
   countdownChip: { backgroundColor: colors.dangerSoft, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   countdownChipText: { ...typography.bodySm, fontSize: 11, lineHeight: 16, color: colors.danger },

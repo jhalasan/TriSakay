@@ -496,6 +496,8 @@ export const en = {
       pickupLabel: 'Pickup',
       dropoffLabel: 'Drop-off',
       pickupAwaySuffix: 'm away',
+      paymentMethodCash: 'Cash',
+      paymentMethodGcash: 'GCash',
     },
     errors: {
       availabilityUpdateFailed: "Couldn't update your availability. Please try again.",

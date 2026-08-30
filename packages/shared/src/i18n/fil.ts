@@ -499,6 +499,8 @@ export const fil: Translations = {
       pickupLabel: 'Sakayan',
       dropoffLabel: 'Babaan',
       pickupAwaySuffix: 'm ang layo',
+      paymentMethodCash: 'Cash',
+      paymentMethodGcash: 'GCash',
     },
     errors: {
       availabilityUpdateFailed: 'Hindi ma-update ang iyong availability. Pakisubukang muli.',

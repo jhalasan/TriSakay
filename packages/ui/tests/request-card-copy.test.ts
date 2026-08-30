@@ -10,7 +10,8 @@ test('formatPickupLabel falls back to plain "Pickup" when distance is unknown', 
   assert.equal(formatPickupLabel(null), 'Pickup');
 });
 
-test('formatPaymentSeatsLabel uppercases payment method and pluralizes seats', () => {
-  assert.equal(formatPaymentSeatsLabel('cash', 2), 'CASH · 2 SEATS');
-  assert.equal(formatPaymentSeatsLabel('gcash', 1), 'GCASH · 1 SEAT');
+test('formatPaymentSeatsLabel builds a label from translated copy and pluralizes seats', () => {
+  const copy = { seatsSingular: 'seat', seatsPlural: 'seats', paymentMethodCash: 'Cash', paymentMethodGcash: 'GCash' };
+  assert.equal(formatPaymentSeatsLabel('cash', 2, copy), 'Cash · 2 seats');
+  assert.equal(formatPaymentSeatsLabel('gcash', 1, copy), 'GCash · 1 seat');
 });
