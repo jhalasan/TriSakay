@@ -346,6 +346,35 @@ export type Database = {
           },
         ]
       }
+      driver_locations: {
+        Row: {
+          current_lat: number | null
+          current_lng: number | null
+          location_updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          current_lat?: number | null
+          current_lng?: number | null
+          location_updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          current_lat?: number | null
+          current_lng?: number | null
+          location_updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_locations_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       driver_profiles: {
         Row: {
           created_at: string

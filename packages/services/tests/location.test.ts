@@ -142,16 +142,20 @@ test('pushDriverLocation returns an error when there is no active session', asyn
 
 interface FakeLocationChannel {
   on: (event: string, filter: unknown, handler: (payload: { new: Record<string, unknown> }) => void) => FakeLocationChannel;
-  subscribe: () => FakeLocationChannel;
+  subscribe: (statusCallback?: (status: string) => void) => FakeLocationChannel;
 }
 
 test('subscribeToDriverLocation filters on the given driver id and maps coordinates', async () => {
   let capturedFilter: any = null;
-  let capturedHandler: ((payload: { new: Record<string, unknown> }) => void) | null = null;
+  // Wrapped in an object, not a bare `let`: a closure-assigned `let` gets
+  // control-flow-narrowed back to its `null` initializer at the call site
+  // below (TS can't see the fake's subscribe() ran), so `assert.ok` would
+  // narrow it to `never` — same pattern as booking.test.ts's SUBSCRIBED-reconcile test.
+  const captured: { handler: ((payload: { new: Record<string, unknown> }) => void) | null } = { handler: null };
   const fakeChannel: FakeLocationChannel = {
     on: (_event, filter, handler) => {
       capturedFilter = filter;
-      capturedHandler = handler;
+      captured.handler = handler;
       return fakeChannel;
     },
     subscribe: () => fakeChannel,
@@ -175,10 +179,10 @@ test('subscribeToDriverLocation filters on the given driver id and maps coordina
 
   assert.equal(capturedFilter.filter, 'user_id=eq.d1');
   assert.equal(capturedFilter.event, 'UPDATE');
-  assert.equal(capturedFilter.table, 'driver_profiles');
-  assert.ok(capturedHandler);
+  assert.equal(capturedFilter.table, 'driver_locations');
+  assert.ok(captured.handler);
 
-  capturedHandler!({ new: { current_lat: 6.1, current_lng: 125.1, location_updated_at: '2026-08-30T00:00:00Z' } });
+  captured.handler({ new: { current_lat: 6.1, current_lng: 125.1, location_updated_at: '2026-08-30T00:00:00Z' } });
   assert.deepEqual(received, [{ lat: 6.1, lng: 125.1, updatedAt: '2026-08-30T00:00:00Z' }]);
 
   unsubscribe();
@@ -203,4 +207,60 @@ test('subscribeToDriverLocation maps a null-coordinate row (driver went offline)
   subscribeToDriverLocation('d1', (loc) => received.push(loc));
   capturedHandler!({ new: { current_lat: null, current_lng: null, location_updated_at: null } });
   assert.deepEqual(received, [null]);
+});
+
+test('subscribeToDriverLocation reconciles once the channel reports SUBSCRIBED', async () => {
+  const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
+  let capturedTable: string | null = null;
+  let capturedSelect: string | null = null;
+  let capturedEqArgs: [string, unknown] | null = null;
+  const fakeChannel: FakeLocationChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback) => {
+      captured.statusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      from: (table: string) => {
+        capturedTable = table;
+        return {
+          select: (columns: string) => {
+            capturedSelect = columns;
+            return {
+              eq: (column: string, value: unknown) => {
+                capturedEqArgs = [column, value];
+                return {
+                  maybeSingle: async () => ({
+                    data: { current_lat: 6.1, current_lng: 125.1, location_updated_at: '2026-08-30T00:00:00Z' },
+                    error: null,
+                  }),
+                };
+              },
+            };
+          },
+        };
+      },
+    })
+  );
+
+  const received: unknown[] = [];
+  subscribeToDriverLocation('d1', (loc) => received.push(loc));
+
+  const statusCallback = captured.statusCallback;
+  assert.ok(statusCallback);
+  statusCallback('SUBSCRIBED');
+
+  // The reconcile query is async — flush microtasks.
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(capturedTable, 'driver_locations');
+  assert.equal(capturedSelect, 'current_lat, current_lng, location_updated_at');
+  assert.deepEqual(capturedEqArgs, ['user_id', 'd1']);
+  assert.deepEqual(received, [{ lat: 6.1, lng: 125.1, updatedAt: '2026-08-30T00:00:00Z' }]);
 });

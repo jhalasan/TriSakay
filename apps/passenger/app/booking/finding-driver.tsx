@@ -53,6 +53,9 @@ export default function FindingDriverScreen() {
         name: data?.driverName ?? '',
         plateNumber: data?.plateNo ?? '',
         rating: data?.ratingAvg ?? null,
+        // Intentionally null here, not an oversight: getTripDriverInfo doesn't
+        // fetch the driver's location, and trip.tsx computes a live straight-
+        // line ETA once its tracking subscription delivers a position.
         etaMinutes: null,
         avatarUrl: data?.avatarUrl ?? null,
       });

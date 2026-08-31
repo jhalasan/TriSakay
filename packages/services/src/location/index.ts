@@ -101,13 +101,31 @@ export interface DriverLocation {
   updatedAt: string;
 }
 
+type DriverLocationRow = { current_lat: number | null; current_lng: number | null; location_updated_at: string | null };
+
+function toDriverLocation(row: DriverLocationRow): DriverLocation | null {
+  if (row.current_lat === null || row.current_lng === null || row.location_updated_at === null) return null;
+  return { lat: row.current_lat, lng: row.current_lng, updatedAt: row.location_updated_at };
+}
+
 /**
  * Live driver location for the ONE passenger currently matched to this
- * driver via an 'assigned' ride request — RLS policy
- * `driver_select_matched_passenger` is what actually restricts this to that
- * passenger; this function has no scoping logic of its own. Delivers `null`
- * when the row's coordinates are null (driver went offline — the
- * `clear_location_when_offline` trigger nulls them server-side).
+ * driver via an 'assigned' ride request — reads `driver_locations`, a narrow
+ * view-like table carrying only user_id/current_lat/current_lng/
+ * location_updated_at, kept in sync from `driver_profiles` by a trigger. Not
+ * `driver_profiles` itself: that table also carries `license_no` (PII) and
+ * RLS is row-scoped, not column-scoped, so a policy granting a matched
+ * passenger any row access there would hand over the whole row, license
+ * number included. RLS policy `driver_location_select_matched_passenger` is
+ * what actually restricts this to the matched passenger; this function has
+ * no scoping logic of its own. Delivers `null` when the row's coordinates
+ * are null (driver went offline — the `clear_location_when_offline` trigger
+ * nulls them server-side, which then propagates here via the sync trigger).
+ *
+ * Also runs a one-shot reconcile query once the channel reports
+ * `'SUBSCRIBED'`, same pattern as `subscribeToRideRequestStatus` — without
+ * it, a passenger would see no marker/ETA for however long it takes the
+ * driver's next location tick to arrive after being matched.
  */
 export function subscribeToDriverLocation(
   driverId: string,
@@ -118,17 +136,23 @@ export function subscribeToDriverLocation(
     .channel(`driver_location_${driverId}`)
     .on(
       'postgres_changes',
-      { event: 'UPDATE', schema: 'public', table: 'driver_profiles', filter: `user_id=eq.${driverId}` },
-      (payload: { new: { current_lat: number | null; current_lng: number | null; location_updated_at: string | null } }) => {
-        const row = payload.new;
-        if (row.current_lat === null || row.current_lng === null || row.location_updated_at === null) {
-          onUpdate(null);
-          return;
-        }
-        onUpdate({ lat: row.current_lat, lng: row.current_lng, updatedAt: row.location_updated_at });
+      { event: 'UPDATE', schema: 'public', table: 'driver_locations', filter: `user_id=eq.${driverId}` },
+      (payload: { new: DriverLocationRow }) => {
+        onUpdate(toDriverLocation(payload.new));
       }
     )
-    .subscribe();
+    .subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        client
+          .from('driver_locations')
+          .select('current_lat, current_lng, location_updated_at')
+          .eq('user_id', driverId)
+          .maybeSingle()
+          .then(({ data }: { data: DriverLocationRow | null }) => {
+            if (data) onUpdate(toDriverLocation(data));
+          });
+      }
+    });
 
   return () => {
     client.removeChannel(channel);
