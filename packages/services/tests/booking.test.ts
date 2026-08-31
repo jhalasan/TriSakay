@@ -206,7 +206,7 @@ test("getActiveRideForPassenger finds the passenger's most recent pending/assign
 
   assert.equal(error, null);
   assert.deepEqual(capturedEqArgs, [['passenger_id', 'p1']]);
-  assert.deepEqual(capturedIn, ['status', ['pending', 'assigned']]);
+  assert.deepEqual(capturedIn, ['status', ['pending', 'assigned', 'ongoing']]);
   assert.deepEqual(data, {
     id: 'rr1',
     status: 'assigned',

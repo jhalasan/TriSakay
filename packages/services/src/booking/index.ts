@@ -65,14 +65,18 @@ export interface GetActiveRideResult {
 }
 
 /**
- * Finds the passenger's own most recent `pending`/`assigned` ride request,
- * if any — used to re-hydrate `useBookingStore` on app boot. Without this,
- * a passenger whose app restarts mid-ride (backgrounded, crashed, force-quit)
- * would land on a blank booking store and could start an entirely new
- * booking while the backend still has their old ride active. Deliberately
- * stops at `assigned`, not `completed` — payment/rating recovery across a
+ * Finds the passenger's own most recent `pending`/`assigned`/`ongoing` ride
+ * request, if any — used to re-hydrate `useBookingStore` on app boot. Without
+ * this, a passenger whose app restarts mid-ride (backgrounded, crashed,
+ * force-quit) would land on a blank booking store and could start an
+ * entirely new booking while the backend still has their old ride active.
+ * Stops at `ongoing`, not `completed` — payment/rating recovery across a
  * restart is a separate, already-tracked gap (both are still mock/local on
- * this screen), not part of what this function exists to fix.
+ * this screen), not part of what this function exists to fix. `ongoing` is
+ * included because, unlike the old `assigned -> completed` transition, a ride
+ * now spends its entire in-tricycle duration in `ongoing` — excluding it here
+ * would drop a passenger's trip screen for the whole ride, not just an
+ * instant.
  */
 export async function getActiveRideForPassenger(passengerId: string): Promise<GetActiveRideResult> {
   const { data, error } = await getSupabaseClient()
@@ -81,7 +85,7 @@ export async function getActiveRideForPassenger(passengerId: string): Promise<Ge
       'id, status, pickup_label, pickup_lat, pickup_lng, dest_label, dest_lat, dest_lng, seats_requested, estimated_fare, preferred_method'
     )
     .eq('passenger_id', passengerId)
-    .in('status', ['pending', 'assigned'])
+    .in('status', ['pending', 'assigned', 'ongoing'])
     .order('requested_at', { ascending: false })
     .limit(1)
     .maybeSingle();
