@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Animated, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { subscribeToDriverLocation, subscribeToRideRequestStatus, type DriverLocation } from '@trisakay/services';
@@ -14,13 +14,22 @@ export default function TripScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const t = useTranslation();
+  // Seeded by splash.tsx's mid-ride rehydrate path when the passenger's
+  // ride was already 'ongoing' on app restart — without this, a rehydrated
+  // in-progress ride would wrongly start back at the live-tracking UI
+  // instead of the trip-in-progress UI. Absent (undefined) on the normal
+  // arrival from finding-driver.tsx, where a freshly matched ride is always
+  // 'assigned'.
+  const { status: initialStatus } = useLocalSearchParams<{ status?: 'assigned' | 'ongoing' }>();
   const driver = useBookingStore((state) => state.driver);
   const pickup = useBookingStore((state) => state.pickup);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const reset = useBookingStore((state) => state.reset);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
-  const [rideStatus, setRideStatus] = useState<'assigned' | 'ongoing'>('assigned');
+  const [rideStatus, setRideStatus] = useState<'assigned' | 'ongoing'>(
+    initialStatus === 'ongoing' ? 'ongoing' : 'assigned'
+  );
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
   // Same exit-guard pattern as finding-driver.tsx: reset() clears
   // rideRequestId, which would otherwise re-fire this effect a second time
@@ -96,8 +105,6 @@ export default function TripScreen() {
         )
       : null;
 
-  const driverForCard = driver ? { ...driver, etaMinutes } : driver;
-
   if (!driver) {
     return (
       <View style={styles.container}>
@@ -108,6 +115,8 @@ export default function TripScreen() {
       </View>
     );
   }
+
+  const driverForCard = { ...driver, etaMinutes };
 
   return (
     <View style={styles.container}>

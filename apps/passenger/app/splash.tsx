@@ -60,17 +60,22 @@ function LoadingBar() {
 
 /**
  * Re-hydrates useBookingStore from the passenger's own most recent
- * `pending`/`assigned` ride request, if any, and returns where to send them.
- * Without this, useBookingStore always boots empty — a passenger whose app
- * restarted mid-ride would land on Home with a clean slate and could start
- * an entirely new booking while the backend still has their old one active
- * and a driver who thinks they still have this passenger.
+ * `pending`/`assigned`/`ongoing` ride request, if any, and returns where to
+ * send them. Without this, useBookingStore always boots empty — a passenger
+ * whose app restarted mid-ride would land on Home with a clean slate and
+ * could start an entirely new booking while the backend still has their old
+ * one active and a driver who thinks they still have this passenger.
  *
- * Deliberately stops at 'assigned' — a 'completed' ride's payment/rating
- * recovery is a separate, already-tracked gap (both are still mock/local on
- * those screens), not something re-hydrating the booking store can fix.
+ * Stops at 'ongoing' — a 'completed' ride's payment/rating recovery is a
+ * separate, already-tracked gap (both are still mock/local on those
+ * screens), not something re-hydrating the booking store can fix. 'ongoing'
+ * itself must be handled here (routed to /booking/trip, same as 'assigned')
+ * because a ride now spends its entire in-tricycle duration in that state,
+ * not just an instant.
  */
-async function resolveActiveRideRoute(passengerId: string): Promise<'/booking/trip' | '/booking/finding-driver' | null> {
+async function resolveActiveRideRoute(
+  passengerId: string
+): Promise<{ pathname: '/booking/trip'; status: 'assigned' | 'ongoing' } | { pathname: '/booking/finding-driver' } | null> {
   const { data } = await getActiveRideForPassenger(passengerId).catch(() => ({ data: null }));
   if (!data) return null;
 
@@ -93,9 +98,9 @@ async function resolveActiveRideRoute(passengerId: string): Promise<'/booking/tr
     paymentMethod: data.preferredMethod,
   });
 
-  if (data.status !== 'assigned') {
+  if (data.status !== 'assigned' && data.status !== 'ongoing') {
     useBookingStore.setState({ tripStatus: 'searching' });
-    return '/booking/finding-driver';
+    return { pathname: '/booking/finding-driver' };
   }
 
   const { data: driverInfo } = await getTripDriverInfo(data.id).catch(() => ({ data: null }));
@@ -106,10 +111,11 @@ async function resolveActiveRideRoute(passengerId: string): Promise<'/booking/tr
       plateNumber: driverInfo?.plateNo ?? '',
       rating: driverInfo?.ratingAvg ?? null,
       etaMinutes: null,
+      avatarUrl: driverInfo?.avatarUrl ?? null,
     },
     tripStatus: 'matched',
   });
-  return '/booking/trip';
+  return { pathname: '/booking/trip', status: data.status };
 }
 
 function waitUntilHydrated(): Promise<void> {
@@ -203,7 +209,13 @@ export default function SplashScreen() {
       const activeRideRoute = await resolveActiveRideRoute(sessionUserId);
       if (cancelled) return;
 
-      router.replace(activeRideRoute ?? '/(tabs)/home');
+      if (!activeRideRoute) {
+        router.replace('/(tabs)/home');
+      } else if (activeRideRoute.pathname === '/booking/trip') {
+        router.replace({ pathname: '/booking/trip', params: { status: activeRideRoute.status } });
+      } else {
+        router.replace('/booking/finding-driver');
+      }
     })();
 
     return () => {

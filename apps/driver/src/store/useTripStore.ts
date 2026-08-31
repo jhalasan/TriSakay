@@ -261,7 +261,12 @@ export const useTripStore = create<TripState>()((set, get) => {
               paymentMethod: p.paymentMethod,
               fare: p.fare,
               cashConfirmed: p.cashConfirmed,
-              status: p.status,
+              // get_active_trip_passengers' own WHERE clause only ever returns
+              // rows with status in ('assigned', 'ongoing') — see migration
+              // 20260830120000's get_active_trip_passengers (D), so this is a
+              // safe narrowing even though ActiveTripPassenger['status'] is
+              // typed as the full ride_status enum.
+              status: p.status as 'assigned' | 'ongoing',
             })),
           },
           error: null,
