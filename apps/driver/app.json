@@ -47,6 +47,13 @@
           "cameraPermission": "TriSakay needs access to your camera so you can upload verification documents."
         }
       ]
-    ]
+    ],
+    "owner": "jirou404",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "d688c6e6-3757-412d-9ed1-dad921da79a2"
+      }
+    }
   }
 }

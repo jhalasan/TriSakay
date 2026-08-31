@@ -25,10 +25,11 @@
     "typescript": "~5.9.2"
   },
   "//typecheck": "packages/services/tests is checked by a second, non-emitting project rather than by the build graph: a composite project may not disable declaration emit (TS6304), so tsconfig.tests.json cannot be a `tsc -b` reference without emitting throwaway .d.ts for test files. Running it after `tsc -b` also guarantees the declarations it references are current.",
-  "//overrides": "Expo SDK 54 / React Native 0.81 pin React 19.1.0. Without this, apps/admin's caret range resolves React 19.2.8 into the hoisted root while the RN apps keep a nested 19.1.0 — Metro then bundles two Reacts and hooks break at runtime.",
+  "//overrides": "Expo SDK 54 / React Native 0.81 pin React 19.1.0. Without this, apps/admin's caret range resolves React 19.2.8 into the hoisted root while the RN apps keep a nested 19.1.0 — Metro then bundles two Reacts and hooks break at runtime. react-native-worklets is pinned for the same reason: react-native-reanimated's peer range let npm hoist 0.8.3 to root while the per-app pin only landed nested, and Expo Go's SDK 54 binary is compiled against the native module at 0.5.1 (see node_modules/expo/bundledNativeModules.json) — a JS/native version mismatch there throws 'installTurboModule called with 1 arguments (expected argument count: 0)' at launch.",
   "overrides": {
     "react": "19.1.0",
-    "react-dom": "19.1.0"
+    "react-dom": "19.1.0",
+    "react-native-worklets": "0.5.1"
   },
   "//dependencies": "Every hoisted expo-* package (expo-notifications, expo-font, expo-constants, etc.) declares a wildcard peerDependency on 'expo'. With no expo pinned at root, npm's peer auto-install resolved the newest published version (57.x) here — a different SDK than the ~54.0.36 every app pins locally — which fragmented expo-modules-core into two incompatible copies and broke type resolution for anything hoisted. Pinning it to match keeps a single consistent expo-modules-core.",
   "dependencies": {
