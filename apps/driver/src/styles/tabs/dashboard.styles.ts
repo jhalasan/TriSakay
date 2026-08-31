@@ -78,8 +78,9 @@ export const styles = StyleSheet.create({
   goOnlineButton: {
     minHeight: 52,
     borderRadius: radius.sm2,
+    justifyContent: 'center',
   },
-  goOnlineInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, height: '100%' },
+  goOnlineInner: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm },
   goOnlineText: { ...typography.h3b, fontSize: 16, lineHeight: 20, color: colors.white },
 
   offlineStrip: {

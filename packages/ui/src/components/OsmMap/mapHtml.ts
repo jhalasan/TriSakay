@@ -23,6 +23,9 @@ import { colors } from '#theme/colors';
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_ATTRIBUTION =
   '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+/** Leaflet's own standard credit — restored via `prefix` below alongside the OSM tile credit. */
+const LEAFLET_ATTRIBUTION =
+  '<a href="https://leafletjs.com" title="A JavaScript library for interactive maps">Leaflet</a>';
 
 /** Leaflet 1.9.4. SRI hashes computed from the published files. */
 const LEAFLET_CSS = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
@@ -240,7 +243,7 @@ export function buildMapHtml({
 
     var map = L.map('map', options);
 
-    L.control.attribution({ position: '${attributionPosition}', prefix: '' })
+    L.control.attribution({ position: '${attributionPosition}', prefix: '${LEAFLET_ATTRIBUTION}' })
       .addAttribution('${TILE_ATTRIBUTION}')
       .addTo(map);
 

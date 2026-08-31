@@ -285,7 +285,8 @@ export const en = {
       backToHome: 'Back to Home',
     },
     splash: {
-      subtitle: 'Drive with TriSakay',
+      subtitle: 'Your next ride starts here',
+      driverBadge: 'Driver',
     },
     dashboard: {
       driverFallback: 'Driver',

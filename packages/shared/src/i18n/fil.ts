@@ -288,7 +288,8 @@ export const fil: Translations = {
       backToHome: 'Bumalik sa Home',
     },
     splash: {
-      subtitle: 'Magmaneho kasama ang TriSakay',
+      subtitle: 'Dito magsisimula ang susunod mong sakay',
+      driverBadge: 'Driver',
     },
     dashboard: {
       driverFallback: 'Driver',
