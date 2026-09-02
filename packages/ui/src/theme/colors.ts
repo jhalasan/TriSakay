@@ -37,6 +37,8 @@ export const colors = {
   danger: '#B3261E', // 6.54:1 with white
   dangerPressed: '#931E17',
   dangerSoft: '#FBEAE8',
+  /** Deepest red stop in the emergency screen's gradient — same hue as danger, no new contrast pairing (never sits behind text on its own). Mirrors accentBlueDeep's precedent for the hero gradient. */
+  dangerDeep: '#7E1913',
 
   overlay: 'rgba(10, 14, 17, 0.58)',
 } as const;
