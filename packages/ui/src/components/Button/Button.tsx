@@ -5,7 +5,7 @@ import { GradientSurface } from '../GradientSurface';
 import { styles } from './Button.styles';
 
 export type ButtonVariant = 'solid' | 'outline' | 'ghost';
-export type ButtonTone = 'primary' | 'neutral' | 'danger';
+export type ButtonTone = 'primary' | 'neutral' | 'danger' | 'success';
 export type ButtonSize = 'md' | 'sm';
 
 export interface ButtonProps extends Omit<PressableProps, 'style'> {
@@ -22,6 +22,9 @@ const TONES = {
   primary: { solid: colors.accentBlue, pressed: colors.accentBluePressed, text: colors.accentBlue },
   neutral: { solid: colors.ink, pressed: colors.inkPressed, text: colors.ink },
   danger: { solid: colors.danger, pressed: colors.dangerPressed, text: colors.danger },
+  // Reserved for the "Request a ride" family of CTAs — the system's colour
+  // discipline keeps green to confirmed/positive actions only.
+  success: { solid: colors.accentGreen, pressed: colors.accentGreenPressed, text: colors.accentGreen },
 } as const;
 
 function surfaceFor(tone: ButtonTone, variant: ButtonVariant, pressed: boolean, isDisabled: boolean) {

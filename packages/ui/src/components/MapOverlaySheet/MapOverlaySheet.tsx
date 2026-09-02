@@ -1,5 +1,4 @@
 import { View, type StyleProp, type ViewStyle } from 'react-native';
-import { GradientSurface } from '../GradientSurface';
 import { styles } from './MapOverlaySheet.styles';
 
 export interface MapOverlaySheetProps {
@@ -30,7 +29,7 @@ export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, style }:
     <View
       style={[styles.sheet, { paddingBottom: styles.sheet.paddingBottom + bottomInset }, maxHeight != null && { maxHeight }, style]}
     >
-      <GradientSurface token="brand" direction="diagonal" style={styles.handle} />
+      <View style={styles.handle} />
       {children}
     </View>
   );
