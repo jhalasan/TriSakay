@@ -15,6 +15,9 @@ import { useBookingStore } from '../../src/store/useBookingStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { styles } from '../../src/styles/booking/finding-driver.styles';
 
+/** No documented figure for this — a reasonable upper bound before telling the rider nobody's picking up the request. */
+const SEARCH_TIMEOUT_MS = 60_000;
+
 export default function FindingDriverScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
@@ -46,6 +49,12 @@ export default function FindingDriverScreen() {
     let cancelled = false;
     let unsubscribe: (() => void) | null = null;
 
+    const searchTimeout = setTimeout(() => {
+      if (cancelled || hasExitedRef.current) return;
+      hasExitedRef.current = true;
+      router.replace('/booking/no-drivers-nearby');
+    }, SEARCH_TIMEOUT_MS);
+
     const applyDriverAndAdvance = (data?: TripDriverInfo | null) => {
       if (cancelled) return;
       setDriver({
@@ -69,13 +78,20 @@ export default function FindingDriverScreen() {
         if (cancelled || hasExitedRef.current) return;
         if (row.status === 'assigned') {
           hasExitedRef.current = true;
+          clearTimeout(searchTimeout);
           getTripDriverInfo(row.id)
             .then(({ data }) => applyDriverAndAdvance(data))
             .catch(() => applyDriverAndAdvance());
         } else if (row.status === 'cancelled') {
           hasExitedRef.current = true;
-          reset();
-          router.replace('/(tabs)/home');
+          clearTimeout(searchTimeout);
+          router.replace({
+            pathname: '/booking/ride-cancelled',
+            params: {
+              byDriver: row.cancel_reason?.toLowerCase().includes('driver') ? '1' : '0',
+              discountApplied: row.discount_applied ? '1' : '0',
+            },
+          });
         }
       },
       (message) => {
@@ -85,6 +101,7 @@ export default function FindingDriverScreen() {
 
     return () => {
       cancelled = true;
+      clearTimeout(searchTimeout);
       unsubscribe?.();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

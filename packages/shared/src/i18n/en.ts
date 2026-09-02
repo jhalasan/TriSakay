@@ -122,6 +122,24 @@ export const en = {
     notifyFailed: "Couldn't reach PSO. Your call for help above still works.",
     retry: 'Try again',
     backToTrip: 'Back to trip',
+    sharedWithPso: 'Shared with the PSO',
+  },
+  noDriversNearby: {
+    title: 'No drivers nearby',
+    cause:
+      "We asked every driver nearby, but nobody's free yet — this is common around peak hours.",
+    notifyToggleLabel: 'Notify me when one is free',
+    searchAgain: 'Search again',
+    changePickupPoint: 'Change pickup point',
+  },
+  rideCancelled: {
+    title: 'Ride cancelled',
+    cancelledByDriverSuffix: "cancelled this ride. You weren't charged and nothing counts against your account.",
+    cancelledGeneric: "This ride was cancelled. You weren't charged and nothing counts against your account.",
+    fareHeld: 'Fare held',
+    discountStillValid: 'Your discount is still valid',
+    findAnotherDriver: 'Find another driver',
+    reportCancellation: 'Report this cancellation',
   },
   payment: {
     title: 'Payment',

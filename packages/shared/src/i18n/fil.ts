@@ -124,6 +124,23 @@ export const fil: Translations = {
     notifyFailed: 'Hindi maabot ang PSO. Gumagana pa rin ang pagtawag ng tulong sa itaas.',
     retry: 'Subukan muli',
     backToTrip: 'Bumalik sa biyahe',
+    sharedWithPso: 'Ibinahagi sa PSO',
+  },
+  noDriversNearby: {
+    title: 'Walang driver na malapit',
+    cause: 'Tinanong namin ang bawat malapit na driver, pero wala pang libre — karaniwan ito tuwing peak hours.',
+    notifyToggleLabel: 'Abisuhan ako kapag may libre na',
+    searchAgain: 'Maghanap Muli',
+    changePickupPoint: 'Palitan ang Pickup Point',
+  },
+  rideCancelled: {
+    title: 'Nakansela ang Sakay',
+    cancelledByDriverSuffix: 'kinansela ang sakay na ito. Hindi ka siningil at walang bilang laban sa iyong account.',
+    cancelledGeneric: 'Nakansela ang sakay na ito. Hindi ka siningil at walang bilang laban sa iyong account.',
+    fareHeld: 'Naka-hold na Bayad',
+    discountStillValid: 'Balido pa rin ang iyong diskwento',
+    findAnotherDriver: 'Maghanap ng Ibang Driver',
+    reportCancellation: 'I-report ang Pagkansela',
   },
   payment: {
     title: 'Bayad',

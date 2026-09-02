@@ -74,8 +74,13 @@ export default function TripScreen() {
           router.replace('/booking/payment');
         } else if (row.status === 'cancelled') {
           hasExitedRef.current = true;
-          reset();
-          router.replace('/(tabs)/home');
+          router.replace({
+            pathname: '/booking/ride-cancelled',
+            params: {
+              byDriver: row.cancel_reason?.toLowerCase().includes('driver') ? '1' : '0',
+              discountApplied: row.discount_applied ? '1' : '0',
+            },
+          });
         }
       },
       (message) => {
