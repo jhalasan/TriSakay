@@ -1,6 +1,8 @@
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Badge, EmptyState, RequestCard } from '@trisakay/ui';
+import { Badge, Button, colors, EmptyState, RequestCard } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useDriverStore } from '../../src/store/useDriverStore';
@@ -8,6 +10,7 @@ import { useRequestsStore } from '../../src/store/useRequestsStore';
 import { styles } from '../../src/styles/tabs/requests.styles';
 
 export default function RequestsScreen() {
+  const router = useRouter();
   const t = useTranslation();
   const isAvailable = useDriverStore((state) => state.isAvailable);
   const pending = useRequestsStore((state) => state.pending);
@@ -29,14 +32,31 @@ export default function RequestsScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         ListEmptyComponent={
-          <EmptyState
-            title={isAvailable ? t.driver.requests.noRequestsTitle : t.driver.requests.offlineTitle}
-            message={isAvailable ? t.driver.requests.noRequestsMessage : t.driver.requests.offlineMessage}
-          />
+          isAvailable ? (
+            <EmptyState title={t.driver.requests.noRequestsTitle} message={t.driver.requests.noRequestsMessage} />
+          ) : (
+            <EmptyState
+              icon={
+                <View style={styles.offlineIconTile}>
+                  <Ionicons name="list-outline" size={32} color={colors.lineStrong} />
+                </View>
+              }
+              title={t.driver.requests.offlineTitle}
+              message={t.driver.requests.offlineMessage}
+              action={
+                <Button
+                  label={t.driver.requests.goToDashboard}
+                  icon={<Ionicons name="arrow-forward" size={16} color={colors.white} />}
+                  onPress={() => router.push('/(tabs)/dashboard')}
+                />
+              }
+            />
+          )
         }
         renderItem={({ item }) => (
           <RequestCard
             request={item}
+            variant="incoming"
             accepting={acceptingId === item.id}
             onAccept={() => acceptRideRequest(item.id)}
             onDecline={() => decline(item.id)}

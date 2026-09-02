@@ -39,13 +39,18 @@ export default function LocationPermissionScreen() {
       <View style={styles.backdrop}>
         <View style={styles.card}>
           <View style={styles.iconBadge}>
-            <Ionicons name="location-outline" size={26} color={colors.accentBluePressed} />
+            <Ionicons name="locate-outline" size={26} color={colors.accentBluePressed} />
           </View>
 
           <Text style={styles.title}>{t.driver.locationPermission.title}</Text>
           <Text style={styles.body}>{t.driver.locationPermission.body}</Text>
 
-          {isBlocked ? <Text style={styles.blockedNote}>{t.driver.locationPermission.blockedNote}</Text> : null}
+          {isBlocked ? (
+            <View style={styles.blockedNote}>
+              <Ionicons name="alert-circle-outline" size={15} color={colors.danger} />
+              <Text style={styles.blockedNoteText}>{t.driver.locationPermission.blockedNote}</Text>
+            </View>
+          ) : null}
 
           <View style={styles.actions}>
             <Button

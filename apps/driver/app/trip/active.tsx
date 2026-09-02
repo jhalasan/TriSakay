@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar, Badge, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, RequestCard, Toggle } from '@trisakay/ui';
+import { Avatar, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, RequestCard, Toggle, colors } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -120,17 +121,32 @@ export default function ActiveTripScreen() {
         <OsmMap variant="route" caption={t.trip.mapCaption} height="100%" interactive={false} edgeToEdge bottomInset={260} />
       </View>
       <View style={styles.statusBadgeWrap}>
-        <Badge
-          label={hasPassengers ? t.driver.tripActive.inProgress : t.driver.tripActive.onlineNoPassengers}
-          tone={hasPassengers ? 'blue' : 'neutral'}
-          dot
-        />
+        <View style={styles.statusPill}>
+          <View style={styles.statusDot} />
+          <Text style={styles.statusLabel}>
+            {hasPassengers ? t.driver.tripActive.inProgress : t.driver.tripActive.onlineNoPassengers}
+          </Text>
+        </View>
+      </View>
+
+      {/* Visual only — real turn-by-turn needs route/destination coordinates not yet plumbed to the driver client. */}
+      <View style={styles.navigateButton}>
+        <Ionicons name="navigate" size={20} color={colors.ink} />
       </View>
 
       <MapOverlaySheet bottomInset={insets.bottom} maxHeight={sheetMaxHeight} style={styles.content}>
         <ScrollView style={styles.passengerScroll} contentContainerStyle={styles.passengerScrollContent} showsVerticalScrollIndicator>
         {!hasPassengers && (
           <EmptyState title={t.driver.tripActive.onlineNoPassengers} message={t.driver.tripActive.noPassengersNote} />
+        )}
+
+        {hasPassengers && (
+          <View style={styles.aboardRow}>
+            <Text style={styles.aboardLabel}>
+              {t.driver.tripActive.aboard} · {trip.passengers.length}{' '}
+              {trip.passengers.length > 1 ? t.driver.tripActive.passengerPlural : t.driver.tripActive.passengerSingular}
+            </Text>
+          </View>
         )}
 
         {trip.passengers.map((passenger) => {
@@ -140,23 +156,29 @@ export default function ActiveTripScreen() {
           const canComplete = passenger.status === 'ongoing' && (!isCash || passenger.cashConfirmed) && !isCompleting;
 
           return (
-            <Card key={passenger.id} style={styles.passengerCard}>
+            <Card key={passenger.id} variant="flat" style={styles.passengerCard}>
               <View style={styles.passengerRow}>
                 <Avatar
                   name={passenger.passengerName ?? undefined}
                   source={passenger.passengerAvatarUrl ? { uri: passenger.passengerAvatarUrl } : undefined}
                   size="lg"
                 />
-                <View>
+                <View style={styles.passengerInfo}>
                   <Text style={styles.passengerName}>{passenger.passengerName || t.driver.tripActive.passengerFallback}</Text>
                   <Text style={styles.seatsLabel}>
                     {passenger.seats} {passenger.seats > 1 ? t.driver.tripActive.seatsPlural : t.driver.tripActive.seatsSingular} ·{' '}
                     {passenger.fare !== null ? formatCurrency(passenger.fare) : '—'}
+                    {!isCash ? ` · ${t.driver.tripActive.gcashConfirmedInline}` : ''}
                   </Text>
                 </View>
+                {passenger.status === 'ongoing' && (
+                  <View style={styles.ongoingChip}>
+                    <Text style={styles.ongoingChipText}>{t.driver.tripActive.ongoingStatus}</Text>
+                  </View>
+                )}
               </View>
 
-              {isCash ? (
+              {isCash && (
                 <View style={styles.cashRow}>
                   <Text style={styles.cashLabel}>{t.driver.tripActive.confirmCashReceived}</Text>
                   <Toggle
@@ -165,8 +187,6 @@ export default function ActiveTripScreen() {
                     disabled={passenger.cashConfirmed || confirmingCashId === passenger.id}
                   />
                 </View>
-              ) : (
-                <Text style={styles.cashCaption}>{t.driver.tripActive.gcashAutoConfirmed}</Text>
               )}
 
               <View style={styles.actions}>
@@ -233,7 +253,12 @@ export default function ActiveTripScreen() {
         {(tripError || requestError) && <Text style={styles.error}>{tripError ?? requestError}</Text>}
 
         <View style={styles.sosBlock}>
-          <HoldToConfirmButton label={t.trip.sosButton} fullWidth onConfirm={() => router.push('/trip/emergency')} />
+          <HoldToConfirmButton
+            label={t.trip.sosButton}
+            icon={<Ionicons name="warning" size={19} color={colors.white} />}
+            fullWidth
+            onConfirm={() => router.push('/trip/emergency')}
+          />
           <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
         </View>
 

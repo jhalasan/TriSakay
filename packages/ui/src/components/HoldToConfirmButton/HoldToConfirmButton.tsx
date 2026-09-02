@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Animated, Pressable, Text, type PressableProps } from 'react-native';
+import { Animated, Pressable, Text, View, type PressableProps } from 'react-native';
 import { motion } from '../../theme';
 import { styles } from './HoldToConfirmButton.styles';
 
@@ -13,6 +13,7 @@ export interface HoldToConfirmButtonProps extends Omit<PressableProps, 'style' |
   onConfirm: () => void;
   disabled?: boolean;
   fullWidth?: boolean;
+  icon?: React.ReactNode;
 }
 
 /**
@@ -24,7 +25,7 @@ export interface HoldToConfirmButtonProps extends Omit<PressableProps, 'style' |
  * 2026-08-21-emergency-sos-alert-design.md, section B) — this is verified
  * live in Expo web, not by a unit test.
  */
-export function HoldToConfirmButton({ label, onConfirm, disabled = false, fullWidth = false, ...pressableProps }: HoldToConfirmButtonProps) {
+export function HoldToConfirmButton({ label, onConfirm, disabled = false, fullWidth = false, icon, ...pressableProps }: HoldToConfirmButtonProps) {
   const progress = useRef(new Animated.Value(0)).current;
   const [holding, setHolding] = useState(false);
 
@@ -67,6 +68,7 @@ export function HoldToConfirmButton({ label, onConfirm, disabled = false, fullWi
         style={[styles.fill, { width: progress.interpolate({ inputRange: [0, 1], outputRange: ['0%', '100%'] }) }]}
       />
       <Animated.View style={styles.content}>
+        {icon && <View style={styles.iconSlot}>{icon}</View>}
         <Text style={styles.label}>{holding ? 'Keep holding…' : label}</Text>
       </Animated.View>
     </Pressable>

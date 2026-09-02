@@ -5,6 +5,7 @@ import { styles } from './EarningsBarChart.styles';
 export interface EarningsBarChartProps {
   data: DailyEarning[];
   height?: number;
+  todayLabel: string;
 }
 
 const LABEL_HEIGHT = 44;
@@ -18,6 +19,10 @@ function formatDayLabel(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', { weekday: 'short' });
 }
 
+function isToday(iso: string) {
+  return new Date(iso).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA');
+}
+
 /**
  * Plain flex/percentage-height bars rather than react-native-svg — a fixed-
  * height parent lets RN size a percentage-height child directly, no
@@ -25,7 +30,7 @@ function formatDayLabel(iso: string) {
  * the driver has completed/paid rides on; `v_driver_earnings` only ever
  * returns rows for days with at least one, so every bar is non-zero.
  */
-export function EarningsBarChart({ data, height = 160 }: EarningsBarChartProps) {
+export function EarningsBarChart({ data, height = 160, todayLabel }: EarningsBarChartProps) {
   const recent = data.slice(-7);
   const trackHeight = Math.max(height - LABEL_HEIGHT, 40);
   const max = Math.max(...recent.map((day) => day.totalCollected), 1);
@@ -35,15 +40,16 @@ export function EarningsBarChart({ data, height = 160 }: EarningsBarChartProps) 
       <View style={[styles.barsRow, { height }]}>
         {recent.map((day) => {
           const barHeightPercent = Math.max((day.totalCollected / max) * 100, 8);
+          const today = isToday(day.date);
           return (
             <View key={day.date} style={styles.barColumn}>
               <Text style={styles.barValue} numberOfLines={1}>
                 {formatCompact(day.totalCollected)}
               </Text>
               <View style={[styles.barTrack, { height: trackHeight }]}>
-                <View style={[styles.bar, { height: `${barHeightPercent}%` }]} />
+                <View style={[styles.bar, today ? styles.barToday : styles.barPast, { height: `${barHeightPercent}%` }]} />
               </View>
-              <Text style={styles.barLabel}>{formatDayLabel(day.date)}</Text>
+              <Text style={[styles.barLabel, today && styles.barLabelToday]}>{today ? todayLabel : formatDayLabel(day.date)}</Text>
             </View>
           );
         })}

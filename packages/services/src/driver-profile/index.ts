@@ -35,23 +35,35 @@ export async function getDriverVerificationStatus(): Promise<{
 
 export interface DriverUnitResult {
   bodyNo: string | null;
+  plateNo: string | null;
+  mtopExpiryDate: string | null;
   verificationStatus: VerificationStatus | null;
   error: string | null;
 }
 
-/** Backs the Dashboard identity row's "PSO verified · Body no. {n}" line — body_no lives on `tricycles`, keyed by driver_id, not on driver_profiles. */
+/**
+ * Backs the Dashboard identity row's "PSO verified · Body no. {n}" line and
+ * Profile's Tricycle row / franchise card — body_no/plate_no/mtop_expiry_date
+ * all live on `tricycles`, keyed by driver_id, not on driver_profiles.
+ */
 export async function getDriverUnit(): Promise<DriverUnitResult> {
   const userId = await getSignedInUserId();
-  if (!userId) return { bodyNo: null, verificationStatus: null, error: 'Not signed in' };
+  if (!userId) return { bodyNo: null, plateNo: null, mtopExpiryDate: null, verificationStatus: null, error: 'Not signed in' };
 
   const { data, error } = await getSupabaseClient()
     .from('tricycles')
-    .select('body_no, verification_status')
+    .select('body_no, plate_no, mtop_expiry_date, verification_status')
     .eq('driver_id', userId)
     .maybeSingle();
 
-  if (error) return { bodyNo: null, verificationStatus: null, error: error.message };
-  return { bodyNo: data?.body_no ?? null, verificationStatus: data?.verification_status ?? null, error: null };
+  if (error) return { bodyNo: null, plateNo: null, mtopExpiryDate: null, verificationStatus: null, error: error.message };
+  return {
+    bodyNo: data?.body_no ?? null,
+    plateNo: data?.plate_no ?? null,
+    mtopExpiryDate: data?.mtop_expiry_date ?? null,
+    verificationStatus: data?.verification_status ?? null,
+    error: null,
+  };
 }
 
 /**

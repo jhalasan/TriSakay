@@ -3,9 +3,10 @@ import { useRouter } from 'expo-router';
 import { File } from 'expo-file-system';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION, submitDriverDocuments, type DriverDocumentInput } from '@trisakay/services';
-import { BrandMotif, Button, Card, Checkbox, GradientSurface, TextField } from '@trisakay/ui';
+import { BrandMotif, Button, Card, Checkbox, colors, GradientSurface, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { DocumentUploadRow } from '../../src/components/DocumentUploadRow';
+import { ScrollFade } from '../../src/components/ScrollFade';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConsentStore } from '../../src/store/useConsentStore';
@@ -164,7 +165,7 @@ export default function RegisterScreen() {
       {step === 1 ? (
         <>
           <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
-            <BrandMotif size={120} color="#FFFFFF" opacity={0.1} style={styles.motif} />
+            <BrandMotif size={120} color={colors.white} opacity={0.1} style={styles.motif} />
             <View style={styles.markBadge}>
               <Image
                 source={require('../../../../assets/brand/trisakay-mark.png')}
@@ -221,65 +222,74 @@ export default function RegisterScreen() {
           </ScrollView>
         </>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
-          <Text style={styles.stepIntro}>{t.driver.register.documentsIntro}</Text>
+        <View style={styles.stepTwoBody}>
+          <View style={styles.scrollWrap}>
+            <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+              <Text style={styles.stepIntro}>{t.driver.register.documentsIntro}</Text>
 
-          <TextField
-            label={t.driver.register.plateNumber}
-            placeholder={t.driver.register.plateNumberPlaceholder}
-            value={plateNo}
-            onChangeText={(v) => {
-              setPlateNo(v);
-              if (plateNoError) setPlateNoError(undefined);
-            }}
-            error={plateNoError}
-            autoCapitalize="characters"
-          />
+              <TextField
+                label={t.driver.register.plateNumber}
+                placeholder={t.driver.register.plateNumberPlaceholder}
+                value={plateNo}
+                onChangeText={(v) => {
+                  setPlateNo(v);
+                  if (plateNoError) setPlateNoError(undefined);
+                }}
+                error={plateNoError}
+                autoCapitalize="characters"
+              />
 
-          {DOCUMENT_TYPES.map((type) => (
-            <DocumentUploadRow
-              key={type}
-              label={DOCUMENT_LABEL[type]}
-              status={documents[type].status}
-              uri={documents[type].uri}
-              onUpload={(uri) => submitDocument(type, uri)}
-              onRemove={() => removeDocument(type)}
+              {DOCUMENT_TYPES.map((type) => (
+                <DocumentUploadRow
+                  key={type}
+                  label={DOCUMENT_LABEL[type]}
+                  status={documents[type].status}
+                  uri={documents[type].uri}
+                  onUpload={(uri) => submitDocument(type, uri)}
+                  onRemove={() => removeDocument(type)}
+                />
+              ))}
+
+              <Text style={styles.stepIntro}>{t.driver.register.acceptTermsIntro}</Text>
+              <Text style={styles.version}>
+                Terms {CURRENT_TOS_VERSION} · Privacy {CURRENT_PRIVACY_VERSION}
+              </Text>
+
+              {POLICY_BODY.map((paragraph) => (
+                <Text key={paragraph.slice(0, 24)} style={styles.paragraph}>
+                  {paragraph}
+                </Text>
+              ))}
+
+              <Text style={styles.sectionLabel}>{t.driver.register.whatWeCollect}</Text>
+              <Card style={styles.disclosureCard}>
+                {DISCLOSURES.map((item, index) => (
+                  <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
+                    <Text style={styles.disclosureTitle}>{item.title}</Text>
+                    <Text style={styles.disclosureBody}>{item.body}</Text>
+                  </View>
+                ))}
+              </Card>
+            </ScrollView>
+            <ScrollFade />
+          </View>
+
+          <View style={styles.footer}>
+            <View style={styles.checkboxCard}>
+              <Checkbox checked={termsChecked} onChange={setTermsChecked} label={t.driver.register.acceptTerms} />
+            </View>
+
+            {authError ? <Text style={styles.authError}>{authError}</Text> : null}
+
+            <Button
+              label={t.driver.register.registerButton}
+              onPress={handleSubmit}
+              loading={submitting || awaitingGate}
+              disabled={!isNonEmpty(plateNo) || !allDocumentsUploaded || !termsChecked}
+              fullWidth
             />
-          ))}
-
-          <Text style={styles.stepIntro}>{t.driver.register.acceptTermsIntro}</Text>
-          <Text style={styles.version}>
-            Terms {CURRENT_TOS_VERSION} · Privacy {CURRENT_PRIVACY_VERSION}
-          </Text>
-
-          {POLICY_BODY.map((paragraph) => (
-            <Text key={paragraph.slice(0, 24)} style={styles.paragraph}>
-              {paragraph}
-            </Text>
-          ))}
-
-          <Text style={styles.sectionLabel}>{t.driver.register.whatWeCollect}</Text>
-          <Card style={styles.disclosureCard}>
-            {DISCLOSURES.map((item, index) => (
-              <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
-                <Text style={styles.disclosureTitle}>{item.title}</Text>
-                <Text style={styles.disclosureBody}>{item.body}</Text>
-              </View>
-            ))}
-          </Card>
-
-          <Checkbox checked={termsChecked} onChange={setTermsChecked} label={t.driver.register.acceptTerms} />
-
-          {authError ? <Text style={styles.authError}>{authError}</Text> : null}
-
-          <Button
-            label={t.driver.register.registerButton}
-            onPress={handleSubmit}
-            loading={submitting || awaitingGate}
-            disabled={!isNonEmpty(plateNo) || !allDocumentsUploaded || !termsChecked}
-            fullWidth
-          />
-        </ScrollView>
+          </View>
+        </View>
       )}
     </KeyboardAvoidingView>
   );

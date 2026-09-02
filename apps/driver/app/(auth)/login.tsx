@@ -1,7 +1,8 @@
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { BrandMotif, Button, GradientSurface, TextField } from '@trisakay/ui';
+import { BrandMotif, Button, colors, GradientSurface, TextField } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isValidEmail, isValidPassword } from '../../src/utils/validation';
@@ -36,7 +37,11 @@ export default function LoginScreen() {
   return (
     <View style={styles.screen}>
       <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
-        <BrandMotif size={200} color="#FFFFFF" opacity={0.1} style={styles.motif} />
+        <BrandMotif size={200} color={colors.white} opacity={0.1} style={styles.motif} />
+        <View style={styles.driverChip}>
+          <Ionicons name="shield-checkmark-outline" size={14} color={colors.accentGreenSoft} />
+          <Text style={styles.driverChipText}>{t.driver.login.driverChip}</Text>
+        </View>
       </GradientSurface>
       <View style={styles.badgeWrap}>
         <View style={styles.markBadge}>

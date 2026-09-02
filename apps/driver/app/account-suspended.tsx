@@ -35,11 +35,18 @@ export default function AccountSuspendedScreen() {
         <Text style={styles.title}>{copy.title}</Text>
         <Text style={styles.body}>{copy.body}</Text>
 
+        <View style={styles.officeCard}>
+          <Text style={styles.officeLabel}>{t.driver.accountSuspended.psoOfficeLabel}</Text>
+          <Text style={styles.officeAddress}>{t.driver.accountSuspended.psoOfficeAddress}</Text>
+          <Text style={styles.officeHours}>{t.driver.accountSuspended.psoOfficeHours}</Text>
+        </View>
+
         <View style={styles.actions}>
           <Button
             label={t.driver.accountSuspended.refreshStatus}
             variant="outline"
             tone="neutral"
+            icon={<Ionicons name="refresh" size={18} color={colors.ink} />}
             loading={refreshing}
             onPress={handleRefresh}
             fullWidth

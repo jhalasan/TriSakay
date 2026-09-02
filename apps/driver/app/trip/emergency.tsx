@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Linking, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Spinner } from '@trisakay/ui';
+import { BrandMotif, Button, Spinner, colors } from '@trisakay/ui';
 import { triggerEmergencyAlert } from '@trisakay/services/src/emergency/index.ts';
+import { interpolate } from '../../src/utils/interpolate';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useTripStore } from '../../src/store/useTripStore';
 import { styles } from '../../src/styles/trip/emergency.styles';
@@ -24,6 +26,7 @@ export default function DriverEmergencyScreen() {
   const t = useTranslation();
   const trip = useTripStore((state) => state.current);
   const [alertState, setAlertState] = useState<AlertState>('sending');
+  const [sentAt, setSentAt] = useState<string | null>(null);
   const hasFiredRef = useRef(false);
 
   async function sendAlert() {
@@ -44,7 +47,12 @@ export default function DriverEmergencyScreen() {
         lat: position.coords.latitude,
         lng: position.coords.longitude,
       });
-      setAlertState(error ? 'failed' : 'sent');
+      if (error) {
+        setAlertState('failed');
+      } else {
+        setSentAt(new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }));
+        setAlertState('sent');
+      }
     } catch {
       setAlertState('failed');
     }
@@ -63,7 +71,11 @@ export default function DriverEmergencyScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
+      <BrandMotif size={250} color={colors.danger} opacity={0.09} style={styles.motif} />
       <View style={styles.content}>
+        <View style={styles.iconBadge}>
+          <Ionicons name="warning" size={32} color={colors.white} />
+        </View>
         <Text style={styles.title}>{t.emergency.title}</Text>
         <Text style={styles.subtitle}>{t.emergency.subtitle}</Text>
 
@@ -71,21 +83,30 @@ export default function DriverEmergencyScreen() {
           <Button
             label={t.emergency.callButton}
             tone="danger"
+            icon={<Ionicons name="call" size={20} color={colors.white} />}
             fullWidth
             onPress={() => Linking.openURL('tel:911')}
           />
         </View>
 
-        <View style={styles.psoStatus}>
+        <View style={styles.psoCard}>
           {alertState === 'sending' && (
             <>
               <Spinner size="small" />
               <Text style={styles.psoStatusText}>{t.emergency.notifyingPso}</Text>
             </>
           )}
-          {alertState === 'sent' && <Text style={styles.psoStatusText}>{t.emergency.notifiedPso}</Text>}
+          {alertState === 'sent' && (
+            <>
+              <Ionicons name="checkmark-circle" size={19} color={colors.accentGreen} style={styles.psoIcon} />
+              <View style={styles.psoTextBlock}>
+                <Text style={styles.psoStatusText}>{t.emergency.notifiedPso}</Text>
+                {sentAt && <Text style={styles.psoStatusTime}>{interpolate(t.emergency.sentAtLabel, { time: sentAt })}</Text>}
+              </View>
+            </>
+          )}
           {alertState === 'failed' && (
-            <View>
+            <View style={styles.psoTextBlock}>
               <Text style={styles.psoStatusTextError}>{t.emergency.notifyFailed}</Text>
               <Pressable onPress={sendAlert} hitSlop={8}>
                 <Text style={styles.retryLink}>{t.emergency.retry}</Text>

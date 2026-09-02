@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { FlatList, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Badge, Button, EmptyState, ListRow } from '@trisakay/ui';
+import { Avatar, Badge, Button, EmptyState, colors } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { formatCurrency } from '../../src/utils/currency';
@@ -61,20 +62,30 @@ export default function HistoryScreen() {
           loading ? null : <EmptyState title={t.driver.history.emptyTitle} message={t.driver.history.emptyMessage} />
         }
         renderItem={({ item }) => (
-          <ListRow
-            title={item.passengerName || t.driver.history.passengerFallback}
-            subtitle={formatDate(item.date)}
-            leading={<Avatar name={item.passengerName ?? undefined} size="md" />}
-            trailing={
-              <View style={styles.trailingSlot}>
-                <Badge
-                  label={item.status === 'done' ? t.driver.history.done : t.driver.history.filterCancelled}
-                  tone={item.status === 'done' ? 'green' : 'danger'}
-                />
-                <Text style={styles.fareText}>{item.fare !== null ? formatCurrency(item.fare) : '—'}</Text>
+          <View style={styles.tripCard}>
+            {item.passengerName ? (
+              <Avatar name={item.passengerName} size="md" />
+            ) : (
+              <View style={styles.fallbackAvatar}>
+                <Ionicons name="person" size={20} color={colors.lineStrong} />
               </View>
-            }
-          />
+            )}
+            <View style={styles.tripInfo}>
+              <Text style={styles.tripName} numberOfLines={1}>
+                {item.passengerName || t.driver.history.passengerFallback}
+              </Text>
+              <Text style={styles.tripDate}>{formatDate(item.date)}</Text>
+            </View>
+            <View style={styles.trailingSlot}>
+              <Badge
+                label={item.status === 'done' ? t.driver.history.done : t.driver.history.filterCancelled}
+                tone={item.status === 'done' ? 'green' : 'danger'}
+              />
+              <Text style={[styles.fareText, item.fare === null && styles.fareTextMuted]}>
+                {item.fare !== null ? formatCurrency(item.fare) : '—'}
+              </Text>
+            </View>
+          </View>
         )}
       />
     </SafeAreaView>

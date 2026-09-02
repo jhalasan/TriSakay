@@ -28,4 +28,8 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
     textAlign: 'center',
   },
+  actionSlot: {
+    width: '100%',
+    marginTop: spacing.md,
+  },
 });

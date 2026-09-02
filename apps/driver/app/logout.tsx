@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { ConfirmModal } from '@trisakay/ui';
+import { Ionicons } from '@expo/vector-icons';
+import { ConfirmModal, colors } from '@trisakay/ui';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useDriverStore } from '../src/store/useDriverStore';
@@ -28,6 +29,7 @@ export default function LogoutScreen() {
       cancelLabel={t.common.cancel}
       confirmLabel={t.driver.logout.confirm}
       destructive
+      icon={<Ionicons name="alert-circle" size={22} color={colors.dangerPressed} />}
       onCancel={() => router.dismiss()}
       onConfirm={handleConfirm}
     />

@@ -9,6 +9,8 @@ export interface ConfirmModalProps {
   confirmLabel: string;
   cancelLabel?: string;
   destructive?: boolean;
+  /** Optional icon shown above the title, in a tone-matched tile (danger-soft when `destructive`, neutral fill otherwise). */
+  icon?: React.ReactNode;
   /** Shows a spinner and disables both buttons while the confirm action is in flight — prevents a double-tap re-firing onConfirm before the modal closes. */
   confirmLoading?: boolean;
   onConfirm: () => void;
@@ -22,6 +24,7 @@ export function ConfirmModal({
   confirmLabel,
   cancelLabel = 'Cancel',
   destructive = false,
+  icon,
   confirmLoading = false,
   onConfirm,
   onCancel,
@@ -30,6 +33,7 @@ export function ConfirmModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
+          {icon && <View style={[styles.iconTile, destructive ? styles.iconTileDanger : styles.iconTileNeutral]}>{icon}</View>}
           <Text style={styles.title}>{title}</Text>
           {message && <Text style={styles.message}>{message}</Text>}
           <View style={styles.actions}>

@@ -5,7 +5,7 @@ import { File } from 'expo-file-system';
 import { Alert, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { submitDriverDocuments, type DriverDocumentInput } from '@trisakay/services';
-import { Button, colors, TextField } from '@trisakay/ui';
+import { BrandMotif, Button, colors, TextField } from '@trisakay/ui';
 import { DocumentUploadRow } from '../src/components/DocumentUploadRow';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
@@ -167,6 +167,7 @@ export default function VerificationPendingScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <BrandMotif size={240} color={colors.accentBlue} opacity={0.05} style={styles.motif} />
         <View style={styles.iconBadge}>
           <Ionicons name="time-outline" size={30} color={colors.accentBluePressed} />
         </View>
@@ -180,6 +181,7 @@ export default function VerificationPendingScreen() {
             label={t.driver.verificationPending.refreshStatus}
             variant="outline"
             tone="neutral"
+            icon={<Ionicons name="refresh" size={18} color={colors.ink} />}
             loading={refreshing || status === 'checking'}
             onPress={handleRefresh}
             fullWidth

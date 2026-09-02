@@ -21,14 +21,14 @@ const TYPE_ICON: Record<NotificationItem['type'], keyof typeof Ionicons.glyphMap
   emergency_alert: 'warning',
 };
 
-const TYPE_TONE: Record<NotificationItem['type'], { bg: string; fg: string }> = {
-  ride_status: { bg: colors.accentBlueSoft, fg: colors.accentBluePressed },
-  payment_status: { bg: colors.accentBlueSoft, fg: colors.accentBluePressed },
-  discount_status: { bg: colors.accentGreenSoft, fg: colors.accentGreenPressed },
-  verification_status: { bg: colors.accentBlueSoft, fg: colors.accentBluePressed },
-  complaint_status: { bg: colors.dangerSoft, fg: colors.dangerPressed },
-  franchise_expiring: { bg: colors.dangerSoft, fg: colors.dangerPressed },
-  emergency_alert: { bg: colors.dangerSoft, fg: colors.dangerPressed },
+const TYPE_TONE: Record<NotificationItem['type'], { bg: string; fg: string; accent: string }> = {
+  ride_status: { bg: colors.accentBlueSoft, fg: colors.accentBluePressed, accent: colors.accentBlue },
+  payment_status: { bg: colors.accentBlueSoft, fg: colors.accentBluePressed, accent: colors.accentBlue },
+  discount_status: { bg: colors.accentGreenSoft, fg: colors.accentGreenPressed, accent: colors.accentGreen },
+  verification_status: { bg: colors.accentBlueSoft, fg: colors.accentBluePressed, accent: colors.accentBlue },
+  complaint_status: { bg: colors.dangerSoft, fg: colors.dangerPressed, accent: colors.danger },
+  franchise_expiring: { bg: colors.dangerSoft, fg: colors.dangerPressed, accent: colors.danger },
+  emergency_alert: { bg: colors.dangerSoft, fg: colors.dangerPressed, accent: colors.danger },
 };
 
 export default function NotificationsScreen() {
@@ -64,14 +64,14 @@ export default function NotificationsScreen() {
   }
 
   function NotificationCard({ item, onPress }: { item: NotificationItem; onPress: () => void }) {
-    const tone = TYPE_TONE[item.type];
+    const tone = item.read ? { bg: colors.fill, fg: colors.inkSoft, accent: 'transparent' } : TYPE_TONE[item.type];
 
     return (
       <Pressable
         accessibilityRole="button"
         accessibilityLabel={item.title}
         onPress={onPress}
-        style={[styles.card, !item.read && styles.cardUnread]}
+        style={[styles.card, !item.read && { borderLeftColor: tone.accent }, item.read && styles.cardRead]}
       >
         <View style={[styles.iconBadge, { backgroundColor: tone.bg }]}>
           <Ionicons name={TYPE_ICON[item.type]} size={18} color={tone.fg} />

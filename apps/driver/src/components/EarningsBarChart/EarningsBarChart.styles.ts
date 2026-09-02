@@ -3,11 +3,7 @@ import { colors, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
-    backgroundColor: colors.panel,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: colors.lineSoft,
-    padding: spacing.md,
+    padding: spacing.xs,
   },
   barsRow: {
     flexDirection: 'row',
@@ -26,6 +22,11 @@ export const styles = StyleSheet.create({
   bar: {
     width: '100%',
     borderRadius: 6,
+  },
+  barPast: {
+    backgroundColor: colors.accentBlueSoft,
+  },
+  barToday: {
     backgroundColor: colors.accentGreen,
   },
   barValue: {
@@ -35,9 +36,13 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
   },
   barLabel: {
-    ...typography.label,
-    fontSize: 10,
-    lineHeight: 14,
+    fontSize: 11,
+    lineHeight: 15,
+    fontFamily: typography.body.fontFamily,
     color: colors.inkFaint,
+  },
+  barLabelToday: {
+    fontFamily: typography.bodyStrong.fontFamily,
+    color: colors.ink,
   },
 });

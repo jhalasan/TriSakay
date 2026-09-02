@@ -1,9 +1,32 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  listContent: { padding: spacing.lg, gap: spacing.sm },
+  listContent: { padding: spacing.lg, gap: spacing.md },
+  summaryCard: {
+    backgroundColor: colors.panel,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.lg,
+    marginBottom: spacing.xs,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.07,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  starsRow: { flexDirection: 'row', gap: 2 },
+  summaryScoreCol: { alignItems: 'center' },
+  summaryScore: { fontSize: 34, lineHeight: 40, fontFamily: typography.amount.fontFamily, letterSpacing: -1, color: colors.ink },
+  summaryCount: { ...typography.caption, fontSize: 11.5, color: colors.inkSoft, marginTop: 3 },
+  distributionCol: { flex: 1, gap: 5 },
+  distributionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  distributionStar: { fontSize: 10.5, lineHeight: 14, fontFamily: typography.body.fontFamily, color: colors.inkFaint, width: 8 },
+  distributionTrack: { flex: 1, height: 6, borderRadius: 3, backgroundColor: colors.fill },
+  distributionFill: { height: 6, borderRadius: 3, backgroundColor: colors.accentGreen },
   card: {
     backgroundColor: colors.panel,
     borderRadius: 16,
@@ -14,6 +37,6 @@ export const styles = StyleSheet.create({
   },
   cardHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   date: { ...typography.caption, color: colors.inkSoft },
-  comment: { ...typography.body, color: colors.ink },
+  comment: { fontSize: 13.5, lineHeight: 20, fontFamily: typography.body.fontFamily, color: colors.ink },
   error: { ...typography.caption, color: colors.danger, paddingHorizontal: spacing.lg, paddingTop: spacing.sm },
 });

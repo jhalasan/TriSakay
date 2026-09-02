@@ -7,6 +7,7 @@ export interface EmptyStateProps {
   title: string;
   message?: string;
   icon?: React.ReactNode;
+  action?: React.ReactNode;
 }
 
 /**
@@ -15,7 +16,7 @@ export interface EmptyStateProps {
  * default"), so this is the one place an empty list gets some presence
  * without resorting to fake data.
  */
-export function EmptyState({ title, message, icon }: EmptyStateProps) {
+export function EmptyState({ title, message, icon, action }: EmptyStateProps) {
   return (
     <View style={styles.container}>
       <View style={styles.motifSlot} pointerEvents="none">
@@ -24,6 +25,7 @@ export function EmptyState({ title, message, icon }: EmptyStateProps) {
       {icon && <View style={styles.iconSlot}>{icon}</View>}
       <Text style={styles.title}>{title}</Text>
       {message && <Text style={styles.message}>{message}</Text>}
+      {action && <View style={styles.actionSlot}>{action}</View>}
     </View>
   );
 }

@@ -2,7 +2,8 @@ import { StyleSheet } from 'react-native';
 import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: colors.bg },
+  container: { flex: 1, backgroundColor: colors.bg, overflow: 'hidden' },
+  motif: { position: 'absolute', top: -40, right: -50 },
   scrollContent: {
     flexGrow: 1,
     alignItems: 'center',
@@ -18,8 +19,8 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { ...typography.h2, color: colors.ink, textAlign: 'center' },
-  body: { ...typography.body, color: colors.inkSoft, textAlign: 'center' },
+  title: { fontSize: 22, lineHeight: 29, fontFamily: typography.h2.fontFamily, letterSpacing: -0.4, color: colors.ink, textAlign: 'center' },
+  body: { fontSize: 14, lineHeight: 21, fontFamily: typography.body.fontFamily, color: colors.inkSoft, textAlign: 'center' },
   error: { ...typography.caption, color: colors.danger, textAlign: 'center' },
   actions: { width: '100%', gap: spacing.sm, marginTop: spacing.md },
   uploadScroll: { flex: 1 },

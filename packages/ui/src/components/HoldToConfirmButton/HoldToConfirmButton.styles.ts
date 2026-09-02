@@ -32,6 +32,9 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  iconSlot: {
+    marginRight: spacing.sm,
+  },
   label: {
     ...typography.button,
     color: colors.white,

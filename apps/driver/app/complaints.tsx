@@ -1,12 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { useFocusEffect } from 'expo-router';
 import type { ComplaintCategory } from '@trisakay/services';
-import { Badge, Button, Card, EmptyState, ListRow, Textarea, TextField, colors, type BadgeTone } from '@trisakay/ui';
-import { ScreenHeader } from '../src/components/ScreenHeader';
+import { Avatar, Badge, Button, Card, EmptyState, ListRow, Textarea, TextField, colors, type BadgeTone } from '@trisakay/ui';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useComplaintsStore, type ComplaintStatus } from '../src/store/useComplaintsStore';
 import { useHistoryStore } from '../src/store/useHistoryStore';
@@ -15,6 +14,15 @@ import { isNonEmpty } from '../src/utils/validation';
 import { styles } from '../src/styles/complaints.styles';
 
 const MAX_EVIDENCE_PHOTOS = 3;
+
+const CATEGORY_ICON: Record<ComplaintCategory, { icon: keyof typeof Ionicons.glyphMap; bg: string; fg: string }> = {
+  fare: { icon: 'cash-outline', bg: colors.accentGreenSoft, fg: colors.accentGreenPressed },
+  conduct: { icon: 'person-outline', bg: colors.accentBlueSoft, fg: colors.accentBluePressed },
+  safety: { icon: 'shield-outline', bg: colors.dangerSoft, fg: colors.dangerPressed },
+  low_rating: { icon: 'star-outline', bg: colors.accentBlueSoft, fg: colors.accentBluePressed },
+  vehicle_condition: { icon: 'build-outline', bg: colors.accentBlueSoft, fg: colors.accentBluePressed },
+  other: { icon: 'ellipsis-horizontal-outline', bg: colors.accentBlueSoft, fg: colors.accentBluePressed },
+};
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
@@ -37,6 +45,7 @@ const STATUS_TONE: Record<ComplaintStatus, BadgeTone> = { open: 'blue', review: 
 const CATEGORY_OPTIONS: ComplaintCategory[] = ['fare', 'conduct', 'safety', 'low_rating', 'vehicle_condition', 'other'];
 
 export default function ComplaintsScreen() {
+  const router = useRouter();
   const t = useTranslation();
   const STATUS_LABEL: Record<ComplaintStatus, string> = {
     open: t.driver.complaints.statusOpen,
@@ -132,26 +141,33 @@ export default function ComplaintsScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader
-        title={t.driver.complaints.title}
-        right={
-          <Text
-            onPress={() => {
-              setComposing((prev) => !prev);
-              setSubmittedWarning(null);
-            }}
-            style={styles.newToggleText}
-          >
-            {composing ? t.common.cancel : t.driver.complaints.new}
-          </Text>
-        }
-      />
+      <View style={styles.topRow}>
+        <Pressable accessibilityRole="button" accessibilityLabel="Go back" hitSlop={8} onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="chevron-back" size={18} color={colors.ink} />
+        </Pressable>
+      </View>
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView
           contentContainerStyle={styles.scrollContent}
           keyboardShouldPersistTaps="handled"
           refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
         >
+          <View style={styles.headerBlock}>
+            <View style={styles.titleRow}>
+              <Text style={styles.title}>{t.driver.complaints.title}</Text>
+              <Text
+                onPress={() => {
+                  setComposing((prev) => !prev);
+                  setSubmittedWarning(null);
+                }}
+                style={styles.newToggleText}
+              >
+                {composing ? t.common.cancel : t.driver.complaints.new}
+              </Text>
+            </View>
+            <Text style={styles.subtitle}>{t.driver.complaints.subtitle}</Text>
+          </View>
+
           {complaintsError && <Text style={styles.error}>{complaintsError}</Text>}
           {composing ? (
             <View style={styles.formGap}>
@@ -162,6 +178,9 @@ export default function ComplaintsScreen() {
                   onPress={() => setCategoryPickerOpen((prev) => !prev)}
                   accessibilityRole="button"
                 >
+                  <View style={[styles.pickerIconTile, { backgroundColor: CATEGORY_ICON[category].bg }]}>
+                    <Ionicons name={CATEGORY_ICON[category].icon} size={15} color={CATEGORY_ICON[category].fg} />
+                  </View>
                   <Text style={styles.pickerFieldText} numberOfLines={1}>
                     {CATEGORY_LABEL[category]}
                   </Text>
@@ -192,6 +211,13 @@ export default function ComplaintsScreen() {
                   onPress={() => setTripPickerOpen((prev) => !prev)}
                   accessibilityRole="button"
                 >
+                  {selectedTrip ? (
+                    <Avatar name={selectedTrip.passengerName ?? undefined} size="xs" />
+                  ) : (
+                    <View style={styles.pickerIconTile}>
+                      <Ionicons name="time-outline" size={15} color={colors.accentBluePressed} />
+                    </View>
+                  )}
                   <Text style={[styles.pickerFieldText, !selectedTrip && styles.pickerFieldPlaceholder]} numberOfLines={1}>
                     {selectedTrip
                       ? `${selectedTrip.passengerName ?? t.driver.complaints.passengerFallback} · ${formatDate(selectedTrip.date)}`

@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { requestPasswordReset } from '@trisakay/services';
-import { Button, TextField } from '@trisakay/ui';
+import { Button, colors, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { isValidEmail } from '../../src/utils/validation';
@@ -42,6 +43,9 @@ export default function ForgotPasswordScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader title={t.driver.forgotPassword.title} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.iconTile}>
+          <Ionicons name="mail-outline" size={24} color={colors.accentBluePressed} />
+        </View>
         <Text style={styles.intro}>{t.driver.forgotPassword.intro}</Text>
 
         <View style={styles.fields}>
