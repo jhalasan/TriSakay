@@ -144,8 +144,10 @@ export const en = {
     payNow: 'Pay now',
   },
   rateDriver: {
+    tripCompletedEyebrow: 'Trip completed',
     yourDriverFallback: 'Your driver',
     howWasYourRide: 'How was your ride?',
+    paidVia: 'paid via',
     commentLabel: 'Comment (optional)',
     commentPlaceholder: 'Tell us about your trip',
     submitRating: 'Submit rating',

@@ -2,6 +2,35 @@ import { StyleSheet } from 'react-native';
 import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
+  screen: {
+    flex: 1,
+  },
+  band: {
+    paddingHorizontal: spacing.xl,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xl,
+    gap: spacing.xs,
+  },
+  bandMotif: {
+    position: 'absolute',
+    top: -30,
+    right: -30,
+  },
+  bandEyebrow: {
+    ...typography.eyebrow,
+    color: colors.white,
+    opacity: 0.75,
+  },
+  bandTitle: {
+    ...typography.h1b,
+    color: colors.white,
+  },
+  bandSummary: {
+    ...typography.caption,
+    color: colors.white,
+    opacity: 0.85,
+    marginTop: spacing.xs,
+  },
   container: {
     flex: 1,
   },

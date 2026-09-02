@@ -99,11 +99,11 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
     marginBottom: spacing.md,
   },
-  /** The fare is the number the rider is looking for — give it its own surface. */
+  /** The fare is the number the rider is looking for — the spec gives it the system's navy panel, not a white card. */
   fareCard: {
     alignItems: 'center',
     gap: spacing.xs,
-    backgroundColor: colors.accentBlueSoft,
+    backgroundColor: colors.accentBlue,
     borderColor: 'transparent',
     paddingVertical: spacing.xl,
     borderRadius: radius.lg,
@@ -120,20 +120,22 @@ export const styles = StyleSheet.create({
   },
   fareLabel: {
     ...typography.label,
-    color: colors.accentBluePressed,
+    color: colors.white,
+    opacity: 0.75,
   },
   fareValue: {
     ...typography.amount,
-    color: colors.ink,
+    color: colors.white,
   },
   fareNote: {
     ...typography.caption,
-    color: colors.inkSoft,
+    color: colors.white,
+    opacity: 0.75,
     textAlign: 'center',
   },
   discountLink: {
     ...typography.caption,
-    color: colors.accentBluePressed,
+    color: colors.white,
     textDecorationLine: 'underline',
     marginTop: spacing.xs,
   },

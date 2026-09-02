@@ -146,8 +146,10 @@ export const fil: Translations = {
     payNow: 'Magbayad Ngayon',
   },
   rateDriver: {
+    tripCompletedEyebrow: 'Tapos na ang biyahe',
     yourDriverFallback: 'Iyong driver',
     howWasYourRide: 'Kumusta ang biyahe mo?',
+    paidVia: 'binayaran gamit ang',
     commentLabel: 'Komento (opsyonal)',
     commentPlaceholder: 'Ikwento ang iyong biyahe',
     submitRating: 'Isumite ang Rating',
