@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { BrandMotif, Button, GradientSurface, TextField } from '@trisakay/ui';
+import { BrandMotif, Button, GradientSurface, SegmentedControl, TextField } from '@trisakay/ui';
 import { HAS_SIGNED_IN_KEY } from '../../src/constants/walkthrough';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { isValidEmail, isValidPassword } from '../../src/utils/validation';
+import { isValidEmail, isValidMobile, isValidPassword } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/login.styles';
+
+type LoginMethod = 'mobile' | 'email';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -29,9 +31,11 @@ export default function LoginScreen() {
   // either one puts this button back at the mercy of a hung request.
   const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
 
+  const [method, setMethod] = useState<LoginMethod>('email');
   const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; mobile?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
   // null while unresolved (the one frame before AsyncStorage answers) — the
@@ -64,6 +68,12 @@ export default function LoginScreen() {
     setSubmitting(false);
   }
 
+  function handleMobileBlur() {
+    if (mobile && !isValidMobile(mobile)) {
+      setErrors((prev) => ({ ...prev, mobile: 'Enter a valid 10-digit mobile number.' }));
+    }
+  }
+
   const title = hasSignedIn === null ? ' ' : hasSignedIn ? 'Welcome back' : 'Welcome to TriSakay';
   const subtitle =
     hasSignedIn === null
@@ -75,7 +85,7 @@ export default function LoginScreen() {
   return (
     <View style={styles.screen}>
       <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
-        <BrandMotif size={200} color="#FFFFFF" opacity={0.1} style={styles.motif} />
+        <BrandMotif size={210} color="#FFFFFF" opacity={0.12} style={styles.motif} />
       </GradientSurface>
       <View style={styles.badgeWrap}>
         <View style={styles.markBadge}>
@@ -93,17 +103,46 @@ export default function LoginScreen() {
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
 
-          <View style={styles.fields}>
-            <TextField
-              label="Email"
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={setEmail}
-              error={errors.email}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
+          <View style={styles.methodTrack}>
+            <SegmentedControl
+              options={[
+                { label: 'Mobile number', value: 'mobile' },
+                { label: 'Email', value: 'email' },
+              ]}
+              value={method}
+              onChange={setMethod}
             />
+          </View>
+
+          <View style={styles.fields}>
+            {method === 'mobile' ? (
+              <TextField
+                label="Mobile number"
+                placeholder="917 842 5510"
+                value={mobile}
+                onChangeText={setMobile}
+                onBlur={handleMobileBlur}
+                error={errors.mobile}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                leftIcon={
+                  <View style={styles.mobilePrefix}>
+                    <Text style={styles.mobilePrefixText}>+63</Text>
+                  </View>
+                }
+              />
+            ) : (
+              <TextField
+                label="Email"
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={setEmail}
+                error={errors.email}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            )}
             <TextField
               label="Password"
               placeholder="••••••••"
@@ -115,6 +154,15 @@ export default function LoginScreen() {
             />
           </View>
 
+          {method === 'mobile' && (
+            // Mobile-number sign-in has no backend path yet — signIn only
+            // accepts email/password (packages/services/src/auth/index.ts)
+            // and there's no phone→email lookup available to this app. The
+            // control above is built to spec; submission stays on Email
+            // until that backend support exists.
+            <Text style={styles.mobileNotice}>Signing in with a mobile number is coming soon — use Email for now.</Text>
+          )}
+
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
           <View style={styles.forgotLink}>
@@ -123,7 +171,13 @@ export default function LoginScreen() {
             </Text>
           </View>
 
-          <Button label="Log in" onPress={handleLogin} loading={submitting || awaitingGate} fullWidth />
+          <Button
+            label="Log in"
+            onPress={handleLogin}
+            loading={submitting || awaitingGate}
+            disabled={method === 'mobile'}
+            fullWidth
+          />
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />

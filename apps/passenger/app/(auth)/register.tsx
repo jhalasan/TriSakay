@@ -243,7 +243,7 @@ export default function RegisterScreen() {
           </ScrollView>
         </>
       ) : (
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView contentContainerStyle={[styles.scrollContent, styles.legalScrollContent]} keyboardShouldPersistTaps="handled">
           <Text style={styles.stepIntro}>
             Please read and accept these before your account is created.
           </Text>
