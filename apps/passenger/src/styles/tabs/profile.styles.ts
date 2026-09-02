@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -127,7 +127,16 @@ export const styles = StyleSheet.create({
 
   // Discount status banner — green when an approved discount is active
   // (mirrors the emergency/hero band's texture-free solid-fill treatment),
-  // neutral navy-tinted invite when the passenger has none yet.
+  // neutral navy-tinted invite when the passenger has none yet. Shadow lives
+  // on the wrap below, never on the same view as overflow:'hidden' +
+  // borderRadius (see home.styles.ts's heroShadowWrap).
+  discountBannerShadowWrap: {
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 20,
+    elevation: 8,
+  },
   discountBanner: {
     position: 'relative',
     overflow: 'hidden',
@@ -136,7 +145,6 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radius.lg,
     padding: spacing.lg,
-    ...elevation.card,
   },
   discountBannerNeutral: {
     backgroundColor: colors.panel,

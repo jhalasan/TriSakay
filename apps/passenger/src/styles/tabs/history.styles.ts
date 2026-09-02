@@ -211,6 +211,10 @@ export const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   skeletonBlock: {
+    // Literal — the mock names this exact loading-skeleton grey (`.sk` in
+    // the HTML) and it doesn't match any existing token (closest is
+    // colors.line #DCE2E6 or colors.fill #EDF1F4); flagged per hard rule 2
+    // rather than added to the palette for a single-purpose placeholder tone.
     backgroundColor: '#E4E8EC',
     borderRadius: 7,
   },

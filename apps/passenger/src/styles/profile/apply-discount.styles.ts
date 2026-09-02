@@ -12,6 +12,11 @@ export const styles = StyleSheet.create({
     gap: spacing.lg,
   },
 
+  // Shadow lives on this wrapper, never on the same view as overflow:'hidden'
+  // + borderRadius (see home.styles.ts's heroShadowWrap).
+  bannerShadowWrap: {
+    ...elevation.card,
+  },
   banner: {
     position: 'relative',
     overflow: 'hidden',
@@ -20,7 +25,6 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
     borderRadius: radius.lg,
     padding: spacing.lg,
-    ...elevation.card,
   },
   bannerMotif: {
     position: 'absolute',

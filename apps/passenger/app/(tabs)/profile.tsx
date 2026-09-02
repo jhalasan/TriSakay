@@ -159,21 +159,23 @@ export default function ProfileScreen() {
           </View>
 
           {stats?.discount ? (
-            <GradientSurface solid={colors.accentGreen} style={styles.discountBanner}>
-              <BrandMotif size={100} color={colors.white} opacity={0.14} style={styles.discountBannerMotif} />
-              <View style={[styles.discountIconTile, styles.discountIconTileActive]}>
-                <Ionicons name="pricetag" size={20} color={colors.white} />
-              </View>
-              <View style={styles.discountTextSlot}>
-                <Text style={styles.discountTitle}>
-                  {CATEGORY_LABEL[stats.discount.category]} {t.profile.discountActiveSuffix}
-                </Text>
-                <Text style={styles.discountSubtitle}>
-                  {stats.discount.ratePercent}% {t.accountPages.fareDiscountBannerSuffix}
-                </Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color={colors.white} />
-            </GradientSurface>
+            <View style={styles.discountBannerShadowWrap}>
+              <GradientSurface solid={colors.accentGreen} style={styles.discountBanner}>
+                <BrandMotif size={100} color={colors.white} opacity={0.14} style={styles.discountBannerMotif} />
+                <View style={[styles.discountIconTile, styles.discountIconTileActive]}>
+                  <Ionicons name="pricetag" size={20} color={colors.white} />
+                </View>
+                <View style={styles.discountTextSlot}>
+                  <Text style={styles.discountTitle}>
+                    {CATEGORY_LABEL[stats.discount.category]} {t.profile.discountActiveSuffix}
+                  </Text>
+                  <Text style={styles.discountSubtitle}>
+                    {stats.discount.ratePercent}% {t.accountPages.fareDiscountBannerSuffix}
+                  </Text>
+                </View>
+                <Ionicons name="chevron-forward" size={18} color={colors.white} />
+              </GradientSurface>
+            </View>
           ) : (
             <Pressable
               accessibilityRole="button"

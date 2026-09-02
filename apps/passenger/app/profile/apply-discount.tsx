@@ -164,18 +164,20 @@ export default function ApplyDiscountScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.accentBluePressed} />
         }
       >
-        <GradientSurface solid={colors.accentGreen} style={styles.banner}>
-          <BrandMotif size={130} color={colors.white} opacity={0.14} style={styles.bannerMotif} />
-          <View style={styles.bannerIconTile}>
-            <Ionicons name="pricetag" size={22} color={colors.white} />
-          </View>
-          <View style={styles.bannerTextSlot}>
-            <Text style={styles.bannerTitle}>
-              {discountRatePercent ?? 20}% {t.accountPages.fareDiscountBannerSuffix}
-            </Text>
-            <Text style={styles.bannerSubtitle}>{t.accountPages.fareDiscountBannerSubtitle}</Text>
-          </View>
-        </GradientSurface>
+        <View style={styles.bannerShadowWrap}>
+          <GradientSurface solid={colors.accentGreen} style={styles.banner}>
+            <BrandMotif size={130} color={colors.white} opacity={0.14} style={styles.bannerMotif} />
+            <View style={styles.bannerIconTile}>
+              <Ionicons name="pricetag" size={22} color={colors.white} />
+            </View>
+            <View style={styles.bannerTextSlot}>
+              <Text style={styles.bannerTitle}>
+                {discountRatePercent ?? 20}% {t.accountPages.fareDiscountBannerSuffix}
+              </Text>
+              <Text style={styles.bannerSubtitle}>{t.accountPages.fareDiscountBannerSubtitle}</Text>
+            </View>
+          </GradientSurface>
+        </View>
 
         <Text style={styles.intro}>{t.accountPages.fareDiscountIntro}</Text>
 
