@@ -6,13 +6,13 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   header: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20, // legal screen — 20px gutter, not the general 16px
     paddingTop: spacing.lg,
     paddingBottom: spacing.md,
     gap: spacing.xs,
   },
   title: {
-    ...typography.h1,
+    ...typography.h1b,
     color: colors.ink,
   },
   version: {
@@ -24,7 +24,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20, // legal screen gutter
     paddingBottom: spacing.xl,
     gap: spacing.md,
   },
@@ -33,7 +33,7 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
   },
   sectionLabel: {
-    ...typography.label,
+    ...typography.eyebrow,
     color: colors.inkSoft,
     marginTop: spacing.md,
   },
@@ -59,7 +59,7 @@ export const styles = StyleSheet.create({
   },
   /** Pinned so the primary action stays reachable no matter how long the policy runs. */
   footer: {
-    paddingHorizontal: spacing.lg,
+    paddingHorizontal: 20, // legal screen gutter
     paddingTop: spacing.md,
     paddingBottom: spacing.lg,
     gap: spacing.md,

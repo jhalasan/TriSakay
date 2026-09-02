@@ -1,5 +1,6 @@
 import { useRouter } from 'expo-router';
-import { ConfirmModal } from '@trisakay/ui';
+import { Ionicons } from '@expo/vector-icons';
+import { ConfirmModal, colors } from '@trisakay/ui';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useBookingStore } from '../src/store/useBookingStore';
 
@@ -22,6 +23,7 @@ export default function LogoutScreen() {
       cancelLabel="Cancel"
       confirmLabel="Log out"
       destructive
+      icon={<Ionicons name="log-out-outline" size={24} color={colors.dangerPressed} />}
       onCancel={() => router.dismiss()}
       onConfirm={handleConfirm}
     />

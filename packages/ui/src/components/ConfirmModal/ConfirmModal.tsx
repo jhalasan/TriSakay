@@ -1,4 +1,5 @@
 import { Modal, Text, View } from 'react-native';
+import { colors } from '../../theme';
 import { Button } from '../Button';
 import { styles } from './ConfirmModal.styles';
 
@@ -9,6 +10,8 @@ export interface ConfirmModalProps {
   confirmLabel: string;
   cancelLabel?: string;
   destructive?: boolean;
+  /** Optional icon rendered in a centred 48px tile above the title — e.g. the log-out gate's warning glyph. Not shown unless passed, so existing confirm dialogs (e.g. a trip cancel) are unaffected. */
+  icon?: React.ReactNode;
   /** Shows a spinner and disables both buttons while the confirm action is in flight — prevents a double-tap re-firing onConfirm before the modal closes. */
   confirmLoading?: boolean;
   onConfirm: () => void;
@@ -22,6 +25,7 @@ export function ConfirmModal({
   confirmLabel,
   cancelLabel = 'Cancel',
   destructive = false,
+  icon,
   confirmLoading = false,
   onConfirm,
   onCancel,
@@ -30,6 +34,11 @@ export function ConfirmModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
+          {icon && (
+            <View style={[styles.iconTile, { backgroundColor: destructive ? colors.dangerSoft : colors.accentBlueSoft }]}>
+              {icon}
+            </View>
+          )}
           <Text style={styles.title}>{title}</Text>
           {message && <Text style={styles.message}>{message}</Text>}
           <View style={styles.actions}>
