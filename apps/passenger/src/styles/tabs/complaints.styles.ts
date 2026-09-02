@@ -31,12 +31,12 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    borderWidth: 1.5,
-    borderColor: colors.lineStrong, // behaves as a select input
-    borderRadius: radius.sm,
+    borderWidth: 1,
+    borderColor: colors.line,
+    borderRadius: radius.card,
     backgroundColor: colors.panel,
-    paddingHorizontal: spacing.md,
-    minHeight: 48,
+    paddingHorizontal: spacing.lg,
+    minHeight: 52,
   },
   categoryFieldContent: {
     flexDirection: 'row',
@@ -68,8 +68,12 @@ export const styles = StyleSheet.create({
   pickerList: {
     borderWidth: 1,
     borderColor: colors.line,
-    borderRadius: radius.sm,
+    borderRadius: radius.card,
     overflow: 'hidden',
+  },
+  priorSection: {
+    gap: spacing.sm,
+    marginTop: spacing.sm,
   },
   error: {
     ...typography.caption,
@@ -117,13 +121,13 @@ export const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   evidenceThumbWrap: {
-    width: 84,
-    height: 84,
+    width: 72,
+    height: 72,
   },
   evidenceThumb: {
-    width: 84,
-    height: 84,
-    borderRadius: radius.sm,
+    width: 72,
+    height: 72,
+    borderRadius: radius.sm2,
   },
   evidenceRemove: {
     position: 'absolute',
@@ -137,9 +141,9 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   evidenceAddTile: {
-    width: 84,
-    height: 84,
-    borderRadius: radius.sm,
+    width: 72,
+    height: 72,
+    borderRadius: radius.sm2,
     borderWidth: 1,
     borderColor: colors.line,
     borderStyle: 'dashed',

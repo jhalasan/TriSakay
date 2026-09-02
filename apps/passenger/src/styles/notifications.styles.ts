@@ -1,14 +1,14 @@
 import { StyleSheet } from 'react-native';
-import { colors, fontFamily, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, fontFamily, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.bg,
   },
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
-    gap: spacing.sm,
   },
   markReadText: {
     ...typography.caption,
@@ -35,7 +35,7 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   unreadPill: {
-    backgroundColor: colors.accentBlue,
+    backgroundColor: colors.danger,
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: 4,
@@ -57,10 +57,13 @@ export const styles = StyleSheet.create({
     borderRadius: radius.pill,
     paddingHorizontal: spacing.md,
     paddingVertical: spacing.sm - 2,
-    backgroundColor: colors.fill,
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderColor: colors.line,
   },
   filterChipActive: {
     backgroundColor: colors.accentBlue,
+    borderColor: colors.accentBlue,
   },
   filterChipText: {
     ...typography.caption,
@@ -71,24 +74,29 @@ export const styles = StyleSheet.create({
     color: colors.white,
   },
 
+  sectionHeader: {
+    ...typography.label,
+    color: colors.inkSoft,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+  },
+
   card: {
     flexDirection: 'row',
     alignItems: 'flex-start',
     gap: spacing.md,
     backgroundColor: colors.panel,
-    borderRadius: radius.md,
+    borderRadius: radius.card,
     padding: spacing.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-  },
-  cardUnread: {
-    backgroundColor: colors.accentBlueSoft,
-    borderColor: colors.accentBlueSoft,
+    marginBottom: spacing.sm,
+    borderLeftWidth: 3,
+    borderLeftColor: 'transparent',
+    ...elevation.card,
   },
   iconBadge: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.pill,
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -97,7 +105,7 @@ export const styles = StyleSheet.create({
     height: 8,
     borderRadius: 4,
     marginTop: 6,
-    backgroundColor: colors.accentBlue,
+    backgroundColor: colors.danger,
   },
   textSlot: {
     flex: 1,
