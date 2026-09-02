@@ -1,14 +1,17 @@
 import { useCallback } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
+import NetInfo from '@react-native-community/netinfo';
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, BrandMotif, EmptyState, GradientSurface, Spinner, StatTile, colors } from '@trisakay/ui';
+import { Avatar, BrandMotif, Button, EmptyState, GradientSurface, Spinner, StatTile, colors } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { usePassengerStats } from '../../src/hooks/usePassengerStats';
 import { useNearbyDriverCount } from '../../src/hooks/useNearbyDriverCount';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useBookingStore } from '../../src/store/useBookingStore';
+import { useConnectivityStore } from '../../src/store/useConnectivityStore';
+import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
 import { useSavedPlacesStore } from '../../src/store/useSavedPlacesStore';
 import { SHORTCUT_ICON_TONE, DEFAULT_SHORTCUT_TONE } from '../../src/utils/savedPlaceIconTone';
@@ -52,6 +55,8 @@ export default function HomeScreen() {
   const removeSavedPlace = useSavedPlacesStore((state) => state.remove);
   const { stats } = usePassengerStats();
   const nearbyCount = useNearbyDriverCount();
+  const isOffline = useConnectivityStore((state) => state.isOffline);
+  const lastRideId = useHistoryStore((state) => state.items[0]?.id);
 
   useFocusEffect(
     useCallback(() => {
@@ -91,6 +96,31 @@ export default function HomeScreen() {
       })
     : t.home.statsDiscountEmptyValue;
   const tripsValue = stats ? String(stats.trips) : t.home.statsTripsEmptyValue;
+
+  // The map and every live-data card below need a connection to mean
+  // anything — showing them stale/blank would be worse than the honest
+  // offline state the system-states spec asks for.
+  if (isOffline) {
+    return (
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+        <View style={styles.offlineWrap}>
+          <View style={styles.offlineIconTile}>
+            <Ionicons name="locate-outline" size={22} color={colors.accentBlue} />
+          </View>
+          <Text style={styles.offlineTitle}>{t.offline.title}</Text>
+          <Text style={styles.offlineMessage}>{t.offline.cause}</Text>
+          <View style={styles.offlineButton}>
+            <Button label={t.offline.tryAgain} fullWidth onPress={() => void NetInfo.fetch()} />
+          </View>
+          {lastRideId && (
+            <Pressable accessibilityRole="button" onPress={() => router.push(`/history/${lastRideId}`)}>
+              <Text style={styles.offlineReceiptLink}>{t.offline.viewLastReceipt}</Text>
+            </Pressable>
+          )}
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right']}>

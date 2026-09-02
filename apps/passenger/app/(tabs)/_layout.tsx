@@ -3,6 +3,8 @@ import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { Tabs } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { colors, fontFamily, spacing, typography } from '@trisakay/ui';
+import { OfflineStrip } from '../../src/components/OfflineStrip/OfflineStrip';
+import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 
 // The active marker (22×3, centred on the item's top edge) and the
 // active label's family swap (regular → bold) aren't expressible through
@@ -78,68 +80,77 @@ function TabLabel({ label, color, focused }: { label: string; color: string; foc
 }
 
 export default function TabsLayout() {
+  const isOffline = useConnectivityStore((state) => state.isOffline);
+
   return (
-    <Tabs
-      screenOptions={{
-        headerShown: false,
-        tabBarActiveTintColor: colors.accentBlue,
-        tabBarInactiveTintColor: colors.inkFaint,
-        tabBarButton: (props) => <TabBarButton {...props} />,
-        tabBarStyle: {
-          backgroundColor: colors.panel,
-          borderTopWidth: 1,
-          borderTopColor: colors.lineSoft,
-          height: 60,
-          paddingBottom: spacing.xs,
-          paddingTop: spacing.xs,
-        },
-      }}
-    >
-      <Tabs.Screen
-        name="home"
-        options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Home" color={color} focused={focused} />,
+    <View style={styles.root}>
+      <OfflineStrip />
+      <Tabs
+        screenOptions={{
+          headerShown: false,
+          tabBarActiveTintColor: colors.accentBlue,
+          tabBarInactiveTintColor: colors.inkFaint,
+          tabBarButton: (props) => <TabBarButton {...props} />,
+          tabBarStyle: {
+            backgroundColor: colors.panel,
+            borderTopWidth: 1,
+            borderTopColor: colors.lineSoft,
+            height: 60,
+            paddingBottom: spacing.xs,
+            paddingTop: spacing.xs,
+            opacity: isOffline ? 0.5 : 1,
+          },
         }}
-      />
-      <Tabs.Screen
-        name="history"
-        options={{
-          title: 'History',
-          tabBarIcon: ({ color }) => <TabIcon name="time" color={color} />,
-          tabBarLabel: ({ color, focused }) => <TabLabel label="History" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="complaints"
-        options={{
-          title: 'Complaints',
-          tabBarIcon: ({ color }) => <TabIcon name="chatbox-ellipses" color={color} />,
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Complaints" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="profile"
-        options={{
-          title: 'Profile',
-          tabBarIcon: ({ color }) => <TabIcon name="person" color={color} />,
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Profile" color={color} focused={focused} />,
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: 'Settings',
-          tabBarIcon: ({ color }) => <TabIcon name="settings-sharp" color={color} />,
-          tabBarLabel: ({ color, focused }) => <TabLabel label="Settings" color={color} focused={focused} />,
-        }}
-      />
-    </Tabs>
+      >
+        <Tabs.Screen
+          name="home"
+          options={{
+            title: 'Home',
+            tabBarIcon: ({ color }) => <TabIcon name="home" color={color} />,
+            tabBarLabel: ({ color, focused }) => <TabLabel label="Home" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="history"
+          options={{
+            title: 'History',
+            tabBarIcon: ({ color }) => <TabIcon name="time" color={color} />,
+            tabBarLabel: ({ color, focused }) => <TabLabel label="History" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="complaints"
+          options={{
+            title: 'Complaints',
+            tabBarIcon: ({ color }) => <TabIcon name="chatbox-ellipses" color={color} />,
+            tabBarLabel: ({ color, focused }) => <TabLabel label="Complaints" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="profile"
+          options={{
+            title: 'Profile',
+            tabBarIcon: ({ color }) => <TabIcon name="person" color={color} />,
+            tabBarLabel: ({ color, focused }) => <TabLabel label="Profile" color={color} focused={focused} />,
+          }}
+        />
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: 'Settings',
+            tabBarIcon: ({ color }) => <TabIcon name="settings-sharp" color={color} />,
+            tabBarLabel: ({ color, focused }) => <TabLabel label="Settings" color={color} focused={focused} />,
+          }}
+        />
+      </Tabs>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
+  root: {
+    flex: 1,
+  },
   tabButton: {
     flex: 1,
     minWidth: 0,

@@ -7,6 +7,13 @@ export const fil: Translations = {
     cancel: 'Kanselahin',
     delete: 'Tanggalin',
   },
+  offline: {
+    stripMessage: 'Walang koneksyon — ipinapakita ang iyong huling update',
+    title: 'Ikaw ay offline',
+    cause: 'Kailangan ng TriSakay ng data o Wi-Fi para makahanap ng driver malapit sa iyo. Walang nawala — naka-save pa rin ang iyong huling biyahe.',
+    tryAgain: 'Subukan Muli',
+    viewLastReceipt: 'Tingnan ang Huling Resibo ng Sakay',
+  },
   home: {
     profileAccessibilityLabel: 'Profile',
     notificationsAccessibilityLabel: 'Mga Abiso',

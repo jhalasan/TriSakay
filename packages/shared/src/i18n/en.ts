@@ -5,6 +5,13 @@ export const en = {
     cancel: 'Cancel',
     delete: 'Delete',
   },
+  offline: {
+    stripMessage: 'No connection — showing your last update',
+    title: "You're offline",
+    cause: 'TriSakay needs data or Wi-Fi to find drivers near you. Nothing was lost — your last trip is still saved.',
+    tryAgain: 'Try again',
+    viewLastReceipt: 'View last ride receipt',
+  },
   home: {
     profileAccessibilityLabel: 'Profile',
     notificationsAccessibilityLabel: 'Notifications',
