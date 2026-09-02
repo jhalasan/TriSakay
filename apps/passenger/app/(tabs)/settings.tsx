@@ -4,6 +4,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Toggle, colors } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { useAuthStore } from '../../src/store/useAuthStore';
 import { useSettingsStore, type SettingsLanguage } from '../../src/store/useSettingsStore';
 import { styles } from '../../src/styles/tabs/settings.styles';
 
@@ -24,12 +25,14 @@ function IconBadge({ name }: { name: keyof typeof Ionicons.glyphMap }) {
 function ToggleRow({
   icon,
   label,
+  subtitle,
   value,
   onValueChange,
   divider = true,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
+  subtitle?: string;
   value: boolean;
   onValueChange: (value: boolean) => void;
   divider?: boolean;
@@ -38,7 +41,14 @@ function ToggleRow({
     <View style={[styles.row, divider && styles.rowDivider]}>
       <View style={styles.rowLeading}>
         <IconBadge name={icon} />
-        <Text style={styles.rowLabel}>{label}</Text>
+        <View style={styles.rowTextSlot}>
+          <Text style={styles.rowLabel}>{label}</Text>
+          {subtitle && (
+            <Text style={styles.rowSubtitle} numberOfLines={1}>
+              {subtitle}
+            </Text>
+          )}
+        </View>
       </View>
       <Toggle value={value} onValueChange={onValueChange} />
     </View>
@@ -48,6 +58,7 @@ function ToggleRow({
 export default function SettingsScreen() {
   const router = useRouter();
   const t = useTranslation();
+  const user = useAuthStore((state) => state.user);
   const {
     pushNotificationsEnabled,
     locationTrackingEnabled,
@@ -80,22 +91,25 @@ export default function SettingsScreen() {
         </View>
 
         <SectionLabel label={t.settings.sectionNotifications} />
-        <Card style={styles.card}>
+        <Card variant="raised" style={styles.card}>
           <ToggleRow
             icon="notifications-outline"
             label={t.settings.pushNotifications}
+            subtitle={t.settings.pushNotificationsSubtitle}
             value={pushNotificationsEnabled}
             onValueChange={togglePushNotifications}
           />
           <ToggleRow
             icon="chatbubble-ellipses-outline"
             label={t.settings.smsReceipts}
+            subtitle={user?.phone ? `${t.settings.smsReceiptsSubtitlePrefix} ${user.phone}` : undefined}
             value={smsReceipts}
             onValueChange={toggleSmsReceipts}
           />
           <ToggleRow
             icon="mail-outline"
             label={t.settings.emailReceipts}
+            subtitle={user?.email}
             value={emailReceipts}
             onValueChange={toggleEmailReceipts}
             divider={false}
@@ -103,10 +117,11 @@ export default function SettingsScreen() {
         </Card>
 
         <SectionLabel label={t.settings.sectionPrivacy} />
-        <Card style={styles.card}>
+        <Card variant="raised" style={styles.card}>
           <ToggleRow
             icon="location-outline"
             label={t.settings.locationTracking}
+            subtitle={t.settings.locationTrackingSubtitle}
             value={locationTrackingEnabled}
             onValueChange={toggleLocationTracking}
             divider={false}
@@ -114,7 +129,7 @@ export default function SettingsScreen() {
         </Card>
 
         <SectionLabel label={t.settings.sectionPreferences} />
-        <Card style={styles.card}>
+        <Card variant="raised" style={styles.card}>
           <Pressable style={styles.row} onPress={cycleLanguage} accessibilityRole="button">
             <View style={styles.rowLeading}>
               <IconBadge name="language-outline" />
@@ -129,6 +144,7 @@ export default function SettingsScreen() {
 
         <View style={styles.logoutWrap}>
           <Button label={t.settings.logOut} variant="outline" tone="danger" fullWidth onPress={() => router.push('/logout')} />
+          <Text style={styles.versionFooter}>{t.settings.versionFooter}</Text>
         </View>
       </ScrollView>
     </SafeAreaView>
