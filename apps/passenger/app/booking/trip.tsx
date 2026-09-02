@@ -23,6 +23,8 @@ export default function TripScreen() {
   const { status: initialStatus } = useLocalSearchParams<{ status?: 'assigned' | 'ongoing' }>();
   const driver = useBookingStore((state) => state.driver);
   const pickup = useBookingStore((state) => state.pickup);
+  const seats = useBookingStore((state) => state.seats);
+  const fare = useBookingStore((state) => state.fare);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const reset = useBookingStore((state) => state.reset);
@@ -72,8 +74,13 @@ export default function TripScreen() {
           router.replace('/booking/payment');
         } else if (row.status === 'cancelled') {
           hasExitedRef.current = true;
-          reset();
-          router.replace('/(tabs)/home');
+          router.replace({
+            pathname: '/booking/ride-cancelled',
+            params: {
+              byDriver: row.cancel_reason?.toLowerCase().includes('driver') ? '1' : '0',
+              discountApplied: row.discount_applied ? '1' : '0',
+            },
+          });
         }
       },
       (message) => {
@@ -145,8 +152,7 @@ export default function TripScreen() {
 
       <Animated.View
         style={[
-          styles.sheet,
-          { paddingBottom: spacing.xl + insets.bottom },
+          styles.sheetShadowWrap,
           {
             opacity: settle,
             transform: [
@@ -155,19 +161,25 @@ export default function TripScreen() {
           },
         ]}
       >
-        <GradientSurface token="brand" direction="diagonal" style={styles.sheetAccent} />
-        <DriverInfoCard driver={driverForCard} />
-        {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
-        <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
+        <GradientSurface
+          token="hero"
+          direction="diagonal"
+          style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]}
+        >
+          <View style={styles.sheetHandle} />
+          <DriverInfoCard driver={driverForCard} seats={seats} fare={fare} />
+          {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
+          <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
 
-        <View style={styles.sosBlock}>
-          <HoldToConfirmButton
-            label={t.trip.sosButton}
-            fullWidth
-            onConfirm={() => router.push('/booking/emergency')}
-          />
-          <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
-        </View>
+          <View style={styles.sosBlock}>
+            <HoldToConfirmButton
+              label={t.trip.sosButton}
+              fullWidth
+              onConfirm={() => router.push('/booking/emergency')}
+            />
+            <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
+          </View>
+        </GradientSurface>
       </Animated.View>
     </View>
   );

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   card: {
@@ -18,24 +18,29 @@ export const styles = StyleSheet.create({
     ...typography.bodyStrong,
     color: colors.ink,
   },
-  plateRow: {
+  statsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
     borderTopWidth: 1,
     borderTopColor: colors.lineSoft,
     paddingTop: spacing.md,
   },
-  plateLabel: {
+  statCell: {
+    flex: 1,
+    gap: 2,
+  },
+  statDivider: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: colors.lineSoft,
+    marginHorizontal: spacing.md,
+  },
+  statLabel: {
     ...typography.label,
     color: colors.inkSoft,
   },
-  plateValue: {
+  statValue: {
     ...typography.bodyStrong,
     color: colors.ink,
-    backgroundColor: colors.fill,
-    borderRadius: radius.sm,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 4,
   },
 });

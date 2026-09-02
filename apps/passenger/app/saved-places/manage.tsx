@@ -54,6 +54,7 @@ export default function ManageSavedPlacesScreen() {
         <View style={styles.backButton} />
       </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
+        <Text style={styles.intro}>{t.savedPlacesManagement.intro}</Text>
         {loading && items.length === 0 ? (
           <Spinner size="small" />
         ) : error ? (
@@ -87,6 +88,14 @@ export default function ManageSavedPlacesScreen() {
             );
           })
         )}
+        <Pressable
+          accessibilityRole="button"
+          style={styles.addRow}
+          onPress={() => router.push('/booking/set-pickup')}
+        >
+          <Ionicons name="add" size={18} color={colors.accentBlue} />
+          <Text style={styles.addRowLabel}>{t.savedPlacesManagement.addFromMap}</Text>
+        </Pressable>
       </ScrollView>
     </SafeAreaView>
   );

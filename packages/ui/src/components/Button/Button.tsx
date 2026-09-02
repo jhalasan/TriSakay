@@ -5,7 +5,7 @@ import { GradientSurface } from '../GradientSurface';
 import { styles } from './Button.styles';
 
 export type ButtonVariant = 'solid' | 'outline' | 'ghost';
-export type ButtonTone = 'primary' | 'neutral' | 'danger';
+export type ButtonTone = 'primary' | 'neutral' | 'danger' | 'success';
 export type ButtonSize = 'md' | 'sm';
 
 export interface ButtonProps extends Omit<PressableProps, 'style'> {
@@ -22,11 +22,20 @@ const TONES = {
   primary: { solid: colors.accentBlue, pressed: colors.accentBluePressed, text: colors.accentBlue },
   neutral: { solid: colors.ink, pressed: colors.inkPressed, text: colors.ink },
   danger: { solid: colors.danger, pressed: colors.dangerPressed, text: colors.danger },
+  // Reserved for the "Request a ride" family of CTAs — the system's colour
+  // discipline keeps green to confirmed/positive actions only.
+  success: { solid: colors.accentGreen, pressed: colors.accentGreenPressed, text: colors.accentGreen },
 } as const;
 
-function surfaceFor(tone: ButtonTone, variant: ButtonVariant, pressed: boolean) {
+function surfaceFor(tone: ButtonTone, variant: ButtonVariant, pressed: boolean, isDisabled: boolean) {
   const t = TONES[tone];
   if (variant === 'solid') {
+    // Disabled solid buttons get their own flat neutral surface, not a
+    // dimmed version of the tone's fill — matches the redesign's disabled
+    // CTA treatment (e.g. the consent gate's "Accept & Continue").
+    if (isDisabled) {
+      return { backgroundColor: colors.fill, borderColor: colors.fill, textColor: colors.inkFaint };
+    }
     const bg = pressed ? t.pressed : t.solid;
     return { backgroundColor: bg, borderColor: bg, textColor: colors.white };
   }
@@ -84,33 +93,35 @@ export function Button({
           onPressOut?.(e);
         }}
         style={({ pressed }) => {
-          const s = surfaceFor(tone, variant, pressed);
+          const s = surfaceFor(tone, variant, pressed, isDisabled);
           // The primary solid CTA carries its fill as a gradient (rendered
           // as a child below) instead of a flat backgroundColor — this is
           // the one signature surface, deliberately not spread to every
           // button so it stays a highlight rather than becoming noise.
-          const usesGradientFill = tone === 'primary' && variant === 'solid' && !pressed;
+          const usesGradientFill = tone === 'primary' && variant === 'solid' && !pressed && !isDisabled;
           return [
             styles.base,
             size === 'md' ? styles.md : styles.sm,
             fullWidth && styles.fullWidth,
             variant === 'solid' && !isDisabled && elevation.button,
             { backgroundColor: usesGradientFill ? 'transparent' : s.backgroundColor, borderColor: s.borderColor },
-            isDisabled && styles.disabled,
+            // Solid disabled already renders its own flat colors.fill surface
+            // above — only outline/ghost fall back to a plain opacity dim.
+            isDisabled && variant !== 'solid' && styles.disabled,
           ];
         }}
         {...pressableProps}
       >
         {({ pressed }) => {
-          const s = surfaceFor(tone, variant, pressed);
-          const usesGradientFill = tone === 'primary' && variant === 'solid' && !pressed;
+          const s = surfaceFor(tone, variant, pressed, isDisabled);
+          const usesGradientFill = tone === 'primary' && variant === 'solid' && !pressed && !isDisabled;
           return (
             <>
               {usesGradientFill && (
                 <GradientSurface
                   token="button"
                   direction="diagonal"
-                  style={[StyleSheet.absoluteFillObject, { borderRadius: radius.md }]}
+                  style={[StyleSheet.absoluteFillObject, { borderRadius: radius.sm2 }]}
                 />
               )}
               <View style={styles.content}>

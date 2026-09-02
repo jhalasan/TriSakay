@@ -1,4 +1,5 @@
 import { Modal, Text, View } from 'react-native';
+import { colors } from '../../theme';
 import { Button } from '../Button';
 import { styles } from './ConfirmModal.styles';
 
@@ -9,7 +10,7 @@ export interface ConfirmModalProps {
   confirmLabel: string;
   cancelLabel?: string;
   destructive?: boolean;
-  /** Optional icon shown above the title, in a tone-matched tile (danger-soft when `destructive`, neutral fill otherwise). */
+  /** Optional icon rendered in a centred 48px tile above the title in a tone-matched tile (danger-soft when `destructive`, neutral fill otherwise). Not shown unless passed, so existing confirm dialogs are unaffected. */
   icon?: React.ReactNode;
   /** Shows a spinner and disables both buttons while the confirm action is in flight — prevents a double-tap re-firing onConfirm before the modal closes. */
   confirmLoading?: boolean;
@@ -33,7 +34,7 @@ export function ConfirmModal({
     <Modal visible={visible} transparent animationType="fade" onRequestClose={onCancel}>
       <View style={styles.backdrop}>
         <View style={styles.card}>
-          {icon && <View style={[styles.iconTile, destructive ? styles.iconTileDanger : styles.iconTileNeutral]}>{icon}</View>}
+{icon && <View style={[styles.iconTile, destructive ? styles.iconTileDanger : styles.iconTileNeutral]}>{icon}</View>}
           <Text style={styles.title}>{title}</Text>
           {message && <Text style={styles.message}>{message}</Text>}
           <View style={styles.actions}>

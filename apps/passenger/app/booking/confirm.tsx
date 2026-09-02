@@ -35,6 +35,7 @@ export default function ConfirmScreen() {
   const paymentMethod = useBookingStore((state) => state.paymentMethod);
   const setSeats = useBookingStore((state) => state.setSeats);
   const setFare = useBookingStore((state) => state.setFare);
+  const setDistanceKm = useBookingStore((state) => state.setDistanceKm);
   const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
@@ -134,6 +135,7 @@ export default function ConfirmScreen() {
     <View style={styles.footer}>
       <Button
         label={t.confirm.requestRide}
+        tone="success"
         fullWidth
         loading={isRequesting}
         disabled={!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady}
@@ -159,6 +161,7 @@ export default function ConfirmScreen() {
     setRequestError(null);
 
     const distanceKm = route?.distanceKm ?? haversineDistanceKm(pickup, dropoff);
+    setDistanceKm(distanceKm);
     const { data, error } = await createRideRequest({
       passengerId: user.id,
       pickup: { latitude: pickup.latitude, longitude: pickup.longitude, label: pickup.label },
@@ -272,7 +275,7 @@ export default function ConfirmScreen() {
                   accessibilityLabel={t.confirm.viewFareMatrix}
                   onPress={() => router.push('/profile/fare-matrix')}
                 >
-                  <Ionicons name="information-circle-outline" size={16} color={colors.inkFaint} />
+                  <Ionicons name="information-circle-outline" size={16} color={colors.white} style={{ opacity: 0.75 }} />
                 </Pressable>
               </View>
               {discountApproved && (

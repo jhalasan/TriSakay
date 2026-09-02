@@ -5,9 +5,16 @@ import { File } from 'expo-file-system';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from 'expo-router';
-import { submitComplaint, type ComplaintCategory } from '@trisakay/services';
-import { Button, Card, EmptyState, ListRow, Textarea, TextField, colors } from '@trisakay/ui';
+import {
+  listMyComplaints,
+  submitComplaint,
+  type ComplaintCategory,
+  type ComplaintDbStatus,
+  type MyComplaintRow,
+} from '@trisakay/services';
+import { Badge, Button, Card, EmptyState, ListRow, Textarea, TextField, colors, type BadgeTone } from '@trisakay/ui';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { isNonEmpty } from '../../src/utils/validation';
 import { styles } from '../../src/styles/tabs/complaints.styles';
 
@@ -24,15 +31,6 @@ async function readFileBytes(uri: string): Promise<ArrayBuffer> {
   if (Platform.OS === 'web') return (await fetch(uri)).arrayBuffer();
   return new File(uri).arrayBuffer();
 }
-
-const CATEGORY_LABEL: Record<ComplaintCategory, string> = {
-  fare: 'Fare dispute',
-  conduct: 'Driver conduct',
-  safety: 'Safety concern',
-  low_rating: 'Low rating',
-  vehicle_condition: 'Vehicle condition',
-  other: 'Other',
-};
 
 const CATEGORY_ICON: Record<ComplaintCategory, keyof typeof Ionicons.glyphMap> = {
   fare: 'cash-outline',
@@ -52,15 +50,44 @@ const CATEGORY_TONE: Record<ComplaintCategory, { bg: string; fg: string }> = {
   other: { bg: colors.fill, fg: colors.inkSoft },
 };
 
-const CATEGORY_OPTIONS = Object.keys(CATEGORY_LABEL) as ComplaintCategory[];
+const STATUS_TONE: Record<ComplaintDbStatus, BadgeTone> = {
+  open: 'blue',
+  under_review: 'blue',
+  mediation_scheduled: 'blue',
+  escalated: 'danger',
+  resolved: 'green',
+  dismissed: 'neutral',
+};
 
 export default function ComplaintsScreen() {
+  const t = useTranslation();
   const rides = useHistoryStore((state) => state.items);
   const loadHistory = useHistoryStore((state) => state.load);
+
+  const CATEGORY_LABEL: Record<ComplaintCategory, string> = {
+    fare: t.complaints.categoryFare,
+    conduct: t.complaints.categoryConduct,
+    safety: t.complaints.categorySafety,
+    low_rating: t.complaints.categoryLowRating,
+    vehicle_condition: t.complaints.categoryVehicleCondition,
+    other: t.complaints.categoryOther,
+  };
+  const CATEGORY_OPTIONS = Object.keys(CATEGORY_LABEL) as ComplaintCategory[];
+  const STATUS_LABEL: Record<ComplaintDbStatus, string> = {
+    open: t.complaints.statusOpen,
+    under_review: t.complaints.statusUnderReview,
+    escalated: t.complaints.statusEscalated,
+    mediation_scheduled: t.complaints.statusMediationScheduled,
+    resolved: t.complaints.statusResolved,
+    dismissed: t.complaints.statusDismissed,
+  };
+
+  const [myComplaints, setMyComplaints] = useState<MyComplaintRow[]>([]);
 
   useFocusEffect(
     useCallback(() => {
       void loadHistory();
+      listMyComplaints().then(({ data }) => setMyComplaints(data));
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
@@ -128,9 +155,10 @@ export default function ComplaintsScreen() {
     }
 
     setSubmittedWarning(
-      attachmentError ? `Your complaint was filed, but the evidence photos could not be attached (${attachmentError}).` : null
+      attachmentError ? `${t.complaints.attachmentUploadFailedPrefix} (${attachmentError}).` : null
     );
     setSubmitted(true);
+    listMyComplaints().then(({ data }) => setMyComplaints(data));
   }
 
   if (submitted) {
@@ -143,11 +171,11 @@ export default function ComplaintsScreen() {
                 <Ionicons name="checkmark" size={32} color={colors.accentGreenPressed} />
               </View>
             }
-            title="Complaint submitted"
-            message="Our team will review this and follow up if needed."
+            title={t.complaints.submittedTitle}
+            message={t.complaints.submittedMessage}
           />
           {submittedWarning && <Text style={styles.successWarning}>{submittedWarning}</Text>}
-          <Button label="Submit another" variant="outline" tone="neutral" onPress={resetForm} />
+          <Button label={t.complaints.submitAnother} variant="outline" tone="neutral" onPress={resetForm} />
         </View>
       </SafeAreaView>
     );
@@ -158,19 +186,19 @@ export default function ComplaintsScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <View style={styles.headerBlock}>
-            <Text style={styles.title}>Complaints</Text>
-            <Text style={styles.tagline}>We're here to help make things right.</Text>
+            <Text style={styles.title}>{t.complaints.title}</Text>
+            <Text style={styles.tagline}>{t.complaints.tagline}</Text>
           </View>
 
           <View>
-            <Text style={styles.fieldLabel}>Related trip</Text>
+            <Text style={styles.fieldLabel}>{t.complaints.relatedTrip}</Text>
             <Pressable
               style={styles.pickerField}
               onPress={() => setPickerOpen((prev) => !prev)}
               accessibilityRole="button"
             >
               <Text style={[styles.pickerFieldText, !selectedRide && styles.pickerFieldPlaceholder]} numberOfLines={1}>
-                {selectedRide ? `${selectedRide.driverName} · ${selectedRide.dropoff}` : 'Select a past ride'}
+                {selectedRide ? `${selectedRide.driverName} · ${selectedRide.dropoff}` : t.complaints.selectAPastRide}
               </Text>
               <Ionicons name={pickerOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.inkSoft} />
             </Pressable>
@@ -178,9 +206,7 @@ export default function ComplaintsScreen() {
             {pickerOpen && (
               <Card style={styles.pickerList}>
                 {rides.length === 0 ? (
-                  <Text style={styles.pickerEmpty}>
-                    No past rides to report on yet.
-                  </Text>
+                  <Text style={styles.pickerEmpty}>{t.complaints.noPastRides}</Text>
                 ) : (
                   rides.map((ride, index) => (
                     <ListRow
@@ -200,7 +226,7 @@ export default function ComplaintsScreen() {
           </View>
 
           <View>
-            <Text style={styles.fieldLabel}>Category</Text>
+            <Text style={styles.fieldLabel}>{t.complaints.category}</Text>
             <Pressable
               style={styles.pickerField}
               onPress={() => setCategoryPickerOpen((prev) => !prev)}
@@ -239,17 +265,22 @@ export default function ComplaintsScreen() {
             )}
           </View>
 
-          <TextField label="Subject" placeholder="What's this about?" value={subject} onChangeText={setSubject} />
+          <TextField
+            label={t.complaints.subject}
+            placeholder={t.complaints.subjectPlaceholder}
+            value={subject}
+            onChangeText={setSubject}
+          />
           <Textarea
-            label="Message"
-            placeholder="Describe what happened"
+            label={t.complaints.message}
+            placeholder={t.complaints.messagePlaceholder}
             value={message}
             onChangeText={setMessage}
           />
 
           <View>
             <View style={styles.evidenceLabelRow}>
-              <Text style={styles.fieldLabel}>Evidence (optional)</Text>
+              <Text style={styles.fieldLabel}>{t.complaints.evidenceOptional}</Text>
               <View style={styles.evidenceCounter}>
                 <Text style={styles.evidenceCounterText}>
                   {evidenceUris.length}/{MAX_EVIDENCE_PHOTOS}
@@ -281,12 +312,36 @@ export default function ComplaintsScreen() {
                 </Pressable>
               )}
             </View>
-            <Text style={styles.evidenceHint}>Up to {MAX_EVIDENCE_PHOTOS} photos.</Text>
+            <Text style={styles.evidenceHint}>
+              {t.complaints.evidenceHintPrefix} {MAX_EVIDENCE_PHOTOS} {t.complaints.evidenceHintSuffix}
+            </Text>
           </View>
 
           {submitError && <Text style={styles.error}>{submitError}</Text>}
 
-          <Button label="Submit complaint" fullWidth disabled={!canSubmit} loading={submitting} onPress={handleSubmit} />
+          <Button
+            label={t.complaints.submitComplaint}
+            fullWidth
+            disabled={!canSubmit}
+            loading={submitting}
+            onPress={handleSubmit}
+          />
+
+          {myComplaints.length > 0 && (
+            <View style={styles.priorSection}>
+              <Text style={styles.fieldLabel}>{t.complaints.yourComplaints}</Text>
+              <Card style={styles.pickerList}>
+                {myComplaints.map((complaint, index) => (
+                  <ListRow
+                    key={complaint.id}
+                    title={complaint.subject}
+                    trailing={<Badge label={STATUS_LABEL[complaint.status]} tone={STATUS_TONE[complaint.status]} />}
+                    divider={index < myComplaints.length - 1}
+                  />
+                ))}
+              </Card>
+            </View>
+          )}
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>

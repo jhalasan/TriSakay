@@ -14,6 +14,7 @@ import { colors, fontFamily } from '@trisakay/ui';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useAuthStore } from '../src/store/useAuthStore';
+import { useConnectivityStore } from '../src/store/useConnectivityStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
 
@@ -159,6 +160,19 @@ function useNotificationsSync(sessionUserId: string | null) {
 }
 
 /**
+ * Global connectivity listener — kept subscribed for the whole session (not
+ * scoped to a single screen) since the offline strip and tab-bar dimming
+ * must persist across every tab, per the redesign's system-states spec.
+ */
+function useConnectivitySync() {
+  const subscribe = useConnectivityStore((state) => state.subscribe);
+
+  useEffect(() => {
+    return subscribe();
+  }, [subscribe]);
+}
+
+/**
  * Surfaces the permission prompt on every foreground while permission is
  * missing. The dismissal flag is cleared by the hook's AppState listener, so
  * "Not now" holds for this session only — FR-11.4 asks for a prompt on app
@@ -214,6 +228,7 @@ function RootLayoutNav() {
   const consentStatus = useConsentStore((state) => state.status);
   useConsentSync(sessionUserId);
   useNotificationsSync(sessionUserId);
+  useConnectivitySync();
   usePushNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);

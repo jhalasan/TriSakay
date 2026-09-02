@@ -374,7 +374,7 @@ test('subscribeToRideRequestStatus reconciles once the channel reports SUBSCRIBE
   await Promise.resolve();
 
   assert.equal(capturedTable, 'ride_requests');
-  assert.equal(capturedSelect, 'id, status');
+  assert.equal(capturedSelect, 'id, status, cancel_reason, discount_applied');
   assert.deepEqual(capturedEqArgs, ['id', 'rr1']);
   assert.deepEqual(received, [{ id: 'rr1', status: 'assigned' }]);
 });

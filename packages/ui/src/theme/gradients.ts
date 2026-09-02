@@ -16,6 +16,8 @@ export const gradients = {
   brand: [colors.accentBlue, colors.accentGreen] as const,
   /** Primary solid button fill — within the already-verified pressed-state pair. */
   button: [colors.accentBlue, colors.accentBluePressed] as const,
+  /** Emergency screen only — the one surface allowed to go red. */
+  sos: [colors.danger, colors.dangerDeep] as const,
 } as const;
 
 export type GradientToken = keyof typeof gradients;

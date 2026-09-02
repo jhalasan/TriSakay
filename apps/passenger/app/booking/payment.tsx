@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
+import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
-import { Badge, Button, Card } from '@trisakay/ui';
+import { BrandMotif, Button, GradientSurface, colors } from '@trisakay/ui';
 import { createGcashCheckout, subscribeToTransactionStatus } from '@trisakay/services';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -188,11 +189,21 @@ export default function PaymentScreen() {
     <View style={styles.container}>
       <ScreenHeader title={t.payment.title} showBack={false} />
       <View style={styles.content}>
-        <Card variant="raised" style={styles.amountCard}>
-          <Text style={styles.amountLabel}>{t.payment.amountDue}</Text>
-          <Text style={styles.amountValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
-          {dropoff && <Text style={styles.amountNote}>{t.payment.tripTo} {dropoff.label}</Text>}
-        </Card>
+        <View style={styles.amountShadowWrap}>
+          <GradientSurface token="hero" direction="diagonal" style={styles.amountCard}>
+            <BrandMotif size={170} color={colors.white} opacity={0.12} style={styles.amountMotif} />
+            <Text style={styles.amountLabel}>{t.payment.amountDue}</Text>
+            <Text style={styles.amountValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
+            {dropoff && (
+              <View style={styles.amountNoteRow}>
+                <Ionicons name="location" size={14} color={colors.white} style={{ opacity: 0.7 }} />
+                <Text style={styles.amountNote}>
+                  {t.payment.tripTo} {dropoff.label}
+                </Text>
+              </View>
+            )}
+          </GradientSurface>
+        </View>
 
         <View>
           <Text style={styles.sectionLabel}>{t.payment.payWith}</Text>
@@ -214,10 +225,19 @@ export default function PaymentScreen() {
                   <Text style={styles.optionTitle}>{option.title}</Text>
                   <Text style={styles.optionSubtitle}>{option.subtitle}</Text>
                 </View>
-                <Badge label={option.value === 'gcash' ? t.common.gcash : t.common.cash} tone="neutral" />
+                <Ionicons
+                  name={option.value === 'gcash' ? 'card-outline' : 'cash-outline'}
+                  size={20}
+                  color={selected ? colors.accentBlue : colors.inkFaint}
+                />
               </Pressable>
             );
           })}
+        </View>
+
+        <View style={styles.noticeBox}>
+          <Ionicons name="information-circle-outline" size={18} color={colors.accentBluePressed} />
+          <Text style={styles.noticeText}>{t.payment.keepScreenOpenNotice}</Text>
         </View>
 
         {paymentPhase === 'waiting' && (
@@ -244,7 +264,11 @@ export default function PaymentScreen() {
       {paymentMethod === 'gcash' && (
         <View style={styles.footer}>
           <Button
-            label={paymentPhase === 'opening' ? t.payment.openingPaymongo : t.payment.payNow}
+            label={
+              paymentPhase === 'opening'
+                ? t.payment.openingPaymongo
+                : `${t.payment.payNow} ${fare === null ? '' : formatCurrency(fare)}`
+            }
             fullWidth
             loading={paymentPhase === 'opening'}
             disabled={paymentPhase === 'waiting' || paymentPhase === 'failed'}

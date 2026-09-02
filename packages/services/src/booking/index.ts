@@ -233,7 +233,10 @@ export async function acceptRideRequest(driverId: string, rideRequestId: string)
   return { error: null, tripId };
 }
 
-export type RideRequestStatusUpdate = Pick<RideRequestRow, 'id' | 'status'>;
+export type RideRequestStatusUpdate = Pick<
+  RideRequestRow,
+  'id' | 'status' | 'cancel_reason' | 'discount_applied'
+>;
 
 /**
  * First Realtime subscription in this codebase — one row, one channel, torn down by the returned unsubscribe.
@@ -263,7 +266,7 @@ export function subscribeToRideRequestStatus(
       if (status === 'SUBSCRIBED') {
         client
           .from('ride_requests')
-          .select('id, status')
+          .select('id, status, cancel_reason, discount_applied')
           .eq('id', rideRequestId)
           .maybeSingle()
           .then(({ data }: { data: RideRequestStatusUpdate | null }) => {

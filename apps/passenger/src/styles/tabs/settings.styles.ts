@@ -4,6 +4,7 @@ import { colors, radius, spacing, typography } from '@trisakay/ui';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.bg,
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
@@ -15,7 +16,7 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.lg,
   },
   title: {
-    ...typography.h1,
+    ...typography.h1b,
     color: colors.ink,
   },
   tagline: {
@@ -25,40 +26,52 @@ export const styles = StyleSheet.create({
   sectionLabel: {
     ...typography.label,
     fontSize: 11,
-    color: colors.inkFaint,
+    color: colors.inkSoft,
     marginBottom: spacing.sm,
   },
   card: {
     marginBottom: spacing.lg,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 2,
   },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    paddingVertical: spacing.sm,
+    paddingVertical: spacing.sm + 2,
   },
   rowDivider: {
     borderBottomWidth: 1,
     borderBottomColor: colors.lineSoft,
-    marginBottom: spacing.sm,
   },
   rowLeading: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
     flex: 1,
   },
   iconBadge: {
-    width: 32,
-    height: 32,
-    borderRadius: radius.pill,
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
     backgroundColor: colors.accentBlueSoft,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  rowTextSlot: {
+    flex: 1,
+    minWidth: 0,
+    gap: 1,
+  },
   rowLabel: {
-    ...typography.body,
+    ...typography.bodyStrong,
+    fontSize: 15,
     color: colors.ink,
+  },
+  rowSubtitle: {
+    ...typography.caption,
+    fontSize: 12,
+    color: colors.inkFaint,
   },
   rowValueSlot: {
     flexDirection: 'row',
@@ -66,10 +79,18 @@ export const styles = StyleSheet.create({
     gap: spacing.xs,
   },
   rowValue: {
-    ...typography.body,
+    ...typography.bodyStrong,
+    fontSize: 14,
     color: colors.inkSoft,
   },
   logoutWrap: {
     marginTop: spacing.sm,
+    gap: spacing.sm,
+  },
+  versionFooter: {
+    ...typography.caption,
+    fontSize: 11,
+    color: colors.inkFaint,
+    textAlign: 'center',
   },
 });

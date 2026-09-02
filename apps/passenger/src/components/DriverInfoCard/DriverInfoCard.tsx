@@ -1,10 +1,14 @@
 import { Text, View } from 'react-native';
 import { Avatar, Badge, Card, StarRating } from '@trisakay/ui';
 import type { Driver } from '../../types/driver';
+import { formatCurrency } from '../../utils/currency';
 import { styles } from './DriverInfoCard.styles';
 
 export interface DriverInfoCardProps {
   driver: Driver;
+  /** Trip-level fields, not part of the driver record — both optional so this still renders plate-only before the booking store has them. */
+  seats?: number;
+  fare?: number | null;
 }
 
 /**
@@ -12,7 +16,7 @@ export interface DriverInfoCardProps {
  * missing rather than a default. Rating in particular is hidden rather than
  * shown as zero — no stars reads as "unknown", zero stars reads as "terrible".
  */
-export function DriverInfoCard({ driver }: DriverInfoCardProps) {
+export function DriverInfoCard({ driver, seats, fare }: DriverInfoCardProps) {
   return (
     <Card variant="raised" style={styles.card}>
       <View style={styles.topRow}>
@@ -27,9 +31,29 @@ export function DriverInfoCard({ driver }: DriverInfoCardProps) {
         </View>
         {driver.etaMinutes !== null && <Badge label={`ETA ${driver.etaMinutes} min`} tone="blue" />}
       </View>
-      <View style={styles.plateRow}>
-        <Text style={styles.plateLabel}>Tricycle / Plate</Text>
-        <Text style={styles.plateValue}>{driver.plateNumber || '—'}</Text>
+      <View style={styles.statsRow}>
+        <View style={styles.statCell}>
+          <Text style={styles.statLabel}>Plate</Text>
+          <Text style={styles.statValue}>{driver.plateNumber || '—'}</Text>
+        </View>
+        {seats != null && (
+          <>
+            <View style={styles.statDivider} />
+            <View style={styles.statCell}>
+              <Text style={styles.statLabel}>Seats</Text>
+              <Text style={styles.statValue}>{seats}</Text>
+            </View>
+          </>
+        )}
+        {fare != null && (
+          <>
+            <View style={styles.statDivider} />
+            <View style={styles.statCell}>
+              <Text style={styles.statLabel}>Fare</Text>
+              <Text style={styles.statValue}>{formatCurrency(fare)}</Text>
+            </View>
+          </>
+        )}
       </View>
     </Card>
   );

@@ -4,12 +4,57 @@ import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.bg,
   },
   content: {
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
     gap: spacing.lg,
   },
+
+  // Shadow lives on this wrapper, never on the same view as overflow:'hidden'
+  // + borderRadius (see home.styles.ts's heroShadowWrap).
+  bannerShadowWrap: {
+    ...elevation.card,
+  },
+  banner: {
+    position: 'relative',
+    overflow: 'hidden',
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    borderRadius: radius.lg,
+    padding: spacing.lg,
+  },
+  bannerMotif: {
+    position: 'absolute',
+    top: -30,
+    right: -26,
+  },
+  bannerIconTile: {
+    width: 46,
+    height: 46,
+    borderRadius: radius.sm2,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  bannerTextSlot: {
+    flex: 1,
+    gap: 2,
+  },
+  bannerTitle: {
+    ...typography.h3,
+    color: colors.white,
+  },
+  bannerSubtitle: {
+    ...typography.caption,
+    color: colors.white,
+    opacity: 0.85,
+  },
+
   intro: {
     ...typography.body,
     color: colors.inkSoft,
@@ -37,48 +82,52 @@ export const styles = StyleSheet.create({
   sectionLabel: {
     ...typography.label,
     color: colors.inkSoft,
-    marginBottom: spacing.xs,
+    marginBottom: spacing.sm,
   },
-  photoRow: {
-    flexDirection: 'column',
+
+  idSlotsWrap: {
     gap: spacing.md,
   },
-  photoSlot: {},
-  photoUpload: {
-    height: 140,
-    borderRadius: radius.md,
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderStyle: 'dashed',
-    backgroundColor: colors.fill,
+  idSlot: {
+    flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
-    overflow: 'hidden',
-    gap: spacing.xs,
+    gap: spacing.md,
+    height: 130,
+    borderRadius: radius.card,
+    paddingHorizontal: spacing.lg,
   },
-  photoUploadFilled: {
-    borderWidth: 0,
-    borderStyle: 'solid',
+  idSlotEmpty: {
+    backgroundColor: colors.panel,
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderColor: colors.line,
   },
-  photoPreview: {
-    width: '100%',
-    height: '100%',
+  idSlotFilled: {
+    backgroundColor: colors.accentBlueSoft,
+    borderWidth: 1.5,
+    borderColor: colors.accentBlue,
   },
-  photoUploadLabel: {
+  idSlotTextSlot: {
+    flex: 1,
+    gap: 2,
+  },
+  idSlotTitle: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+  },
+  idSlotSubtitle: {
     ...typography.caption,
     color: colors.inkSoft,
   },
-  photoChangeLabel: {
-    ...typography.caption,
-    color: colors.white,
-    backgroundColor: 'rgba(10,18,24,0.55)',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    textAlign: 'center',
-    paddingVertical: spacing.xs,
+  idSlotCheck: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: colors.accentGreen,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
+
   formError: {
     ...typography.caption,
     color: colors.danger,
@@ -86,6 +135,7 @@ export const styles = StyleSheet.create({
   disclaimer: {
     ...typography.caption,
     color: colors.inkFaint,
+    textAlign: 'center',
   },
   loadingWrap: {
     flex: 1,

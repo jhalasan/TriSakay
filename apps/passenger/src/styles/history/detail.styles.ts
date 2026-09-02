@@ -4,6 +4,7 @@ import { colors, radius, spacing, typography } from '@trisakay/ui';
 export const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: colors.bg,
   },
   content: {
     paddingHorizontal: spacing.lg,
@@ -11,8 +12,26 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
   },
 
+  // Summary is a floating inset card (radius 22), not the edge-to-edge
+  // header band — shadow lives on the outer wrap per the Android caveat.
+  summaryShadowWrap: {
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.24,
+    shadowRadius: 26,
+    elevation: 8,
+  },
   summaryCard: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderRadius: radius.lg2,
+    padding: spacing.lg,
     gap: spacing.xs,
+  },
+  summaryMotif: {
+    position: 'absolute',
+    top: -34,
+    right: -30,
   },
   summaryTopRow: {
     flexDirection: 'row',
@@ -21,15 +40,29 @@ export const styles = StyleSheet.create({
   },
   dateTimeText: {
     ...typography.caption,
-    color: colors.inkFaint,
+    color: colors.white,
+    opacity: 0.72,
+  },
+  fareEyebrow: {
+    ...typography.eyebrow,
+    color: colors.white,
+    opacity: 0.6,
+    marginTop: spacing.md,
   },
   fareText: {
-    ...typography.h1,
-    color: colors.ink,
+    ...typography.amount,
+    color: colors.white,
+  },
+  discountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+    marginTop: 2,
   },
   discountText: {
-    ...typography.caption,
-    color: colors.accentGreen,
+    ...typography.bodyStrong,
+    fontSize: 12,
+    color: colors.accentGreenSoft,
   },
 
   section: {
@@ -41,37 +74,37 @@ export const styles = StyleSheet.create({
   },
 
   routeBlock: {
-    gap: 2,
-  },
-  routeRow: {
     flexDirection: 'row',
     gap: spacing.md,
   },
   routeMarkerCol: {
     alignItems: 'center',
     width: 10,
-  },
-  routeDot: {
-    width: 10,
-    height: 10,
-    borderRadius: radius.pill,
+    paddingTop: 3,
   },
   routeDotPickup: {
-    backgroundColor: colors.accentBlue,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderColor: colors.accentGreen,
   },
   routeDotDropoff: {
-    backgroundColor: colors.accentGreen,
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: colors.accentBlue,
   },
   routeLine: {
     flex: 1,
-    minHeight: spacing.lg,
+    minHeight: spacing.xl,
     width: 2,
     backgroundColor: colors.line,
-    marginVertical: 2,
+    marginVertical: 3,
   },
   routeTextCol: {
     flex: 1,
-    paddingBottom: spacing.sm,
+    gap: spacing.md,
   },
   routeLabel: {
     ...typography.label,
@@ -79,35 +112,72 @@ export const styles = StyleSheet.create({
     color: colors.inkFaint,
   },
   routeAddress: {
-    ...typography.body,
+    ...typography.bodyStrong,
     color: colors.ink,
   },
   distanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: spacing.xs,
-    paddingTop: spacing.sm,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.lineSoft,
   },
   distanceText: {
-    ...typography.caption,
+    ...typography.bodyStrong,
+    fontSize: 13,
     color: colors.inkSoft,
   },
 
   driverRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.sm,
+    gap: spacing.md,
+  },
+  driverTextSlot: {
+    flex: 1,
+    gap: 2,
   },
   driverName: {
     ...typography.bodyStrong,
     color: colors.ink,
   },
+  driverPlateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  driverPlateText: {
+    ...typography.caption,
+    color: colors.inkSoft,
+  },
 
   paymentRow: {
     flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  paymentMethodLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.sm,
+  },
+  paymentMethodText: {
+    ...typography.body,
+    color: colors.inkSoft,
+  },
+  paymentDivider: {
+    height: 1,
+    backgroundColor: colors.lineSoft,
+  },
+  totalLabel: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+  },
+  totalValue: {
+    ...typography.h3,
+    color: colors.ink,
   },
 
   cancelReasonText: {

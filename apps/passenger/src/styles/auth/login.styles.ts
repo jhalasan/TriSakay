@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, fontFamily, radius, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   screen: {
@@ -7,54 +7,81 @@ export const styles = StyleSheet.create({
   },
   /** Fixed top band, outside the scroller — the badge below overlaps its bottom edge. */
   heroBand: {
-    height: 156,
+    height: 186,
+    borderBottomLeftRadius: radius.heroBottom,
+    borderBottomRightRadius: radius.heroBottom,
   },
   motif: {
     position: 'absolute',
-    top: -60,
-    right: -60,
+    top: -40,
+    right: -46,
   },
-  /** Pulled up over the hero/body boundary so the mark reads as a floating badge. */
+  /** Pulled up over the hero/body boundary so the mark reads as a floating badge, rendered after (below) the band so it paints above it. */
   badgeWrap: {
     alignItems: 'center',
-    marginTop: -48,
+    marginTop: -44,
     marginBottom: spacing.lg,
   },
   markBadge: {
-    width: 96,
-    height: 96,
-    borderRadius: radius.lg,
+    width: 88,
+    height: 88,
+    borderRadius: 26, // literal — no matching radius token, see PHASE0_NOTES.md
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    ...elevation.card,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.2,
+    shadowRadius: 26,
+    elevation: 6,
   },
   mark: {
-    width: 56,
-    height: 66,
+    width: 54,
+    height: 63,
   },
   keyboardView: {
     flex: 1,
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
   },
   title: {
-    ...typography.display,
+    ...typography.h1,
     color: colors.ink,
     textAlign: 'center',
   },
   subtitle: {
-    ...typography.body,
+    ...typography.caption,
     color: colors.inkSoft,
     textAlign: 'center',
     marginTop: spacing.xs,
-    marginBottom: spacing.xxl,
+    marginBottom: spacing.xl,
+  },
+  methodTrack: {
+    marginBottom: spacing.lg,
   },
   fields: {
-    gap: spacing.lg,
+    gap: spacing.md,
+    marginBottom: spacing.md,
+  },
+  mobilePrefix: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingRight: spacing.tight10,
+    marginRight: spacing.tight10,
+    borderRightWidth: 1,
+    borderRightColor: colors.line,
+  },
+  mobilePrefixText: {
+    ...typography.bodyLg,
+    color: colors.inkSoft,
+  },
+  mobileNotice: {
+    ...typography.caption,
+    color: colors.inkFaint,
+    marginTop: -spacing.sm,
     marginBottom: spacing.md,
   },
   forgotLink: {
@@ -63,9 +90,8 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   forgotLinkText: {
-    ...typography.caption,
+    ...typography.chip,
     color: colors.accentBlue,
-    fontFamily: fontFamily.bold,
   },
   dividerRow: {
     flexDirection: 'row',
@@ -80,7 +106,10 @@ export const styles = StyleSheet.create({
   },
   dividerText: {
     ...typography.label,
-    color: colors.inkSoft, // sits on bg, needs 4.5:1 — inkFaint only clears it on panel
+    // Spec calls this `inkFaint`, but inkFaint only clears 4.5:1 on `panel`,
+    // not on this screen's `bg` — same fix already applied to home.styles.ts;
+    // keeping inkSoft here preserves that contrast floor.
+    color: colors.inkSoft,
   },
   authError: {
     ...typography.caption,

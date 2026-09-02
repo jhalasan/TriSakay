@@ -2,9 +2,14 @@ import { StyleSheet } from 'react-native';
 import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
+  // The mock shows this over a flat map-ground backdrop, not a dark scrim —
+  // `colors.overlay` is reserved for true blocking dialogs over an active
+  // screen (log out); this gate is closer to the booking flow's "map behind
+  // a docked sheet" language, just without a live map since location isn't
+  // granted yet.
   backdrop: {
     flex: 1,
-    backgroundColor: colors.overlay,
+    backgroundColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
     padding: spacing.xl,
@@ -20,9 +25,9 @@ export const styles = StyleSheet.create({
     ...elevation.sheet,
   },
   iconBadge: {
-    width: 56,
-    height: 56,
-    borderRadius: radius.pill,
+    width: 46,
+    height: 46,
+    borderRadius: radius.sm2,
     backgroundColor: colors.accentBlueSoft,
     alignItems: 'center',
     justifyContent: 'center',

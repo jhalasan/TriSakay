@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
   },
   stepSegment: {
     flex: 1,
-    height: 4,
+    height: 5,
     borderRadius: radius.pill,
     backgroundColor: colors.line,
   },
@@ -37,7 +37,7 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
   },
   sectionLabel: {
-    ...typography.label,
+    ...typography.eyebrow,
     color: colors.inkSoft,
     marginTop: spacing.md,
   },
@@ -87,10 +87,14 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     flexGrow: 1,
-    paddingHorizontal: spacing.xl,
+    paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
     paddingBottom: spacing.xxxl,
     gap: spacing.lg,
+  },
+  /** Step 2 (terms & disclosures) is a legal screen — the system uses a 20px gutter there, not the general 16px. */
+  legalScrollContent: {
+    paddingHorizontal: 20,
   },
   /** Non-clipping wrapper — the edit badge sits just outside the circle's own bounds. */
   avatarWrap: {

@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
-import { Avatar, Badge, Card, EmptyState, colors } from '@trisakay/ui';
+import { Avatar, Badge, BrandMotif, Card, EmptyState, GradientSurface, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/history/detail.styles';
 
@@ -16,59 +17,63 @@ function formatDateTime(iso: string) {
 
 export default function RideDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const t = useTranslation();
   const item = useHistoryStore((state) => state.items.find((ride) => ride.id === id));
 
   if (!item) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title="Ride details" />
-        <EmptyState title="Ride not found" message="This ride isn't in your history anymore." />
+        <ScreenHeader title={t.history.detailTitle} />
+        <EmptyState title={t.history.notFoundTitle} message={t.history.notFoundMessage} />
       </View>
     );
   }
 
   const hasRoute = item.pickup && item.dropoff;
+  const isDone = item.status === 'done';
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title="Ride details" />
+      <ScreenHeader title={t.history.detailTitle} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Card variant="raised" style={styles.summaryCard}>
-          <View style={styles.summaryTopRow}>
-            <Badge
-              label={item.status === 'done' ? 'Completed' : 'Cancelled'}
-              tone={item.status === 'done' ? 'green' : 'danger'}
-            />
-            <Text style={styles.dateTimeText}>{formatDateTime(item.date)}</Text>
-          </View>
-          <Text style={styles.fareText}>{formatCurrency(item.fare)}</Text>
-          {item.discountApplied && (
-            <Text style={styles.discountText}>
-              {item.discountPercent != null ? `${item.discountPercent}% discount applied` : 'Discount applied'}
-            </Text>
-          )}
-        </Card>
+        <View style={styles.summaryShadowWrap}>
+          <GradientSurface token="hero" direction="diagonal" style={styles.summaryCard}>
+            <BrandMotif size={160} color={colors.white} opacity={0.12} style={styles.summaryMotif} />
+            <View style={styles.summaryTopRow}>
+              <Badge label={isDone ? t.history.completed : t.history.cancelled} tone={isDone ? 'green' : 'danger'} />
+              <Text style={styles.dateTimeText}>{formatDateTime(item.date)}</Text>
+            </View>
+            <Text style={styles.fareEyebrow}>{t.history.totalFare}</Text>
+            <Text style={styles.fareText}>{formatCurrency(item.fare)}</Text>
+            {item.discountApplied && (
+              <View style={styles.discountRow}>
+                <Ionicons name="pricetag-outline" size={13} color={colors.accentGreenSoft} />
+                <Text style={styles.discountText}>
+                  {item.discountPercent != null
+                    ? `${item.discountPercent}${t.history.discountAppliedSuffix}`
+                    : t.history.discountAppliedGeneric}
+                </Text>
+              </View>
+            )}
+          </GradientSurface>
+        </View>
 
         {hasRoute && (
           <Card variant="raised" style={styles.section}>
-            <Text style={styles.sectionLabel}>Route</Text>
+            <Text style={styles.sectionLabel}>{t.history.route}</Text>
             <View style={styles.routeBlock}>
-              <View style={styles.routeRow}>
-                <View style={styles.routeMarkerCol}>
-                  <View style={[styles.routeDot, styles.routeDotPickup]} />
-                  <View style={styles.routeLine} />
-                </View>
-                <View style={styles.routeTextCol}>
-                  <Text style={styles.routeLabel}>Pickup</Text>
+              <View style={styles.routeMarkerCol}>
+                <View style={styles.routeDotPickup} />
+                <View style={styles.routeLine} />
+                <View style={styles.routeDotDropoff} />
+              </View>
+              <View style={styles.routeTextCol}>
+                <View>
+                  <Text style={styles.routeLabel}>{t.history.pickup}</Text>
                   <Text style={styles.routeAddress}>{item.pickup}</Text>
                 </View>
-              </View>
-              <View style={styles.routeRow}>
-                <View style={styles.routeMarkerCol}>
-                  <View style={[styles.routeDot, styles.routeDotDropoff]} />
-                </View>
-                <View style={styles.routeTextCol}>
-                  <Text style={styles.routeLabel}>Dropoff</Text>
+                <View>
+                  <Text style={styles.routeLabel}>{t.history.dropoff}</Text>
                   <Text style={styles.routeAddress}>{item.dropoff}</Text>
                 </View>
               </View>
@@ -84,18 +89,29 @@ export default function RideDetailScreen() {
 
         {item.driverName && (
           <Card variant="raised" style={styles.section}>
-            <Text style={styles.sectionLabel}>Driver</Text>
+            <Text style={styles.sectionLabel}>{t.history.driver}</Text>
             <View style={styles.driverRow}>
-              <Avatar name={item.driverName} size="sm" />
-              <Text style={styles.driverName}>{item.driverName}</Text>
+              <Avatar name={item.driverName} size="md" />
+              <View style={styles.driverTextSlot}>
+                <Text style={styles.driverName}>{item.driverName}</Text>
+              </View>
             </View>
           </Card>
         )}
 
         <Card variant="raised" style={styles.section}>
-          <Text style={styles.sectionLabel}>Payment</Text>
+          <Text style={styles.sectionLabel}>{t.history.payment}</Text>
           <View style={styles.paymentRow}>
-            <Badge label={item.paymentMethod === 'gcash' ? 'GCash' : item.paymentMethod === 'cash' ? 'Cash' : 'No payment'} tone="neutral" />
+            <View style={styles.paymentMethodLabel}>
+              <Ionicons
+                name={item.paymentMethod === 'gcash' ? 'wallet-outline' : 'cash-outline'}
+                size={16}
+                color={colors.inkSoft}
+              />
+              <Text style={styles.paymentMethodText}>
+                {item.paymentMethod === 'gcash' ? 'GCash' : item.paymentMethod === 'cash' ? 'Cash' : 'No payment'}
+              </Text>
+            </View>
             {item.paymentStatus && (
               <Badge
                 label={item.paymentStatus.charAt(0).toUpperCase() + item.paymentStatus.slice(1)}
@@ -103,11 +119,16 @@ export default function RideDetailScreen() {
               />
             )}
           </View>
+          <View style={styles.paymentDivider} />
+          <View style={styles.paymentRow}>
+            <Text style={styles.totalLabel}>{t.history.total}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(item.fare)}</Text>
+          </View>
         </Card>
 
         {item.status === 'cancelled' && item.cancelReason && (
           <Card variant="raised" style={styles.section}>
-            <Text style={styles.sectionLabel}>Cancellation reason</Text>
+            <Text style={styles.sectionLabel}>{t.history.cancellationReason}</Text>
             <Text style={styles.cancelReasonText}>{item.cancelReason}</Text>
           </Card>
         )}

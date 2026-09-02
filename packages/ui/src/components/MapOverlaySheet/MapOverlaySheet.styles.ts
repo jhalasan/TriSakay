@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing } from '../../theme';
+import { colors, spacing } from '../../theme';
 
 export const styles = StyleSheet.create({
   sheet: {
@@ -8,19 +8,24 @@ export const styles = StyleSheet.create({
     right: 0,
     bottom: 0,
     backgroundColor: colors.panel,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
+    borderTopLeftRadius: 26, // literal — no matching radius token, see docs/design_handoff_trisakay_passenger/PHASE0_NOTES.md
+    borderTopRightRadius: 26,
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.xl,
     gap: spacing.md,
-    ...elevation.sheet,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: -14 },
+    shadowOpacity: 0.16,
+    shadowRadius: 36,
+    elevation: 12,
   },
-  /** Same brand-gradient handle carried through every map screen's sheet. */
+  /** Plain neutral grip, not the brand gradient — a drag handle is chrome, not a branded surface. */
   handle: {
     width: 40,
     height: 4,
-    borderRadius: radius.pill,
+    borderRadius: 2,
+    backgroundColor: colors.line,
     alignSelf: 'center',
   },
 });
