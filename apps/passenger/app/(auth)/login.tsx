@@ -43,6 +43,23 @@ export default function LoginScreen() {
   // rather than flashing "Welcome back" then swapping to the first-visit copy.
   const [hasSignedIn, setHasSignedIn] = useState<boolean | null>(null);
 
+  // Scrolling should only kick in when the form genuinely doesn't fit — a
+  // short device, or the keyboard eating vertical space — not by default.
+  // Comparing the ScrollView's measured content height against its own
+  // available viewport height (both reported by RN, not guessed) is more
+  // robust than hand-tuning the layout to a single reference device: it
+  // stays correct across screen sizes and re-evaluates itself when the
+  // keyboard opens/closes.
+  const [scrollEnabled, setScrollEnabled] = useState(false);
+  const [viewportHeight, setViewportHeight] = useState(0);
+  const [contentHeight, setContentHeight] = useState(0);
+
+  useEffect(() => {
+    if (viewportHeight > 0 && contentHeight > 0) {
+      setScrollEnabled(contentHeight > viewportHeight);
+    }
+  }, [viewportHeight, contentHeight]);
+
   useEffect(() => {
     let cancelled = false;
     AsyncStorage.getItem(HAS_SIGNED_IN_KEY)
@@ -99,7 +116,14 @@ export default function LoginScreen() {
       </View>
 
       <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
+        <ScrollView
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          scrollEnabled={scrollEnabled}
+          bounces={scrollEnabled}
+          onLayout={(e) => setViewportHeight(e.nativeEvent.layout.height)}
+          onContentSizeChange={(_w, height) => setContentHeight(height)}
+        >
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
 
