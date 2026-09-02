@@ -3,37 +3,38 @@ import { colors, fontFamily, radius, spacing, typography } from '../../theme';
 
 export const styles = StyleSheet.create({
   container: {
-    gap: spacing.sm,
+    gap: 7, // literal — spec calls out 7px label-to-field gap specifically, no matching spacing token
   },
   label: {
     ...typography.label,
     color: colors.inkSoft,
   },
+  // Border width is fixed across every state (resting/focused/error) — only
+  // borderColor changes. An RN TextInput on Android can lose focus the
+  // instant its wrapping View's box dimensions change out from under it
+  // (padding/border-width shifts included, not just elevation), so nothing
+  // here is allowed to resize on focus, only recolor.
   fieldRow: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: colors.lineStrong,
-    borderRadius: radius.sm,
+    borderColor: colors.line,
+    borderRadius: radius.card,
     backgroundColor: colors.panel,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     minHeight: 52,
   },
   fieldRowFocused: {
     borderColor: colors.accentBlue,
-    borderWidth: 2,
-    paddingHorizontal: spacing.md - 0.5,
   },
   fieldRowError: {
     borderColor: colors.danger,
-    borderWidth: 2,
-    paddingHorizontal: spacing.md - 0.5,
   },
   input: {
     flex: 1,
     ...typography.body,
     color: colors.ink,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.tight14,
   },
   iconSlot: {
     marginRight: spacing.sm,
@@ -49,5 +50,6 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.danger,
     fontFamily: fontFamily.semibold,
+    marginTop: -1, // container gap already gives 7px; spec wants the message 6px below the field
   },
 });

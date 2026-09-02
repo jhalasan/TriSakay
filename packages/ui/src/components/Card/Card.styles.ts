@@ -4,7 +4,7 @@ import { colors, radius, spacing } from '../../theme';
 export const styles = StyleSheet.create({
   base: {
     backgroundColor: colors.panel,
-    borderRadius: radius.md,
+    borderRadius: radius.card,
     padding: spacing.lg,
   },
   flat: {

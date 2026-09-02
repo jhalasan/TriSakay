@@ -6,14 +6,14 @@ export const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: radius.md,
+    borderRadius: radius.sm2,
     borderWidth: 1.5,
     borderColor: 'transparent',
   },
   md: {
     paddingVertical: spacing.md + 2,
     paddingHorizontal: spacing.xl,
-    minHeight: 52,
+    minHeight: 54,
   },
   sm: {
     paddingVertical: spacing.sm,
