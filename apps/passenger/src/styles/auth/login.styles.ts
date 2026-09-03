@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, fontFamily, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   screen: {
@@ -111,9 +111,21 @@ export const styles = StyleSheet.create({
     // keeping inkSoft here preserves that contrast floor.
     color: colors.inkSoft,
   },
-  authError: {
+  errorBanner: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: spacing.sm,
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.sm2,
+    padding: spacing.md,
+  },
+  errorBannerIcon: {
+    marginTop: 1,
+  },
+  errorBannerText: {
     ...typography.caption,
-    color: colors.danger,
-    marginBottom: spacing.md,
+    fontFamily: fontFamily.semibold,
+    color: colors.dangerPressed,
+    flex: 1,
   },
 });

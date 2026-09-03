@@ -47,8 +47,13 @@ export async function uploadAvatar({
 
     if (uploadError) return { publicUrl: null, error: uploadError.message };
 
+    // The path is deterministic and re-uploaded with `upsert: true`, so the
+    // public URL is byte-identical across uploads — without a cache-busting
+    // query param, RN's `Image` (and any CDN in front of the bucket) keeps
+    // serving the previously cached bytes for that exact URI, and a changed
+    // avatar never visibly updates even though the upload itself succeeded.
     const { data: publicUrlData } = getSupabaseClient().storage.from('avatars').getPublicUrl(path);
-    return { publicUrl: publicUrlData.publicUrl, error: null };
+    return { publicUrl: `${publicUrlData.publicUrl}?v=${Date.now()}`, error: null };
   } catch (err) {
     return { publicUrl: null, error: err instanceof Error ? err.message : 'Upload failed' };
   }

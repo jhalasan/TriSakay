@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   stepWrap: {
@@ -69,21 +69,8 @@ export const styles = StyleSheet.create({
   },
   motif: {
     position: 'absolute',
-    top: -40,
-    left: -40,
-  },
-  markBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.lg,
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    ...elevation.card,
-  },
-  mark: {
-    width: 36,
-    height: 42,
+    top: -30,
+    right: -32,
   },
   scrollContent: {
     flexGrow: 1,
@@ -96,19 +83,31 @@ export const styles = StyleSheet.create({
   legalScrollContent: {
     paddingHorizontal: 20,
   },
-  /** Non-clipping wrapper — the edit badge sits just outside the circle's own bounds. */
+  /**
+   * Non-clipping wrapper — the edit badge sits just outside the circle's own
+   * bounds. Shadow lives here rather than on `avatarUpload`, which needs
+   * `overflow:'hidden'` to clip a chosen photo into the circle — combining a
+   * shadow with overflow:'hidden' on the same view bleeds an unclipped
+   * rectangle past the rounded corners on Android (same caveat as
+   * home.styles.ts's heroShadowWrap).
+   */
   avatarWrap: {
     alignSelf: 'center',
     marginBottom: spacing.sm,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.14,
+    shadowRadius: 18,
+    elevation: 4,
   },
   avatarUpload: {
-    width: 88,
-    height: 88,
-    borderRadius: 44,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     borderWidth: 1,
     borderColor: colors.line,
     borderStyle: 'dashed',
-    backgroundColor: colors.fill,
+    backgroundColor: colors.panel,
     alignItems: 'center',
     justifyContent: 'center',
     overflow: 'hidden',
@@ -130,9 +129,9 @@ export const styles = StyleSheet.create({
     width: 28,
     height: 28,
     borderRadius: 14,
-    backgroundColor: colors.accentBlue,
-    borderWidth: 2,
-    borderColor: colors.white,
+    backgroundColor: colors.accentGreen,
+    borderWidth: 2.5,
+    borderColor: colors.bg,
     alignItems: 'center',
     justifyContent: 'center',
   },

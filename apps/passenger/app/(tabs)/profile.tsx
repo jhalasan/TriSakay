@@ -7,7 +7,9 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'rea
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { updateAvatarUrl, updateProfile, uploadAvatar, type DiscountCategory } from '@trisakay/services';
 import { Avatar, BrandMotif, Card, GradientSurface, ListRow, TextField, colors } from '@trisakay/ui';
+import { OfflineState } from '../../src/components/OfflineState';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 import { usePassengerStats } from '../../src/hooks/usePassengerStats';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { styles } from '../../src/styles/tabs/profile.styles';
@@ -18,6 +20,7 @@ export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const { stats } = usePassengerStats();
+  const isOffline = useConnectivityStore((state) => state.isOffline);
 
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name ?? '');
@@ -87,6 +90,14 @@ export default function ProfileScreen() {
     }
   }
 
+  if (isOffline) {
+    return (
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+        <OfflineState />
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
@@ -149,8 +160,9 @@ export default function ProfileScreen() {
                 <Text style={styles.name}>{name || t.profile.riderFallback}</Text>
                 {stats && (
                   <View style={styles.ridesRow}>
+                    <Ionicons name="shield-checkmark" size={13} color={colors.accentGreen} />
                     <Text style={styles.ridesText}>
-                      {stats.trips} {t.profile.ridesSuffix}
+                      {t.profile.verifiedPassenger} · {stats.trips} {t.profile.ridesSuffix}
                     </Text>
                   </View>
                 )}

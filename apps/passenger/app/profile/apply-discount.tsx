@@ -133,7 +133,7 @@ export default function ApplyDiscountScreen() {
     >
       <Ionicons name="card-outline" size={34} color={uri ? colors.accentBluePressed : colors.inkSoft} style={{ opacity: uri ? 0.55 : 1 }} />
       <View style={styles.idSlotTextSlot}>
-        <Text style={styles.idSlotTitle}>
+        <Text style={[styles.idSlotTitle, uri && styles.idSlotTitleFilled]}>
           {uri
             ? side === 'front'
               ? t.accountPages.idFrontCapturedTitle
@@ -142,7 +142,9 @@ export default function ApplyDiscountScreen() {
               ? t.accountPages.idFrontEmptyTitle
               : t.accountPages.idBackEmptyTitle}
         </Text>
-        <Text style={styles.idSlotSubtitle}>{uri ? t.accountPages.idCapturedSubtitle : t.accountPages.idEmptySubtitle}</Text>
+        <Text style={[styles.idSlotSubtitle, uri && styles.idSlotSubtitleFilled]}>
+          {uri ? t.accountPages.idCapturedSubtitle : t.accountPages.idEmptySubtitle}
+        </Text>
       </View>
       {uri ? (
         <View style={styles.idSlotCheck}>

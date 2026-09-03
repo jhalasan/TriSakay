@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Card, Checkbox } from '@trisakay/ui';
+import { Button, Card, Checkbox, colors } from '@trisakay/ui';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION } from '@trisakay/services';
 import { useConsentStore } from '../src/store/useConsentStore';
 import { DISCLOSURES, POLICY_BODY } from '../src/content/legalCopy';
@@ -66,7 +67,12 @@ export default function ConsentScreen() {
           onChange={setChecked}
           label="I have read and accept the Terms of Service and Privacy Policy"
         />
-        {error ? <Text style={styles.error}>{error}</Text> : null}
+        {error ? (
+          <View style={styles.errorRow}>
+            <Ionicons name="alert-circle" size={16} color={colors.danger} />
+            <Text style={styles.error}>{error}</Text>
+          </View>
+        ) : null}
         <Button
           label="Accept & Continue"
           fullWidth

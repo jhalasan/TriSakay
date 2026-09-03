@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   row: {
@@ -10,14 +10,21 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
   },
   backButton: {
-    width: 36,
-    height: 36,
+    width: 40,
+    height: 40,
+    borderRadius: 13, // literal — no matching radius token, see docs/design_handoff_trisakay_passenger/PHASE0_NOTES.md
     alignItems: 'center',
     justifyContent: 'center',
-    marginLeft: -spacing.sm,
+    backgroundColor: colors.panel,
+    ...elevation.card,
   },
-  title: {
-    ...typography.h1,
+  titleCompact: {
+    ...typography.h3b,
+    color: colors.ink,
+    flex: 1,
+  },
+  titleLarge: {
+    ...typography.h1b,
     color: colors.ink,
     flex: 1,
   },

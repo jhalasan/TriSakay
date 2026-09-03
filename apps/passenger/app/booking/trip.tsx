@@ -4,10 +4,11 @@ import { Animated, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { subscribeToDriverLocation, subscribeToRideRequestStatus, type DriverLocation } from '@trisakay/services';
 import { ASSUMED_TRICYCLE_SPEED_KMH, estimateEtaMinutes, haversineKm } from '@trisakay/shared';
-import { Badge, Button, EmptyState, GradientSurface, HoldToConfirmButton, OsmMap, motion, spacing } from '@trisakay/ui';
+import { Badge, Button, EmptyState, GradientSurface, HoldToConfirmButton, OsmMap, colors, motion, spacing } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useBookingStore } from '../../src/store/useBookingStore';
+import { fetchRouteEstimate, type RouteEstimate } from '../../src/utils/route';
 import { styles } from '../../src/styles/booking/trip.styles';
 
 export default function TripScreen() {
@@ -23,6 +24,7 @@ export default function TripScreen() {
   const { status: initialStatus } = useLocalSearchParams<{ status?: 'assigned' | 'ongoing' }>();
   const driver = useBookingStore((state) => state.driver);
   const pickup = useBookingStore((state) => state.pickup);
+  const dropoff = useBookingStore((state) => state.dropoff);
   const seats = useBookingStore((state) => state.seats);
   const fare = useBookingStore((state) => state.fare);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
@@ -33,6 +35,10 @@ export default function TripScreen() {
     initialStatus === 'ongoing' ? 'ongoing' : 'assigned'
   );
   const [driverLocation, setDriverLocation] = useState<DriverLocation | null>(null);
+  // Only fetched once the trip is actually underway — during 'assigned' the
+  // map shows the driver-to-pickup line instead (drawn by OsmMap itself from
+  // `liveDriverMarker`), so there's nothing for a pickup→dropoff route to add yet.
+  const [tripRoute, setTripRoute] = useState<RouteEstimate | null>(null);
   // Same exit-guard pattern as finding-driver.tsx: reset() clears
   // rideRequestId, which would otherwise re-fire this effect a second time
   // before the component finishes unmounting from the first navigate-away.
@@ -104,6 +110,20 @@ export default function TripScreen() {
     return unsubscribe;
   }, [rideStatus, driver?.id]);
 
+  useEffect(() => {
+    if (rideStatus !== 'ongoing' || !pickup || !dropoff) {
+      setTripRoute(null);
+      return;
+    }
+    let cancelled = false;
+    fetchRouteEstimate(pickup, dropoff).then((result) => {
+      if (!cancelled) setTripRoute(result);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rideStatus, pickup, dropoff]);
+
   const etaMinutes =
     driverLocation && pickup
       ? estimateEtaMinutes(
@@ -132,12 +152,22 @@ export default function TripScreen() {
           variant="route"
           caption={rideStatus === 'assigned' ? t.trip.mapCaption : t.trip.tripInProgressCaption}
           height="100%"
-          latitude={pickup?.latitude}
-          longitude={pickup?.longitude}
+          latitude={(rideStatus === 'ongoing' ? dropoff : pickup)?.latitude}
+          longitude={(rideStatus === 'ongoing' ? dropoff : pickup)?.longitude}
           zoom={15}
           interactive
           edgeToEdge
-          marker={pickup ? { latitude: pickup.latitude, longitude: pickup.longitude } : null}
+          marker={
+            rideStatus === 'ongoing'
+              ? dropoff
+                ? { latitude: dropoff.latitude, longitude: dropoff.longitude }
+                : null
+              : pickup
+                ? { latitude: pickup.latitude, longitude: pickup.longitude }
+                : null
+          }
+          markerColor={rideStatus === 'ongoing' ? colors.accentGreen : undefined}
+          route={rideStatus === 'ongoing' ? tripRoute?.geometry : null}
           liveDriverMarker={
             rideStatus === 'assigned' && driverLocation
               ? { latitude: driverLocation.lat, longitude: driverLocation.lng }

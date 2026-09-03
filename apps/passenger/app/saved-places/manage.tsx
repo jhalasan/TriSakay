@@ -4,6 +4,7 @@ import { useCallback } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { EmptyState, Spinner, colors } from '@trisakay/ui';
+import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useSavedPlacesStore } from '../../src/store/useSavedPlacesStore';
 import { SHORTCUT_ICON_TONE, DEFAULT_SHORTCUT_TONE } from '../../src/utils/savedPlaceIconTone';
@@ -40,19 +41,7 @@ export default function ManageSavedPlacesScreen() {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Pressable
-          accessibilityRole="button"
-          accessibilityLabel={t.savedPlacesManagement.backAccessibilityLabel}
-          style={styles.backButton}
-          onPress={() => router.back()}
-          hitSlop={8}
-        >
-          <Ionicons name="chevron-back" size={22} color={colors.ink} />
-        </Pressable>
-        <Text style={styles.title}>{t.savedPlacesManagement.title}</Text>
-        <View style={styles.backButton} />
-      </View>
+      <ScreenHeader title={t.savedPlacesManagement.title} onBack={() => router.back()} />
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.intro}>{t.savedPlacesManagement.intro}</Text>
         {loading && items.length === 0 ? (

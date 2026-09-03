@@ -81,6 +81,6 @@ export const styles = StyleSheet.create({
     color: colors.accentGreenPressed,
   },
   statusTextRefunded: {
-    color: colors.accentBluePressed,
+    color: colors.accentBlue,
   },
 });

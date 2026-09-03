@@ -69,6 +69,8 @@ export interface MapHtmlOptions {
    * map exists. Use `draggable` to let the rider fine-tune the pin by hand.
    */
   marker?: { latitude: number; longitude: number; draggable?: boolean } | null;
+  /** Fixed-marker pin color — navy for a pickup point, green for a destination. Defaults to the navy accent. */
+  markerColor?: string;
   /**
    * Tapping the map drops (or, once one exists, relocates) the marker there —
    * for a destination-picking map. Off by default: a rider's pickup pin (home)
@@ -105,6 +107,7 @@ export function buildMapHtml({
   interactive = false,
   bottomInset = 0,
   marker = null,
+  markerColor = colors.accentBlue,
   tapToPlace = false,
   route = null,
 }: MapHtmlOptions): string {
@@ -132,8 +135,8 @@ export function buildMapHtml({
     if (ROUTE.length >= 2) {
       var routeLine = L.polyline(ROUTE, { color: '${colors.accentBlue}', weight: 5, opacity: 0.9 });
       routeLine.addTo(map);
-      L.circleMarker(ROUTE[0], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentGreen}', fillOpacity: 1 }).addTo(map);
-      L.circleMarker(ROUTE[ROUTE.length - 1], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentBlue}', fillOpacity: 1 }).addTo(map);
+      L.circleMarker(ROUTE[0], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentBlue}', fillOpacity: 1 }).addTo(map);
+      L.circleMarker(ROUTE[ROUTE.length - 1], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentGreen}', fillOpacity: 1 }).addTo(map);
       map.fitBounds(routeLine.getBounds(), { paddingTopLeft: [24, 24], paddingBottomRight: [24, 24 + ${attributionBottom}] });
     }
 `
@@ -269,9 +272,14 @@ ${routeScript}
     var HAS_MARKER = ${marker ? 'true' : 'false'};
     var pinIcon = L.divIcon({
       className: '',
-      html: '<div style="width:26px;height:26px;border-radius:13px 13px 13px 0;background:${colors.accentBlue};transform:rotate(45deg);border:2px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,0.35);"></div>',
-      iconSize: [26, 26],
-      iconAnchor: [13, 26],
+      html: '<div style="display:flex;flex-direction:column;align-items:center;">' +
+        '<div style="width:34px;height:34px;border-radius:17px 17px 17px 2px;background:${markerColor};transform:rotate(-45deg);box-shadow:0 6px 14px rgba(0,46,96,.35);display:flex;align-items:center;justify-content:center;">' +
+        '<div style="width:11px;height:11px;border-radius:6px;background:#fff;transform:rotate(45deg);"></div>' +
+        '</div>' +
+        '<div style="width:13px;height:4px;border-radius:6px;background:rgba(0,26,56,.28);margin-top:5px;"></div>' +
+        '</div>',
+      iconSize: [34, 43],
+      iconAnchor: [17, 43],
     });
     if (HAS_MARKER) {
       pin = L.marker([${markerLat}, ${markerLng}], {

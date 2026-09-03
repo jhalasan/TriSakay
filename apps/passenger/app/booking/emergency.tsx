@@ -8,6 +8,7 @@ import { BrandMotif, Button, GradientSurface, PulseRing, Spinner, colors, motion
 import { triggerEmergencyAlert } from '@trisakay/services/src/emergency/index.ts';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useBookingStore } from '../../src/store/useBookingStore';
+import { reverseGeocode } from '../../src/utils/geocode';
 import { styles } from '../../src/styles/booking/emergency.styles';
 
 type AlertState = 'sending' | 'sent' | 'failed';
@@ -26,6 +27,9 @@ export default function PassengerEmergencyScreen() {
   const dropoff = useBookingStore((state) => state.dropoff);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const [alertState, setAlertState] = useState<AlertState>('sending');
+  // Best-effort only — the row is simply omitted if this never resolves, the
+  // same fail-open pattern as the rest of this screen.
+  const [currentLocationLabel, setCurrentLocationLabel] = useState<string | null>(null);
   const hasFiredRef = useRef(false);
 
   async function sendAlert() {
@@ -40,6 +44,9 @@ export default function PassengerEmergencyScreen() {
         lng: position.coords.longitude,
       });
       setAlertState(error ? 'failed' : 'sent');
+      reverseGeocode(position.coords.latitude, position.coords.longitude)
+        .then((point) => setCurrentLocationLabel(point.address))
+        .catch(() => {});
     } catch {
       setAlertState('failed');
     }
@@ -106,6 +113,14 @@ export default function PassengerEmergencyScreen() {
                 {driver.plateNumber ? ` · ${driver.plateNumber}` : ''}
               </Text>
             </View>
+            {currentLocationLabel && (
+              <View style={styles.sharedRow}>
+                <Ionicons name="location" size={15} color={colors.inkSoft} />
+                <Text style={styles.sharedRowText} numberOfLines={1}>
+                  {t.emergency.nearLabel} {currentLocationLabel}
+                </Text>
+              </View>
+            )}
             {dropoff && (
               <View style={styles.sharedRow}>
                 <Ionicons name="navigate" size={15} color={colors.inkSoft} />

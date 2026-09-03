@@ -16,7 +16,7 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.sm,
   },
   title: {
-    ...typography.h1,
+    ...typography.h1b,
     color: colors.ink,
   },
   tagline: {
@@ -45,9 +45,9 @@ export const styles = StyleSheet.create({
     flex: 1,
   },
   categoryIconBadge: {
-    width: 28,
-    height: 28,
-    borderRadius: radius.pill,
+    width: 30,
+    height: 30,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -147,7 +147,7 @@ export const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.line,
     borderStyle: 'dashed',
-    backgroundColor: colors.fill,
+    backgroundColor: colors.panel,
     alignItems: 'center',
     justifyContent: 'center',
   },

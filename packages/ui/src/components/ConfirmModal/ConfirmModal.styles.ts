@@ -22,7 +22,7 @@ export const styles = StyleSheet.create({
   iconTile: {
     width: 48,
     height: 48,
-    borderRadius: radius.sm2,
+    borderRadius: radius.card,
     alignItems: 'center',
     justifyContent: 'center',
   },

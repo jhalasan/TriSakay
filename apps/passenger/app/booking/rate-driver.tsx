@@ -113,7 +113,7 @@ export default function RateDriverScreen() {
 
               {submitError && (
                 <View style={styles.submitWrap}>
-                  <Button label={t.rateDriver.skipForNow} variant="outline" fullWidth onPress={finish} />
+                  <Button label={t.rateDriver.skipForNow} variant="ghost" tone="neutral" fullWidth onPress={finish} />
                 </View>
               )}
             </>

@@ -17,7 +17,7 @@ export const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.dangerSoft,
+    backgroundColor: '#F2B8B5', // literal — no matching token, see docs/design_handoff_trisakay_passenger/PHASE0_NOTES.md
   },
   text: {
     ...typography.bodyStrong,

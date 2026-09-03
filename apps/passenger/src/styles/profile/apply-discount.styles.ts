@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, fontFamily, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -47,6 +47,7 @@ export const styles = StyleSheet.create({
   },
   bannerTitle: {
     ...typography.h3,
+    fontFamily: fontFamily.bold,
     color: colors.white,
   },
   bannerSubtitle: {
@@ -112,12 +113,19 @@ export const styles = StyleSheet.create({
     gap: 2,
   },
   idSlotTitle: {
-    ...typography.bodyStrong,
+    ...typography.bodySm,
     color: colors.ink,
+  },
+  idSlotTitleFilled: {
+    color: colors.accentBluePressed,
   },
   idSlotSubtitle: {
     ...typography.caption,
     color: colors.inkSoft,
+  },
+  idSlotSubtitleFilled: {
+    color: colors.accentBlue,
+    opacity: 0.75,
   },
   idSlotCheck: {
     width: 24,

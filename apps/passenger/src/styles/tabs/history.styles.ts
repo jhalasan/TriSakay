@@ -95,6 +95,7 @@ export const styles = StyleSheet.create({
 
   rideCard: {
     gap: spacing.md,
+    borderRadius: radius.md3,
   },
   cardTopRow: {
     flexDirection: 'row',
@@ -254,7 +255,7 @@ export const styles = StyleSheet.create({
     marginBottom: spacing.xs,
   },
   emptyTitle: {
-    ...typography.h3,
+    ...typography.h3b,
     color: colors.ink,
   },
   emptyMessage: {

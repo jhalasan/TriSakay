@@ -104,6 +104,7 @@ export default function SetPickupScreen() {
         <OsmMap
           variant="pin"
           caption={resolvingPin ? t.setDestination.locatingPin : t.setPickup.tapOrDragPin}
+          captionPersistent
           height="100%"
           latitude={selected?.latitude}
           longitude={selected?.longitude}

@@ -12,7 +12,9 @@ import {
   type ComplaintDbStatus,
   type MyComplaintRow,
 } from '@trisakay/services';
-import { Badge, Button, Card, EmptyState, ListRow, Textarea, TextField, colors, type BadgeTone } from '@trisakay/ui';
+import { Avatar, Badge, Button, Card, EmptyState, ListRow, Textarea, TextField, colors, type BadgeTone } from '@trisakay/ui';
+import { OfflineState } from '../../src/components/OfflineState';
+import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { isNonEmpty } from '../../src/utils/validation';
@@ -82,6 +84,7 @@ export default function ComplaintsScreen() {
     dismissed: t.complaints.statusDismissed,
   };
 
+  const isOffline = useConnectivityStore((state) => state.isOffline);
   const [myComplaints, setMyComplaints] = useState<MyComplaintRow[]>([]);
 
   useFocusEffect(
@@ -161,6 +164,14 @@ export default function ComplaintsScreen() {
     listMyComplaints().then(({ data }) => setMyComplaints(data));
   }
 
+  if (isOffline) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <OfflineState />
+      </SafeAreaView>
+    );
+  }
+
   if (submitted) {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
@@ -197,9 +208,12 @@ export default function ComplaintsScreen() {
               onPress={() => setPickerOpen((prev) => !prev)}
               accessibilityRole="button"
             >
-              <Text style={[styles.pickerFieldText, !selectedRide && styles.pickerFieldPlaceholder]} numberOfLines={1}>
-                {selectedRide ? `${selectedRide.driverName} · ${selectedRide.dropoff}` : t.complaints.selectAPastRide}
-              </Text>
+              <View style={styles.categoryFieldContent}>
+                {selectedRide && <Avatar name={selectedRide.driverName} size="xs" />}
+                <Text style={[styles.pickerFieldText, !selectedRide && styles.pickerFieldPlaceholder]} numberOfLines={1}>
+                  {selectedRide ? `${selectedRide.driverName} · ${selectedRide.dropoff}` : t.complaints.selectAPastRide}
+                </Text>
+              </View>
               <Ionicons name={pickerOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.inkSoft} />
             </Pressable>
 

@@ -25,13 +25,11 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     gap: spacing.sm,
     padding: spacing.sm,
-    borderTopWidth: 3,
-    borderTopColor: colors.accentGreen,
   },
   backButton: {
     width: 40,
     height: 40,
-    borderRadius: radius.pill,
+    borderRadius: radius.xs,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.accentBlueSoft,
@@ -51,6 +49,8 @@ export const styles = StyleSheet.create({
   },
   routeCard: {
     gap: spacing.md,
+    borderColor: colors.lineSoft,
+    borderRadius: radius.md3,
   },
   routeRow: {
     flexDirection: 'row',
@@ -68,13 +68,15 @@ export const styles = StyleSheet.create({
     flex: 1,
     gap: 2,
   },
+  routeEyebrow: {
+    ...typography.labelSm,
+    color: colors.inkSoft,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+  },
   routeLabel: {
     ...typography.bodyStrong,
     color: colors.ink,
-  },
-  routeAddress: {
-    ...typography.caption,
-    color: colors.inkSoft,
   },
   routeChangeLink: {
     ...typography.buttonSmall,
@@ -101,16 +103,22 @@ export const styles = StyleSheet.create({
   },
   /** The fare is the number the rider is looking for — the spec gives it the system's navy panel, not a white card. */
   fareCard: {
-    alignItems: 'center',
     gap: spacing.xs,
     backgroundColor: colors.accentBlue,
     borderColor: 'transparent',
     paddingVertical: spacing.xl,
     borderRadius: radius.lg,
+    overflow: 'hidden',
+  },
+  fareMotif: {
+    position: 'absolute',
+    top: -30,
+    right: -26,
   },
   fareLabelRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: spacing.xs,
   },
   fareLabelWithInfo: {
@@ -123,21 +131,34 @@ export const styles = StyleSheet.create({
     color: colors.white,
     opacity: 0.75,
   },
+  fareValueRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    gap: spacing.sm,
+  },
   fareValue: {
     ...typography.amount,
     color: colors.white,
+  },
+  fareDistance: {
+    ...typography.caption,
+    color: colors.white,
+    opacity: 0.7,
   },
   fareNote: {
     ...typography.caption,
     color: colors.white,
     opacity: 0.75,
-    textAlign: 'center',
   },
   discountLink: {
     ...typography.caption,
     color: colors.white,
     textDecorationLine: 'underline',
     marginTop: spacing.xs,
+  },
+  requestButtonIcon: {
+    width: 22,
+    height: 22,
   },
   requestError: {
     ...typography.caption,

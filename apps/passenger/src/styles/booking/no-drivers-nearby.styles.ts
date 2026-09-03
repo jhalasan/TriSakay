@@ -22,9 +22,9 @@ export const styles = StyleSheet.create({
     backgroundColor: colors.panel,
   },
   iconTile: {
-    width: 48,
-    height: 48,
-    borderRadius: radius.sm2,
+    width: 46,
+    height: 46,
+    borderRadius: 15, // literal — no matching radius token, see docs/design_handoff_trisakay_passenger/PHASE0_NOTES.md
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.fill,
