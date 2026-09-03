@@ -42,6 +42,8 @@ yarn-error.*
 # generated native folders
 /ios
 /android
+apps/*/ios
+apps/*/android
 
 # Superpowers subagent-driven-development scratch workspace
 /.superpowers/
