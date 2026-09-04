@@ -870,6 +870,42 @@ export type Database = {
           },
         ]
       }
+      settlements: {
+        Row: {
+          amount: number
+          driver_id: string
+          id: string
+          notified_at: string
+        }
+        Insert: {
+          amount: number
+          driver_id: string
+          id?: string
+          notified_at?: string
+        }
+        Update: {
+          amount?: number
+          driver_id?: string
+          id?: string
+          notified_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "settlements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "settlements_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "v_flagged_low_ratings"
+            referencedColumns: ["driver_id"]
+          },
+        ]
+      }
       system_settings: {
         Row: {
           bearing_tolerance_deg: number
@@ -1542,6 +1578,7 @@ export type Database = {
         | "discount_status"
         | "franchise_expiring"
         | "emergency_alert"
+        | "settlement_notice"
       payment_method: "cash" | "gcash"
       payment_status: "pending" | "paid" | "failed" | "refunded"
       ride_status:
@@ -1727,6 +1764,7 @@ export const Constants = {
         "discount_status",
         "franchise_expiring",
         "emergency_alert",
+        "settlement_notice",
       ],
       payment_method: ["cash", "gcash"],
       payment_status: ["pending", "paid", "failed", "refunded"],

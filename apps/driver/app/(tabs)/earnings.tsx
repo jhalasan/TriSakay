@@ -22,6 +22,8 @@ export default function EarningsScreen() {
   const earningsError = useEarningsStore((state) => state.error);
   const load = useEarningsStore((state) => state.load);
   const settlementLog = useEarningsStore((state) => state.settlementLog);
+  const settlementsError = useEarningsStore((state) => state.settlementsError);
+  const notifying = useEarningsStore((state) => state.notifying);
   const notifyPsoForSettlement = useEarningsStore((state) => state.notifyPsoForSettlement);
 
   useEffect(() => {
@@ -88,7 +90,8 @@ export default function EarningsScreen() {
           </View>
         )}
 
-        <Button label={t.driver.earnings.notifyPso} fullWidth onPress={notifyPsoForSettlement} />
+        {settlementsError && <Text style={styles.error}>{settlementsError}</Text>}
+        <Button label={t.driver.earnings.notifyPso} fullWidth loading={notifying} onPress={() => void notifyPsoForSettlement()} />
         <Text style={styles.caption}>{t.driver.earnings.caption}</Text>
       </ScrollView>
     </SafeAreaView>

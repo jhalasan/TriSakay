@@ -19,6 +19,7 @@ const TYPE_ICON: Record<NotificationItem['type'], keyof typeof Ionicons.glyphMap
   verification_status: 'shield-checkmark',
   franchise_expiring: 'alert-circle',
   emergency_alert: 'warning',
+  settlement_notice: 'wallet',
 };
 
 const TYPE_TONE: Record<NotificationItem['type'], { bg: string; fg: string; accent: string }> = {
@@ -29,6 +30,7 @@ const TYPE_TONE: Record<NotificationItem['type'], { bg: string; fg: string; acce
   complaint_status: { bg: colors.dangerSoft, fg: colors.dangerPressed, accent: colors.danger },
   franchise_expiring: { bg: colors.dangerSoft, fg: colors.dangerPressed, accent: colors.danger },
   emergency_alert: { bg: colors.dangerSoft, fg: colors.dangerPressed, accent: colors.danger },
+  settlement_notice: { bg: colors.accentBlueSoft, fg: colors.accentBluePressed, accent: colors.accentBlue },
 };
 
 export default function NotificationsScreen() {
