@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { getDriverEarnings, getDriverRatingSummary, getDriverVerificationStatus } from '../src/driver-profile/index.ts';
+import { getDriverAcceptRate, getDriverEarnings, getDriverRatingSummary, getDriverVerificationStatus } from '../src/driver-profile/index.ts';
 
 const SESSION = { data: { session: { user: { id: 'u1' } } } };
 
@@ -198,4 +198,43 @@ test('getDriverRatingSummary returns an error when there is no active session', 
   const { ratingAvg, error } = await getDriverRatingSummary();
   assert.equal(ratingAvg, null);
   assert.equal(error, 'Not signed in');
+});
+
+test('getDriverAcceptRate divides accepted by accepted + declined', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn) => {
+        assert.equal(fn, 'get_driver_accept_rate');
+        return { data: [{ accepted_count: 3, declined_count: 1 }], error: null };
+      },
+    })
+  );
+
+  const { acceptRate, error } = await getDriverAcceptRate();
+  assert.equal(error, null);
+  assert.equal(acceptRate, 0.75);
+});
+
+test('getDriverAcceptRate returns null (not 0%) when the driver has never been offered a request', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: [{ accepted_count: 0, declined_count: 0 }], error: null }),
+    })
+  );
+
+  const { acceptRate, error } = await getDriverAcceptRate();
+  assert.equal(error, null);
+  assert.equal(acceptRate, null);
+});
+
+test('getDriverAcceptRate surfaces an RPC error instead of guessing', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: null, error: { message: 'network down' } }),
+    })
+  );
+
+  const { acceptRate, error } = await getDriverAcceptRate();
+  assert.equal(acceptRate, null);
+  assert.equal(error, 'network down');
 });

@@ -74,3 +74,36 @@ test('checkRating() leaves rating untouched when the backend read fails', async 
   assert.equal(useDriverStore.getState().rating, 4.9);
   assert.equal(useDriverStore.getState().ratingCount, 20);
 });
+
+test('checkAcceptRate() re-computes acceptRate from accepted/declined counts', async () => {
+  const { useDriverStore } = await import('../src/store/useDriverStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'driver1' } } } }) },
+    rpc: async (fn) => {
+      assert.equal(fn, 'get_driver_accept_rate');
+      return { data: [{ accepted_count: 3, declined_count: 1 }], error: null };
+    },
+  });
+
+  useDriverStore.setState({ acceptRate: null });
+  await useDriverStore.getState().checkAcceptRate();
+
+  assert.equal(useDriverStore.getState().acceptRate, 0.75);
+});
+
+test('checkAcceptRate() leaves acceptRate untouched when the backend read fails', async () => {
+  const { useDriverStore } = await import('../src/store/useDriverStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'driver1' } } } }) },
+    rpc: async () => ({ data: null, error: { message: 'network error' } }),
+  });
+
+  useDriverStore.setState({ acceptRate: 0.5 });
+  await useDriverStore.getState().checkAcceptRate();
+
+  assert.equal(useDriverStore.getState().acceptRate, 0.5);
+});

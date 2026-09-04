@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { getDriverAvailability, getDriverRatingSummary, updateDriverAvailability } from '@trisakay/services';
+import { getDriverAcceptRate, getDriverAvailability, getDriverRatingSummary, updateDriverAvailability } from '@trisakay/services';
 import { getTranslations } from '../utils/getTranslations.ts';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 
@@ -27,6 +27,8 @@ interface DriverState {
   checkAvailability: () => Promise<void>;
   /** Re-syncs rating/ratingCount from driver_profiles — called on app boot/login, same reasoning as checkAvailability. */
   checkRating: () => Promise<void>;
+  /** Re-computes acceptRate from accepted/declined counts — called on app boot/login, same reasoning as checkAvailability. */
+  checkAcceptRate: () => Promise<void>;
   recordCompletedTrip: (fare: number) => void;
   clearError: () => void;
 }
@@ -34,6 +36,7 @@ interface DriverState {
 export const useDriverStore = create<DriverState>()((set) => {
   let checkEpoch = 0;
   let ratingCheckEpoch = 0;
+  let acceptRateCheckEpoch = 0;
 
   return {
     isAvailable: false,
@@ -94,6 +97,17 @@ export const useDriverStore = create<DriverState>()((set) => {
       } catch {
         // Leave rating/ratingCount untouched on failure/timeout — same
         // reasoning as checkAvailability's catch above.
+      }
+    },
+
+    checkAcceptRate: async () => {
+      const epoch = ++acceptRateCheckEpoch;
+      try {
+        const { acceptRate, error } = await withTimeout(getDriverAcceptRate(), REQUEST_TIMEOUT_MS, 'Accept rate check timed out');
+        if (epoch !== acceptRateCheckEpoch || error) return;
+        set({ acceptRate });
+      } catch {
+        // Leave acceptRate untouched on failure/timeout — same reasoning as checkAvailability's catch above.
       }
     },
 

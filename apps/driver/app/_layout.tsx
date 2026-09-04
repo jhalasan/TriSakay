@@ -193,16 +193,19 @@ function useRequestsSync(sessionUserId: string | null, isAvailable: boolean) {
   }, [sessionUserId, isAvailable, subscribe, unsubscribe]);
 }
 
+/** Also covers acceptRate — same reset-on-logout/check-on-session-change lifecycle as rating. */
 function useRatingSync(sessionUserId: string | null) {
   const checkRating = useDriverStore((state) => state.checkRating);
+  const checkAcceptRate = useDriverStore((state) => state.checkAcceptRate);
 
   useEffect(() => {
     if (sessionUserId === null) {
-      useDriverStore.setState({ rating: null, ratingCount: 0 });
+      useDriverStore.setState({ rating: null, ratingCount: 0, acceptRate: null });
       return;
     }
     void checkRating();
-  }, [sessionUserId, checkRating]);
+    void checkAcceptRate();
+  }, [sessionUserId, checkRating, checkAcceptRate]);
 }
 
 /**

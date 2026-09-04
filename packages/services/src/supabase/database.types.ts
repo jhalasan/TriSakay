@@ -1458,6 +1458,13 @@ export type Database = {
           status: Database["public"]["Enums"]["ride_status"]
         }[]
       }
+      get_driver_accept_rate: {
+        Args: never
+        Returns: {
+          accepted_count: number
+          declined_count: number
+        }[]
+      }
       get_driver_trip_history: {
         Args: { p_limit?: number }
         Returns: {

@@ -92,6 +92,24 @@ export async function getDriverRatingSummary(): Promise<{
   return { ratingAvg: data.rating_avg, ratingCount: data.rating_count, error: null };
 }
 
+/**
+ * accepted ÷ (accepted + declined), all-time. No "expired" bucket — nothing
+ * records that a request was ever shown to a driver who neither accepted
+ * nor declined it (would need a new per-impression log, not built here).
+ * `null` when the driver has never been offered a request yet, so the
+ * caller can render "—" instead of a misleading 0%.
+ */
+export async function getDriverAcceptRate(): Promise<{ acceptRate: number | null; error: string | null }> {
+  const { data, error } = await getSupabaseClient().rpc('get_driver_accept_rate');
+  if (error) return { acceptRate: null, error: error.message };
+
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { acceptRate: null, error: null };
+
+  const total = row.accepted_count + row.declined_count;
+  return { acceptRate: total > 0 ? row.accepted_count / total : null, error: null };
+}
+
 export interface DriverDailyEarning {
   date: string;
   ridesCompleted: number;
