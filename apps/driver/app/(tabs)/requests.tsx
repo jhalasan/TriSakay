@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Badge, Button, colors, EmptyState, RequestCard } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useRequestsStore } from '../../src/store/useRequestsStore';
 import { styles } from '../../src/styles/tabs/requests.styles';
@@ -12,6 +13,7 @@ import { styles } from '../../src/styles/tabs/requests.styles';
 export default function RequestsScreen() {
   const router = useRouter();
   const t = useTranslation();
+  const user = useAuthStore((state) => state.user);
   const isAvailable = useDriverStore((state) => state.isAvailable);
   const pending = useRequestsStore((state) => state.pending);
   const requestError = useRequestsStore((state) => state.error);
@@ -59,7 +61,7 @@ export default function RequestsScreen() {
             variant="incoming"
             accepting={acceptingId === item.id}
             onAccept={() => acceptRideRequest(item.id)}
-            onDecline={() => decline(item.id)}
+            onDecline={() => user && decline(item.id, user.id)}
             copy={{
               decline: t.driver.requestCard.decline,
               accept: t.driver.requestCard.accept,

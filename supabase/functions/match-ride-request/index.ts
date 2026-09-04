@@ -1,6 +1,11 @@
 // FR-2.5 ride-matching heuristic. Given a driver, returns the subset of
 // `pending` ride_requests they are allowed and well-positioned to serve:
 //
+//   0. DECLINED — any request this driver has already declined
+//      (ride_request_declines, written by declineRideRequest() in
+//      packages/services/src/booking/index.ts) is dropped before either
+//      filter runs, so a decline persists across relaunch instead of only
+//      suppressing it for the current in-memory session.
 //   1. HARD FILTER — cluster authorization (Ordinance No. 37, s.2018, Sec.
 //      119) + remaining seat capacity. The cluster check mirrors
 //      public.is_cluster_authorized() (docs/SCHEMA.MD §4.3b) rather than
@@ -175,7 +180,15 @@ Deno.serve(async (req: Request) => {
 
     if (pendingError) return json({ data: null, error: pendingError.message }, 500);
 
-    const rows = (pendingRows ?? []) as RideRequestRow[];
+    const { data: declinedRows, error: declinedError } = await supabase
+      .from('ride_request_declines')
+      .select('ride_request_id')
+      .eq('driver_id', driverId);
+
+    if (declinedError) return json({ data: null, error: declinedError.message }, 500);
+
+    const declinedIds = new Set((declinedRows ?? []).map((r) => r.ride_request_id as string));
+    const rows = ((pendingRows ?? []) as RideRequestRow[]).filter((r) => !declinedIds.has(r.id));
 
     const barangayIds = [...new Set(rows.map((r) => r.pickup_barangay_id).filter((id): id is string => !!id))];
     const barangayClusterById = new Map<string, TricycleCluster | null>();

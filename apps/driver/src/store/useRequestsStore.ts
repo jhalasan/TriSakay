@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { acceptRideRequest, subscribeToPendingRideRequests } from '@trisakay/services/src/booking/index.ts';
+import { acceptRideRequest, declineRideRequest, subscribeToPendingRideRequests } from '@trisakay/services/src/booking/index.ts';
 import type { RideRequestRow } from '@trisakay/services/src/booking/index.ts';
 import { getTranslations } from '../utils/getTranslations.ts';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
@@ -11,7 +11,7 @@ interface RequestsState {
   subscribe: (driverId: string) => void;
   unsubscribe: () => void;
   accept: (id: string, driverId: string) => Promise<AcceptedRequest | undefined>;
-  decline: (id: string) => void;
+  decline: (id: string, driverId: string) => void;
 }
 
 function toPendingRequest(row: RideRequestRow): PendingRequest {
@@ -78,8 +78,17 @@ export const useRequestsStore = create<RequestsState>()((set, get) => ({
     }
   },
 
-  decline: (id) => {
+  decline: (id, driverId) => {
+    // Optimistic and instant, same as before — the real write below just
+    // makes the dismissal survive a relaunch instead of only suppressing it
+    // for this in-memory session. A failed write isn't rolled back into the
+    // list (that would be jarring after the driver already dismissed it);
+    // worst case it can resurface later, same as the old behavior.
     dismissedIds.add(id);
     set((state) => ({ pending: state.pending.filter((item) => item.id !== id) }));
+
+    void declineRideRequest(driverId, id).then(({ error }) => {
+      if (error) set({ error });
+    });
   },
 }));

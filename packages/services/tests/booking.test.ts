@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver, startRideLeg } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, declineRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver, startRideLeg } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -717,6 +717,40 @@ test('acceptRideRequest surfaces a Postgres error from the assignment update', a
 
   const { error } = await acceptRideRequest('driver1', 'rr1');
   assert.equal(error, "Couldn't assign this ride. Please try again.");
+});
+
+test('declineRideRequest upserts the (ride_request_id, driver_id) pair, ignoring a duplicate decline', async () => {
+  let upsertArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: (table) => {
+        assert.equal(table, 'ride_request_declines');
+        return {
+          upsert: (row: unknown, options: unknown) => {
+            upsertArgs = { row, options };
+            return Promise.resolve({ error: null });
+          },
+        };
+      },
+    })
+  );
+
+  const { error } = await declineRideRequest('driver1', 'rr1');
+
+  assert.equal(error, null);
+  assert.deepEqual(upsertArgs.row, { ride_request_id: 'rr1', driver_id: 'driver1' });
+  assert.deepEqual(upsertArgs.options, { onConflict: 'ride_request_id,driver_id', ignoreDuplicates: true });
+});
+
+test('declineRideRequest surfaces a Postgres error', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: () => ({ upsert: () => Promise.resolve({ error: { message: 'network error' } }) }),
+    })
+  );
+
+  const { error } = await declineRideRequest('driver1', 'rr1');
+  assert.equal(error, 'network error');
 });
 
 test('subscribeToPendingRideRequests invokes match-ride-request with driverId on SUBSCRIBED and on every change event', async () => {

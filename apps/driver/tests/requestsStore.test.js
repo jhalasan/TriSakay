@@ -78,7 +78,7 @@ test('subscribe(driverId) populates pending from the reconcile fetch and maps fi
   useRequestsStore.getState().unsubscribe();
 });
 
-test('decline(id) removes the request locally and it does not reappear on the next refetch', async () => {
+test('decline(id, driverId) removes the request locally, it does not reappear on the next refetch, and the decline is written for real', async () => {
   const { useRequestsStore } = await import('../src/store/useRequestsStore.ts');
   const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
 
@@ -88,11 +88,21 @@ test('decline(id) removes the request locally and it does not reappear on the ne
     { id: 'rr2', seats_requested: 1, preferred_method: 'cash', pickup_label: null, dest_label: null, estimated_fare: null, requested_at: 'now' },
   ];
 
+  let upserted = null;
   __setSupabaseClientForTests({
     channel: () => channel,
     removeChannel: () => {},
     functions: {
       invoke: async () => ({ data: { data: rows, error: null }, error: null }),
+    },
+    from: (table) => {
+      assert.equal(table, 'ride_request_declines');
+      return {
+        upsert: (row) => {
+          upserted = row;
+          return Promise.resolve({ error: null });
+        },
+      };
     },
   });
 
@@ -102,7 +112,7 @@ test('decline(id) removes the request locally and it does not reappear on the ne
   await Promise.resolve();
   await Promise.resolve();
 
-  useRequestsStore.getState().decline('rr1');
+  useRequestsStore.getState().decline('rr1', 'driver1');
   assert.deepEqual(useRequestsStore.getState().pending.map((item) => item.id), ['rr2']);
 
   fireChange();
@@ -110,8 +120,33 @@ test('decline(id) removes the request locally and it does not reappear on the ne
   await Promise.resolve();
 
   assert.deepEqual(useRequestsStore.getState().pending.map((item) => item.id), ['rr2']);
+  assert.equal(upserted.ride_request_id, 'rr1');
+  assert.equal(upserted.driver_id, 'driver1');
 
   useRequestsStore.getState().unsubscribe();
+});
+
+test('decline(id, driverId) sets error without restoring the dismissed item when the write fails', async () => {
+  const { useRequestsStore } = await import('../src/store/useRequestsStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    from: () => ({ upsert: () => Promise.resolve({ error: { message: 'connection refused' } }) }),
+  });
+
+  useRequestsStore.setState({
+    pending: [{ id: 'rr1', seats: 1, paymentMethod: 'cash', pickupLabel: null, dropoffLabel: null, fare: null, createdAt: 'now' }],
+    error: null,
+  });
+
+  useRequestsStore.getState().decline('rr1', 'driver1');
+  assert.deepEqual(useRequestsStore.getState().pending, []);
+
+  await Promise.resolve();
+  await Promise.resolve();
+
+  assert.equal(useRequestsStore.getState().error, 'connection refused');
+  assert.deepEqual(useRequestsStore.getState().pending, []);
 });
 
 test('accept(id, driverId) removes the accepted request and resolves it on success', async () => {

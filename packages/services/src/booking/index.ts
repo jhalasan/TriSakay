@@ -233,6 +233,26 @@ export async function acceptRideRequest(driverId: string, rideRequestId: string)
   return { error: null, tripId };
 }
 
+export interface DeclineRideRequestResult {
+  error: string | null;
+}
+
+/**
+ * Records that this driver declined a request (`driver_id = auth.uid()`,
+ * enforced by `ride_request_declines_driver_insert`), so match-ride-request
+ * excludes it from this driver's board going forward — including after a
+ * relaunch, unlike the old in-memory-only dismissal. Idempotent: declining
+ * the same request twice just no-ops the second insert rather than erroring,
+ * since the (ride_request_id, driver_id) pair is the table's primary key.
+ */
+export async function declineRideRequest(driverId: string, rideRequestId: string): Promise<DeclineRideRequestResult> {
+  const { error } = await getSupabaseClient()
+    .from('ride_request_declines')
+    .upsert({ ride_request_id: rideRequestId, driver_id: driverId }, { onConflict: 'ride_request_id,driver_id', ignoreDuplicates: true });
+
+  return { error: error?.message ?? null };
+}
+
 export type RideRequestStatusUpdate = Pick<
   RideRequestRow,
   'id' | 'status' | 'cancel_reason' | 'discount_applied'

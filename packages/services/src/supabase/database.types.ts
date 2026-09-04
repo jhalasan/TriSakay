@@ -726,6 +726,46 @@ export type Database = {
           },
         ]
       }
+      ride_request_declines: {
+        Row: {
+          declined_at: string
+          driver_id: string
+          ride_request_id: string
+        }
+        Insert: {
+          declined_at?: string
+          driver_id: string
+          ride_request_id: string
+        }
+        Update: {
+          declined_at?: string
+          driver_id?: string
+          ride_request_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_request_declines_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ride_request_declines_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "v_flagged_low_ratings"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "ride_request_declines_ride_request_id_fkey"
+            columns: ["ride_request_id"]
+            isOneToOne: false
+            referencedRelation: "ride_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_requests: {
         Row: {
           assigned_at: string | null

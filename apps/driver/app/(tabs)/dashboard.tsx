@@ -245,7 +245,7 @@ export default function DashboardScreen() {
               variant="incoming"
               accepting={acceptingId === incoming.id}
               onAccept={() => acceptRideRequest(incoming.id)}
-              onDecline={() => decline(incoming.id)}
+              onDecline={() => user && decline(incoming.id, user.id)}
               copy={{
                 decline: t.driver.requestCard.decline,
                 accept: t.driver.requestCard.accept,
