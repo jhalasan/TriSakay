@@ -31,7 +31,7 @@ export const styles = StyleSheet.create({
     borderColor: colors.accentBlue,
   },
   label: {
-    ...typography.body,
+    ...typography.caption,
     color: colors.ink,
     flex: 1,
   },

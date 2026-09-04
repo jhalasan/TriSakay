@@ -10,6 +10,8 @@ export interface ScreenHeaderProps {
   onBack?: () => void;
   showBack?: boolean;
   right?: React.ReactNode;
+  /** 'compact' (default) is the 18/24 bold title used on every detail screen; 'large' is the 28/34 extrabold title reserved for the consent gate. */
+  titleSize?: 'compact' | 'large';
 }
 
 /**
@@ -18,7 +20,7 @@ export interface ScreenHeaderProps {
  * `app/_layout.tsx`) — so the inset has to be applied here, once, rather than
  * trusted to every screen that renders this header.
  */
-export function ScreenHeader({ title, onBack, showBack = true, right }: ScreenHeaderProps) {
+export function ScreenHeader({ title, onBack, showBack = true, right, titleSize = 'compact' }: ScreenHeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -32,10 +34,10 @@ export function ScreenHeader({ title, onBack, showBack = true, right }: ScreenHe
           onPress={onBack ?? (() => router.back())}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={24} color={colors.ink} />
+          <Ionicons name="chevron-back" size={18} color={colors.ink} />
         </Pressable>
       )}
-      <Text style={styles.title} numberOfLines={1}>
+      <Text style={titleSize === 'large' ? styles.titleLarge : styles.titleCompact} numberOfLines={1}>
         {title}
       </Text>
       {right && <View style={styles.rightSlot}>{right}</View>}

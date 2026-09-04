@@ -67,6 +67,7 @@ export const styles = StyleSheet.create({
 
   section: {
     gap: spacing.sm,
+    borderRadius: radius.md3,
   },
   sectionLabel: {
     ...typography.label,
@@ -118,11 +119,16 @@ export const styles = StyleSheet.create({
   distanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    gap: spacing.md,
     marginTop: spacing.md,
     paddingTop: spacing.md,
     borderTopWidth: 1,
     borderTopColor: colors.lineSoft,
+  },
+  distanceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   distanceText: {
     ...typography.bodyStrong,
@@ -152,6 +158,15 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkSoft,
   },
+  driverRatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  driverRatingText: {
+    ...typography.bodySm,
+    color: colors.ink,
+  },
 
   paymentRow: {
     flexDirection: 'row',
@@ -170,6 +185,18 @@ export const styles = StyleSheet.create({
   paymentDivider: {
     height: 1,
     backgroundColor: colors.lineSoft,
+  },
+  paymentBreakdownLabel: {
+    ...typography.body,
+    color: colors.inkSoft,
+  },
+  paymentBreakdownValue: {
+    ...typography.bodySm,
+    color: colors.ink,
+  },
+  paymentDiscountValue: {
+    ...typography.bodySm,
+    color: colors.accentGreenPressed,
   },
   totalLabel: {
     ...typography.bodyStrong,

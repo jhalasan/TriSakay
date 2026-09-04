@@ -3,15 +3,6 @@ import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: spacing.lg,
-    paddingVertical: spacing.md,
-  },
-  backButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
-  title: { ...typography.h2, color: colors.ink },
   scrollContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xxxl, gap: spacing.tight10 },
   intro: { ...typography.caption, color: colors.inkSoft, marginBottom: spacing.xs },
   row: {

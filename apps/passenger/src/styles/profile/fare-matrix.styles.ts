@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, fontFamily, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -44,6 +44,7 @@ export const styles = StyleSheet.create({
   },
   ordinanceValue: {
     ...typography.h3,
+    fontFamily: fontFamily.bold,
     color: colors.white,
     marginTop: 3,
   },

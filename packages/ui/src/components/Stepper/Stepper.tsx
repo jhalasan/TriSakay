@@ -30,9 +30,9 @@ export function Stepper({ value, onChange, min = 1, max = 10, step = 1 }: Steppe
         accessibilityLabel="Increase"
         disabled={!canIncrease}
         onPress={() => onChange(Math.min(max, value + step))}
-        style={[styles.button, !canIncrease && styles.buttonDisabled]}
+        style={[styles.button, styles.buttonIncrease, !canIncrease && styles.buttonDisabled]}
       >
-        <Text style={styles.buttonGlyph}>+</Text>
+        <Text style={[styles.buttonGlyph, styles.buttonGlyphIncrease]}>+</Text>
       </Pressable>
     </View>
   );

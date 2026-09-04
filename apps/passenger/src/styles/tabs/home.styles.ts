@@ -150,35 +150,4 @@ export const styles = StyleSheet.create({
   },
   emptyTitle: { ...typography.h3, color: colors.ink, textAlign: 'center' },
   emptyMessage: { ...typography.caption, color: colors.inkSoft, textAlign: 'center', marginTop: spacing.xs },
-
-  offlineWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  offlineIconTile: {
-    width: 46,
-    height: 46,
-    borderRadius: radius.sm2,
-    backgroundColor: colors.accentBlueSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: spacing.md,
-  },
-  offlineTitle: { ...typography.h2, color: colors.ink, textAlign: 'center' },
-  offlineMessage: {
-    ...typography.body,
-    color: colors.inkSoft,
-    textAlign: 'center',
-    marginTop: spacing.xs,
-    maxWidth: 280,
-  },
-  offlineButton: { alignSelf: 'stretch', marginTop: spacing.lg },
-  offlineReceiptLink: {
-    ...typography.bodyStrong,
-    fontSize: 13,
-    color: colors.accentBlue,
-    marginTop: spacing.sm,
-  },
 });

@@ -31,6 +31,12 @@ export default function RideDetailScreen() {
 
   const hasRoute = item.pickup && item.dropoff;
   const isDone = item.status === 'done';
+  // `item.fare` is already the discounted total the passenger paid — the
+  // pre-discount base fare isn't stored separately, so it's backed out from
+  // the percent that is.
+  const showFareBreakdown = item.discountApplied && item.discountPercent != null && item.discountPercent > 0;
+  const baseFare = showFareBreakdown ? item.fare / (1 - item.discountPercent! / 100) : null;
+  const discountAmount = baseFare != null ? baseFare - item.fare : null;
 
   return (
     <View style={styles.container}>
@@ -78,10 +84,30 @@ export default function RideDetailScreen() {
                 </View>
               </View>
             </View>
-            {item.distanceKm != null && (
+            {(item.distanceKm != null || item.durationMinutes != null || item.seats != null) && (
               <View style={styles.distanceRow}>
-                <Ionicons name="navigate-outline" size={14} color={colors.inkSoft} />
-                <Text style={styles.distanceText}>{item.distanceKm.toFixed(1)} km</Text>
+                {item.distanceKm != null && (
+                  <View style={styles.distanceItem}>
+                    <Ionicons name="navigate-outline" size={14} color={colors.inkSoft} />
+                    <Text style={styles.distanceText}>{item.distanceKm.toFixed(1)} km</Text>
+                  </View>
+                )}
+                {item.durationMinutes != null && (
+                  <View style={styles.distanceItem}>
+                    <Ionicons name="time-outline" size={14} color={colors.inkSoft} />
+                    <Text style={styles.distanceText}>
+                      {Math.round(item.durationMinutes)} {t.history.minutesSuffix}
+                    </Text>
+                  </View>
+                )}
+                {item.seats != null && (
+                  <View style={styles.distanceItem}>
+                    <Ionicons name="person-outline" size={14} color={colors.inkSoft} />
+                    <Text style={styles.distanceText}>
+                      {item.seats} {t.history.seatsSuffix}
+                    </Text>
+                  </View>
+                )}
               </View>
             )}
           </Card>
@@ -94,7 +120,23 @@ export default function RideDetailScreen() {
               <Avatar name={item.driverName} size="md" />
               <View style={styles.driverTextSlot}>
                 <Text style={styles.driverName}>{item.driverName}</Text>
+                {(item.bodyNo || item.plateNo) && (
+                  <View style={styles.driverPlateRow}>
+                    <Ionicons name="shield-checkmark" size={13} color={colors.accentGreen} />
+                    <Text style={styles.driverPlateText}>
+                      {[item.bodyNo && `${t.history.bodyNoPrefix} ${item.bodyNo}`, item.plateNo]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  </View>
+                )}
               </View>
+              {item.driverRating != null && item.driverRating > 0 && (
+                <View style={styles.driverRatingBadge}>
+                  <Ionicons name="star" size={14} color={colors.accentGreen} />
+                  <Text style={styles.driverRatingText}>{item.driverRating.toFixed(1)}</Text>
+                </View>
+              )}
             </View>
           </Card>
         )}
@@ -120,6 +162,19 @@ export default function RideDetailScreen() {
             )}
           </View>
           <View style={styles.paymentDivider} />
+          {showFareBreakdown && baseFare != null && discountAmount != null && (
+            <>
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentBreakdownLabel}>{t.history.baseFare}</Text>
+                <Text style={styles.paymentBreakdownValue}>{formatCurrency(baseFare)}</Text>
+              </View>
+              <View style={styles.paymentRow}>
+                <Text style={styles.paymentBreakdownLabel}>{t.history.discountLabel}</Text>
+                <Text style={styles.paymentDiscountValue}>−{formatCurrency(discountAmount)}</Text>
+              </View>
+              <View style={styles.paymentDivider} />
+            </>
+          )}
           <View style={styles.paymentRow}>
             <Text style={styles.totalLabel}>{t.history.total}</Text>
             <Text style={styles.totalValue}>{formatCurrency(item.fare)}</Text>

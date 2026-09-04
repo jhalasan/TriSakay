@@ -72,10 +72,10 @@ export function MapSearchBar({
           onPress={onBack}
           style={styles.backButton}
         >
-          <Ionicons name="chevron-back" size={22} color={colors.ink} />
+          <Ionicons name="chevron-back" size={18} color={colors.accentBluePressed} />
         </Pressable>
       )}
-      <View style={styles.contentSlot}>
+      <View style={[styles.contentSlot, onBack && styles.contentSlotDivided]}>
         {children ?? (
           <Pressable
             accessibilityRole="button"

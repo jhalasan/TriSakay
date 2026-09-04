@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '../../theme';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme';
 
 export const styles = StyleSheet.create({
   track: {
@@ -11,8 +11,10 @@ export const styles = StyleSheet.create({
   },
   segment: {
     flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    gap: spacing.xs,
     borderRadius: radius.xs,
     minHeight: 36,
   },
@@ -25,11 +27,13 @@ export const styles = StyleSheet.create({
     elevation: 1,
   },
   label: {
-    ...typography.chip,
+    ...typography.caption,
+    fontFamily: fontFamily.semibold,
     color: colors.inkFaint,
   },
   labelActive: {
-    ...typography.chip,
+    ...typography.caption,
+    fontFamily: fontFamily.bold,
     color: colors.accentBlue,
   },
 });

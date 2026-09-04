@@ -161,15 +161,7 @@ export default function RegisterScreen() {
       {step === 1 ? (
         <>
           <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
-            <BrandMotif size={140} color="#FFFFFF" opacity={0.1} style={styles.motif} />
-            <View style={styles.markBadge}>
-              <Image
-                source={require('../../../../assets/brand/trisakay-mark.png')}
-                style={styles.mark}
-                resizeMode="contain"
-                accessibilityLabel="TriSakay"
-              />
-            </View>
+            <BrandMotif size={150} color="#FFFFFF" opacity={0.12} style={styles.motif} />
           </GradientSurface>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <View>

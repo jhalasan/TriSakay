@@ -4,6 +4,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Avatar, Badge, BrandMotif, Button, Card, GradientSurface, colors, motion } from '@trisakay/ui';
+import { OfflineState } from '../../src/components/OfflineState';
+import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { usePullToRefresh } from '../../src/hooks/usePullToRefresh';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -158,6 +160,7 @@ export default function HistoryScreen() {
   const loading = useHistoryStore((state) => state.loading);
   const error = useHistoryStore((state) => state.error);
   const load = useHistoryStore((state) => state.load);
+  const isOffline = useConnectivityStore((state) => state.isOffline);
   const [filter, setFilter] = useState<FilterMode>('all');
 
   const { refreshing, onRefresh } = usePullToRefresh(load);
@@ -188,6 +191,14 @@ export default function HistoryScreen() {
     { mode: 'done', label: t.history.filterCompleted },
     { mode: 'cancelled', label: t.history.filterCancelled },
   ];
+
+  if (isOffline) {
+    return (
+      <SafeAreaView style={styles.container} edges={['left', 'right']}>
+        <OfflineState />
+      </SafeAreaView>
+    );
+  }
 
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right']}>

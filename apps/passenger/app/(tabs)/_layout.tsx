@@ -88,6 +88,7 @@ export default function TabsLayout() {
       <Tabs
         screenOptions={{
           headerShown: false,
+          animation: 'shift',
           tabBarActiveTintColor: colors.accentBlue,
           tabBarInactiveTintColor: colors.inkFaint,
           tabBarButton: (props) => <TabBarButton {...props} />,

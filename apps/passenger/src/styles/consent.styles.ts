@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -66,11 +66,15 @@ export const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: colors.lineSoft,
     backgroundColor: colors.panel,
-    borderTopLeftRadius: radius.lg,
-    borderTopRightRadius: radius.lg,
+  },
+  errorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
   },
   error: {
     ...typography.caption,
     color: colors.danger,
+    flexShrink: 1,
   },
 });

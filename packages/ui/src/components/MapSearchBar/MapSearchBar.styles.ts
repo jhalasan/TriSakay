@@ -8,10 +8,10 @@ export const styles = StyleSheet.create({
     gap: spacing.sm,
     minHeight: 56,
   },
-  /** The standalone pill — its own background and shadow, for sitting directly over map tiles. */
+  /** The standalone bar — its own background and shadow, for sitting directly over map tiles. */
   barFloating: {
     paddingHorizontal: spacing.sm,
-    borderRadius: radius.pill,
+    borderRadius: radius.card,
     backgroundColor: colors.panel,
     ...elevation.card,
   },
@@ -23,14 +23,20 @@ export const styles = StyleSheet.create({
     opacity: 0.6,
   },
   backButton: {
-    width: 40,
-    height: 40,
-    borderRadius: radius.pill,
+    width: 36,
+    height: 36,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: colors.accentBlueSoft,
   },
   contentSlot: {
     flex: 1,
+  },
+  contentSlotDivided: {
+    borderLeftWidth: 1,
+    borderLeftColor: colors.lineSoft,
+    paddingLeft: spacing.sm,
   },
   labelPressable: {
     flexDirection: 'row',

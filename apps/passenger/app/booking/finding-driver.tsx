@@ -5,6 +5,7 @@ import { Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   cancelRideRequest,
+  getNearbyDriverCount,
   getTripDriverInfo,
   subscribeToRideRequestStatus,
   type TripDriverInfo,
@@ -13,6 +14,7 @@ import { Button, MapOverlaySheet, OsmMap, colors } from '@trisakay/ui';
 import { PulseBeacon } from '../../src/components/PulseBeacon';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/booking/finding-driver.styles';
 
 /** No documented figure for this — a reasonable upper bound before telling the rider nobody's picking up the request. */
@@ -24,6 +26,8 @@ export default function FindingDriverScreen() {
   const t = useTranslation();
   const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
+  const seats = useBookingStore((state) => state.seats);
+  const fare = useBookingStore((state) => state.fare);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const setDriver = useBookingStore((state) => state.setDriver);
@@ -31,6 +35,7 @@ export default function FindingDriverScreen() {
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  const [nearbyCount, setNearbyCount] = useState<number | null>(null);
   // Guards against a second, redundant exit: reset() clears rideRequestId,
   // which re-fires this effect (deps: [rideRequestId]) before the component
   // finishes unmounting from the first navigate-away.
@@ -107,6 +112,17 @@ export default function FindingDriverScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [rideRequestId]);
 
+  useEffect(() => {
+    if (!pickup) return;
+    let cancelled = false;
+    getNearbyDriverCount(pickup.latitude, pickup.longitude).then((result) => {
+      if (!cancelled) setNearbyCount(result.count);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [pickup]);
+
   async function handleCancel() {
     if (!rideRequestId) return;
 
@@ -141,17 +157,44 @@ export default function FindingDriverScreen() {
           edgeToEdge
         />
         <View style={styles.beaconWrap} pointerEvents="none">
-          <PulseBeacon size={80}>
-            <Ionicons name="search" size={32} color={colors.white} />
+          <PulseBeacon size={56}>
+            <Ionicons name="search" size={26} color={colors.white} />
           </PulseBeacon>
         </View>
       </View>
 
       <MapOverlaySheet bottomInset={insets.bottom}>
-        <Text style={styles.title}>{t.findingDriver.title}</Text>
-        <Text style={styles.subtitle}>
-          {dropoff ? `${t.findingDriver.lookingForTricycleTo} ${dropoff.label}` : t.findingDriver.lookingForTricycleNearby}
-        </Text>
+        <View style={styles.eyebrowRow}>
+          <View style={styles.eyebrowDots}>
+            <View style={styles.eyebrowDot} />
+            <View style={styles.eyebrowDot} />
+            <View style={styles.eyebrowDot} />
+          </View>
+          <Text style={styles.eyebrowLabel}>{t.findingDriver.searchingNearbyEyebrow}</Text>
+        </View>
+        <View style={styles.titleBlock}>
+          <Text style={styles.title}>{t.findingDriver.title}</Text>
+          <Text style={styles.subtitle}>
+            {dropoff ? `${t.findingDriver.lookingForTricycleTo} ${dropoff.label}` : t.findingDriver.lookingForTricycleNearby}
+          </Text>
+        </View>
+        {nearbyCount != null && (
+          <View style={styles.infoRow}>
+            <View style={styles.infoIconTile}>
+              <Ionicons name="navigate" size={18} color={colors.accentBluePressed} />
+            </View>
+            <View style={styles.infoTextSlot}>
+              <Text style={styles.infoTitle}>
+                {t.findingDriver.tricyclesNearby.replace('{count}', String(nearbyCount))}
+              </Text>
+              {fare !== null && (
+                <Text style={styles.infoSubtitle}>
+                  {t.findingDriver.fareHeld.replace('{fare}', formatCurrency(fare)).replace('{seats}', String(seats))}
+                </Text>
+              )}
+            </View>
+          </View>
+        )}
         {subscriptionError && <Text style={styles.cancelError}>{subscriptionError}</Text>}
         <View style={styles.cancelButton}>
           <Button

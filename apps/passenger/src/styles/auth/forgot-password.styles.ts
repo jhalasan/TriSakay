@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, spacing, typography } from '@trisakay/ui';
+import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: {
@@ -9,6 +9,15 @@ export const styles = StyleSheet.create({
     flexGrow: 1,
     paddingHorizontal: spacing.lg,
     paddingBottom: spacing.xxxl,
+  },
+  iconTile: {
+    width: 52,
+    height: 52,
+    borderRadius: radius.card,
+    backgroundColor: colors.accentBlueSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
   },
   intro: {
     ...typography.body,

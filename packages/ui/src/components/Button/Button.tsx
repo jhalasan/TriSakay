@@ -40,9 +40,12 @@ function surfaceFor(tone: ButtonTone, variant: ButtonVariant, pressed: boolean, 
     return { backgroundColor: bg, borderColor: bg, textColor: colors.white };
   }
   if (variant === 'outline') {
+    // Neutral keeps the plain control-boundary border (e.g. the log-out
+    // modal's "Cancel"); every other tone borders in its own color (e.g.
+    // Settings' outline "Log out" row, which needs a red border).
     return {
       backgroundColor: pressed ? colors.fill : 'transparent',
-      borderColor: colors.lineStrong,
+      borderColor: tone === 'neutral' ? colors.lineStrong : t.text,
       textColor: t.text,
     };
   }
@@ -104,7 +107,15 @@ export function Button({
             size === 'md' ? styles.md : styles.sm,
             fullWidth && styles.fullWidth,
             variant === 'solid' && !isDisabled && elevation.button,
-            { backgroundColor: usesGradientFill ? 'transparent' : s.backgroundColor, borderColor: s.borderColor },
+            {
+              backgroundColor: usesGradientFill ? 'transparent' : s.backgroundColor,
+              borderColor: s.borderColor,
+              // The gradient fill below is the whole surface here — a flat
+              // border in one solid stop of that gradient reads as a
+              // mismatched ring against it, especially at the corners where
+              // the diagonal trends toward the darker stop.
+              borderWidth: usesGradientFill ? 0 : styles.base.borderWidth,
+            },
             // Solid disabled already renders its own flat colors.fill surface
             // above — only outline/ghost fall back to a plain opacity dim.
             isDisabled && variant !== 'solid' && styles.disabled,

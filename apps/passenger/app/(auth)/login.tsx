@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { BrandMotif, Button, GradientSurface, SegmentedControl, TextField } from '@trisakay/ui';
+import { BrandMotif, Button, GradientSurface, SegmentedControl, TextField, colors } from '@trisakay/ui';
 import { HAS_SIGNED_IN_KEY } from '../../src/constants/walkthrough';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { isValidEmail, isValidMobile, isValidPassword } from '../../src/utils/validation';
@@ -53,6 +54,10 @@ export default function LoginScreen() {
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
+  // Session-only counter for the "N tries left" copy — there is no backend
+  // lockout rule yet (see the README's open items), so this drives display
+  // copy only and resets on success; it does not disable anything.
+  const [failedAttempts, setFailedAttempts] = useState(0);
 
   useEffect(() => {
     if (viewportHeight > 0 && contentHeight > 0) {
@@ -83,6 +88,7 @@ export default function LoginScreen() {
     setSubmitting(true);
     await login(email, password);
     setSubmitting(false);
+    setFailedAttempts((prev) => (useAuthStore.getState().error ? prev + 1 : 0));
   }
 
   function handleMobileBlur() {
@@ -126,6 +132,21 @@ export default function LoginScreen() {
         >
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
+
+          {authError && (
+            <View style={styles.errorBanner}>
+              <Ionicons name="alert-circle" size={18} color={colors.danger} style={styles.errorBannerIcon} />
+              <Text style={styles.errorBannerText}>
+                {authError}
+                {failedAttempts > 0 && failedAttempts < 3 && (
+                  <Text>
+                    {' '}
+                    {3 - failedAttempts} {3 - failedAttempts === 1 ? 'try' : 'tries'} left before a 5-minute lock.
+                  </Text>
+                )}
+              </Text>
+            </View>
+          )}
 
           <View style={styles.methodTrack}>
             <SegmentedControl
@@ -186,8 +207,6 @@ export default function LoginScreen() {
             // until that backend support exists.
             <Text style={styles.mobileNotice}>Signing in with a mobile number is coming soon — use Email for now.</Text>
           )}
-
-          {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
           <View style={styles.forgotLink}>
             <Text style={styles.forgotLinkText} onPress={() => router.push('/(auth)/forgot-password')}>

@@ -23,7 +23,7 @@ export default function LogoutScreen() {
       cancelLabel="Cancel"
       confirmLabel="Log out"
       destructive
-      icon={<Ionicons name="log-out-outline" size={24} color={colors.dangerPressed} />}
+      icon={<Ionicons name="warning" size={22} color={colors.dangerPressed} />}
       onCancel={() => router.dismiss()}
       onConfirm={handleConfirm}
     />

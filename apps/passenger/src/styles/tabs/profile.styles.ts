@@ -204,7 +204,7 @@ export const styles = StyleSheet.create({
   detailIconTile: {
     width: 34,
     height: 34,
-    borderRadius: radius.sm2,
+    borderRadius: radius.xs,
     backgroundColor: colors.accentBlueSoft,
     alignItems: 'center',
     justifyContent: 'center',

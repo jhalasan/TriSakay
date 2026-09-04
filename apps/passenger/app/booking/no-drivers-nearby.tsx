@@ -62,7 +62,7 @@ export default function NoDriversNearbyScreen() {
 
       <MapOverlaySheet bottomInset={insets.bottom}>
         <View style={styles.iconTile}>
-          <Ionicons name="search-outline" size={22} color={colors.inkSoft} />
+          <Ionicons name="radio-outline" size={22} color={colors.inkSoft} />
         </View>
         <Text style={styles.title}>{t.noDriversNearby.title}</Text>
         <Text style={styles.cause}>{t.noDriversNearby.cause}</Text>

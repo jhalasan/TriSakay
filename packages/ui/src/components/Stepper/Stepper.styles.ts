@@ -8,27 +8,34 @@ export const styles = StyleSheet.create({
     gap: spacing.sm,
   },
   button: {
-    width: 44,
-    height: 44,
-    borderRadius: radius.sm,
+    width: 38,
+    height: 38,
+    borderRadius: radius.md,
     borderWidth: 1.5,
     borderColor: colors.lineStrong,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.panel,
   },
+  buttonIncrease: {
+    borderWidth: 0,
+    backgroundColor: colors.accentBlue,
+  },
   buttonDisabled: {
     opacity: 0.35,
   },
   buttonGlyph: {
-    ...typography.h2,
+    ...typography.h3b,
     color: colors.ink,
-    lineHeight: 26,
+    lineHeight: 22,
+  },
+  buttonGlyphIncrease: {
+    color: colors.white,
   },
   value: {
-    ...typography.h2,
+    ...typography.h3b,
     color: colors.ink,
-    minWidth: 40,
+    minWidth: 24,
     textAlign: 'center',
   },
 });

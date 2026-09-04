@@ -3,8 +3,10 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Toggle, colors } from '@trisakay/ui';
+import { OfflineState } from '../../src/components/OfflineState';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
+import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 import { useSettingsStore, type SettingsLanguage } from '../../src/store/useSettingsStore';
 import { styles } from '../../src/styles/tabs/settings.styles';
 
@@ -71,6 +73,7 @@ export default function SettingsScreen() {
     toggleSmsReceipts,
     toggleEmailReceipts,
   } = useSettingsStore();
+  const isOffline = useConnectivityStore((state) => state.isOffline);
 
   const languageLabels: Record<SettingsLanguage, string> = {
     en: t.settings.languageEnglish,
@@ -80,6 +83,14 @@ export default function SettingsScreen() {
   function cycleLanguage() {
     const nextIndex = (LANGUAGE_CODES.indexOf(language) + 1) % LANGUAGE_CODES.length;
     setLanguage(LANGUAGE_CODES[nextIndex]);
+  }
+
+  if (isOffline) {
+    return (
+      <SafeAreaView style={styles.container} edges={['top']}>
+        <OfflineState />
+      </SafeAreaView>
+    );
   }
 
   return (

@@ -30,6 +30,8 @@ export interface OsmMapProps {
   /** Drives the fallback skeleton. Markers/routes are a later step. */
   variant?: MapPlaceholderVariant;
   caption?: string;
+  /** Keeps `caption` visible after tiles finish loading — for a standing instruction (e.g. "Tap or drag the pin") rather than a loading-state label. */
+  captionPersistent?: boolean;
   /** Number or '100%'. Same contract as MapPlaceholder — no parent flex required. */
   height?: DimensionValue;
   latitude?: number;
@@ -58,6 +60,8 @@ export interface OsmMapProps {
    * every tile.
    */
   marker?: { latitude: number; longitude: number; draggable?: boolean } | null;
+  /** Fixed-marker pin color — navy for a pickup point, green for a destination. Defaults to the navy accent. */
+  markerColor?: string;
   onMarkerMove?: (point: { latitude: number; longitude: number }) => void;
   /** Tapping the map drops (or relocates) the marker there. See `mapHtml.ts`'s doc for why this defaults off. */
   tapToPlace?: boolean;
@@ -82,6 +86,7 @@ type MapState = 'loading' | 'ready' | 'error';
 export function OsmMap({
   variant = 'plain',
   caption,
+  captionPersistent = false,
   height = 220,
   latitude = DEFAULT_CENTER.latitude,
   longitude = DEFAULT_CENTER.longitude,
@@ -90,6 +95,7 @@ export function OsmMap({
   interactive = false,
   bottomInset = 0,
   marker = null,
+  markerColor,
   onMarkerMove,
   tapToPlace = false,
   route = null,
@@ -130,12 +136,13 @@ export function OsmMap({
         interactive,
         bottomInset,
         marker,
+        markerColor,
         tapToPlace,
         route,
       }),
     }),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- marker's coordinates are deliberately excluded; see the comment above. `route` is serialized via JSON.stringify so an equal-but-new array reference (a common shape from a fresh fetch/selector) doesn't force a remount — only a change in the actual points does. The route resolving asynchronously after mount therefore causes exactly one remount, same as a lat/lng change.
-    [latitude, longitude, zoom, attributionLeft, interactive, bottomInset, Boolean(marker), marker?.draggable, tapToPlace, JSON.stringify(route ?? null)],
+    [latitude, longitude, zoom, attributionLeft, interactive, bottomInset, Boolean(marker), marker?.draggable, markerColor, tapToPlace, JSON.stringify(route ?? null)],
   );
 
   const settle = useCallback(() => {
@@ -255,7 +262,7 @@ export function OsmMap({
         <MapPlaceholder variant={variant} height="100%" />
       </Animated.View>
 
-      {caption && state !== 'ready' && (
+      {caption && (captionPersistent || state !== 'ready') && (
         <View style={styles.labelChip} pointerEvents="none">
           <Text style={styles.labelText}>{caption}</Text>
         </View>

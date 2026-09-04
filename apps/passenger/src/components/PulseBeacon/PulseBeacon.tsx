@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Animated, Easing, StyleSheet, View } from 'react-native';
-import { GradientSurface, motion } from '@trisakay/ui';
+import { Animated, Easing, View } from 'react-native';
+import { colors, motion } from '@trisakay/ui';
 import { styles } from './PulseBeacon.styles';
 
 export interface PulseBeaconProps {
@@ -49,7 +49,7 @@ export function PulseBeacon({ size = 72, rings = 3, children }: PulseBeaconProps
   }, [progress, rings]);
 
   return (
-    <View style={[styles.container, { width: size * 3, height: size * 3 }]}>
+    <View style={[styles.container, { width: size * 1.8, height: size * 1.8 }]}>
       {progress.map((value, index) => (
         <Animated.View
           key={index}
@@ -59,22 +59,16 @@ export function PulseBeacon({ size = 72, rings = 3, children }: PulseBeaconProps
               width: size,
               height: size,
               borderRadius: size / 2,
-              opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.35, 0] }),
+              backgroundColor: colors.accentBlue,
+              opacity: value.interpolate({ inputRange: [0, 1], outputRange: [0.28, 0] }),
               transform: [
-                { scale: value.interpolate({ inputRange: [0, 1], outputRange: [1, 3] }) },
+                { scale: value.interpolate({ inputRange: [0, 1], outputRange: [1, 1.8] }) },
               ],
             },
           ]}
-        >
-          <GradientSurface token="brand" direction="diagonal" style={{ flex: 1, borderRadius: size / 2 }} />
-        </Animated.View>
-      ))}
-      <View style={[styles.core, { width: size, height: size, borderRadius: size / 2 }]}>
-        <GradientSurface
-          token="brand"
-          direction="diagonal"
-          style={{ ...StyleSheet.absoluteFillObject, borderRadius: size / 2 }}
         />
+      ))}
+      <View style={[styles.core, { width: size, height: size, borderRadius: size / 2, backgroundColor: colors.accentBlue }]}>
         {children}
       </View>
     </View>

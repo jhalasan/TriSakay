@@ -1,12 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { createRideRequest, estimateFare, getFareDiscountRate, getMyDiscount } from '@trisakay/services';
 import { haversineDistanceKm } from '@trisakay/utils';
 import {
   Badge,
+  BrandMotif,
   Button,
   Card,
   MapOverlaySheet,
@@ -137,6 +138,7 @@ export default function ConfirmScreen() {
         label={t.confirm.requestRide}
         tone="success"
         fullWidth
+        icon={<Image source={require('../../../../assets/trike-white.png')} style={styles.requestButtonIcon} resizeMode="contain" />}
         loading={isRequesting}
         disabled={!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady}
         // Only while disabled — an enabled button must not announce a reason
@@ -221,15 +223,15 @@ export default function ConfirmScreen() {
 
       <MapOverlaySheet bottomInset={insets.bottom}>
         <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
-          <Card variant="raised" style={styles.routeCard}>
+          <Card variant="flat" style={styles.routeCard}>
             <View style={styles.routeRow}>
               <View style={[styles.routeIconBadge, { backgroundColor: colors.accentGreenSoft }]}>
                 <Ionicons name="radio-button-on" size={16} color={colors.accentGreen} />
               </View>
               <View style={styles.routeTextSlot}>
-                <Text style={styles.routeLabel}>{pickup?.label ?? t.confirm.pickupPointFallback}</Text>
-                <Text style={styles.routeAddress} numberOfLines={1}>
-                  {pickup?.address ?? t.confirm.notSetYetFallback}
+                <Text style={styles.routeEyebrow}>{t.confirm.pickupEyebrow}</Text>
+                <Text style={styles.routeLabel} numberOfLines={1}>
+                  {pickup?.label ?? t.confirm.pickupPointFallback}
                 </Text>
               </View>
               <Pressable
@@ -246,9 +248,9 @@ export default function ConfirmScreen() {
                 <Ionicons name="location" size={16} color={colors.accentBlue} />
               </View>
               <View style={styles.routeTextSlot}>
-                <Text style={styles.routeLabel}>{dropoff.label}</Text>
-                <Text style={styles.routeAddress} numberOfLines={1}>
-                  {dropoff.address}
+                <Text style={styles.routeEyebrow}>{t.confirm.dropoffEyebrow}</Text>
+                <Text style={styles.routeLabel} numberOfLines={1}>
+                  {dropoff.label}
                 </Text>
               </View>
               <Pressable
@@ -266,7 +268,8 @@ export default function ConfirmScreen() {
             <Stepper value={seats} onChange={setSeats} min={1} max={6} />
           </View>
 
-          <Card variant="raised" style={styles.fareCard}>
+          <Card variant="flat" style={styles.fareCard}>
+            <BrandMotif size={130} color={colors.white} opacity={0.12} style={styles.fareMotif} />
             <View style={styles.fareLabelRow}>
               <View style={styles.fareLabelWithInfo}>
                 <Text style={styles.fareLabel}>{t.confirm.estimatedFare}</Text>
@@ -282,8 +285,14 @@ export default function ConfirmScreen() {
                 <Badge label={`${discountRatePercent ?? 20}${t.confirm.discountAppliedSuffix}`} tone="green" />
               )}
             </View>
-            <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
-            {route && (<Text style={styles.fareNote}>{t.confirm.roadDistanceLabel} {route.distanceKm.toFixed(1)} km</Text>)}
+            <View style={styles.fareValueRow}>
+              <Text style={styles.fareValue}>{fare === null ? '—' : formatCurrency(fare)}</Text>
+              {route && (
+                <Text style={styles.fareDistance}>
+                  {route.distanceKm.toFixed(1)} {t.confirm.roadDistanceSuffix}
+                </Text>
+              )}
+            </View>
             <Text style={styles.fareNote}>
               {fareError
                 ? t.confirm.couldNotReachFareService
@@ -305,8 +314,28 @@ export default function ConfirmScreen() {
             <Text style={styles.sectionLabelSpaced}>{t.confirm.paymentMethod}</Text>
             <SegmentedControl
               options={[
-                { label: t.common.gcash, value: 'gcash' },
-                { label: t.common.cash, value: 'cash' },
+                {
+                  label: t.common.gcash,
+                  value: 'gcash',
+                  icon: (
+                    <Ionicons
+                      name="card"
+                      size={17}
+                      color={paymentMethod === 'gcash' ? colors.accentBlue : colors.inkFaint}
+                    />
+                  ),
+                },
+                {
+                  label: t.common.cash,
+                  value: 'cash',
+                  icon: (
+                    <Ionicons
+                      name="cash"
+                      size={17}
+                      color={paymentMethod === 'cash' ? colors.accentBlue : colors.inkFaint}
+                    />
+                  ),
+                },
               ]}
               value={paymentMethod}
               onChange={setPaymentMethod}

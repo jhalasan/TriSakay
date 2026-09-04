@@ -4,6 +4,7 @@ import { styles } from './SegmentedControl.styles';
 export interface SegmentedOption<T extends string> {
   label: string;
   value: T;
+  icon?: React.ReactNode;
 }
 
 export interface SegmentedControlProps<T extends string> {
@@ -25,6 +26,7 @@ export function SegmentedControl<T extends string>({ options, value, onChange }:
             accessibilityState={{ selected: active }}
             style={[styles.segment, active && styles.segmentActive]}
           >
+            {option.icon}
             <Text style={[styles.label, active && styles.labelActive]}>{option.label}</Text>
           </Pressable>
         );

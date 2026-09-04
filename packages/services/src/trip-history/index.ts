@@ -3,14 +3,19 @@ import { getSupabaseClient } from '../supabase/client.ts';
 export interface PassengerTripHistoryItem {
   rideRequestId: string;
   driverName: string | null;
+  driverRating: number | null;
+  plateNo: string | null;
+  bodyNo: string | null;
   pickup: string | null;
   dropoff: string | null;
   status: 'completed' | 'cancelled';
   fare: number | null;
+  seats: number | null;
   paymentMethod: 'cash' | 'gcash' | null;
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | null;
   date: string;
   distanceKm: number | null;
+  durationMinutes: number | null;
   discountApplied: boolean;
   discountPercent: number | null;
   cancelReason: string | null;
@@ -36,14 +41,19 @@ export async function listPassengerTripHistory(limit = 50): Promise<ListPassenge
   const rows = (data ?? []).map((row) => ({
     rideRequestId: row.ride_request_id,
     driverName: row.driver_name,
+    driverRating: row.driver_rating,
+    plateNo: row.plate_no,
+    bodyNo: row.body_no,
     pickup: row.pickup_label,
     dropoff: row.dest_label,
     status: row.status as 'completed' | 'cancelled',
     fare: row.fare,
+    seats: row.seats,
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
     date: row.completed_at ?? row.cancelled_at ?? row.requested_at,
     distanceKm: row.distance_km,
+    durationMinutes: row.duration_minutes,
     discountApplied: row.discount_applied ?? false,
     discountPercent: row.discount_percent,
     cancelReason: row.cancel_reason,

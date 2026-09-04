@@ -1,8 +1,9 @@
 import { useState } from 'react';
+import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { requestPasswordReset } from '@trisakay/services';
-import { Button, TextField } from '@trisakay/ui';
+import { Button, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { isValidEmail } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/forgot-password.styles';
@@ -40,6 +41,9 @@ export default function ForgotPasswordScreen() {
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScreenHeader title="Reset password" />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
+        <View style={styles.iconTile}>
+          <Ionicons name="mail" size={24} color={colors.accentBluePressed} />
+        </View>
         <Text style={styles.intro}>
           Enter the email on your account and we'll send you a code to reset your password.
         </Text>

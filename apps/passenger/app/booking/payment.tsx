@@ -37,6 +37,10 @@ export default function PaymentScreen() {
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cashWaitRestartRef = useRef<(() => void) | null>(null);
   const settledRef = useRef(false);
+  // Guards against a fast double-tap firing two concurrent GCash checkouts —
+  // `paymentPhase` alone isn't enough since React batches the 'opening' state
+  // update, leaving a window where a second tap still reads 'idle'.
+  const gcashInFlightRef = useRef(false);
 
   useEffect(() => {
     return () => {
@@ -105,6 +109,9 @@ export default function PaymentScreen() {
   }
 
   async function handlePayNowGcash() {
+    if (gcashInFlightRef.current) return;
+    gcashInFlightRef.current = true;
+
     // Defensive: tear down any stale subscription from a prior attempt
     // before starting a new one, even if a previous cleanup path missed it.
     unsubscribeRef.current?.();
@@ -113,6 +120,7 @@ export default function PaymentScreen() {
     if (!rideRequestId) {
       setPaymentError(t.payment.missingRideDetails);
       setPaymentPhase('failed');
+      gcashInFlightRef.current = false;
       return;
     }
 
@@ -124,10 +132,14 @@ export default function PaymentScreen() {
     if (error || !checkoutUrl) {
       setPaymentError(error ?? t.payment.couldNotStartGcashCheckout);
       setPaymentPhase('failed');
+      gcashInFlightRef.current = false;
       return;
     }
 
     setPaymentPhase('waiting');
+    // From here, the button's own `disabled` prop (phase 'waiting'/'failed')
+    // covers re-entry — safe to release the pre-render guard.
+    gcashInFlightRef.current = false;
 
     unsubscribeRef.current = subscribeToTransactionStatus(
       rideRequestId,

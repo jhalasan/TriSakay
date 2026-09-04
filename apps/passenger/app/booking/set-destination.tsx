@@ -84,6 +84,7 @@ export default function SetDestinationScreen() {
         <OsmMap
           variant="pin"
           caption={resolvingPin ? t.setDestination.locatingPin : t.setDestination.tapOrDragPin}
+          captionPersistent
           height="100%"
           latitude={selected?.latitude}
           longitude={selected?.longitude}
@@ -93,6 +94,7 @@ export default function SetDestinationScreen() {
           interactive
           edgeToEdge
           tapToPlace
+          markerColor={colors.accentGreen}
           marker={selected ? { latitude: selected.latitude, longitude: selected.longitude, draggable: true } : null}
           onMarkerMove={handleMapPoint}
         />
