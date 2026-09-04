@@ -41,7 +41,7 @@ export default function EarningsScreen() {
         <Text style={styles.title}>{t.driver.earnings.title}</Text>
 
         <View style={styles.totalCardShadow}>
-          <GradientSurface token="hero" direction="diagonal" texture textureOpacity={0.05} style={styles.totalCard}>
+          <GradientSurface token="hero" direction="diagonal" style={styles.totalCard}>
             <BrandMotif size={200} color={colors.white} opacity={0.12} style={styles.totalMotif} />
             <Text style={styles.totalLabel}>{t.driver.earnings.totalTracked}</Text>
             <Text style={styles.totalValue}>{formatCurrency(totalTracked)}</Text>

@@ -118,7 +118,7 @@ export default function ProfileScreen() {
     <SafeAreaView style={styles.container} edges={['top']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.heroShadow}>
-          <GradientSurface token="hero" direction="diagonal" texture textureOpacity={0.05} style={styles.heroBand}>
+          <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
             <BrandMotif size={230} color={colors.white} opacity={0.12} style={styles.motif} />
             <View style={styles.heroTopRow}>
               <View>
