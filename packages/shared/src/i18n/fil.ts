@@ -271,6 +271,14 @@ export const fil: Translations = {
     payNow: 'Magbayad Ngayon',
     keepScreenOpenNotice: 'Ang iyong sakay ay ituturing na bayad lamang kapag nakumpirma na ang bayad — huwag isara ang screen na ito.',
   },
+  tripComplete: {
+    title: 'Tapos na ang biyahe',
+    subtitle: 'Nakarating ka na at bayad na ang iyong pamasahe.',
+    fareLabel: 'Pamasahe',
+    paidViaLabel: 'Binayaran gamit ang',
+    distanceLabel: 'Distansya',
+    continueButton: 'Magpatuloy',
+  },
   rateDriver: {
     tripCompletedEyebrow: 'Tapos na ang biyahe',
     yourDriverFallback: 'Iyong driver',

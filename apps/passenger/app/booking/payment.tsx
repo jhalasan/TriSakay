@@ -105,7 +105,7 @@ export default function PaymentScreen() {
     settledRef.current = true;
 
     setTripStatus('paid');
-    router.replace('/booking/rate-driver');
+    router.replace('/booking/trip-complete');
   }
 
   async function handlePayNowGcash() {

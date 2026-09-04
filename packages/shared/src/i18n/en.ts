@@ -270,6 +270,14 @@ export const en = {
     payNow: 'Pay now',
     keepScreenOpenNotice: 'Your ride is only marked paid once the payment is confirmed — keep this screen open.',
   },
+  tripComplete: {
+    title: 'Trip complete',
+    subtitle: "You've arrived and your payment is settled.",
+    fareLabel: 'Fare',
+    paidViaLabel: 'Paid via',
+    distanceLabel: 'Distance',
+    continueButton: 'Continue',
+  },
   rateDriver: {
     tripCompletedEyebrow: 'Trip completed',
     yourDriverFallback: 'Your driver',
