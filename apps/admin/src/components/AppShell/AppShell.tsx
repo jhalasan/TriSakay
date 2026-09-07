@@ -4,21 +4,8 @@ import { Sidebar } from '../Sidebar';
 import { TopBar } from '../TopBar';
 import { ConfirmModal } from '../ConfirmModal';
 import { useSessionStore } from '../../store/useSessionStore';
+import { ROUTE_TITLES } from '../../lib/navigation';
 import styles from './AppShell.module.css';
-
-const TITLES: Record<string, string> = {
-  '/': 'Dashboard',
-  '/drivers': 'Driver Management',
-  '/verification': 'Driver & Tricycle Verification',
-  '/passengers': 'Passenger Management',
-  '/monitoring': 'Ride Monitoring',
-  '/complaints': 'Complaints Management',
-  '/reports': 'Reports & Analytics',
-  '/rating-oversight': 'Rating Oversight',
-  '/discounts': 'Fare Discount Review',
-  '/pso-users': 'PSO User Management',
-  '/settings': 'System Settings',
-};
 
 /**
  * Sidebar (176px, wireframe-exact) + top bar + content frame, wrapping
@@ -32,7 +19,7 @@ export function AppShell() {
   const signOut = useSessionStore((state) => state.signOut);
   const [confirmingLogout, setConfirmingLogout] = useState(false);
 
-  const title = TITLES[location.pathname] ?? 'TriSakay Admin';
+  const title = ROUTE_TITLES[location.pathname] ?? 'TriSakay Admin';
 
   return (
     <div className={styles.shell}>

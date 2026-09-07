@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useState, type ReactNode } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { StatTile } from '../components/StatTile';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { RideStatusChart, RidesOverTimeChart } from '../components/charts';
+import { useDriversStore } from '../store/useDriversStore';
 import {
   getDashboardStats,
   getRidesPerDay,
@@ -50,25 +51,21 @@ const overdueColumns: DataTableColumn<OverdueComplaintRow>[] = [
   { key: 'status', header: 'Status', render: (r) => <Badge label={titleCaseLabel(r.status)} tone="warn" /> },
 ];
 
-const expiringColumns: DataTableColumn<ExpiringFranchiseRow>[] = [
-  { key: 'driver', header: 'Driver', render: (r) => r.driverName ?? 'Unknown', sortValue: (r) => r.driverName ?? '' },
-  { key: 'plate', header: 'Plate No.', render: (r) => r.plateNo },
-  {
-    key: 'expiry',
-    header: 'Days until expiry',
-    render: (r) => (
-      <Badge
-        label={r.daysUntilExpiry < 0 ? `Expired ${Math.abs(r.daysUntilExpiry)}d ago` : `${r.daysUntilExpiry}d`}
-        tone={r.daysUntilExpiry < 0 ? 'danger' : 'warn'}
-      />
-    ),
-    sortValue: (r) => r.daysUntilExpiry,
-    align: 'right',
-  },
-];
+/** Shared "panel title + View all" header, used by every Dashboard panel that links out to its full section. */
+function PanelHeader({ title, action }: { title: string; action?: ReactNode }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+      <div className="panel-title" style={{ marginBottom: 0 }}>
+        {title}
+      </div>
+      {action}
+    </div>
+  );
+}
 
 /** Wireframe screen 2 "Dashboard / Overview" (FR-5.1, 5.4, 5.5). */
 export function Dashboard() {
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [overdue, setOverdue] = useState<OverdueComplaintRow[]>([]);
@@ -115,6 +112,40 @@ export function Dashboard() {
     };
   }, []);
 
+  function viewDriver(plateNo: string) {
+    // Seeds Drivers.tsx's own search filter (matches on plateNo, see Drivers.tsx) so the operator
+    // lands on exactly this driver's row. This persists in the module-global store, so a later,
+    // unrelated visit to /drivers is still filtered — visible in its toolbar, so acceptable.
+    useDriversStore.setState({ search: plateNo, page: 1 });
+    navigate('/drivers');
+  }
+
+  const expiringColumns: DataTableColumn<ExpiringFranchiseRow>[] = [
+    { key: 'driver', header: 'Driver', render: (r) => r.driverName ?? 'Unknown', sortValue: (r) => r.driverName ?? '' },
+    { key: 'plate', header: 'Plate No.', render: (r) => r.plateNo },
+    {
+      key: 'expiry',
+      header: 'Days until expiry',
+      render: (r) => (
+        <Badge
+          label={r.daysUntilExpiry < 0 ? `Expired ${Math.abs(r.daysUntilExpiry)}d ago` : `${r.daysUntilExpiry}d`}
+          tone={r.daysUntilExpiry < 0 ? 'danger' : 'warn'}
+        />
+      ),
+      sortValue: (r) => r.daysUntilExpiry,
+      align: 'right',
+    },
+    {
+      key: 'actions',
+      header: 'Actions',
+      render: (r) => (
+        <Button variant="outline" tone="neutral" size="sm" onClick={() => viewDriver(r.plateNo)}>
+          View driver
+        </Button>
+      ),
+    },
+  ];
+
   return (
     <div className="page">
       {statsError && <div className="form-error">{statsError}</div>}
@@ -141,13 +172,31 @@ export function Dashboard() {
       </div>
 
       <div className="panel">
-        <div className="panel-title">Overdue Complaints</div>
+        <PanelHeader
+          title="Overdue Complaints"
+          action={
+            <Link to="/complaints">
+              <Button variant="outline" tone="neutral" size="sm">
+                Review all
+              </Button>
+            </Link>
+          }
+        />
         {overdueError && <div className="form-error">{overdueError}</div>}
         <DataTable columns={overdueColumns} rows={overdue} getRowKey={(r) => r.id} loading={loading} emptyMessage="No overdue complaints." />
       </div>
 
       <div className="panel">
-        <div className="panel-title">Expiring Franchises</div>
+        <PanelHeader
+          title="Expiring Franchises"
+          action={
+            <Link to="/verification">
+              <Button variant="outline" tone="neutral" size="sm">
+                Open verification
+              </Button>
+            </Link>
+          }
+        />
         {expiringError && <div className="form-error">{expiringError}</div>}
         <DataTable
           columns={expiringColumns}
@@ -159,16 +208,16 @@ export function Dashboard() {
       </div>
 
       <div className="panel">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <div className="panel-title" style={{ marginBottom: 0 }}>
-            Recent Activity
-          </div>
-          <Link to="/monitoring">
-            <Button variant="outline" tone="neutral" size="sm">
-              View all
-            </Button>
-          </Link>
-        </div>
+        <PanelHeader
+          title="Recent Activity"
+          action={
+            <Link to="/monitoring">
+              <Button variant="outline" tone="neutral" size="sm">
+                View all
+              </Button>
+            </Link>
+          }
+        />
         {activityError && <div className="form-error">{activityError}</div>}
         <DataTable columns={activityColumns} rows={activity} getRowKey={(r) => r.id} loading={loading} />
       </div>
