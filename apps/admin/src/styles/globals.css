@@ -141,3 +141,34 @@ a {
   font-size: 13px;
   margin-bottom: var(--sp-sm);
 }
+
+/* Inline "selected record" detail panel — shared by every route that shows
+   a read-only field breakdown below a list (Complaints, Emergency Alerts,
+   Drivers, Passengers). */
+.detail-panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+  max-width: 480px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.field-label {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+.read-only-note {
+  font-size: 11px;
+  color: var(--ink-faint);
+  border-top: 1px solid var(--line-soft);
+  padding-top: var(--sp-sm);
+}

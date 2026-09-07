@@ -1,0 +1,9 @@
+.banner {
+  font-size: 12px;
+  color: var(--danger);
+  background: var(--danger-soft);
+  border: 1px solid var(--danger);
+  border-radius: var(--r-sm);
+  padding: var(--sp-sm);
+  margin-bottom: var(--sp-sm);
+}

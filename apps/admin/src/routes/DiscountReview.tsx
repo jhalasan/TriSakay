@@ -4,6 +4,7 @@ import { Textarea } from '../components/Textarea';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { RoleGate } from '../components/RoleGate';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { useDiscountsStore } from '../store/useDiscountsStore';
 import type { DiscountRow } from '../types/discount';
 import { titleCaseLabel } from '../lib/format';
@@ -38,21 +39,7 @@ export function DiscountReview() {
 
   return (
     <div className="page">
-      {error && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--danger)',
-            background: 'var(--danger-soft)',
-            border: '1px solid var(--danger)',
-            borderRadius: 'var(--r-sm)',
-            padding: 'var(--sp-sm)',
-            marginBottom: 'var(--sp-sm)',
-          }}
-        >
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
 
       <div className="panel">
         <div className="panel-title">Pending Applications</div>
@@ -99,7 +86,7 @@ export function DiscountReview() {
 
             <RoleGate
               min="supervisor"
-              fallback={<div className={styles.readOnlyNote}>Approve / Reject — PSO Supervisor &amp; Administrator only. PSO Staff: read-only review.</div>}
+              fallback={<div className="read-only-note">Approve / Reject — PSO Supervisor &amp; Administrator only. PSO Staff: read-only review.</div>}
             >
               <div className={styles.decisionRow}>
                 <Button variant="solid" tone="primary" superscript="S+" fullWidth onClick={() => approve(selected.id, remarksDraft || undefined)}>

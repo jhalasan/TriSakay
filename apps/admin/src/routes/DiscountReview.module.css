@@ -66,10 +66,3 @@
 .decisionRow > * {
   flex: 1;
 }
-
-.readOnlyNote {
-  font-size: 11px;
-  color: var(--ink-faint);
-  border-top: 1px solid var(--line-soft);
-  padding-top: var(--sp-sm);
-}

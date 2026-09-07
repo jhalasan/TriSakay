@@ -6,6 +6,7 @@ import { Textarea } from '../components/Textarea';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { RoleGate } from '../components/RoleGate';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { useVerificationStore } from '../store/useVerificationStore';
 import type { TricycleCluster } from '../types/driver';
 import { titleCaseLabel } from '../lib/format';
@@ -27,7 +28,7 @@ const CLUSTER_OPTIONS: { label: string; value: TricycleCluster | '' }[] = [
  * §11 item 6).
  */
 export function DriverVerification() {
-  const { cases, selectedDriverId, loading, fetch, select, updateFields, approve, reject } = useVerificationStore();
+  const { cases, selectedDriverId, loading, error, fetch, select, updateFields, approve, reject } = useVerificationStore();
 
   useEffect(() => {
     fetch();
@@ -37,6 +38,7 @@ export function DriverVerification() {
 
   return (
     <div className="page">
+      <ErrorBanner message={error} />
       <div className="panel">
         <div className="panel-title">Pending Cases</div>
         <div className={styles.caseList}>
@@ -76,7 +78,7 @@ export function DriverVerification() {
                   <div className={styles.readOnlyField}><span>MTOP Expiry Date</span>{selectedCase.mtopExpiryDate || '—'}</div>
                   <div className={styles.readOnlyField}><span>Cluster</span>{selectedCase.cluster || '—'}</div>
                   <div className={styles.readOnlyField}><span>Notes</span>{selectedCase.notes || '—'}</div>
-                  <div className={styles.readOnlyNote}>
+                  <div className="read-only-note">
                     Editing &amp; Approve / Reject — PSO Supervisor &amp; Administrator only. PSO Staff: read-only review.
                   </div>
                 </>

@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { TextField } from '../components/TextField';
 import { Select } from '../components/Select';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { usePsoUsersStore } from '../store/usePsoUsersStore';
 import type { PsoUserRow } from '../types/psoUser';
 import { ROLE_LABELS } from '../lib/rbac';
@@ -90,20 +91,7 @@ export function PsoUsers() {
 
   return (
     <div className="page">
-      {error && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--danger)',
-            background: 'var(--danger-soft)',
-            border: '1px solid var(--danger)',
-            borderRadius: 'var(--r-sm)',
-            padding: 'var(--sp-sm)',
-          }}
-        >
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
 
       {createdTempPassword && (
         <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

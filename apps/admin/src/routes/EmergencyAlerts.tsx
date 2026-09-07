@@ -4,10 +4,10 @@ import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Textarea } from '../components/Textarea';
 import { RoleGate } from '../components/RoleGate';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { useEmergencyAlertsStore } from '../store/useEmergencyAlertsStore';
 import type { EmergencyAlertRow, EmergencyStatus } from '../types/emergency';
 import { formatDateTime, titleCaseLabel } from '../lib/format';
-import styles from './EmergencyAlerts.module.css';
 
 const STATUS_TONE: Record<EmergencyStatus, 'neutral' | 'success' | 'warn' | 'danger' | 'info'> = {
   logged: 'danger',
@@ -70,35 +70,21 @@ export function EmergencyAlerts() {
 
   return (
     <div className="page">
-      {error && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--danger)',
-            background: 'var(--danger-soft)',
-            border: '1px solid var(--danger)',
-            borderRadius: 'var(--r-sm)',
-            padding: 'var(--sp-sm)',
-            marginBottom: 'var(--sp-sm)',
-          }}
-        >
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
 
       <DataTable columns={columns} rows={alerts} getRowKey={(a) => a.id} loading={loading} emptyMessage="No emergency alerts on record." />
 
       {selected && (
-        <div className={`panel ${styles.review}`}>
+        <div className="panel detail-panel">
           <div className="panel-title">Alert — {selected.triggeredByName} ({ROLE_LABEL[selected.triggeredRole]})</div>
 
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Triggered at</span>
+          <div className="field">
+            <span className="field-label">Triggered at</span>
             <span>{formatDateTime(selected.createdAt)}</span>
           </div>
 
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Location</span>
+          <div className="field">
+            <span className="field-label">Location</span>
             <span>
               {selected.lat.toFixed(5)}, {selected.lng.toFixed(5)}
               {' — '}
@@ -108,19 +94,19 @@ export function EmergencyAlerts() {
             </span>
           </div>
 
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Linked ride</span>
+          <div className="field">
+            <span className="field-label">Linked ride</span>
             <span>{selected.rideRequestId ?? '—'}</span>
           </div>
 
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Counterpart</span>
+          <div className="field">
+            <span className="field-label">Counterpart</span>
             <span>{selected.counterpartName ?? '—'}</span>
           </div>
 
           {selected.status !== 'logged' && (
-            <div className={styles.field}>
-              <span className={styles.fieldLabel}>Reviewed by</span>
+            <div className="field">
+              <span className="field-label">Reviewed by</span>
               <span>
                 {selected.reviewedByName ?? '—'}
                 {selected.reviewedAt ? ` · ${formatDateTime(selected.reviewedAt)}` : ''}
@@ -137,7 +123,7 @@ export function EmergencyAlerts() {
 
           <RoleGate
             min="supervisor"
-            fallback={<div className={styles.readOnlyNote}>Mark Reviewed — PSO Supervisor &amp; Administrator only.</div>}
+            fallback={<div className="read-only-note">Mark Reviewed — PSO Supervisor &amp; Administrator only.</div>}
           >
             <Button
               variant="solid"

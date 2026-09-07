@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { RatingSquares } from '../components/RatingSquares';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { useRatingOversightStore } from '../store/useRatingOversightStore';
 import type { FlaggedLowRatingRow } from '../services/ratings';
 
@@ -35,21 +36,7 @@ export function RatingOversight() {
 
   return (
     <div className="page">
-      {error && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--danger)',
-            background: 'var(--danger-soft)',
-            border: '1px solid var(--danger)',
-            borderRadius: 'var(--r-sm)',
-            padding: 'var(--sp-sm)',
-            marginBottom: 'var(--sp-sm)',
-          }}
-        >
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
       <DataTable columns={columns} rows={drivers} getRowKey={(d) => d.driverId} loading={loading} emptyMessage="No drivers currently flagged for a low rating." />
     </div>
   );
