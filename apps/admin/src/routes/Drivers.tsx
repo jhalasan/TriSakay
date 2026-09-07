@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { Link } from 'react-router-dom';
 import { TableToolbar } from '../components/TableToolbar';
 import { Select } from '../components/Select';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
@@ -9,9 +10,12 @@ import { RatingSquares } from '../components/RatingSquares';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { useDriversStore } from '../store/useDriversStore';
 import type { DriverRow } from '../types/driver';
-import { titleCaseLabel } from '../lib/format';
+import { formatDate, titleCaseLabel } from '../lib/format';
+import { downloadCsv, toCsv } from '../lib/csv';
+import { driverCsvColumns, exportFilename } from '../lib/exports';
 
 type PendingActionKind = 'flag' | 'suspend' | 'reactivate';
 
@@ -57,6 +61,7 @@ export function Drivers() {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch();
@@ -86,7 +91,45 @@ export function Drivers() {
   }, [drivers, search, statusFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const safePage = Math.min(page, pageCount);
+  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  function exportCsv() {
+    // DataTable's column sort is internal state, not lifted here, so this exports in store order (not the on-screen sort order).
+    const csv = toCsv(filtered, driverCsvColumns);
+    downloadCsv(exportFilename('drivers', statusFilter), csv);
+  }
+
+  const selected = drivers.find((d) => d.id === selectedId) ?? null;
+
+  const detailFields: { label: string; value: ReactNode }[] = selected
+    ? [
+        { label: 'Contact No', value: selected.contactNo },
+        { label: 'Email', value: selected.email },
+        { label: 'Plate No', value: selected.plateNo },
+        { label: 'Cluster', value: selected.cluster ? titleCaseLabel(selected.cluster) : '—' },
+        {
+          label: 'Verification',
+          value: <Badge label={titleCaseLabel(selected.verificationStatus)} tone={selected.verificationStatus === 'approved' ? 'success' : selected.verificationStatus === 'rejected' ? 'danger' : 'warn'} />,
+        },
+        {
+          label: 'Rating',
+          value:
+            selected.ratingCount > 0 ? (
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <RatingSquares value={selected.ratingAvg} />
+                <span style={{ color: 'var(--ink-faint)', fontSize: 11 }}>
+                  {selected.ratingAvg.toFixed(1)} ({selected.ratingCount})
+                </span>
+              </span>
+            ) : (
+              '—'
+            ),
+        },
+        { label: 'Registered', value: formatDate(selected.createdAt) },
+        { label: 'Driver ID', value: <span className="mono">{selected.id}</span> },
+      ]
+    : [];
 
   const columns: DataTableColumn<DriverRow>[] = [
     {
@@ -120,7 +163,12 @@ export function Drivers() {
       header: 'Actions',
       render: (d) => (
         <div style={{ display: 'flex', gap: 6 }}>
-          <Button variant="outline" tone="neutral" size="sm">
+          <Button
+            variant={selectedId === d.id ? 'solid' : 'outline'}
+            tone="neutral"
+            size="sm"
+            onClick={() => setSelectedId((prev) => (prev === d.id ? null : d.id))}
+          >
             View
           </Button>
           <Button variant="outline" tone="neutral" size="sm" onClick={() => setPendingAction({ driver: d, kind: 'flag' })}>
@@ -156,21 +204,7 @@ export function Drivers() {
 
   return (
     <div className="page">
-      {error && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--danger)',
-            background: 'var(--danger-soft)',
-            border: '1px solid var(--danger)',
-            borderRadius: 'var(--r-sm)',
-            padding: 'var(--sp-sm)',
-            marginBottom: 'var(--sp-sm)',
-          }}
-        >
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
       <TableToolbar
         search={search}
         onSearchChange={setSearch}
@@ -190,13 +224,47 @@ export function Drivers() {
           />
         }
         actions={
-          <Button variant="outline" tone="neutral" size="sm">
+          <Button variant="outline" tone="neutral" size="sm" disabled={filtered.length === 0} onClick={exportCsv}>
             Export
           </Button>
         }
       />
       <DataTable columns={columns} rows={pageRows} getRowKey={(d) => d.id} loading={loading} emptyMessage="No drivers match your filters." />
-      <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+      <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
+
+      {selected && (
+        <div className="panel detail-panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <Avatar fullName={selected.fullName} />
+            <div>
+              <div className="panel-title" style={{ marginBottom: 2 }}>
+                {selected.fullName}
+              </div>
+              <Badge label={titleCaseLabel(selected.accountStatus)} tone={STATUS_TONE[selected.accountStatus]} />
+            </div>
+          </div>
+
+          {detailFields.map((f) => (
+            <div className="field" key={f.label}>
+              <span className="field-label">{f.label}</span>
+              <span>{f.value}</span>
+            </div>
+          ))}
+
+          {selected.verificationStatus === 'pending' && (
+            <Link to="/verification" style={{ fontSize: 12 }}>
+              Open in Verification queue →
+            </Link>
+          )}
+
+          <div className="read-only-note">Showing the record loaded with this list. Full ride history isn't available in the admin portal yet.</div>
+
+          <Button variant="outline" tone="neutral" size="sm" onClick={() => setSelectedId(null)} style={{ alignSelf: 'flex-start' }}>
+            Close
+          </Button>
+        </div>
+      )}
+
       {pendingAction && (
         <ConfirmModal
           title={ACTION_COPY[pendingAction.kind].title}

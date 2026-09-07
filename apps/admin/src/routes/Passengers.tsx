@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, type ReactNode } from 'react';
 import { TableToolbar } from '../components/TableToolbar';
 import { Select } from '../components/Select';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
@@ -8,9 +8,12 @@ import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { usePassengersStore } from '../store/usePassengersStore';
 import type { PassengerRow } from '../types/passenger';
-import { passengerStatusLabel } from '../lib/format';
+import { formatDate, passengerStatusLabel } from '../lib/format';
+import { downloadCsv, toCsv } from '../lib/csv';
+import { passengerCsvColumns, exportFilename } from '../lib/exports';
 
 const STATUS_TONE: Record<PassengerRow['accountStatus'], 'neutral' | 'success' | 'warn' | 'danger'> = {
   active: 'success',
@@ -50,6 +53,7 @@ export function Passengers() {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
 
   useEffect(() => {
     fetch();
@@ -79,7 +83,27 @@ export function Passengers() {
   }, [passengers, search, statusFilter]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
+  const safePage = Math.min(page, pageCount);
+  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+
+  function exportCsv() {
+    // DataTable's column sort is internal state, not lifted here, so this exports in store order (not the on-screen sort order).
+    const csv = toCsv(filtered, passengerCsvColumns);
+    downloadCsv(exportFilename('passengers', statusFilter), csv);
+  }
+
+  const selected = passengers.find((p) => p.id === selectedId) ?? null;
+
+  const detailFields: { label: string; value: ReactNode }[] = selected
+    ? [
+        { label: 'Contact No', value: selected.contactNo },
+        { label: 'Email', value: selected.email },
+        { label: 'Total Rides', value: selected.totalRides },
+        { label: 'Fare Discount', value: selected.hasApprovedDiscount ? <Badge label="Approved" tone="success" /> : '—' },
+        { label: 'Registered', value: formatDate(selected.createdAt) },
+        { label: 'Passenger ID', value: <span className="mono">{selected.id}</span> },
+      ]
+    : [];
 
   const columns: DataTableColumn<PassengerRow>[] = [
     {
@@ -113,7 +137,12 @@ export function Passengers() {
       header: 'Actions',
       render: (p) => (
         <div style={{ display: 'flex', gap: 6 }}>
-          <Button variant="outline" tone="neutral" size="sm">
+          <Button
+            variant={selectedId === p.id ? 'solid' : 'outline'}
+            tone="neutral"
+            size="sm"
+            onClick={() => setSelectedId((prev) => (prev === p.id ? null : p.id))}
+          >
             View
           </Button>
           <RoleGate min="supervisor">
@@ -146,21 +175,7 @@ export function Passengers() {
 
   return (
     <div className="page">
-      {error && (
-        <div
-          style={{
-            fontSize: 12,
-            color: 'var(--danger)',
-            background: 'var(--danger-soft)',
-            border: '1px solid var(--danger)',
-            borderRadius: 'var(--r-sm)',
-            padding: 'var(--sp-sm)',
-            marginBottom: 'var(--sp-sm)',
-          }}
-        >
-          {error}
-        </div>
-      )}
+      <ErrorBanner message={error} />
       <TableToolbar
         search={search}
         onSearchChange={setSearch}
@@ -179,7 +194,7 @@ export function Passengers() {
           />
         }
         actions={
-          <Button variant="outline" tone="neutral" size="sm">
+          <Button variant="outline" tone="neutral" size="sm" disabled={filtered.length === 0} onClick={exportCsv}>
             Export
           </Button>
         }
@@ -191,7 +206,35 @@ export function Passengers() {
         loading={loading}
         emptyMessage="No passengers match your filters."
       />
-      <Pagination page={page} pageCount={pageCount} onChange={setPage} />
+      <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
+
+      {selected && (
+        <div className="panel detail-panel">
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+            <Avatar fullName={selected.fullName} />
+            <div>
+              <div className="panel-title" style={{ marginBottom: 2 }}>
+                {selected.fullName}
+              </div>
+              <Badge label={passengerStatusLabel(selected.accountStatus)} tone={STATUS_TONE[selected.accountStatus]} />
+            </div>
+          </div>
+
+          {detailFields.map((f) => (
+            <div className="field" key={f.label}>
+              <span className="field-label">{f.label}</span>
+              <span>{f.value}</span>
+            </div>
+          ))}
+
+          <div className="read-only-note">Showing the record loaded with this list. Full ride history isn't available in the admin portal yet.</div>
+
+          <Button variant="outline" tone="neutral" size="sm" onClick={() => setSelectedId(null)} style={{ alignSelf: 'flex-start' }}>
+            Close
+          </Button>
+        </div>
+      )}
+
       {pendingAction && (
         <ConfirmModal
           title={ACTION_COPY[pendingAction.kind].title}
