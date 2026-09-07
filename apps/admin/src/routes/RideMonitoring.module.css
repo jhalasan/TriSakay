@@ -18,6 +18,18 @@
   margin-bottom: var(--sp-md);
 }
 
+.mapHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.stamp {
+  font-family: var(--mono);
+  font-size: 11px;
+  color: var(--ink-faint);
+}
+
 .caption {
   margin-top: var(--sp-sm);
   font-size: 11px;
