@@ -9,6 +9,7 @@ import { getPeakHourHistogram, getReportSummary, getRidesRevenueOverTime, listTr
 import type { PeakHourBucket, ReportSummary, RidesRevenuePoint, TransactionRow } from '../types/report';
 import { formatCurrency, formatDateTime, paymentMethodLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
+import { ErrorBanner } from '../components/ErrorBanner';
 import styles from './Reports.module.css';
 
 const PAYMENT_TONE: Record<TransactionRow['status'], 'neutral' | 'success' | 'warn' | 'danger'> = {
@@ -28,7 +29,9 @@ const DATE_RANGE_OPTIONS: { label: string; value: ReportDateRange }[] = [
 export function Reports() {
   const [dateRange, setDateRange] = useState<ReportDateRange>('30d');
   const [summary, setSummary] = useState<ReportSummary | null>(null);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
+  const [transactionsError, setTransactionsError] = useState<string | null>(null);
   const [ridesRevenue, setRidesRevenue] = useState<RidesRevenuePoint[]>([]);
   const [ridesRevenueError, setRidesRevenueError] = useState<string | null>(null);
   const [peakHours, setPeakHours] = useState<PeakHourBucket[]>([]);
@@ -36,21 +39,34 @@ export function Reports() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
     setLoading(true);
     Promise.all([
       getReportSummary(dateRange),
       listTransactions(dateRange),
       getRidesRevenueOverTime(dateRange),
       getPeakHourHistogram(dateRange),
-    ]).then(([s, t, rr, ph]) => {
-      setSummary(s.data);
-      setTransactions(t.data);
-      setRidesRevenue(rr.data);
-      setRidesRevenueError(rr.error);
-      setPeakHours(ph.data);
-      setPeakHoursError(ph.error);
-      setLoading(false);
-    });
+    ])
+      .then(([s, t, rr, ph]) => {
+        if (cancelled) return;
+        setSummary(s.data);
+        setSummaryError(s.error);
+        setTransactions(t.data);
+        setTransactionsError(t.error);
+        setRidesRevenue(rr.data);
+        setRidesRevenueError(rr.error);
+        setPeakHours(ph.data);
+        setPeakHoursError(ph.error);
+        setLoading(false);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        setSummaryError('Could not load report data.');
+        setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [dateRange]);
 
   function exportCsv() {
@@ -95,11 +111,12 @@ export function Reports() {
         </Button>
       </div>
 
+      <ErrorBanner message={summaryError} />
       <div className="stat-grid">
-        <StatTile label="Total Rides" value={loading ? '—' : summary!.totalRides} />
-        <StatTile label="Total Revenue" value={loading ? '—' : formatCurrency(summary!.totalRevenue)} />
-        <StatTile label="Average Fare" value={loading ? '—' : formatCurrency(summary!.averageFare)} />
-        <StatTile label="Peak Hour" value={loading ? '—' : summary!.peakHourLabel} />
+        <StatTile label="Total Rides" value={loading || !summary ? '—' : summary.totalRides} />
+        <StatTile label="Total Revenue" value={loading || !summary ? '—' : formatCurrency(summary.totalRevenue)} />
+        <StatTile label="Average Fare" value={loading || !summary ? '—' : formatCurrency(summary.averageFare)} />
+        <StatTile label="Peak Hour" value={loading || !summary ? '—' : summary.peakHourLabel} />
       </div>
 
       <div className="two-col">
@@ -117,6 +134,7 @@ export function Reports() {
 
       <div className="panel">
         <div className="panel-title">Transactions</div>
+        {transactionsError && <div className="form-error">{transactionsError}</div>}
         <DataTable columns={columns} rows={transactions} getRowKey={(t) => t.id} loading={loading} />
       </div>
     </div>

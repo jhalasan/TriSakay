@@ -60,9 +60,17 @@ export const useSettingsStore = create<SettingsState>()((set, get) => ({
   toggleFeature: async (key) => {
     const current = get().featureToggles;
     if (!current) return;
-    const patch = { [key]: !current[key] } as Partial<FeatureToggles>;
-    set({ featureToggles: { ...current, ...patch } });
-    const { error } = await updateFeatureToggles(patch);
-    if (error) set({ error });
+    const previousValue = current[key];
+    set((state) => ({
+      featureToggles: state.featureToggles ? { ...state.featureToggles, [key]: !previousValue } : state.featureToggles,
+      error: null,
+    }));
+    const { error } = await updateFeatureToggles({ [key]: !previousValue } as Partial<FeatureToggles>);
+    if (error) {
+      set((state) => ({
+        featureToggles: state.featureToggles ? { ...state.featureToggles, [key]: previousValue } : state.featureToggles,
+        error,
+      }));
+    }
   },
 }));

@@ -1,24 +1,3 @@
-.review {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-md);
-  max-width: 480px;
-}
-
-.field {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.fieldLabel {
-  font-family: var(--mono);
-  font-size: 10px;
-  letter-spacing: 0.03em;
-  color: var(--ink-soft);
-  text-transform: uppercase;
-}
-
 .subsection {
   display: flex;
   flex-direction: column;
@@ -33,9 +12,3 @@
   color: var(--ink);
 }
 
-.readOnlyNote {
-  font-size: 11px;
-  color: var(--ink-faint);
-  border-top: 1px solid var(--line-soft);
-  padding-top: var(--sp-sm);
-}

@@ -7,6 +7,8 @@ import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
+import { ErrorBanner } from '../components/ErrorBanner';
+import { Pagination } from '../components/Pagination';
 import { useComplaintsStore } from '../store/useComplaintsStore';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { titleCaseLabel } from '../lib/format';
@@ -30,6 +32,8 @@ const CATEGORY_LABEL: Record<ComplaintRow['category'], string> = {
   other: 'Other',
 };
 
+const PAGE_SIZE = 5;
+
 const ALL_STATUSES: { label: string; value: ComplaintStatus }[] = [
   { label: 'Open', value: 'open' },
   { label: 'Under Review', value: 'under_review' },
@@ -44,12 +48,14 @@ export function Complaints() {
   const {
     complaints,
     loading,
+    error,
     search,
     statusFilter,
     page,
     fetch,
     setSearch,
     setStatusFilter,
+    setPage,
     updateStatus,
     setDhDirective,
     scheduleMediation,
@@ -74,6 +80,10 @@ export function Complaints() {
       return matchesSearch && matchesStatus;
     });
   }, [complaints, search, statusFilter]);
+
+  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const safePage = Math.min(page, pageCount);
+  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
 
   const selected = complaints.find((c) => c.id === selectedId) ?? null;
 
@@ -126,6 +136,7 @@ export function Complaints() {
 
   return (
     <div className="page">
+      <ErrorBanner message={error} />
       <TableToolbar
         search={search}
         onSearchChange={setSearch}
@@ -139,14 +150,15 @@ export function Complaints() {
           />
         }
       />
-      <DataTable columns={columns} rows={filtered} getRowKey={(c) => c.id} loading={loading} emptyMessage="No complaints match your filters." />
+      <DataTable columns={columns} rows={pageRows} getRowKey={(c) => c.id} loading={loading} emptyMessage="No complaints match your filters." />
+      <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
 
       {selected && (
-        <div className={`panel ${styles.review}`}>
+        <div className="panel detail-panel">
           <div className="panel-title">Reviewing: {selected.subject}</div>
 
-          <div className={styles.field}>
-            <span className={styles.fieldLabel}>Status</span>
+          <div className="field">
+            <span className="field-label">Status</span>
             <Select
               value={selected.status}
               onChange={(e) => updateStatus(selected.id, e.target.value as ComplaintStatus)}
@@ -173,7 +185,7 @@ export function Complaints() {
           {selected.status === 'escalated' && (
             <RoleGate
               min="supervisor"
-              fallback={<div className={styles.readOnlyNote}>Schedule Mediation — PSO Supervisor &amp; Administrator only.</div>}
+              fallback={<div className="read-only-note">Schedule Mediation — PSO Supervisor &amp; Administrator only.</div>}
             >
               <div className={styles.subsection}>
                 <div className={styles.subsectionTitle}>Schedule Mediation (FR-4.5)</div>
@@ -204,8 +216,8 @@ export function Complaints() {
           )}
 
           {selected.mediationMeetingAt && (
-            <div className={styles.field}>
-              <span className={styles.fieldLabel}>Mediation Meeting</span>
+            <div className="field">
+              <span className="field-label">Mediation Meeting</span>
               <span style={{ fontSize: 13 }}>
                 {new Date(selected.mediationMeetingAt).toLocaleString('en-PH')}
                 {selected.mediationLocation ? ` — ${selected.mediationLocation}` : ''}
@@ -216,7 +228,7 @@ export function Complaints() {
           {selected.status === 'mediation_scheduled' && (
             <RoleGate
               min="supervisor"
-              fallback={<div className={styles.readOnlyNote}>Record Outcome — PSO Supervisor &amp; Administrator only.</div>}
+              fallback={<div className="read-only-note">Record Outcome — PSO Supervisor &amp; Administrator only.</div>}
             >
               <div className={styles.subsection}>
                 <div className={styles.subsectionTitle}>Record Outcome (FR-4.6)</div>
@@ -248,8 +260,8 @@ export function Complaints() {
           )}
 
           {selected.resolutionNotes && ['resolved', 'dismissed'].includes(selected.status) && (
-            <div className={styles.field}>
-              <span className={styles.fieldLabel}>Resolution Notes</span>
+            <div className="field">
+              <span className="field-label">Resolution Notes</span>
               <span style={{ fontSize: 13 }}>{selected.resolutionNotes}</span>
             </div>
           )}
