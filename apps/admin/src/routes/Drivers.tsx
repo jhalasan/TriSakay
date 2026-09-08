@@ -162,7 +162,7 @@ export function Drivers() {
       key: 'actions',
       header: 'Actions',
       render: (d) => (
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="row-actions">
           <Button
             variant={selectedId === d.id ? 'solid' : 'outline'}
             tone="neutral"
@@ -237,9 +237,9 @@ export function Drivers() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <Avatar fullName={selected.fullName} />
             <div>
-              <div className="panel-title" style={{ marginBottom: 2 }}>
+              <h2 className="panel-title" style={{ marginBottom: 2 }}>
                 {selected.fullName}
-              </div>
+              </h2>
               <Badge label={titleCaseLabel(selected.accountStatus)} tone={STATUS_TONE[selected.accountStatus]} />
             </div>
           </div>

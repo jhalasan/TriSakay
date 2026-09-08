@@ -4,40 +4,53 @@
   gap: var(--sp-sm);
   padding: var(--sp-lg);
   border: 1px solid var(--line);
-  border-left: 3px solid var(--line);
   border-radius: var(--r-md);
   background: var(--panel);
   box-shadow: var(--shadow-card);
-  transition: box-shadow 150ms ease;
+  transition: box-shadow 150ms ease, transform 150ms ease;
 }
 
 .tile:hover {
   box-shadow: 0 6px 16px rgba(0, 46, 96, 0.14);
+  transform: translateY(-1px);
+}
+
+.labelRow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
 }
 
 .neutral {
-  border-left-color: var(--line-strong);
+  background: var(--line-strong);
 }
 
 .primary {
-  border-left-color: var(--primary);
+  background: var(--primary);
 }
 
 .success {
-  border-left-color: var(--success);
+  background: var(--success);
 }
 
 .warn {
-  border-left-color: var(--warn);
+  background: var(--warn);
 }
 
 .danger {
-  border-left-color: var(--danger);
+  background: var(--danger);
 }
 
 .label {
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-micro);
   letter-spacing: 0.03em;
   color: var(--ink-soft);
   text-transform: uppercase;
@@ -45,12 +58,12 @@
 
 .value {
   font-family: var(--font-brand);
-  font-size: 26px;
+  font-size: var(--fs-metric);
   font-weight: 700;
   color: var(--ink);
 }
 
 .hint {
-  font-size: 11px;
+  font-size: var(--fs-sm);
   color: var(--ink-faint);
 }

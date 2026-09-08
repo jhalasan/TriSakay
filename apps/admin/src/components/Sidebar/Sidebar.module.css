@@ -1,8 +1,8 @@
 .sidebar {
+  position: relative;
   width: var(--sidebar-w);
   flex-shrink: 0;
-  background: var(--panel);
-  border-right: 1px solid var(--line);
+  background: var(--gradient-hero);
   display: flex;
   flex-direction: column;
   height: 100%;
@@ -10,24 +10,39 @@
 }
 
 .brand {
+  position: relative;
   display: flex;
   align-items: center;
   gap: var(--sp-sm);
   padding: var(--sp-lg) var(--sp-md);
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid var(--sidebar-line);
+  overflow: hidden;
+}
+
+.brandArt {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0.16;
 }
 
 .brandMark {
+  position: relative;
   width: 24px;
   height: 29px;
   flex-shrink: 0;
+  /* The mark's navy+green artwork is built for light surfaces; reversed to a
+     white silhouette here since it now sits on the dark sidebar. */
+  filter: brightness(0) invert(1);
 }
 
 .brandWordmark {
+  position: relative;
   font-family: var(--font-brand);
   font-weight: 600;
   font-size: 13px;
-  color: var(--primary);
+  color: var(--sidebar-ink);
 }
 
 .list {
@@ -40,7 +55,7 @@
 
 .divider {
   height: 1px;
-  background: var(--line);
+  background: var(--sidebar-line);
   margin: var(--sp-sm) var(--sp-md);
 }
 
@@ -56,32 +71,33 @@
   margin: 0;
   padding: var(--sp-xs) var(--sp-md);
   font-family: var(--mono);
-  font-size: 10px;
+  font-size: var(--fs-micro);
   font-weight: 600;
   letter-spacing: 0.03em;
   text-transform: uppercase;
-  color: var(--ink-faint);
+  color: var(--sidebar-ink-faint);
 }
 
 .link,
 .active {
   display: block;
   padding: var(--sp-sm) var(--sp-md);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   text-decoration: none;
-  color: var(--ink-soft);
+  color: var(--sidebar-ink-soft);
   border-left: 3px solid transparent;
   border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  transition: background-color 120ms ease, color 120ms ease;
 }
 
 .link:hover {
-  background: var(--fill);
-  color: var(--ink);
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-ink);
 }
 
 .active {
-  background: var(--primary-soft);
-  color: var(--primary);
-  border-left-color: var(--primary);
+  background: var(--sidebar-active-bg);
+  color: var(--sidebar-ink);
+  border-left-color: var(--sidebar-ink);
   font-weight: 600;
 }

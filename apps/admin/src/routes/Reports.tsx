@@ -121,20 +121,20 @@ export function Reports() {
 
       <div className="two-col">
         <div className="panel">
-          <div className="panel-title">Rides / Revenue</div>
-          {ridesRevenueError && <div className="form-error">{ridesRevenueError}</div>}
+          <h2 className="panel-title">Rides / Revenue</h2>
+          <ErrorBanner message={ridesRevenueError} />
           <RidesRevenueChart data={ridesRevenue} loading={loading} />
         </div>
         <div className="panel">
-          <div className="panel-title">Peak Hours</div>
-          {peakHoursError && <div className="form-error">{peakHoursError}</div>}
+          <h2 className="panel-title">Peak Hours</h2>
+          <ErrorBanner message={peakHoursError} />
           <PeakHoursChart data={peakHours} loading={loading} />
         </div>
       </div>
 
       <div className="panel">
-        <div className="panel-title">Transactions</div>
-        {transactionsError && <div className="form-error">{transactionsError}</div>}
+        <h2 className="panel-title">Transactions</h2>
+        <ErrorBanner message={transactionsError} />
         <DataTable columns={columns} rows={transactions} getRowKey={(t) => t.id} loading={loading} />
       </div>
     </div>

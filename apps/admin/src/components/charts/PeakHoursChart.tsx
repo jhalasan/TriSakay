@@ -13,10 +13,10 @@ const AXIS_TICK = { fill: AXIS_COLOR, fontFamily: MONO_FONT, fontSize: 9 };
 /** "Peak Hours" report panel — completed rides per 2-hour window across the selected range. */
 export function PeakHoursChart({ data, loading = false }: PeakHoursChartProps) {
   if (loading) {
-    return <div className={styles.loading}>Loading…</div>;
+    return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
   }
   if (data.length === 0) {
-    return <div className={styles.loading}>No rides in this range.</div>;
+    return <div className={`ph-box ${styles.loading}`}>No rides in this range.</div>;
   }
 
   return (

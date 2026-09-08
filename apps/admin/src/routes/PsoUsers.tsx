@@ -95,7 +95,7 @@ export function PsoUsers() {
 
       {createdTempPassword && (
         <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <div className="panel-title">Account created for {createdEmail}</div>
+          <h2 className="panel-title">Account created for {createdEmail}</h2>
           <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: 0 }}>
             Share this temporary password with them directly — it won't be shown again, and no email was sent.
           </p>
@@ -104,7 +104,7 @@ export function PsoUsers() {
               style={{
                 fontFamily: 'monospace',
                 fontSize: 14,
-                background: 'var(--surface-alt, #f4f4f4)',
+                background: 'var(--fill)',
                 padding: '6px 10px',
                 borderRadius: 'var(--r-sm)',
                 userSelect: 'all',

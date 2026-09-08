@@ -40,7 +40,7 @@ export function DriverVerification() {
     <div className="page">
       <ErrorBanner message={error} />
       <div className="panel">
-        <div className="panel-title">Pending Cases</div>
+        <h2 className="panel-title">Pending Cases</h2>
         <div className={styles.caseList}>
           {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
           {!loading && cases.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>No pending verifications.</div>}
@@ -68,7 +68,7 @@ export function DriverVerification() {
           </div>
 
           <div className={`panel ${styles.sidebar}`}>
-            <div className="panel-title">Franchise / Permit (Ordinance 21, s.2024)</div>
+            <h2 className="panel-title">Franchise / Permit (Ordinance 21, s.2024)</h2>
 
             <RoleGate
               min="supervisor"

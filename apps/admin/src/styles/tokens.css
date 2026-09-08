@@ -32,17 +32,21 @@
   --primary: #002E60;
   --primary-pressed: #002043;
   --primary-soft: #E3EDF7;
+  --primary-border: #9FB9D4;
 
   --success: #477434;
   --success-pressed: #3B602B;
   --success-soft: #E9F7E3;
+  --success-border: #8FBE78;
 
   --danger: #B3261E;
   --danger-pressed: #931E17;
   --danger-soft: #FBEAE8;
+  --danger-border: #E2938D;
 
-  --warn: #a06b00;
+  --warn: #7a5b00;
   --warn-soft: #fff6dc;
+  --warn-border: #e3b341;
 
   --overlay: rgba(10, 14, 17, 0.58);
 
@@ -62,13 +66,23 @@
      Shadow color is the brand navy (#002E60) rather than near-black, same
      reasoning as the mobile app: a colored shadow reads as premium and ties
      every raised surface back to the brand mark. */
-  --shadow-card: 0 3px 8px rgba(0, 46, 96, 0.10);
+  --shadow-card: 0 4px 12px rgba(0, 46, 96, 0.12);
   --shadow-button: 0 4px 10px rgba(0, 46, 96, 0.22);
   --shadow-sheet: 0 -6px 24px rgba(0, 46, 96, 0.16);
 
-  /* Hero gradient — Login page background only, mirrors the `hero` token
-     in packages/ui/src/theme/gradients.ts. Never used on data screens. */
+  /* Hero gradient — mirrors the `hero` token in packages/ui/src/theme/gradients.ts.
+     Used on Login's brand pane and the Sidebar, the app's two dark brand surfaces. */
   --gradient-hero: linear-gradient(180deg, var(--primary) 0%, #001A38 100%);
+
+  /* On-dark palette for the Sidebar's navy surface — same ratios Login's
+     .brandPanel already uses (brandTagline: 0.78, brandFooter: 0.45), so the
+     interior nav reads as the same brand surface as the login screen. */
+  --sidebar-ink: #FFFFFF;
+  --sidebar-ink-soft: rgba(255, 255, 255, 0.78);
+  --sidebar-ink-faint: rgba(255, 255, 255, 0.6);
+  --sidebar-line: rgba(255, 255, 255, 0.12);
+  --sidebar-hover-bg: rgba(255, 255, 255, 0.07);
+  --sidebar-active-bg: rgba(255, 255, 255, 0.12);
 
   /* Spacing scale — mirrors packages/ui/src/theme/spacing.ts */
   --sp-xs: 4px;
@@ -82,6 +96,17 @@
   --mono: ui-monospace, Menlo, Consolas, monospace;
   --sans: system-ui, "Segoe UI", Roboto, sans-serif;
   --font-brand: 'Poppins', var(--sans);
+
+  /* Type scale — names the sizes already in use plus two missing hierarchy
+     steps (section, page), so page title > section title > body is a real
+     progression instead of a 10-14px band. */
+  --fs-micro: 10px;
+  --fs-sm: 11px;
+  --fs-xs: 12px;
+  --fs-body: 13px;
+  --fs-section: 15px;
+  --fs-page: 18px;
+  --fs-metric: 26px;
 
   color-scheme: light;
 }

@@ -17,6 +17,24 @@ export function Sidebar() {
   return (
     <nav className={styles.sidebar} aria-label="Admin navigation">
       <div className={styles.brand}>
+        <svg className={styles.brandArt} viewBox="0 0 176 88" fill="none" aria-hidden="true">
+          <path
+            d="M-10 20 C 40 6, 60 46, 110 34 S 170 8, 210 24"
+            stroke="white"
+            strokeOpacity="0.5"
+            strokeWidth="2"
+            strokeDasharray="1 10"
+            strokeLinecap="round"
+          />
+          <path
+            d="M-10 66 C 30 54, 55 84, 100 72 S 160 50, 200 64"
+            stroke="white"
+            strokeOpacity="0.3"
+            strokeWidth="2"
+            strokeDasharray="1 10"
+            strokeLinecap="round"
+          />
+        </svg>
         <img src="/brand/trisakay-mark.png" alt="" className={styles.brandMark} />
         <span className={styles.brandWordmark}>TriSakay Admin</span>
       </div>

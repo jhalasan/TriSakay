@@ -136,7 +136,7 @@ export function Passengers() {
       key: 'actions',
       header: 'Actions',
       render: (p) => (
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="row-actions">
           <Button
             variant={selectedId === p.id ? 'solid' : 'outline'}
             tone="neutral"
@@ -213,9 +213,9 @@ export function Passengers() {
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
             <Avatar fullName={selected.fullName} />
             <div>
-              <div className="panel-title" style={{ marginBottom: 2 }}>
+              <h2 className="panel-title" style={{ marginBottom: 2 }}>
                 {selected.fullName}
-              </div>
+              </h2>
               <Badge label={passengerStatusLabel(selected.accountStatus)} tone={STATUS_TONE[selected.accountStatus]} />
             </div>
           </div>

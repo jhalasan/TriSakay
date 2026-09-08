@@ -71,11 +71,16 @@ export function DataTable<T>({ columns, rows, getRowKey, emptyMessage = 'No reco
               <th
                 key={col.key}
                 style={{ width: col.width, textAlign: col.align ?? 'left' }}
-                className={col.sortValue ? styles.sortable : undefined}
-                onClick={col.sortValue ? () => toggleSort(col.key) : undefined}
+                aria-sort={col.sortValue ? (sortKey === col.key ? (sortDir === 'asc' ? 'ascending' : 'descending') : 'none') : undefined}
               >
-                {col.header}
-                {sortKey === col.key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                {col.sortValue ? (
+                  <button type="button" className={styles.sortable} onClick={() => toggleSort(col.key)}>
+                    {col.header}
+                    {sortKey === col.key ? (sortDir === 'asc' ? ' ▲' : ' ▼') : ''}
+                  </button>
+                ) : (
+                  col.header
+                )}
               </th>
             ))}
           </tr>

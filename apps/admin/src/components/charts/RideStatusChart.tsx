@@ -14,12 +14,12 @@ const LEGEND_STYLE = { fontFamily: MONO_FONT, fontSize: 11, color: AXIS_COLOR };
 /** "Ride Status" dashboard panel — all-time ride counts grouped by TripStatus. */
 export function RideStatusChart({ data, loading = false }: RideStatusChartProps) {
   if (loading) {
-    return <div className={styles.loading}>Loading…</div>;
+    return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
   }
 
   const nonZero = data.filter((d) => d.count > 0);
   if (nonZero.length === 0) {
-    return <div className={styles.loading}>No rides recorded yet.</div>;
+    return <div className={`ph-box ${styles.loading}`}>No rides recorded yet.</div>;
   }
 
   return (

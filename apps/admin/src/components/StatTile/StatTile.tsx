@@ -12,8 +12,11 @@ export interface StatTileProps {
 
 export function StatTile({ label, value, hint, tone = 'neutral' }: StatTileProps) {
   return (
-    <div className={`${styles.tile} ${styles[tone]}`}>
-      <span className={styles.label}>{label}</span>
+    <div className={styles.tile}>
+      <span className={styles.labelRow}>
+        <span className={`${styles.dot} ${styles[tone]}`} />
+        <span className={styles.label}>{label}</span>
+      </span>
       <span className={styles.value}>{value}</span>
       {hint && <span className={styles.hint}>{hint}</span>}
     </div>

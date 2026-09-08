@@ -42,7 +42,7 @@ export function DiscountReview() {
       <ErrorBanner message={error} />
 
       <div className="panel">
-        <div className="panel-title">Pending Applications</div>
+        <h2 className="panel-title">Pending Applications</h2>
         <div className={styles.caseList}>
           {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
           {!loading && items.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>No discount applications to review.</div>}
@@ -74,9 +74,9 @@ export function DiscountReview() {
           </div>
 
           <div className={`panel ${styles.sidebar}`}>
-            <div className="panel-title">
+            <h2 className="panel-title">
               {selected.passengerName} — {CATEGORY_LABEL[selected.category]}
-            </div>
+            </h2>
             <Textarea
               label="Remarks"
               value={remarksDraft}

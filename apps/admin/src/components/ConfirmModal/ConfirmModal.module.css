@@ -17,6 +17,7 @@
   flex-direction: column;
   gap: var(--sp-md);
   box-shadow: var(--shadow-sheet);
+  animation: rise 260ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .title {

@@ -22,9 +22,22 @@
   transition: background-color 120ms ease, border-color 120ms ease;
 }
 
+/* Extends the clickable/tappable area to the WCAG 24x24px minimum without
+   changing the track's visible 36x20px size. */
+.track::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+}
+
 .track:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.track:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
 }
 
 .track.on {

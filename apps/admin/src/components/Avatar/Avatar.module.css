@@ -3,10 +3,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid var(--line);
+  border: 1px solid var(--primary-border);
   border-radius: 50%;
-  background: var(--fill);
-  color: var(--ink-soft);
+  background: var(--primary-soft);
+  color: var(--primary);
   font-family: var(--sans);
   font-weight: 600;
 }

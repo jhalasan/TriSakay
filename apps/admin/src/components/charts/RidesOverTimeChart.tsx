@@ -13,10 +13,10 @@ const AXIS_TICK = { fill: AXIS_COLOR, fontFamily: MONO_FONT, fontSize: 10 };
 /** "Rides Over Time (Week)" dashboard panel — completed rides per day, oldest to newest. */
 export function RidesOverTimeChart({ data, loading = false }: RidesOverTimeChartProps) {
   if (loading) {
-    return <div className={styles.loading}>Loading…</div>;
+    return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
   }
   if (data.length === 0) {
-    return <div className={styles.loading}>No rides recorded yet.</div>;
+    return <div className={`ph-box ${styles.loading}`}>No rides recorded yet.</div>;
   }
 
   return (

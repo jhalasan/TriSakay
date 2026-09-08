@@ -41,6 +41,20 @@ a {
   font-family: var(--mono);
 }
 
+/* Shared entrance animation — originally Login's card/error entrance, now
+   reused by any surface that appears as a considered "moment" rather than
+   routine list content (modals, dropdowns). */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 /**
  * Placeholder box — stands in for charts, maps, and document images
  * (wireframe kit §Part 0 "Chart / map / image", class .ph-box). The X is
@@ -104,11 +118,19 @@ a {
 
 .panel-title {
   font-family: var(--font-brand);
-  font-size: 13px;
+  font-size: var(--fs-section);
   font-weight: 600;
   letter-spacing: 0;
   color: var(--ink);
   margin-bottom: var(--sp-md);
+}
+
+/* Shared row of table-row action buttons — replaces the repeated inline
+   `style={{ display: 'flex', gap: 6 }}` wrapper in route files. */
+.row-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .page {

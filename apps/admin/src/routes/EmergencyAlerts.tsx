@@ -76,7 +76,7 @@ export function EmergencyAlerts() {
 
       {selected && (
         <div className="panel detail-panel">
-          <div className="panel-title">Alert — {selected.triggeredByName} ({ROLE_LABEL[selected.triggeredRole]})</div>
+          <h2 className="panel-title">Alert — {selected.triggeredByName} ({ROLE_LABEL[selected.triggeredRole]})</h2>
 
           <div className="field">
             <span className="field-label">Triggered at</span>

@@ -11,7 +11,8 @@
 }
 
 .filled {
-  background: var(--fill);
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .empty {

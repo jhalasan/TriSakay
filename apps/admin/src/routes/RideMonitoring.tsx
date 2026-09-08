@@ -41,9 +41,9 @@ export function RideMonitoring() {
       <div className={styles.layout}>
         <div className="panel">
           <div className={styles.mapHeader}>
-            <div className="panel-title" style={{ marginBottom: 0 }}>
+            <h2 className="panel-title" style={{ marginBottom: 0 }}>
               Active Tricycles
-            </div>
+            </h2>
             <div className={styles.mapHeaderRight}>
               <Badge label={refreshing ? 'Updating…' : 'Live'} tone={listError || mapError ? 'danger' : 'success'} />
               <span className={styles.stamp} aria-live="polite">
@@ -63,7 +63,7 @@ export function RideMonitoring() {
         </div>
 
         <div className={`panel ${styles.list}`}>
-          <div className="panel-title">On the Clock</div>
+          <h2 className="panel-title">On the Clock</h2>
           {listError && <div className="form-error">{listError}</div>}
           {initialLoading && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
           {!initialLoading && tricycles.length === 0 && <EmptyState message="No tricycles on the clock right now." />}

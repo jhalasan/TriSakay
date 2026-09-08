@@ -155,7 +155,7 @@ export function Complaints() {
 
       {selected && (
         <div className="panel detail-panel">
-          <div className="panel-title">Reviewing: {selected.subject}</div>
+          <h2 className="panel-title">Reviewing: {selected.subject}</h2>
 
           <div className="field">
             <span className="field-label">Status</span>

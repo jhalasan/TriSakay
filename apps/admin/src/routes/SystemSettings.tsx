@@ -33,7 +33,7 @@ export function SystemSettings() {
     <div className="page">
       <div className={styles.layout}>
         <div className="panel">
-          <div className="panel-title">Feature Toggles</div>
+          <h2 className="panel-title">Feature Toggles</h2>
           <div className={styles.toggleList}>
             <Toggle label="GCash payments (PayMongo, test mode)" checked={featureToggles.gcashEnabled} onChange={() => toggleFeature('gcashEnabled')} />
             <Toggle label="Cash payments" checked={featureToggles.cashEnabled} onChange={() => toggleFeature('cashEnabled')} />
@@ -44,9 +44,9 @@ export function SystemSettings() {
             />
           </div>
 
-          <div className="panel-title" style={{ marginTop: 20 }}>
+          <h2 className="panel-title" style={{ marginTop: 20 }}>
             Matching Heuristic (FR-2.5)
-          </div>
+          </h2>
           <div className={styles.readonlyGrid}>
             <span>Bearing tolerance</span>
             <span>{systemSettings.bearingToleranceDeg}°</span>
@@ -60,7 +60,7 @@ export function SystemSettings() {
         </div>
 
         <div className="panel">
-          <div className="panel-title">Fare Matrix (Ordinance 08-2023)</div>
+          <h2 className="panel-title">Fare Matrix (Ordinance 08-2023)</h2>
           <div className={styles.fareForm}>
             <TextField label="Base Fare (₱)" type="number" step="0.01" value={baseFare} onChange={(e) => setBaseFare(e.target.value)} />
             <TextField label="Base Distance (km)" type="number" step="0.1" value={baseKm} onChange={(e) => setBaseKm(e.target.value)} />

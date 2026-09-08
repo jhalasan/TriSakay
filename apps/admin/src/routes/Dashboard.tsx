@@ -4,6 +4,7 @@ import { StatTile } from '../components/StatTile';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
+import { ErrorBanner } from '../components/ErrorBanner';
 import { RideStatusChart, RidesOverTimeChart } from '../components/charts';
 import { useDriversStore } from '../store/useDriversStore';
 import {
@@ -55,9 +56,9 @@ const overdueColumns: DataTableColumn<OverdueComplaintRow>[] = [
 function PanelHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-      <div className="panel-title" style={{ marginBottom: 0 }}>
+      <h2 className="panel-title" style={{ marginBottom: 0 }}>
         {title}
-      </div>
+      </h2>
       {action}
     </div>
   );
@@ -148,25 +149,33 @@ export function Dashboard() {
 
   return (
     <div className="page">
-      {statsError && <div className="form-error">{statsError}</div>}
-      <div className="stat-grid">
-        <StatTile label="Total Drivers" value={loading ? '—' : (stats?.totalDrivers ?? '—')} tone="primary" />
-        <StatTile label="Active Rides" value={loading ? '—' : (stats?.activeRides ?? '—')} tone="success" />
-        <StatTile label="Pending Verifications" value={loading ? '—' : (stats?.pendingVerifications ?? '—')} tone="warn" />
-        <StatTile label="Open Complaints" value={loading ? '—' : (stats?.openComplaints ?? '—')} tone="danger" />
-        <StatTile label="Overdue Complaints" value={loading ? '—' : overdue.length} hint="Past 3-business-day ARTA target" tone="danger" />
-        <StatTile label="Expiring Franchises" value={loading ? '—' : expiring.length} hint="MTOP renewal due within 30 days" tone="warn" />
+      <ErrorBanner message={statsError} />
+      <div>
+        <h2 className="panel-title">Overview</h2>
+        <div className="stat-grid">
+          <StatTile label="Total Drivers" value={loading ? '—' : (stats?.totalDrivers ?? '—')} tone="primary" />
+          <StatTile label="Active Rides" value={loading ? '—' : (stats?.activeRides ?? '—')} tone="success" />
+        </div>
+      </div>
+      <div>
+        <h2 className="panel-title">Needs attention</h2>
+        <div className="stat-grid">
+          <StatTile label="Pending Verifications" value={loading ? '—' : (stats?.pendingVerifications ?? '—')} tone="warn" />
+          <StatTile label="Open Complaints" value={loading ? '—' : (stats?.openComplaints ?? '—')} tone="danger" />
+          <StatTile label="Overdue Complaints" value={loading ? '—' : overdue.length} hint="Past 3-business-day ARTA target" tone="danger" />
+          <StatTile label="Expiring Franchises" value={loading ? '—' : expiring.length} hint="MTOP renewal due within 30 days" tone="warn" />
+        </div>
       </div>
 
       <div className="two-col">
         <div className="panel">
-          <div className="panel-title">Rides Over Time (Week)</div>
-          {ridesError && <div className="form-error">{ridesError}</div>}
+          <h2 className="panel-title">Rides Over Time (Week)</h2>
+          <ErrorBanner message={ridesError} />
           <RidesOverTimeChart data={ridesPerDay} loading={loading} />
         </div>
         <div className="panel">
-          <div className="panel-title">Ride Status</div>
-          {statusError && <div className="form-error">{statusError}</div>}
+          <h2 className="panel-title">Ride Status</h2>
+          <ErrorBanner message={statusError} />
           <RideStatusChart data={statusBreakdown} loading={loading} />
         </div>
       </div>
@@ -182,7 +191,7 @@ export function Dashboard() {
             </Link>
           }
         />
-        {overdueError && <div className="form-error">{overdueError}</div>}
+        <ErrorBanner message={overdueError} />
         <DataTable columns={overdueColumns} rows={overdue} getRowKey={(r) => r.id} loading={loading} emptyMessage="No overdue complaints." />
       </div>
 
@@ -197,7 +206,7 @@ export function Dashboard() {
             </Link>
           }
         />
-        {expiringError && <div className="form-error">{expiringError}</div>}
+        <ErrorBanner message={expiringError} />
         <DataTable
           columns={expiringColumns}
           rows={expiring}
@@ -218,7 +227,7 @@ export function Dashboard() {
             </Link>
           }
         />
-        {activityError && <div className="form-error">{activityError}</div>}
+        <ErrorBanner message={activityError} />
         <DataTable columns={activityColumns} rows={activity} getRowKey={(r) => r.id} loading={loading} />
       </div>
     </div>

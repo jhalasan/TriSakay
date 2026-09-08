@@ -2,7 +2,7 @@
   padding: var(--sp-xxl);
   text-align: center;
   color: var(--ink-faint);
-  font-size: 12px;
+  font-size: var(--fs-xs);
   border: 1px dashed var(--line);
   border-radius: var(--r-md);
   background: var(--panel);

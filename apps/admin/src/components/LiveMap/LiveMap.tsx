@@ -39,7 +39,7 @@ function cellIcon(count: number): DivIcon {
  */
 export function LiveMap({ cells, loading = false }: LiveMapProps) {
   if (loading) {
-    return <div className={styles.loading}>Loading…</div>;
+    return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
   }
 
   return (
