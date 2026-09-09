@@ -1,6 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Badge } from '../Badge';
+import { NotificationBell } from '../NotificationBell';
 import { ProfileMenu } from '../ProfileMenu';
 import { useSessionStore } from '../../store/useSessionStore';
 import { ROLE_LABELS } from '../../lib/rbac';
@@ -104,6 +105,7 @@ export function TopBar({ title, onLogoutClick }: TopBarProps) {
       </div>
       <div className={styles.right}>
         <Badge label={ROLE_LABELS[user.role]} tone="info" />
+        <NotificationBell />
         <ProfileMenu onLogoutClick={onLogoutClick} />
       </div>
     </header>
