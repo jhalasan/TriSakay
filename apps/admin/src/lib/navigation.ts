@@ -44,7 +44,10 @@ export const NAV_GROUPS: NavGroup[] = [
   },
   {
     caption: 'Insights',
-    items: [{ to: '/reports', label: 'Reports & Analytics', title: 'Reports & Analytics', min: 'staff' }],
+    items: [
+      { to: '/reports', label: 'Reports & Analytics', title: 'Reports & Analytics', min: 'staff' },
+      { to: '/audit-log', label: 'Audit Log', title: 'Audit Log', min: 'staff' },
+    ],
   },
   {
     caption: 'Administration',

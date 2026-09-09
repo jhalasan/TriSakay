@@ -19,6 +19,7 @@ export * from './location/index.ts';
 export * from './storage/index.ts';
 export * from './trip-history/index.ts';
 export * from './admin/accounts.ts';
+export * from './admin/auditLog.ts';
 export * from './admin/complaints.ts';
 export * from './admin/dashboard.ts';
 export * from './admin/discounts.ts';

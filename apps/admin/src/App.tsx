@@ -10,6 +10,7 @@ import { RideMonitoring } from './routes/RideMonitoring';
 import { Complaints } from './routes/Complaints';
 import { Reports } from './routes/Reports';
 import { RatingOversight } from './routes/RatingOversight';
+import { AuditLog } from './routes/AuditLog';
 import { DiscountReview } from './routes/DiscountReview';
 import { EmergencyAlerts } from './routes/EmergencyAlerts';
 import { PsoUsers } from './routes/PsoUsers';
@@ -99,6 +100,7 @@ export default function App() {
           <Route path="monitoring" element={<RideMonitoring />} />
           <Route path="complaints" element={<Complaints />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="audit-log" element={<AuditLog />} />
           <Route path="rating-oversight" element={<RatingOversight />} />
           <Route path="discounts" element={<DiscountReview />} />
           <Route path="emergency-alerts" element={<EmergencyAlerts />} />
