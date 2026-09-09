@@ -1,7 +1,10 @@
-import { createPsoUserForAdmin, listPsoUsersForAdmin, performAccountAction } from '@trisakay/services';
+import { createPsoUserForAdmin, listPsoUserSessions, listPsoUsersForAdmin, performAccountAction, revokePsoUserSession } from '@trisakay/services';
+import type { PsoUserSessionRow } from '@trisakay/services';
 import type { PsoUserRow } from '../types/psoUser';
 import type { AdminRole } from '../types/role';
 import type { ServiceResult } from './drivers';
+
+export type { PsoUserSessionRow };
 
 /** Admin-only screen (FR-6.3). Gated at the route level via RoleGate, not here. */
 export async function listPsoUsers(): Promise<ServiceResult<PsoUserRow[]>> {
@@ -38,5 +41,16 @@ export async function disablePsoUser(id: string, reason: string): Promise<Servic
 
 export async function enablePsoUser(id: string, reason: string): Promise<ServiceResult<null>> {
   const { error } = await performAccountAction(id, 'reactivate', reason);
+  return { data: null, error };
+}
+
+/** A password change or Disable doesn't invalidate a session the account is already logged into — see admin_list_user_sessions/admin_revoke_user_session (Administrator-only RPCs). */
+export async function listSessionsForPsoUser(userId: string): Promise<ServiceResult<PsoUserSessionRow[]>> {
+  const { data, error } = await listPsoUserSessions(userId);
+  return { data, error };
+}
+
+export async function revokeSessionForPsoUser(sessionId: string): Promise<ServiceResult<null>> {
+  const { error } = await revokePsoUserSession(sessionId);
   return { data: null, error };
 }

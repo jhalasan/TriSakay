@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { createPsoUserForAdmin, listPsoUsersForAdmin } from '../src/admin/psoUsers.ts';
+import { createPsoUserForAdmin, listPsoUserSessions, listPsoUsersForAdmin, revokePsoUserSession } from '../src/admin/psoUsers.ts';
 
 test('listPsoUsersForAdmin maps status to isActive and passes role through', async () => {
   __setSupabaseClientForTests({
@@ -91,4 +91,65 @@ test('createPsoUserForAdmin falls back to the generic error message when the res
 
   const { error } = await createPsoUserForAdmin({ fullName: 'Test User', email: 'test@example.com', role: 'pso_staff' });
   assert.equal(error, 'Edge Function returned a non-2xx status code');
+});
+
+test('listPsoUserSessions calls admin_list_user_sessions with the given user id and maps rows', async () => {
+  let capturedArgs: Record<string, unknown> | null = null;
+
+  __setSupabaseClientForTests({
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      if (fn !== 'admin_list_user_sessions') throw new Error(`unexpected rpc ${fn}`);
+      capturedArgs = args;
+      return {
+        data: [
+          { id: 's1', created_at: '2026-09-01T00:00:00.000Z', updated_at: '2026-09-09T08:00:00.000Z', user_agent: 'Mozilla/5.0', ip: '203.0.113.5' },
+        ],
+        error: null,
+      };
+    },
+  } as any);
+
+  const { data, error } = await listPsoUserSessions('u1');
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedArgs, { p_user_id: 'u1' });
+  assert.deepEqual(data, [
+    { id: 's1', createdAt: '2026-09-01T00:00:00.000Z', updatedAt: '2026-09-09T08:00:00.000Z', userAgent: 'Mozilla/5.0', ip: '203.0.113.5' },
+  ]);
+});
+
+test('listPsoUserSessions returns { data: [], error } when the RPC fails (e.g. non-Administrator caller)', async () => {
+  __setSupabaseClientForTests({
+    rpc: async () => ({ data: null, error: { message: 'Only an Administrator may view session data' } }),
+  } as any);
+
+  const { data, error } = await listPsoUserSessions('u1');
+  assert.deepEqual(data, []);
+  assert.equal(error, 'Only an Administrator may view session data');
+});
+
+test('revokePsoUserSession calls admin_revoke_user_session with the given session id', async () => {
+  let capturedArgs: Record<string, unknown> | null = null;
+
+  __setSupabaseClientForTests({
+    rpc: async (fn: string, args: Record<string, unknown>) => {
+      if (fn !== 'admin_revoke_user_session') throw new Error(`unexpected rpc ${fn}`);
+      capturedArgs = args;
+      return { error: null };
+    },
+  } as any);
+
+  const { error } = await revokePsoUserSession('s1');
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedArgs, { p_session_id: 's1' });
+});
+
+test('revokePsoUserSession surfaces an RPC error (e.g. non-Administrator caller)', async () => {
+  __setSupabaseClientForTests({
+    rpc: async () => ({ error: { message: 'Only an Administrator may revoke a session' } }),
+  } as any);
+
+  const { error } = await revokePsoUserSession('s1');
+  assert.equal(error, 'Only an Administrator may revoke a session');
 });

@@ -90,3 +90,50 @@ export async function createPsoUserForAdmin(input: CreatePsoUserInput): Promise<
   const result = data as CreatePsoUserResult;
   return { userId: result.userId ?? null, tempPassword: result.tempPassword ?? null, error: result.error ?? null };
 }
+
+export interface PsoUserSessionRow {
+  id: string;
+  createdAt: string;
+  updatedAt: string;
+  userAgent: string | null;
+  ip: string | null;
+}
+
+export interface ListPsoUserSessionsResult {
+  data: PsoUserSessionRow[];
+  error: string | null;
+}
+
+/**
+ * A password change or account disable doesn't invalidate a session the
+ * account is already logged into — Supabase's access/refresh tokens stay
+ * valid independent of either. Goes through the admin_list_user_sessions
+ * RPC (SECURITY DEFINER, is_admin()-gated) since auth.sessions isn't
+ * exposed to PostgREST at all.
+ */
+export async function listPsoUserSessions(userId: string): Promise<ListPsoUserSessionsResult> {
+  const client = getSupabaseClient();
+  const { data, error } = await client.rpc('admin_list_user_sessions', { p_user_id: userId });
+
+  if (error) return { data: [], error: error.message };
+
+  const rows: PsoUserSessionRow[] = (data ?? []).map((row) => ({
+    id: row.id,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+    userAgent: row.user_agent,
+    ip: row.ip,
+  }));
+
+  return { data: rows, error: null };
+}
+
+export interface RevokePsoUserSessionResult {
+  error: string | null;
+}
+
+/** Deletes the session row via admin_revoke_user_session — the same mechanism Supabase Auth itself uses to terminate a session on sign-out. */
+export async function revokePsoUserSession(sessionId: string): Promise<RevokePsoUserSessionResult> {
+  const { error } = await getSupabaseClient().rpc('admin_revoke_user_session', { p_session_id: sessionId });
+  return { error: error?.message ?? null };
+}

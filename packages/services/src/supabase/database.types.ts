@@ -1409,6 +1409,20 @@ export type Database = {
       }
     }
     Functions: {
+      admin_list_user_sessions: {
+        Args: { p_user_id: string }
+        Returns: {
+          id: string
+          created_at: string
+          updated_at: string
+          user_agent: string | null
+          ip: string | null
+        }[]
+      }
+      admin_revoke_user_session: {
+        Args: { p_session_id: string }
+        Returns: undefined
+      }
       app_current_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]

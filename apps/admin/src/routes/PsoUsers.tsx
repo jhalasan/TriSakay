@@ -10,6 +10,7 @@ import { usePsoUsersStore } from '../store/usePsoUsersStore';
 import type { PsoUserRow } from '../types/psoUser';
 import { ROLE_LABELS } from '../lib/rbac';
 import type { AdminRole } from '../types/role';
+import { formatDateTime } from '../lib/format';
 
 const ROLE_TONE: Record<AdminRole, 'info' | 'warn' | 'neutral'> = {
   admin: 'info',
@@ -25,7 +26,21 @@ interface PendingAction {
 
 /** Wireframe screen 9 "User management" — PSO staff & roles (FR-6.3). Admin-only screen; route access is gated in App.tsx. */
 export function PsoUsers() {
-  const { users, loading, error, createdTempPassword, fetch, addUser, clearTempPassword, disable, enable } = usePsoUsersStore();
+  const {
+    users,
+    loading,
+    error,
+    createdTempPassword,
+    fetch,
+    addUser,
+    clearTempPassword,
+    disable,
+    enable,
+    sessions,
+    sessionsLoading,
+    fetchSessions,
+    revokeSession,
+  } = usePsoUsersStore();
   const [showAddForm, setShowAddForm] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
@@ -36,6 +51,10 @@ export function PsoUsers() {
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
+
+  const [sessionsUser, setSessionsUser] = useState<PsoUserRow | null>(null);
+  const [pendingRevokeId, setPendingRevokeId] = useState<string | null>(null);
+  const [revoking, setRevoking] = useState(false);
 
   useEffect(() => {
     fetch();
@@ -68,6 +87,19 @@ export function PsoUsers() {
     if (ok) closeActionModal();
   }
 
+  function openSessions(u: PsoUserRow) {
+    setSessionsUser(u);
+    fetchSessions(u.id);
+  }
+
+  async function handleConfirmRevoke() {
+    if (!pendingRevokeId || !sessionsUser) return;
+    setRevoking(true);
+    const ok = await revokeSession(pendingRevokeId, sessionsUser.id);
+    setRevoking(false);
+    if (ok) setPendingRevokeId(null);
+  }
+
   const columns: DataTableColumn<PsoUserRow>[] = [
     { key: 'name', header: 'Name', sortValue: (u) => u.fullName, render: (u) => u.fullName },
     { key: 'email', header: 'Email', render: (u) => u.email },
@@ -77,14 +109,19 @@ export function PsoUsers() {
       key: 'actions',
       header: 'Actions',
       render: (u) => (
-        <Button
-          variant="outline"
-          tone={u.isActive ? 'danger' : 'primary'}
-          size="sm"
-          onClick={() => setPendingAction({ user: u, kind: u.isActive ? 'disable' : 'enable' })}
-        >
-          {u.isActive ? 'Disable' : 'Enable'}
-        </Button>
+        <div className="row-actions">
+          <Button variant="outline" tone="neutral" size="sm" onClick={() => openSessions(u)}>
+            Sessions
+          </Button>
+          <Button
+            variant="outline"
+            tone={u.isActive ? 'danger' : 'primary'}
+            size="sm"
+            onClick={() => setPendingAction({ user: u, kind: u.isActive ? 'disable' : 'enable' })}
+          >
+            {u.isActive ? 'Disable' : 'Enable'}
+          </Button>
+        </div>
       ),
     },
   ];
@@ -153,6 +190,60 @@ export function PsoUsers() {
 
       <DataTable columns={columns} rows={users} getRowKey={(u) => u.id} loading={loading} />
       <p style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Roles: PSO Staff · PSO Supervisor (fixed role enum) · Administrator.</p>
+
+      {sessionsUser && (
+        <div className="panel detail-panel">
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h2 className="panel-title">Sessions: {sessionsUser.fullName}</h2>
+            <Button variant="outline" tone="neutral" size="sm" onClick={() => setSessionsUser(null)}>
+              Close
+            </Button>
+          </div>
+          <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: 0 }}>
+            A password change or Disable doesn't sign an active session out — revoke a session here to do that immediately.
+          </p>
+          {sessionsLoading && <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Loading…</span>}
+          {!sessionsLoading && sessions.length === 0 && (
+            <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No active sessions.</span>
+          )}
+          {!sessionsLoading &&
+            sessions.map((s) => (
+              <div
+                key={s.id}
+                style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  gap: 12,
+                  padding: '8px 0',
+                  borderTop: '1px solid var(--line)',
+                }}
+              >
+                <div style={{ fontSize: 12 }}>
+                  <div>Started {formatDateTime(s.createdAt)} — last active {formatDateTime(s.updatedAt)}</div>
+                  <div style={{ color: 'var(--ink-faint)' }}>
+                    {s.ip ?? 'Unknown IP'} · {s.userAgent ?? 'Unknown device'}
+                  </div>
+                </div>
+                <Button variant="outline" tone="danger" size="sm" onClick={() => setPendingRevokeId(s.id)}>
+                  Revoke
+                </Button>
+              </div>
+            ))}
+        </div>
+      )}
+
+      {pendingRevokeId && (
+        <ConfirmModal
+          title="Revoke session"
+          message="Sign this session out immediately? The account will need to sign in again on that device."
+          confirmLabel="Revoke"
+          tone="danger"
+          confirmLoading={revoking}
+          onCancel={() => setPendingRevokeId(null)}
+          onConfirm={handleConfirmRevoke}
+        />
+      )}
 
       {pendingAction && (
         <ConfirmModal
