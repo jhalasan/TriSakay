@@ -9,6 +9,9 @@ interface FakeConfig {
   /** Captures the callback useSessionStore registers, so a test can fire a simulated auth event directly. */
   captureAuthStateCallback?: (cb: (session: unknown) => void) => void;
   onSignOut?: () => void;
+  updateUserError?: string;
+  onUpdateUser?: (attrs: Record<string, unknown>) => void;
+  onUsersUpdate?: (attrs: Record<string, unknown>) => void;
 }
 
 function fakeClient(config: FakeConfig) {
@@ -17,6 +20,10 @@ function fakeClient(config: FakeConfig) {
     eq: () => usersQuery,
     single: async () =>
       config.userRow ? { data: config.userRow, error: null } : { data: null, error: { message: 'not found' } },
+    update: (attrs: Record<string, unknown>) => {
+      config.onUsersUpdate?.(attrs);
+      return usersQuery;
+    },
   };
 
   return {
@@ -28,6 +35,10 @@ function fakeClient(config: FakeConfig) {
       getSession: async () => ({ data: { session: config.session ?? null } }),
       signOut: async () => {
         config.onSignOut?.();
+      },
+      updateUser: async (attrs: Record<string, unknown>) => {
+        config.onUpdateUser?.(attrs);
+        return config.updateUserError ? { error: { message: config.updateUserError } } : { error: null };
       },
       onAuthStateChange: (cb: (event: string, session: unknown) => void) => {
         config.captureAuthStateCallback?.((session) => cb('SIGNED_IN', session));
@@ -47,8 +58,8 @@ __setSupabaseClientForTests(
 );
 const { useSessionStore } = await import('../src/store/useSessionStore.ts');
 
-const PSO_ROW = { id: 'u1', full_name: 'Engr. Wilhelmina Nazareno', email: 'w.nazareno@pso.gensantos.gov.ph', role: 'pso_supervisor', avatar_url: null };
-const DRIVER_ROW = { id: 'u2', full_name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'driver', avatar_url: null };
+const PSO_ROW = { id: 'u1', full_name: 'Engr. Wilhelmina Nazareno', email: 'w.nazareno@pso.gensantos.gov.ph', role: 'pso_supervisor', avatar_url: null, must_change_password: false };
+const DRIVER_ROW = { id: 'u2', full_name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'driver', avatar_url: null, must_change_password: false };
 
 test('signIn() with a PSO account authenticates and populates user', async () => {
   __setSupabaseClientForTests(fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW }));
@@ -125,4 +136,88 @@ test('hydration signs the Supabase session back out when it belongs to a non-adm
   assert.equal(useSessionStore.getState().isAuthenticated, false);
   assert.equal(useSessionStore.getState().user, null);
   assert.equal(useSessionStore.getState().isHydrating, false);
+});
+
+test('signIn() surfaces must_change_password from the profile row', async () => {
+  __setSupabaseClientForTests(
+    fakeClient({ session: { user: { id: 'u1' } }, userRow: { ...PSO_ROW, must_change_password: true } })
+  );
+
+  const ok = await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  assert.equal(ok, true);
+  assert.equal(useSessionStore.getState().user?.mustChangePassword, true);
+});
+
+test('completePasswordChange() sets the new password, clears the flag, and updates local state', async () => {
+  const updateUserCalls: Record<string, unknown>[] = [];
+  const usersUpdateCalls: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: { ...PSO_ROW, must_change_password: true },
+      onUpdateUser: (attrs) => updateUserCalls.push(attrs),
+      onUsersUpdate: (attrs) => usersUpdateCalls.push(attrs),
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  assert.equal(useSessionStore.getState().user?.mustChangePassword, true);
+
+  const failure = await useSessionStore.getState().completePasswordChange('a-new-strong-password');
+
+  assert.equal(failure, null);
+  assert.deepEqual(updateUserCalls, [{ password: 'a-new-strong-password' }]);
+  assert.deepEqual(usersUpdateCalls, [{ must_change_password: false }]);
+  assert.equal(useSessionStore.getState().user?.mustChangePassword, false);
+});
+
+test('completePasswordChange() surfaces an auth error without clearing the flag', async () => {
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: { ...PSO_ROW, must_change_password: true },
+      updateUserError: 'Password should be at least 6 characters.',
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+
+  const failure = await useSessionStore.getState().completePasswordChange('short');
+
+  assert.equal(failure, 'Password should be at least 6 characters.');
+  assert.equal(useSessionStore.getState().user?.mustChangePassword, true);
+});
+
+test('updateFullName() renames the account and updates local state', async () => {
+  const usersUpdateCalls: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: PSO_ROW,
+      onUsersUpdate: (attrs) => usersUpdateCalls.push(attrs),
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+
+  const failure = await useSessionStore.getState().updateFullName('  New Name  ');
+
+  assert.equal(failure, null);
+  assert.deepEqual(usersUpdateCalls, [{ full_name: 'New Name' }]);
+  assert.equal(useSessionStore.getState().user?.fullName, 'New Name');
+});
+
+test('updateFullName() rejects a blank name without calling the service', async () => {
+  const usersUpdateCalls: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: PSO_ROW,
+      onUsersUpdate: (attrs) => usersUpdateCalls.push(attrs),
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+
+  const failure = await useSessionStore.getState().updateFullName('   ');
+
+  assert.match(failure ?? '', /required/);
+  assert.deepEqual(usersUpdateCalls, []);
+  assert.equal(useSessionStore.getState().user?.fullName, PSO_ROW.full_name);
 });

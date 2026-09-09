@@ -11,4 +11,6 @@ export interface AdminSessionUser {
   email: string;
   role: AdminRole;
   avatarUrl?: string;
+  /** True for an admin-created account that hasn't set its own password yet — gates every route but /force-password-change. */
+  mustChangePassword: boolean;
 }

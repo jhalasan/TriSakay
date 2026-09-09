@@ -14,6 +14,7 @@ import { DiscountReview } from './routes/DiscountReview';
 import { EmergencyAlerts } from './routes/EmergencyAlerts';
 import { PsoUsers } from './routes/PsoUsers';
 import { SystemSettings } from './routes/SystemSettings';
+import { ForcePasswordChange } from './routes/ForcePasswordChange';
 import { useSessionStore } from './store/useSessionStore';
 import { isAdmin } from './lib/rbac';
 
@@ -23,6 +24,24 @@ function RequireAuth({ children }: { children: ReactNode }) {
   const isHydrating = useSessionStore((state) => state.isHydrating);
   if (isHydrating) return null;
   if (!isAuthenticated) return <Navigate to="/login" replace />;
+  return <>{children}</>;
+}
+
+/** An admin-created account still on its temp password must set its own before reaching any other route. */
+function RequirePasswordSet({ children }: { children: ReactNode }) {
+  const mustChangePassword = useSessionStore((state) => state.user?.mustChangePassword);
+  if (mustChangePassword) return <Navigate to="/force-password-change" replace />;
+  return <>{children}</>;
+}
+
+/** The mirror image of RequirePasswordSet — once the password is set, this screen has nothing left to do. */
+function RequireForcedPasswordChange({ children }: { children: ReactNode }) {
+  const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
+  const isHydrating = useSessionStore((state) => state.isHydrating);
+  const mustChangePassword = useSessionStore((state) => state.user?.mustChangePassword);
+  if (isHydrating) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (!mustChangePassword) return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -56,9 +75,20 @@ export default function App() {
         />
 
         <Route
+          path="/force-password-change"
+          element={
+            <RequireForcedPasswordChange>
+              <ForcePasswordChange />
+            </RequireForcedPasswordChange>
+          }
+        />
+
+        <Route
           element={
             <RequireAuth>
-              <AppShell />
+              <RequirePasswordSet>
+                <AppShell />
+              </RequirePasswordSet>
             </RequireAuth>
           }
         >

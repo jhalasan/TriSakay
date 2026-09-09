@@ -93,7 +93,10 @@ Deno.serve(async (req: Request) => {
       return json({ userId: null, tempPassword: null, error: createError?.message ?? 'Could not create account' }, 500);
     }
 
-    const { error: roleError } = await serviceClient.from('users').update({ role: role as PsoRole }).eq('id', created.user.id);
+    const { error: roleError } = await serviceClient
+      .from('users')
+      .update({ role: role as PsoRole, must_change_password: true })
+      .eq('id', created.user.id);
 
     if (roleError) {
       // Don't leave an orphaned passenger-role account behind if the role

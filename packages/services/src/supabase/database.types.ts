@@ -1243,6 +1243,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          must_change_password: boolean
           push_token: string | null
           role: Database["public"]["Enums"]["user_role"]
           status: Database["public"]["Enums"]["account_status"]
@@ -1255,6 +1256,7 @@ export type Database = {
           email: string
           full_name: string
           id: string
+          must_change_password?: boolean
           push_token?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: Database["public"]["Enums"]["account_status"]
@@ -1267,6 +1269,7 @@ export type Database = {
           email?: string
           full_name?: string
           id?: string
+          must_change_password?: boolean
           push_token?: string | null
           role?: Database["public"]["Enums"]["user_role"]
           status?: Database["public"]["Enums"]["account_status"]

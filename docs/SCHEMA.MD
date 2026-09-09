@@ -180,6 +180,7 @@ create table public.users (
   status        account_status not null default 'active',
   avatar_url    text,
   push_token    text,          -- Expo push token (FR-7 device push); null while unregistered or disabled
+  must_change_password boolean not null default false,  -- forces the admin portal's password-change screen before any other route
   created_at    timestamptz not null default now(),
   updated_at    timestamptz not null default now(),
 
@@ -190,6 +191,7 @@ create table public.users (
 
 comment on table  public.users is 'All system users across the three apps; role drives RBAC.';
 comment on column public.users.status is 'Set by PSO Supervisor/Admin via account_actions.';
+comment on column public.users.must_change_password is 'Set true when admin-create-pso-user issues a temp password; cleared by the user via the forced password-change screen.';
 
 
 -- 2.2 driver_profiles -------------------------------------------------

@@ -130,6 +130,16 @@ export async function updateProfile({
   return { error: error?.message ?? null };
 }
 
+/** Clears the forced-password-change flag after the admin portal's password-change screen succeeds. */
+export async function clearMustChangePassword(): Promise<{ error: string | null }> {
+  const { data: sessionData } = await getSupabaseClient().auth.getSession();
+  const userId = sessionData.session?.user.id;
+  if (!userId) return { error: 'Not signed in' };
+
+  const { error } = await getSupabaseClient().from('users').update({ must_change_password: false }).eq('id', userId);
+  return { error: error?.message ?? null };
+}
+
 export async function updateAvatarUrl(avatarUrl: string): Promise<{ error: string | null }> {
   const { data: sessionData } = await getSupabaseClient().auth.getSession();
   const userId = sessionData.session?.user.id;

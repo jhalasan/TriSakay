@@ -1,8 +1,7 @@
 import { useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Avatar } from '../Avatar';
 import { Badge } from '../Badge';
-import { Button } from '../Button';
+import { ProfileMenu } from '../ProfileMenu';
 import { useSessionStore } from '../../store/useSessionStore';
 import { ROLE_LABELS } from '../../lib/rbac';
 import { visibleNavItems, matchNavItems } from '../../lib/navigation';
@@ -20,7 +19,9 @@ export interface TopBarProps {
  * picker. The search box was previously decorative (no state/handler); it
  * now filters the operator's own visible nav sections and navigates on
  * Enter, so a role that can't see PSO Users / System Settings can't find
- * them here either.
+ * them here either. Avatar/name/log out live inside `ProfileMenu`, which
+ * also lets the signed-in user rename themselves and change their own
+ * password on demand (not just the forced first-login flow).
  */
 export function TopBar({ title, onLogoutClick }: TopBarProps) {
   const user = useSessionStore((state) => state.user);
@@ -103,10 +104,7 @@ export function TopBar({ title, onLogoutClick }: TopBarProps) {
       </div>
       <div className={styles.right}>
         <Badge label={ROLE_LABELS[user.role]} tone="info" />
-        <Avatar fullName={user.fullName} size={30} />
-        <Button variant="outline" tone="neutral" size="sm" onClick={onLogoutClick}>
-          Log out
-        </Button>
+        <ProfileMenu onLogoutClick={onLogoutClick} />
       </div>
     </header>
   );

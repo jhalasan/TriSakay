@@ -26,6 +26,7 @@ function toSessionUser(profile: PublicUser): AdminSessionUser | null {
     email: profile.email,
     role: profile.role,
     avatarUrl: profile.avatar_url ?? undefined,
+    mustChangePassword: profile.must_change_password,
   };
 }
 
@@ -37,9 +38,13 @@ interface SessionState {
   error: string | null;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
+  /** Sets the new password on the current session, then clears must_change_password so RequireForcedPasswordChange lets the user through. */
+  completePasswordChange: (newPassword: string) => Promise<string | null>;
+  /** Renames the signed-in user's own account, from the ProfileMenu. */
+  updateFullName: (fullName: string) => Promise<string | null>;
 }
 
-export const useSessionStore = create<SessionState>()((set) => {
+export const useSessionStore = create<SessionState>()((set, get) => {
   let epoch = 0;
   // While signIn() owns an in-flight attempt, the onAuthStateChange listener
   // below must not also react to the SIGNED_IN event it triggers — both would
@@ -121,6 +126,30 @@ export const useSessionStore = create<SessionState>()((set) => {
     signOut: async () => {
       await authService.signOut();
       set({ user: null, isAuthenticated: false });
+    },
+
+    completePasswordChange: async (newPassword) => {
+      const { error: updateError } = await authService.updatePassword(newPassword);
+      if (updateError) return updateError;
+
+      const { error: clearError } = await authService.clearMustChangePassword();
+      if (clearError) return clearError;
+
+      const current = get().user;
+      if (current) set({ user: { ...current, mustChangePassword: false } });
+      return null;
+    },
+
+    updateFullName: async (fullName) => {
+      const trimmed = fullName.trim();
+      if (!trimmed) return 'Full name is required.';
+
+      const { error } = await authService.updateProfile({ fullName: trimmed });
+      if (error) return error;
+
+      const current = get().user;
+      if (current) set({ user: { ...current, fullName: trimmed } });
+      return null;
     },
   };
 });
