@@ -53,6 +53,7 @@ export const NAV_GROUPS: NavGroup[] = [
     caption: 'Administration',
     items: [
       { to: '/pso-users', label: 'PSO Users', title: 'PSO User Management', min: 'admin' },
+      { to: '/barangays', label: 'Barangays', title: 'Barangay Reference Data', min: 'admin' },
       { to: '/settings', label: 'System Settings', title: 'System Settings', min: 'admin' },
     ],
   },

@@ -14,6 +14,7 @@ import { AuditLog } from './routes/AuditLog';
 import { DiscountReview } from './routes/DiscountReview';
 import { EmergencyAlerts } from './routes/EmergencyAlerts';
 import { PsoUsers } from './routes/PsoUsers';
+import { Barangays } from './routes/Barangays';
 import { SystemSettings } from './routes/SystemSettings';
 import { ForcePasswordChange } from './routes/ForcePasswordChange';
 import { useSessionStore } from './store/useSessionStore';
@@ -109,6 +110,14 @@ export default function App() {
             element={
               <RequireAdmin>
                 <PsoUsers />
+              </RequireAdmin>
+            }
+          />
+          <Route
+            path="barangays"
+            element={
+              <RequireAdmin>
+                <Barangays />
               </RequireAdmin>
             }
           />
