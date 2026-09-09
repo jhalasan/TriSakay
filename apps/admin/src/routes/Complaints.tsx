@@ -9,6 +9,7 @@ import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { Pagination } from '../components/Pagination';
+import { DocumentImage } from '../components/DocumentImage';
 import { useComplaintsStore } from '../store/useComplaintsStore';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { titleCaseLabel } from '../lib/format';
@@ -60,6 +61,9 @@ export function Complaints() {
     setDhDirective,
     scheduleMediation,
     recordResolution,
+    attachments,
+    attachmentsLoading,
+    fetchAttachments,
   } = useComplaintsStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [directiveDraft, setDirectiveDraft] = useState('');
@@ -94,6 +98,7 @@ export function Complaints() {
     setMeetingLocationDraft(c.mediationLocation ?? '');
     setResolutionStatusDraft('resolved');
     setResolutionNotesDraft(c.resolutionNotes ?? '');
+    fetchAttachments(c.id);
   }
 
   const columns: DataTableColumn<ComplaintRow>[] = [
@@ -156,6 +161,21 @@ export function Complaints() {
       {selected && (
         <div className="panel detail-panel">
           <h2 className="panel-title">Reviewing: {selected.subject}</h2>
+
+          <div className={styles.subsection}>
+            <div className={styles.subsectionTitle}>Evidence (FR-4.7)</div>
+            {attachmentsLoading && <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Loading…</span>}
+            {!attachmentsLoading && attachments.length === 0 && (
+              <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No evidence attached to this complaint.</span>
+            )}
+            {!attachmentsLoading && attachments.length > 0 && (
+              <div className={styles.evidenceGrid}>
+                {attachments.map((a) => (
+                  <DocumentImage key={a.id} bucket="complaint-evidence" path={a.storagePath} alt="Complaint evidence" height={120} />
+                ))}
+              </div>
+            )}
+          </div>
 
           <div className="field">
             <span className="field-label">Status</span>

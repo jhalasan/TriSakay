@@ -1,13 +1,17 @@
 import {
+  listComplaintAttachmentsForAdmin,
   listComplaintsForAdmin,
   recordComplaintResolutionForAdmin,
   recordDhDirectiveForAdmin,
   scheduleComplaintMediationForAdmin,
   setComplaintStatusForAdmin,
 } from '@trisakay/services';
+import type { ComplaintAttachmentRow } from '@trisakay/services';
 import { businessDaysSince } from '../lib/format.ts';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import type { ServiceResult } from './drivers';
+
+export type { ComplaintAttachmentRow };
 
 export async function listComplaints(): Promise<ServiceResult<ComplaintRow[]>> {
   const { data, error } = await listComplaintsForAdmin();
@@ -29,6 +33,12 @@ export async function listComplaints(): Promise<ServiceResult<ComplaintRow[]>> {
   }));
 
   return { data: rows, error: null };
+}
+
+/** FR-4.7 evidence — visible to any PSO the same way the complaint itself is. */
+export async function listComplaintAttachments(complaintId: string): Promise<ServiceResult<ComplaintAttachmentRow[]>> {
+  const { data, error } = await listComplaintAttachmentsForAdmin(complaintId);
+  return { data, error };
 }
 
 /** PSO Staff triage step (FR-4.3) — not S+ gated. */

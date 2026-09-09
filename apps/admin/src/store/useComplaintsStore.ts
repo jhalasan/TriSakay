@@ -1,11 +1,13 @@
 import { create } from 'zustand';
 import {
+  listComplaintAttachments,
   listComplaints,
   recordComplaintResolution,
   recordDhDirective,
   scheduleComplaintMediation,
   setComplaintStatus,
 } from '../services/complaints';
+import type { ComplaintAttachmentRow } from '../services/complaints';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 
 interface ComplaintsState {
@@ -15,6 +17,8 @@ interface ComplaintsState {
   search: string;
   statusFilter: ComplaintStatus | 'all';
   page: number;
+  attachments: ComplaintAttachmentRow[];
+  attachmentsLoading: boolean;
   fetch: () => Promise<void>;
   setSearch: (value: string) => void;
   setStatusFilter: (value: ComplaintsState['statusFilter']) => void;
@@ -23,6 +27,8 @@ interface ComplaintsState {
   setDhDirective: (id: string, directive: string) => Promise<void>;
   scheduleMediation: (id: string, meetingAt: string, location: string) => Promise<void>;
   recordResolution: (id: string, status: 'resolved' | 'dismissed', notes: string) => Promise<void>;
+  /** Lazy — only fetched once a complaint is opened for review, not for every row in the list. */
+  fetchAttachments: (complaintId: string) => Promise<void>;
 }
 
 export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
@@ -32,6 +38,8 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
   search: '',
   statusFilter: 'all',
   page: 1,
+  attachments: [],
+  attachmentsLoading: false,
 
   fetch: async () => {
     set({ loading: true, error: null });
@@ -65,5 +73,12 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     const { error } = await recordComplaintResolution(id, status, notes);
     if (error) return set({ error });
     await get().fetch();
+  },
+
+  fetchAttachments: async (complaintId) => {
+    set({ attachments: [], attachmentsLoading: true });
+    const { data, error } = await listComplaintAttachments(complaintId);
+    if (error) return set({ attachmentsLoading: false, error });
+    set({ attachments: data, attachmentsLoading: false });
   },
 }));

@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import {
+  listComplaintAttachmentsForAdmin,
   listComplaintsForAdmin,
   recordComplaintResolutionForAdmin,
   recordDhDirectiveForAdmin,
@@ -176,4 +177,54 @@ test('recordComplaintResolutionForAdmin surfaces an RPC error (e.g. non-Supervis
 
   const { error } = await recordComplaintResolutionForAdmin('cmp1', 'dismissed', null);
   assert.equal(error, 'Only a PSO Supervisor or Admin may record a complaint resolution');
+});
+
+test('listComplaintAttachmentsForAdmin scopes to the given complaint, ordered oldest first', async () => {
+  let capturedEq: [string, string] | null = null;
+  let capturedOrder: { column: string; opts: unknown } | null = null;
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table !== 'complaint_attachments') throw new Error(`unexpected table ${table}`);
+      return {
+        select: () => ({
+          eq: (col: string, val: string) => {
+            capturedEq = [col, val];
+            return {
+              order: async (column: string, opts: unknown) => {
+                capturedOrder = { column, opts };
+                return {
+                  data: [
+                    { id: 'att1', storage_path: 'cmp1/evidence-1.jpg' },
+                    { id: 'att2', storage_path: 'cmp1/evidence-2.jpg' },
+                  ],
+                  error: null,
+                };
+              },
+            };
+          },
+        }),
+      };
+    },
+  } as any);
+
+  const { data, error } = await listComplaintAttachmentsForAdmin('cmp1');
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedEq, ['complaint_id', 'cmp1']);
+  assert.deepEqual(capturedOrder, { column: 'created_at', opts: { ascending: true } });
+  assert.deepEqual(data, [
+    { id: 'att1', storagePath: 'cmp1/evidence-1.jpg' },
+    { id: 'att2', storagePath: 'cmp1/evidence-2.jpg' },
+  ]);
+});
+
+test('listComplaintAttachmentsForAdmin returns { data: [], error } when the query fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+  } as any);
+
+  const { data, error } = await listComplaintAttachmentsForAdmin('cmp1');
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
 });

@@ -72,7 +72,7 @@ export interface GetSignedDocumentUrlResult {
  * RPC or service-role key needed, unlike the write-side account actions.
  */
 export async function getSignedDocumentUrl(
-  bucket: 'driver-docs' | 'discount-ids',
+  bucket: 'driver-docs' | 'discount-ids' | 'complaint-evidence',
   path: string,
   expirySeconds = 300
 ): Promise<GetSignedDocumentUrlResult> {

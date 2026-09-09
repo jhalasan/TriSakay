@@ -1,6 +1,6 @@
 import { getSignedDocumentUrl as getSignedDocumentUrlShared } from '@trisakay/services';
 
-export type DocumentBucket = 'driver-docs' | 'discount-ids';
+export type DocumentBucket = 'driver-docs' | 'discount-ids' | 'complaint-evidence';
 
 /** Thin wrapper matching this app's one-file-per-feature service convention. */
 export async function getSignedDocumentUrl(bucket: DocumentBucket, path: string): Promise<{ url: string | null; error: string | null }> {

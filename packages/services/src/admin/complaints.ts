@@ -69,6 +69,31 @@ export async function listComplaintsForAdmin(): Promise<ListComplaintsForAdminRe
   return { data: rows, error: null };
 }
 
+export interface ComplaintAttachmentRow {
+  id: string;
+  storagePath: string;
+}
+
+export interface ListComplaintAttachmentsResult {
+  data: ComplaintAttachmentRow[];
+  error: string | null;
+}
+
+/** FR-4.7 evidence — complaint_attachments read; RLS (`complaint_attachments_read`) already lets any is_pso() account read every complaint's evidence, same scope as complaints_read. */
+export async function listComplaintAttachmentsForAdmin(complaintId: string): Promise<ListComplaintAttachmentsResult> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('complaint_attachments')
+    .select('id, storage_path')
+    .eq('complaint_id', complaintId)
+    .order('created_at', { ascending: true });
+
+  if (error) return { data: [], error: error.message };
+
+  const rows = (data ?? []).map((row) => ({ id: row.id, storagePath: row.storage_path }));
+  return { data: rows, error: null };
+}
+
 export interface AdminComplaintWriteResult {
   error: string | null;
 }
