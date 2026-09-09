@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { TableToolbar } from '../components/TableToolbar';
 import { Select } from '../components/Select';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
@@ -99,6 +99,7 @@ export function Drivers() {
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [pendingBulkKind, setPendingBulkKind] = useState<PendingActionKind | null>(null);
@@ -108,6 +109,18 @@ export function Drivers() {
   useEffect(() => {
     fetch();
   }, [fetch]);
+
+  // From TopBar's global search (?highlight=<id>) — opens that driver's detail panel, then clears the param so it doesn't re-trigger on a later manual close/re-search.
+  useEffect(() => {
+    const highlightId = searchParams.get('highlight');
+    if (!highlightId) return;
+    setSelectedId(highlightId);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.delete('highlight');
+      return next;
+    }, { replace: true });
+  }, [searchParams, setSearchParams]);
 
   function closeModal() {
     setPendingAction(null);
