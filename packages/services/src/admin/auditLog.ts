@@ -54,3 +54,97 @@ export async function listAccountActions(): Promise<ListAccountActionsResult> {
 
   return { data: rows, error: null };
 }
+
+export type ReviewDecisionType = 'driver_verification' | 'discount';
+export type ReviewDecisionStatus = 'approved' | 'rejected';
+
+export interface ReviewDecisionRow {
+  id: string;
+  type: ReviewDecisionType;
+  subjectName: string | null;
+  status: ReviewDecisionStatus;
+  detail: string | null;
+  reviewedBy: string;
+  reviewedByName: string | null;
+  reviewedAt: string;
+}
+
+export interface ListReviewDecisionsResult {
+  data: ReviewDecisionRow[];
+  error: string | null;
+}
+
+/**
+ * Driver-verification and fare-discount decisions, merged into one feed —
+ * the reviewed_by/reviewed_at stamps perform_verification_decision() and
+ * the discounts_review_supervisor RLS policy already write on every
+ * Approve/Reject, but that nothing in the admin UI reads back until now
+ * (called out as a known gap when listAccountActions() above was added).
+ * driver_profiles is the source for verification, not tricycles — F4's
+ * perform_verification_decision() stamps verified_by/verified_at
+ * identically on both in the same transaction, so reading tricycles too
+ * would just duplicate every row. Only decided cases are included (a
+ * pending/unsubmitted row has verified_by/reviewed_by null and is filtered
+ * out by the `not.is.null` queries below, not client-side).
+ */
+export async function listReviewDecisions(): Promise<ListReviewDecisionsResult> {
+  const client = getSupabaseClient();
+
+  const [{ data: driverRows, error: driverError }, { data: discountRows, error: discountError }] = await Promise.all([
+    client
+      .from('driver_profiles')
+      .select('user_id, verification_status, verified_by, verified_at')
+      .not('verified_by', 'is', null)
+      .order('verified_at', { ascending: false }),
+    client
+      .from('passenger_discounts')
+      .select('id, passenger_id, category, status, reviewed_by, reviewed_at')
+      .not('reviewed_by', 'is', null)
+      .order('reviewed_at', { ascending: false }),
+  ]);
+
+  if (driverError) return { data: [], error: driverError.message };
+  if (discountError) return { data: [], error: discountError.message };
+
+  const ids = [
+    ...new Set([
+      ...(driverRows ?? []).flatMap((r) => [r.user_id, r.verified_by as string]),
+      ...(discountRows ?? []).flatMap((r) => [r.passenger_id, r.reviewed_by as string]),
+    ]),
+  ];
+  const names = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: userRows } = await client.from('users').select('id, full_name').in('id', ids);
+    for (const row of userRows ?? []) names.set(row.id, row.full_name);
+  }
+
+  const driverDecisions: ReviewDecisionRow[] = (driverRows ?? [])
+    .filter((r) => r.verification_status === 'approved' || r.verification_status === 'rejected')
+    .map((r) => ({
+      id: `driver:${r.user_id}`,
+      type: 'driver_verification' as const,
+      subjectName: names.get(r.user_id) ?? null,
+      status: r.verification_status as ReviewDecisionStatus,
+      detail: null,
+      reviewedBy: r.verified_by as string,
+      reviewedByName: names.get(r.verified_by as string) ?? null,
+      reviewedAt: r.verified_at as string,
+    }));
+
+  const discountDecisions: ReviewDecisionRow[] = (discountRows ?? [])
+    .filter((r) => r.status === 'approved' || r.status === 'rejected')
+    .map((r) => ({
+      id: `discount:${r.id}`,
+      type: 'discount' as const,
+      subjectName: names.get(r.passenger_id) ?? null,
+      status: r.status as ReviewDecisionStatus,
+      detail: r.category,
+      reviewedBy: r.reviewed_by as string,
+      reviewedByName: names.get(r.reviewed_by as string) ?? null,
+      reviewedAt: r.reviewed_at as string,
+    }));
+
+  const rows = [...driverDecisions, ...discountDecisions].sort((a, b) => (a.reviewedAt < b.reviewedAt ? 1 : -1));
+
+  return { data: rows, error: null };
+}
