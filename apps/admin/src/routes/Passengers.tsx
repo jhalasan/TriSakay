@@ -46,14 +46,34 @@ const ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: stri
   },
 };
 
+const BULK_ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (count: number) => string }> = {
+  block: {
+    title: 'Block selected passengers',
+    confirmLabel: 'Block',
+    tone: 'danger',
+    message: (count) => `Block ${count} selected passenger(s)? They won't be able to request rides until unblocked.`,
+  },
+  unblock: {
+    title: 'Unblock selected passengers',
+    confirmLabel: 'Unblock',
+    tone: 'primary',
+    message: (count) => `Unblock ${count} selected passenger(s)?`,
+  },
+};
+
 /** Wireframe screen 5 "Passenger management" (FR-6.1, 6.2). Wireframe labels account_status='suspended' as "Blocked" here. */
 export function Passengers() {
-  const { passengers, loading, error, search, statusFilter, page, fetch, setSearch, setStatusFilter, setPage, block, unblock } =
+  const { passengers, loading, error, search, statusFilter, page, fetch, setSearch, setStatusFilter, setPage, block, unblock, bulkBlock, bulkUnblock } =
     usePassengersStore();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [pendingBulkKind, setPendingBulkKind] = useState<PendingActionKind | null>(null);
+  const [bulkReason, setBulkReason] = useState('');
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
   useEffect(() => {
     fetch();
@@ -71,6 +91,42 @@ export function Passengers() {
     const ok = await action(pendingAction.passenger.id, reason);
     setSubmitting(false);
     if (ok) closeModal();
+  }
+
+  function toggleRow(id: string) {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllOnPage(checked: boolean) {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      for (const row of pageRows) {
+        if (checked) next.add(row.id);
+        else next.delete(row.id);
+      }
+      return next;
+    });
+  }
+
+  function closeBulkModal() {
+    setPendingBulkKind(null);
+    setBulkReason('');
+  }
+
+  async function handleConfirmBulk() {
+    if (!pendingBulkKind) return;
+    setBulkSubmitting(true);
+    const ids = [...selectedRowIds];
+    const action = pendingBulkKind === 'block' ? bulkBlock : bulkUnblock;
+    await action(ids, bulkReason);
+    setBulkSubmitting(false);
+    setSelectedRowIds(new Set());
+    closeBulkModal();
   }
 
   const filtered = useMemo(() => {
@@ -199,12 +255,32 @@ export function Passengers() {
           </Button>
         }
       />
+      {selectedRowIds.size > 0 && (
+        <div className="panel" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, fontWeight: 600 }}>{selectedRowIds.size} selected</span>
+          <RoleGate min="supervisor">
+            <Button variant="outline" tone="danger" size="sm" superscript="S+" onClick={() => setPendingBulkKind('block')}>
+              Block
+            </Button>
+            <Button variant="outline" tone="primary" size="sm" superscript="S+" onClick={() => setPendingBulkKind('unblock')}>
+              Unblock
+            </Button>
+          </RoleGate>
+          <Button variant="ghost" tone="neutral" size="sm" onClick={() => setSelectedRowIds(new Set())} style={{ marginLeft: 'auto' }}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
       <DataTable
         columns={columns}
         rows={pageRows}
         getRowKey={(p) => p.id}
         loading={loading}
         emptyMessage="No passengers match your filters."
+        selectedIds={selectedRowIds}
+        onToggleRow={toggleRow}
+        onToggleAll={toggleAllOnPage}
       />
       <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
 
@@ -247,6 +323,21 @@ export function Passengers() {
           confirmLoading={submitting}
           onCancel={closeModal}
           onConfirm={handleConfirm}
+        />
+      )}
+
+      {pendingBulkKind && (
+        <ConfirmModal
+          title={BULK_ACTION_COPY[pendingBulkKind].title}
+          message={BULK_ACTION_COPY[pendingBulkKind].message(selectedRowIds.size)}
+          confirmLabel={BULK_ACTION_COPY[pendingBulkKind].confirmLabel}
+          tone={BULK_ACTION_COPY[pendingBulkKind].tone}
+          reasonRequired
+          reason={bulkReason}
+          onReasonChange={setBulkReason}
+          confirmLoading={bulkSubmitting}
+          onCancel={closeBulkModal}
+          onConfirm={handleConfirmBulk}
         />
       )}
     </div>

@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { blockPassenger, listPassengers, unblockPassenger } from '../services/passengers';
+import { runBulkAction, type BulkActionSummary } from '../lib/bulkActions';
 import type { PassengerRow } from '../types/passenger';
 
 interface PassengersState {
@@ -15,6 +16,8 @@ interface PassengersState {
   setPage: (page: number) => void;
   block: (passengerId: string, reason: string) => Promise<boolean>;
   unblock: (passengerId: string, reason: string) => Promise<boolean>;
+  bulkBlock: (passengerIds: string[], reason: string) => Promise<BulkActionSummary>;
+  bulkUnblock: (passengerIds: string[], reason: string) => Promise<BulkActionSummary>;
 }
 
 export const usePassengersStore = create<PassengersState>()((set, get) => ({
@@ -53,5 +56,19 @@ export const usePassengersStore = create<PassengersState>()((set, get) => ({
     }
     await get().fetch();
     return true;
+  },
+
+  bulkBlock: async (passengerIds, reason) => {
+    const summary = await runBulkAction(passengerIds, blockPassenger, reason);
+    if (summary.failed > 0) set({ error: `${summary.failed} of ${passengerIds.length} passenger(s) could not be blocked.` });
+    await get().fetch();
+    return summary;
+  },
+
+  bulkUnblock: async (passengerIds, reason) => {
+    const summary = await runBulkAction(passengerIds, unblockPassenger, reason);
+    if (summary.failed > 0) set({ error: `${summary.failed} of ${passengerIds.length} passenger(s) could not be unblocked.` });
+    await get().fetch();
+    return summary;
   },
 }));

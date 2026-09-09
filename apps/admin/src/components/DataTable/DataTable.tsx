@@ -17,6 +17,10 @@ export interface DataTableProps<T> {
   getRowKey: (row: T) => string;
   emptyMessage?: string;
   loading?: boolean;
+  /** Opt-in row-selection checkboxes (e.g. for bulk actions). Omit all three to render exactly as before. */
+  selectedIds?: Set<string>;
+  onToggleRow?: (id: string) => void;
+  onToggleAll?: (checked: boolean) => void;
 }
 
 /**
@@ -26,7 +30,17 @@ export interface DataTableProps<T> {
  * (`.scroll-x`, src/styles/globals.css) — the page body never scrolls
  * sideways.
  */
-export function DataTable<T>({ columns, rows, getRowKey, emptyMessage = 'No records found.', loading = false }: DataTableProps<T>) {
+export function DataTable<T>({
+  columns,
+  rows,
+  getRowKey,
+  emptyMessage = 'No records found.',
+  loading = false,
+  selectedIds,
+  onToggleRow,
+  onToggleAll,
+}: DataTableProps<T>) {
+  const selectable = selectedIds !== undefined && onToggleRow !== undefined && onToggleAll !== undefined;
   const [sortKey, setSortKey] = useState<string | null>(null);
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
@@ -62,11 +76,23 @@ export function DataTable<T>({ columns, rows, getRowKey, emptyMessage = 'No reco
     return <EmptyState message={emptyMessage} />;
   }
 
+  const allOnPageSelected = selectable && sortedRows.every((row) => selectedIds!.has(getRowKey(row)));
+
   return (
     <div className={`scroll-x ${styles.wrap}`}>
       <table className={styles.table}>
         <thead>
           <tr>
+            {selectable && (
+              <th style={{ width: 32 }}>
+                <input
+                  type="checkbox"
+                  aria-label="Select all rows on this page"
+                  checked={allOnPageSelected}
+                  onChange={(e) => onToggleAll!(e.target.checked)}
+                />
+              </th>
+            )}
             {columns.map((col) => (
               <th
                 key={col.key}
@@ -88,6 +114,16 @@ export function DataTable<T>({ columns, rows, getRowKey, emptyMessage = 'No reco
         <tbody>
           {sortedRows.map((row) => (
             <tr key={getRowKey(row)}>
+              {selectable && (
+                <td>
+                  <input
+                    type="checkbox"
+                    aria-label="Select row"
+                    checked={selectedIds!.has(getRowKey(row))}
+                    onChange={() => onToggleRow!(getRowKey(row))}
+                  />
+                </td>
+              )}
               {columns.map((col) => (
                 <td key={col.key} style={{ textAlign: col.align ?? 'left' }}>
                   {col.render(row)}

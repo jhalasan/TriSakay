@@ -45,6 +45,27 @@ const ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: stri
   },
 };
 
+const BULK_ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (count: number) => string }> = {
+  flag: {
+    title: 'Flag selected drivers',
+    confirmLabel: 'Flag',
+    tone: 'primary',
+    message: (count) => `Flag ${count} selected driver(s)? This is visible to other PSO staff reviewing them.`,
+  },
+  suspend: {
+    title: 'Suspend selected drivers',
+    confirmLabel: 'Suspend',
+    tone: 'danger',
+    message: (count) => `Suspend ${count} selected driver(s)? They won't be able to accept ride requests until reactivated.`,
+  },
+  reactivate: {
+    title: 'Reactivate selected drivers',
+    confirmLabel: 'Reactivate',
+    tone: 'primary',
+    message: (count) => `Reactivate ${count} selected driver(s)?`,
+  },
+};
+
 const STATUS_TONE: Record<DriverRow['accountStatus'], 'neutral' | 'success' | 'warn' | 'danger'> = {
   active: 'success',
   flagged: 'warn',
@@ -56,12 +77,33 @@ const PAGE_SIZE = 5;
 
 /** Wireframe screen 3 "Driver management" (FR-6.1, 6.2). */
 export function Drivers() {
-  const { drivers, loading, error, search, statusFilter, page, fetch, setSearch, setStatusFilter, setPage, flag, suspend, reactivate } =
-    useDriversStore();
+  const {
+    drivers,
+    loading,
+    error,
+    search,
+    statusFilter,
+    page,
+    fetch,
+    setSearch,
+    setStatusFilter,
+    setPage,
+    flag,
+    suspend,
+    reactivate,
+    bulkFlag,
+    bulkSuspend,
+    bulkReactivate,
+  } = useDriversStore();
   const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
   const [reason, setReason] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [pendingBulkKind, setPendingBulkKind] = useState<PendingActionKind | null>(null);
+  const [bulkReason, setBulkReason] = useState('');
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
 
   useEffect(() => {
     fetch();
@@ -79,6 +121,42 @@ export function Drivers() {
     const ok = await action(pendingAction.driver.id, reason);
     setSubmitting(false);
     if (ok) closeModal();
+  }
+
+  function toggleRow(id: string) {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllOnPage(checked: boolean) {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      for (const row of pageRows) {
+        if (checked) next.add(row.id);
+        else next.delete(row.id);
+      }
+      return next;
+    });
+  }
+
+  function closeBulkModal() {
+    setPendingBulkKind(null);
+    setBulkReason('');
+  }
+
+  async function handleConfirmBulk() {
+    if (!pendingBulkKind) return;
+    setBulkSubmitting(true);
+    const ids = [...selectedRowIds];
+    const action = pendingBulkKind === 'flag' ? bulkFlag : pendingBulkKind === 'suspend' ? bulkSuspend : bulkReactivate;
+    await action(ids, bulkReason);
+    setBulkSubmitting(false);
+    setSelectedRowIds(new Set());
+    closeBulkModal();
   }
 
   const filtered = useMemo(() => {
@@ -229,7 +307,36 @@ export function Drivers() {
           </Button>
         }
       />
-      <DataTable columns={columns} rows={pageRows} getRowKey={(d) => d.id} loading={loading} emptyMessage="No drivers match your filters." />
+      {selectedRowIds.size > 0 && (
+        <div className="panel" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 12, fontWeight: 600 }}>{selectedRowIds.size} selected</span>
+          <Button variant="outline" tone="neutral" size="sm" onClick={() => setPendingBulkKind('flag')}>
+            Flag
+          </Button>
+          <RoleGate min="supervisor">
+            <Button variant="outline" tone="danger" size="sm" superscript="S+" onClick={() => setPendingBulkKind('suspend')}>
+              Suspend
+            </Button>
+            <Button variant="outline" tone="primary" size="sm" superscript="S+" onClick={() => setPendingBulkKind('reactivate')}>
+              Reactivate
+            </Button>
+          </RoleGate>
+          <Button variant="ghost" tone="neutral" size="sm" onClick={() => setSelectedRowIds(new Set())} style={{ marginLeft: 'auto' }}>
+            Clear selection
+          </Button>
+        </div>
+      )}
+
+      <DataTable
+        columns={columns}
+        rows={pageRows}
+        getRowKey={(d) => d.id}
+        loading={loading}
+        emptyMessage="No drivers match your filters."
+        selectedIds={selectedRowIds}
+        onToggleRow={toggleRow}
+        onToggleAll={toggleAllOnPage}
+      />
       <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
 
       {selected && (
@@ -277,6 +384,21 @@ export function Drivers() {
           confirmLoading={submitting}
           onCancel={closeModal}
           onConfirm={handleConfirm}
+        />
+      )}
+
+      {pendingBulkKind && (
+        <ConfirmModal
+          title={BULK_ACTION_COPY[pendingBulkKind].title}
+          message={BULK_ACTION_COPY[pendingBulkKind].message(selectedRowIds.size)}
+          confirmLabel={BULK_ACTION_COPY[pendingBulkKind].confirmLabel}
+          tone={BULK_ACTION_COPY[pendingBulkKind].tone}
+          reasonRequired
+          reason={bulkReason}
+          onReasonChange={setBulkReason}
+          confirmLoading={bulkSubmitting}
+          onCancel={closeBulkModal}
+          onConfirm={handleConfirmBulk}
         />
       )}
     </div>

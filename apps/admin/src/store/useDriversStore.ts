@@ -1,5 +1,6 @@
 import { create } from 'zustand';
 import { flagDriver, listDrivers, reactivateDriver, suspendDriver } from '../services/drivers';
+import { runBulkAction, type BulkActionSummary } from '../lib/bulkActions';
 import type { DriverRow } from '../types/driver';
 
 interface DriversState {
@@ -16,6 +17,9 @@ interface DriversState {
   flag: (driverId: string, reason: string) => Promise<boolean>;
   suspend: (driverId: string, reason: string) => Promise<boolean>;
   reactivate: (driverId: string, reason: string) => Promise<boolean>;
+  bulkFlag: (driverIds: string[], reason: string) => Promise<BulkActionSummary>;
+  bulkSuspend: (driverIds: string[], reason: string) => Promise<BulkActionSummary>;
+  bulkReactivate: (driverIds: string[], reason: string) => Promise<BulkActionSummary>;
 }
 
 export const useDriversStore = create<DriversState>()((set, get) => ({
@@ -64,5 +68,26 @@ export const useDriversStore = create<DriversState>()((set, get) => ({
     }
     await get().fetch();
     return true;
+  },
+
+  bulkFlag: async (driverIds, reason) => {
+    const summary = await runBulkAction(driverIds, flagDriver, reason);
+    if (summary.failed > 0) set({ error: `${summary.failed} of ${driverIds.length} driver(s) could not be flagged.` });
+    await get().fetch();
+    return summary;
+  },
+
+  bulkSuspend: async (driverIds, reason) => {
+    const summary = await runBulkAction(driverIds, suspendDriver, reason);
+    if (summary.failed > 0) set({ error: `${summary.failed} of ${driverIds.length} driver(s) could not be suspended.` });
+    await get().fetch();
+    return summary;
+  },
+
+  bulkReactivate: async (driverIds, reason) => {
+    const summary = await runBulkAction(driverIds, reactivateDriver, reason);
+    if (summary.failed > 0) set({ error: `${summary.failed} of ${driverIds.length} driver(s) could not be reactivated.` });
+    await get().fetch();
+    return summary;
   },
 }));
