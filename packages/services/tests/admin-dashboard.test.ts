@@ -216,31 +216,55 @@ test('listExpiringFranchises returns { data: [], error } when the view query fai
   assert.equal(error, 'connection refused');
 });
 
-test('listRecentTripActivity maps trip rows, resolves driver names, and respects the limit arg', async () => {
+function rideRequestsTable(rows: unknown[], captureLimit?: (n: number) => void) {
+  return {
+    select: () => ({
+      not: () => ({
+        order: () => ({
+          limit: async (n: number) => {
+            captureLimit?.(n);
+            return { data: rows, error: null };
+          },
+        }),
+      }),
+    }),
+  };
+}
+
+function tripsTable(rows: unknown[]) {
+  return { select: () => ({ in: async () => ({ data: rows, error: null }) }) };
+}
+
+function usersTable(rows: unknown[]) {
+  return { select: () => ({ in: async () => ({ data: rows, error: null }) }) };
+}
+
+test('listRecentTripActivity joins ride_requests to their trip, resolves both names, and respects the limit arg', async () => {
   let capturedLimit: number | null = null;
+
   __setSupabaseClientForTests({
     from: (table: string) => {
+      if (table === 'ride_requests') {
+        return rideRequestsTable(
+          [
+            { id: 'rr1', passenger_id: 'u-passenger1', final_fare: 42, trip_id: 'trip1' },
+            { id: 'rr2', passenger_id: 'u-deleted-passenger', final_fare: null, trip_id: 'trip2' },
+          ],
+          (n) => (capturedLimit = n),
+        );
+      }
       if (table === 'trips') {
-        return {
-          select: () => ({
-            order: () => ({
-              limit: async (n: number) => {
-                capturedLimit = n;
-                return {
-                  data: [
-                    { id: 'trip1', status: 'active', updated_at: '2026-08-14T00:00:00.000Z', driver_id: 'u1' },
-                    { id: 'trip2', status: 'completed', updated_at: '2026-08-13T23:50:00.000Z', driver_id: 'u-deleted' },
-                  ],
-                  error: null,
-                };
-              },
-            }),
-          }),
-        };
+        return tripsTable([
+          { id: 'trip1', status: 'active', updated_at: '2026-08-14T00:00:00.000Z', driver_id: 'u-driver1' },
+          { id: 'trip2', status: 'completed', updated_at: '2026-08-13T23:50:00.000Z', driver_id: 'u-deleted-driver' },
+        ]);
       }
       if (table === 'users') {
-        // u-deleted no longer exists — only u1 comes back.
-        return { select: () => ({ in: async () => ({ data: [{ id: 'u1', full_name: 'Ronnie Bautista' }], error: null }) }) };
+        // u-deleted-driver / u-deleted-passenger no longer exist — only the two live users come back.
+        return usersTable([
+          { id: 'u-driver1', full_name: 'Ronnie Bautista' },
+          { id: 'u-passenger1', full_name: 'Maria Clara' },
+        ]);
       }
       throw new Error(`unexpected table ${table}`);
     },
@@ -249,33 +273,72 @@ test('listRecentTripActivity maps trip rows, resolves driver names, and respects
   const { data, error } = await listRecentTripActivity(20);
 
   assert.equal(error, null);
-  assert.equal(capturedLimit, 20);
+  assert.equal(capturedLimit, 80); // over-fetches 4x the requested limit
   assert.deepEqual(data, [
-    { id: 'trip1', driverName: 'Ronnie Bautista', status: 'active', updatedAt: '2026-08-14T00:00:00.000Z' },
-    { id: 'trip2', driverName: null, status: 'completed', updatedAt: '2026-08-13T23:50:00.000Z' },
+    { id: 'rr1', driverName: 'Ronnie Bautista', passengerName: 'Maria Clara', status: 'active', fare: 42, updatedAt: '2026-08-14T00:00:00.000Z' },
+    { id: 'rr2', driverName: null, passengerName: null, status: 'completed', fare: null, updatedAt: '2026-08-13T23:50:00.000Z' },
   ]);
 });
 
-test('listRecentTripActivity defaults the limit to 10', async () => {
+test('listRecentTripActivity sorts by the trip\'s recency, not the ride_request fetch order', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return rideRequestsTable([
+          { id: 'rr-older-trip', passenger_id: 'p1', final_fare: 10, trip_id: 'trip-old' },
+          { id: 'rr-newer-trip', passenger_id: 'p2', final_fare: 20, trip_id: 'trip-new' },
+        ]);
+      }
+      if (table === 'trips') {
+        return tripsTable([
+          { id: 'trip-old', status: 'completed', updated_at: '2026-08-01T00:00:00.000Z', driver_id: 'd1' },
+          { id: 'trip-new', status: 'completed', updated_at: '2026-08-14T00:00:00.000Z', driver_id: 'd2' },
+        ]);
+      }
+      return usersTable([]);
+    },
+  } as any);
+
+  const { data, error } = await listRecentTripActivity();
+  assert.equal(error, null);
+  assert.deepEqual(data.map((r) => r.id), ['rr-newer-trip', 'rr-older-trip']);
+});
+
+test('listRecentTripActivity defaults the limit to 10 (over-fetches 40 ride_requests)', async () => {
   let capturedLimit: number | null = null;
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'trips') {
-        return { select: () => ({ order: () => ({ limit: async (n: number) => { capturedLimit = n; return { data: [], error: null }; } }) }) };
-      }
-      return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
+      if (table === 'ride_requests') return rideRequestsTable([], (n) => (capturedLimit = n));
+      return usersTable([]);
     },
   } as any);
 
   await listRecentTripActivity();
-  assert.equal(capturedLimit, 10);
+  assert.equal(capturedLimit, 40);
 });
 
-test('listRecentTripActivity returns { data: [], error } on a query error', async () => {
+test('listRecentTripActivity returns { data: [], error } when the ride_requests query fails', async () => {
   __setSupabaseClientForTests({
-    from: () => ({
-      select: () => ({ order: () => ({ limit: async () => ({ data: null, error: { message: 'connection refused' } }) }) }),
-    }),
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return { select: () => ({ not: () => ({ order: () => ({ limit: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await listRecentTripActivity();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
+});
+
+test('listRecentTripActivity returns { data: [], error } when the trips query fails', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') return rideRequestsTable([{ id: 'rr1', passenger_id: 'p1', final_fare: 10, trip_id: 'trip1' }]);
+      if (table === 'trips') return { select: () => ({ in: async () => ({ data: null, error: { message: 'connection refused' } }) }) };
+      throw new Error(`unexpected table ${table}`);
+    },
   } as any);
 
   const { data, error } = await listRecentTripActivity();

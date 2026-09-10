@@ -1,17 +1,38 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '../Button';
 import { Textarea } from '../Textarea';
 import styles from './ConfirmModal.module.css';
 
 const FOCUSABLE_SELECTOR = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 
-/** Wireframe screen 11 "Log out" — dimmed overlay over the current screen, Cancel / confirm. Reused for any destructive S+ confirmation. */
+/** Icon glyphs are tone-based defaults (§12 "red is spent only on the confirm button" — the tile itself never turns red), overridable per call site via `icon`. */
+function DefaultIcon({ tone }: { tone: 'primary' | 'danger' }) {
+  if (tone === 'danger') {
+    return (
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <path d="M12 3.5 21.5 20h-19L12 3.5Z" />
+        <path d="M12 10v4" />
+        <circle cx="12" cy="17" r="0.15" fill="currentColor" />
+      </svg>
+    );
+  }
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M15.5 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h7.5a2 2 0 0 0 2-2v-2" />
+      <path d="M9.5 12H21M21 12l-3-3M21 12l-3 3" />
+    </svg>
+  );
+}
+
+/** README §12 "Destructive confirm" — one shape for log out, suspend, block and delete: icon tile + title + consequence sentence, footer on --bg with Cancel + the tone's action button. */
 export interface ConfirmModalProps {
   title: string;
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
   tone?: 'primary' | 'danger';
+  /** Overrides the tone's default icon (log-out glyph for primary, warning triangle for danger). */
+  icon?: ReactNode;
   onConfirm: () => void;
   onCancel: () => void;
   /** Renders a required reason field (account_actions.reason is NOT NULL) and disables Confirm until it's filled in. */
@@ -29,6 +50,7 @@ export function ConfirmModal({
   confirmLabel = 'Confirm',
   cancelLabel = 'Cancel',
   tone = 'primary',
+  icon,
   onConfirm,
   onCancel,
   reasonRequired = false,
@@ -77,9 +99,14 @@ export function ConfirmModal({
   return (
     <div className={styles.overlay} role="dialog" aria-modal="true" aria-label={title}>
       <div className={styles.card} ref={cardRef}>
-        <h2 className={styles.title}>{title}</h2>
-        <p className={styles.message}>{message}</p>
-        {reasonRequired && <Textarea label={reasonLabel} rows={3} value={reason} onChange={(e) => onReasonChange?.(e.target.value)} />}
+        <div className={styles.body}>
+          <span className={`${styles.iconTile} ${tone === 'danger' ? styles.iconTileDanger : styles.iconTilePrimary}`}>
+            {icon ?? <DefaultIcon tone={tone} />}
+          </span>
+          <h2 className={styles.title}>{title}</h2>
+          <p className={styles.message}>{message}</p>
+          {reasonRequired && <Textarea label={reasonLabel} rows={3} value={reason} onChange={(e) => onReasonChange?.(e.target.value)} />}
+        </div>
         <div className={styles.actions}>
           <Button variant="outline" tone="neutral" onClick={onCancel} disabled={confirmLoading}>
             {cancelLabel}

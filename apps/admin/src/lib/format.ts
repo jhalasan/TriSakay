@@ -10,6 +10,11 @@ export function formatDate(iso: string): string {
   });
 }
 
+/** "Thursday, 8 September" — the Dashboard "Needs attention today" eyebrow date (no year, matches the mock). */
+export function formatDayHeading(date: Date = new Date()): string {
+  return date.toLocaleDateString('en-PH', { weekday: 'long', day: 'numeric', month: 'long' });
+}
+
 export function formatDateTime(iso: string): string {
   return new Date(iso).toLocaleString('en-PH', {
     year: 'numeric',

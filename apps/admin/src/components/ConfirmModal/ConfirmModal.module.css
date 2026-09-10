@@ -9,25 +9,53 @@
 }
 
 .card {
-  width: 320px;
+  width: 420px;
+  max-width: calc(100vw - 32px);
   background: var(--panel);
-  border-radius: var(--r-lg);
-  padding: var(--sp-xl);
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-md);
+  /* 16px per README §12 — not one of Phase 0's three new tokens, so a
+     literal one-off (same call as Login's brand plate; see Phase 0 notes). */
+  border-radius: 16px;
   box-shadow: var(--shadow-sheet);
   animation: rise 260ms cubic-bezier(0.16, 1, 0.3, 1);
+  overflow: hidden;
+}
+
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  padding: var(--sp-xl);
+}
+
+.iconTile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: var(--r-md);
+  margin-bottom: var(--sp-xs);
+}
+
+.iconTilePrimary {
+  background: var(--primary-soft);
+  color: var(--primary);
+}
+
+.iconTileDanger {
+  /* Red is spent only on the confirm button (README §12) — the tile stays neutral even for a destructive confirm. */
+  background: var(--fill);
+  color: var(--ink-soft);
 }
 
 .title {
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   color: var(--ink);
 }
 
 .message {
-  font-size: 12px;
+  font-size: 13px;
   color: var(--ink-soft);
   line-height: 1.5;
 }
@@ -36,5 +64,7 @@
   display: flex;
   justify-content: flex-end;
   gap: var(--sp-sm);
-  margin-top: var(--sp-sm);
+  padding: var(--sp-md) var(--sp-xl);
+  background: var(--bg);
+  border-top: 1px solid var(--line);
 }

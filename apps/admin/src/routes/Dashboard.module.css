@@ -1,0 +1,156 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-lg);
+}
+
+.eyebrow {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.sectionHeader {
+  display: flex;
+  align-items: baseline;
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-md);
+}
+
+.sectionMeta {
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+.attentionGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--sp-md);
+}
+
+@media (max-width: 1100px) {
+  .attentionGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.attentionCard {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-left: 3px solid transparent;
+  border-radius: var(--r-panel);
+  box-shadow: var(--shadow-panel);
+  padding: 18px;
+}
+
+.accent-danger {
+  border-left-color: var(--danger);
+}
+
+.accent-warn {
+  border-left-color: var(--warn-border);
+}
+
+.attentionTop {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+}
+
+.attentionCount {
+  font-family: var(--font-brand);
+  font-size: 34px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.count-danger {
+  color: var(--danger);
+}
+
+.count-warn {
+  color: var(--warn-border);
+}
+
+.attentionContext {
+  font-size: 12.5px;
+  color: var(--ink-soft);
+  margin: 0;
+}
+
+.attentionLink {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  border: none;
+  background: transparent;
+  padding: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.attentionLink:hover {
+  text-decoration: underline;
+}
+
+.volumePanel {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  padding: 0;
+  overflow: hidden;
+}
+
+@media (max-width: 700px) {
+  .volumePanel {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.volumeCell {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 18px;
+  border-right: 1px solid var(--line-soft);
+}
+
+.volumeCell:last-child {
+  border-right: none;
+}
+
+.volumeValue {
+  font-family: var(--font-brand);
+  font-size: var(--fs-metric);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.chartsGrid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--sp-md);
+}
+
+@media (max-width: 900px) {
+  .chartsGrid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.panelHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-md);
+}

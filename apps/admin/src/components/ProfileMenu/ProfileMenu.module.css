@@ -6,12 +6,12 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 4px 6px 4px 4px;
-  border: none;
-  background: transparent;
-  border-radius: var(--r-sm);
+  padding: 3px 10px 3px 3px;
+  border: 1px solid var(--line);
+  background: var(--panel);
+  border-radius: var(--r-pill);
   cursor: pointer;
-  transition: background-color 120ms ease;
+  transition: background-color 120ms ease, border-color 120ms ease;
 }
 
 .trigger:hover {
@@ -23,26 +23,50 @@
   outline-offset: 1px;
 }
 
+.triggerText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
 .triggerName {
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
+  line-height: 15px;
   color: var(--ink);
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 140px;
+}
+
+.triggerRole {
+  font-size: 10.5px;
+  color: var(--ink-faint);
+  white-space: nowrap;
+}
+
+.chevron {
+  flex-shrink: 0;
+  color: var(--ink-faint);
 }
 
 .panel {
   position: absolute;
-  top: calc(100% + 8px);
+  top: calc(100% + 10px);
   right: 0;
-  width: 300px;
+  width: 332px;
   display: flex;
   flex-direction: column;
   gap: var(--sp-md);
-  padding: var(--sp-md);
+  padding: var(--sp-lg);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: var(--r-md);
-  box-shadow: var(--shadow-sheet);
+  border-radius: var(--r-panel);
+  /* 0 18px 44px rgba(0,46,96,.20) — README §04, not one of Phase 0's three
+     new tokens, so a literal one-off (same call as elsewhere in this
+     phase). */
+  box-shadow: 0 18px 44px rgba(0, 46, 96, 0.2);
   z-index: 20;
   animation: rise 150ms ease;
 }
@@ -77,17 +101,27 @@
   white-space: nowrap;
 }
 
-.divider {
-  height: 1px;
-  background: var(--line);
-  border: none;
-  margin: 0;
+.roleBand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 6px;
+  border: 1px solid var(--primary-border);
+  border-radius: var(--r-pill);
+  background: var(--primary-soft);
+  color: var(--primary);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .section {
   display: flex;
   flex-direction: column;
   gap: 6px;
+  padding-top: var(--sp-md);
+  border-top: 1px solid var(--line-soft);
 }
 
 .sectionRow {
@@ -97,11 +131,16 @@
 }
 
 .sectionLabel {
-  font-size: 11px;
-  font-weight: 600;
-  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  color: var(--ink-soft);
+}
+
+.sectionValue {
+  font-size: 13px;
+  color: var(--ink);
 }
 
 .linkButton {
@@ -116,6 +155,12 @@
 
 .linkButton:hover {
   text-decoration: underline;
+}
+
+.logoutButton {
+  margin-top: var(--sp-xs);
+  padding-top: var(--sp-md);
+  border-top: 1px solid var(--line-soft);
 }
 
 .form {

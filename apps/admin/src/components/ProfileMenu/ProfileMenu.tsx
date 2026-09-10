@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { Avatar } from '../Avatar';
-import { Badge } from '../Badge';
 import { Button } from '../Button';
 import { TextField } from '../TextField';
 import { ErrorBanner } from '../ErrorBanner';
@@ -121,23 +120,27 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
         aria-expanded={open}
       >
         <Avatar fullName={user.fullName} size={30} />
-        <span className={styles.triggerName}>{user.fullName}</span>
+        <span className={styles.triggerText}>
+          <span className={styles.triggerName}>{user.fullName}</span>
+          <span className={styles.triggerRole}>{ROLE_LABELS[user.role]}</span>
+        </span>
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={styles.chevron}>
+          <path d="m6 9 6 6 6-6" />
+        </svg>
       </button>
 
       {open && (
         <div className={styles.panel} role="menu">
           <div className={styles.identity}>
-            <Avatar fullName={user.fullName} size={40} />
+            <Avatar fullName={user.fullName} size={38} />
             <div className={styles.identityText}>
               <span className={styles.name}>{user.fullName}</span>
               <span className={styles.email}>{user.email}</span>
             </div>
           </div>
-          <Badge label={ROLE_LABELS[user.role]} tone="info" />
+          <span className={styles.roleBand}>{ROLE_LABELS[user.role]}</span>
 
           {successMessage && <div className={styles.success}>{successMessage}</div>}
-
-          <hr className={styles.divider} />
 
           <div className={styles.section}>
             <div className={styles.sectionRow}>
@@ -148,7 +151,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                 </button>
               )}
             </div>
-            {editingName && (
+            {editingName ? (
               <div className={styles.form}>
                 <TextField value={fullName} onChange={(e) => setFullName(e.target.value)} autoFocus />
                 <ErrorBanner message={nameError} />
@@ -161,10 +164,10 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                   </Button>
                 </div>
               </div>
+            ) : (
+              <span className={styles.sectionValue}>{user.fullName}</span>
             )}
           </div>
-
-          <hr className={styles.divider} />
 
           <div className={styles.section}>
             <div className={styles.sectionRow}>
@@ -175,7 +178,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                 </button>
               )}
             </div>
-            {changingPassword && (
+            {changingPassword ? (
               <div className={styles.form}>
                 <TextField
                   type="password"
@@ -202,12 +205,15 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                   </Button>
                 </div>
               </div>
+            ) : (
+              // No password-last-changed date is tracked anywhere in this app's
+              // schema (see Phase 2 notes) — shown as a quiet placeholder rather
+              // than a fabricated date.
+              <span className={styles.sectionValue}>Not tracked</span>
             )}
           </div>
 
-          <hr className={styles.divider} />
-
-          <Button variant="outline" tone="danger" size="sm" onClick={onLogoutClick}>
+          <Button variant="outline" tone="danger" fullWidth onClick={onLogoutClick} className={styles.logoutButton}>
             Log out
           </Button>
         </div>

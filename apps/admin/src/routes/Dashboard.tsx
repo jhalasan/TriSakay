@@ -1,12 +1,10 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { StatTile } from '../components/StatTile';
-import { DataTable, type DataTableColumn } from '../components/DataTable';
-import { Badge } from '../components/Badge';
+import { Badge, type BadgeTone } from '../components/Badge';
 import { Button } from '../components/Button';
+import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { RideStatusChart, RidesOverTimeChart } from '../components/charts';
-import { useDriversStore } from '../store/useDriversStore';
 import {
   getDashboardStats,
   getRidesPerDay,
@@ -21,41 +19,69 @@ import {
   type RidesPerDayPoint,
   type TripStatusCount,
 } from '../services/dashboard';
-import { formatRelativeTime, titleCaseLabel } from '../lib/format';
+import { listEmergencyAlerts } from '../services/emergency';
+import type { EmergencyAlertRow } from '../types/emergency';
+import { formatCurrency, formatDayHeading, formatRelativeTime, titleCaseLabel } from '../lib/format';
+import styles from './Dashboard.module.css';
 
-const ACTIVITY_TONE: Record<string, 'neutral' | 'success' | 'warn' | 'danger' | 'info'> = {
+const RECENT_ACTIVITY_LIMIT = 5;
+
+const ACTIVITY_TONE: Record<string, BadgeTone> = {
   active: 'info',
   forming: 'warn',
   completed: 'success',
   cancelled: 'danger',
 };
 
-const activityColumns: DataTableColumn<RecentTripActivityRow>[] = [
-  { key: 'driver', header: 'Driver', render: (r) => r.driverName ?? 'Unknown', sortValue: (r) => r.driverName ?? '' },
-  {
-    key: 'status',
-    header: 'Status',
-    render: (r) => <Badge label={titleCaseLabel(r.status)} tone={ACTIVITY_TONE[r.status] ?? 'neutral'} />,
-  },
-  { key: 'time', header: 'Time', render: (r) => formatRelativeTime(r.updatedAt) },
-];
+function ForwardArrow() {
+  return (
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <path d="M5 12h14M13 6l6 6-6 6" />
+    </svg>
+  );
+}
 
-const overdueColumns: DataTableColumn<OverdueComplaintRow>[] = [
-  { key: 'category', header: 'Category', render: (r) => titleCaseLabel(r.category), sortValue: (r) => r.category },
-  {
-    key: 'days',
-    header: 'Days overdue',
-    render: (r) => r.businessDaysElapsed,
-    sortValue: (r) => r.businessDaysElapsed,
-    align: 'right',
-  },
-  { key: 'status', header: 'Status', render: (r) => <Badge label={titleCaseLabel(r.status)} tone="warn" /> },
-];
+interface AttentionCardProps {
+  accent: 'danger' | 'warn';
+  eyebrow: string;
+  count: ReactNode;
+  context: string;
+  linkLabel: string;
+  onLinkClick: () => void;
+  badgeLabel: string;
+  badgeTone: BadgeTone;
+}
 
-/** Shared "panel title + View all" header, used by every Dashboard panel that links out to its full section. */
+/** README §03 band 1 "Needs attention today" — one of the three accent-edged panels. Local to Dashboard, not a new shared component. */
+function AttentionCard({ accent, eyebrow, count, context, linkLabel, onLinkClick, badgeLabel, badgeTone }: AttentionCardProps) {
+  return (
+    <div className={`${styles.attentionCard} ${styles[`accent-${accent}`]}`}>
+      <div className={styles.attentionTop}>
+        <span className={styles.eyebrow}>{eyebrow}</span>
+        <Badge label={badgeLabel} tone={badgeTone} />
+      </div>
+      <span className={`${styles.attentionCount} ${styles[`count-${accent}`]}`}>{count}</span>
+      <p className={styles.attentionContext}>{context}</p>
+      <button type="button" className={styles.attentionLink} onClick={onLinkClick}>
+        {linkLabel}
+        <ForwardArrow />
+      </button>
+    </div>
+  );
+}
+
+function VolumeCell({ label, value }: { label: string; value: ReactNode }) {
+  return (
+    <div className={styles.volumeCell}>
+      <span className={styles.eyebrow}>{label}</span>
+      <span className={styles.volumeValue}>{value}</span>
+    </div>
+  );
+}
+
 function PanelHeader({ title, action }: { title: string; action?: ReactNode }) {
   return (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+    <div className={styles.panelHeader}>
       <h2 className="panel-title" style={{ marginBottom: 0 }}>
         {title}
       </h2>
@@ -64,15 +90,15 @@ function PanelHeader({ title, action }: { title: string; action?: ReactNode }) {
   );
 }
 
-/** Wireframe screen 2 "Dashboard / Overview" (FR-5.1, 5.4, 5.5). */
+/** Wireframe screen 2 "Dashboard / Overview" (FR-5.1, 5.4, 5.5) — restyled per docs/design_handoff_trisakay_admin/README.md §03. */
 export function Dashboard() {
   const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [overdue, setOverdue] = useState<OverdueComplaintRow[]>([]);
-  const [overdueError, setOverdueError] = useState<string | null>(null);
   const [expiring, setExpiring] = useState<ExpiringFranchiseRow[]>([]);
-  const [expiringError, setExpiringError] = useState<string | null>(null);
+  const [alerts, setAlerts] = useState<EmergencyAlertRow[]>([]);
+  const [alertsError, setAlertsError] = useState<string | null>(null);
   const [activity, setActivity] = useState<RecentTripActivityRow[]>([]);
   const [activityError, setActivityError] = useState<string | null>(null);
   const [ridesPerDay, setRidesPerDay] = useState<RidesPerDayPoint[]>([]);
@@ -84,28 +110,29 @@ export function Dashboard() {
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [statsResult, overdueResult, expiringResult, activityResult, ridesResult, statusResult] = await Promise.all([
+      const [statsResult, overdueResult, expiringResult, activityResult, ridesResult, statusResult, alertsResult] = await Promise.all([
         getDashboardStats(),
         listOverdueComplaints(),
         listExpiringFranchises(),
-        listRecentTripActivity(),
+        listRecentTripActivity(RECENT_ACTIVITY_LIMIT),
         getRidesPerDay(),
         getTripStatusBreakdown(),
+        listEmergencyAlerts(),
       ]);
       if (cancelled) return;
 
       setStats(statsResult.data);
       setStatsError(statsResult.error);
       setOverdue(overdueResult.data);
-      setOverdueError(overdueResult.error);
       setExpiring(expiringResult.data);
-      setExpiringError(expiringResult.error);
       setActivity(activityResult.data);
       setActivityError(activityResult.error);
       setRidesPerDay(ridesResult.data);
       setRidesError(ridesResult.error);
       setStatusBreakdown(statusResult.data);
       setStatusError(statusResult.error);
+      setAlerts(alertsResult.data);
+      setAlertsError(alertsResult.error);
       setLoading(false);
     })();
     return () => {
@@ -113,68 +140,91 @@ export function Dashboard() {
     };
   }, []);
 
-  function viewDriver(plateNo: string) {
-    // Seeds Drivers.tsx's own search filter (matches on plateNo, see Drivers.tsx) so the operator
-    // lands on exactly this driver's row. This persists in the module-global store, so a later,
-    // unrelated visit to /drivers is still filtered — visible in its toolbar, so acceptable.
-    useDriversStore.setState({ search: plateNo, page: 1 });
-    navigate('/drivers');
-  }
+  const loggedAlerts = alerts.filter((a) => a.status === 'logged');
+  const mostRecentLogged = loggedAlerts[0];
+  const lapsedCount = expiring.filter((f) => f.daysUntilExpiry < 0).length;
+  const oldestOverdueDays = overdue.reduce((max, r) => Math.max(max, r.businessDaysElapsed), 0);
+  const queuesPastTarget = [overdue.length > 0, expiring.length > 0, loggedAlerts.length > 0].filter(Boolean).length;
 
-  const expiringColumns: DataTableColumn<ExpiringFranchiseRow>[] = [
+  const activityColumns: DataTableColumn<RecentTripActivityRow>[] = [
     { key: 'driver', header: 'Driver', render: (r) => r.driverName ?? 'Unknown', sortValue: (r) => r.driverName ?? '' },
-    { key: 'plate', header: 'Plate No.', render: (r) => r.plateNo },
+    { key: 'passenger', header: 'Passenger', render: (r) => r.passengerName ?? 'Unknown', sortValue: (r) => r.passengerName ?? '' },
     {
-      key: 'expiry',
-      header: 'Days until expiry',
-      render: (r) => (
-        <Badge
-          label={r.daysUntilExpiry < 0 ? `Expired ${Math.abs(r.daysUntilExpiry)}d ago` : `${r.daysUntilExpiry}d`}
-          tone={r.daysUntilExpiry < 0 ? 'danger' : 'warn'}
-        />
-      ),
-      sortValue: (r) => r.daysUntilExpiry,
-      align: 'right',
+      key: 'status',
+      header: 'Status',
+      render: (r) => <Badge label={titleCaseLabel(r.status)} tone={ACTIVITY_TONE[r.status] ?? 'neutral'} />,
     },
-    {
-      key: 'actions',
-      header: 'Actions',
-      render: (r) => (
-        <Button variant="outline" tone="neutral" size="sm" onClick={() => viewDriver(r.plateNo)}>
-          View driver
-        </Button>
-      ),
-    },
+    { key: 'fare', header: 'Fare', align: 'right', render: (r) => (r.fare != null ? formatCurrency(r.fare) : '—') },
+    { key: 'updated', header: 'Updated', render: (r) => formatRelativeTime(r.updatedAt) },
   ];
 
   return (
-    <div className="page">
+    <div className={styles.page}>
       <ErrorBanner message={statsError} />
-      <div>
-        <h2 className="panel-title">Overview</h2>
-        <div className="stat-grid">
-          <StatTile label="Total Drivers" value={loading ? '—' : (stats?.totalDrivers ?? '—')} tone="primary" />
-          <StatTile label="Active Rides" value={loading ? '—' : (stats?.activeRides ?? '—')} tone="success" />
-        </div>
-      </div>
-      <div>
-        <h2 className="panel-title">Needs attention</h2>
-        <div className="stat-grid">
-          <StatTile label="Pending Verifications" value={loading ? '—' : (stats?.pendingVerifications ?? '—')} tone="warn" />
-          <StatTile label="Open Complaints" value={loading ? '—' : (stats?.openComplaints ?? '—')} tone="danger" />
-          <StatTile label="Overdue Complaints" value={loading ? '—' : overdue.length} hint="Past 3-business-day ARTA target" tone="danger" />
-          <StatTile label="Expiring Franchises" value={loading ? '—' : expiring.length} hint="MTOP renewal due within 30 days" tone="warn" />
-        </div>
-      </div>
 
-      <div className="two-col">
+      <section>
+        <div className={styles.sectionHeader}>
+          <span className={styles.eyebrow}>Needs attention today</span>
+          <span className={styles.sectionMeta}>
+            {formatDayHeading()} · {queuesPastTarget} {queuesPastTarget === 1 ? 'queue' : 'queues'} past target
+          </span>
+        </div>
+        <div className={styles.attentionGrid}>
+          <AttentionCard
+            accent="danger"
+            eyebrow="Overdue complaints"
+            count={loading ? '—' : overdue.length}
+            context={loading ? '' : overdue.length > 0 ? `oldest is ${oldestOverdueDays} business days old` : 'No complaints past target.'}
+            linkLabel="Open complaints queue"
+            onLinkClick={() => navigate('/complaints')}
+            badgeLabel="ARTA 3d"
+            badgeTone="danger"
+          />
+          <AttentionCard
+            accent="warn"
+            eyebrow="Expiring franchises"
+            count={loading ? '—' : expiring.length}
+            context={loading ? '' : expiring.length > 0 ? `${lapsedCount} already lapsed, MTOP renewal due within 30 days` : 'No franchises expiring soon.'}
+            linkLabel="Review verification cases"
+            onLinkClick={() => navigate('/verification')}
+            badgeLabel="≤ 30 days"
+            badgeTone="warn"
+          />
+          <AttentionCard
+            accent="danger"
+            eyebrow="Unreviewed SOS"
+            count={loading ? '—' : loggedAlerts.length}
+            context={
+              loading
+                ? ''
+                : mostRecentLogged
+                  ? `triggered ${formatRelativeTime(mostRecentLogged.createdAt)}, ${titleCaseLabel(mostRecentLogged.triggeredRole)}`
+                  : 'No unreviewed alerts.'
+            }
+            linkLabel="Open emergency alerts"
+            onLinkClick={() => navigate('/emergency-alerts')}
+            badgeLabel="Logged"
+            badgeTone="danger"
+          />
+        </div>
+        <ErrorBanner message={alertsError} />
+      </section>
+
+      <section className={`panel ${styles.volumePanel}`}>
+        <VolumeCell label="Total drivers" value={loading ? '—' : (stats?.totalDrivers ?? '—')} />
+        <VolumeCell label="Active rides" value={loading ? '—' : (stats?.activeRides ?? '—')} />
+        <VolumeCell label="Pending verifications" value={loading ? '—' : (stats?.pendingVerifications ?? '—')} />
+        <VolumeCell label="Open complaints" value={loading ? '—' : (stats?.openComplaints ?? '—')} />
+      </section>
+
+      <div className={styles.chartsGrid}>
         <div className="panel">
-          <h2 className="panel-title">Rides Over Time (Week)</h2>
+          <PanelHeader title="Rides over time" action={<Badge label="Last 7 days" tone="neutral" />} />
           <ErrorBanner message={ridesError} />
           <RidesOverTimeChart data={ridesPerDay} loading={loading} />
         </div>
         <div className="panel">
-          <h2 className="panel-title">Ride Status</h2>
+          <PanelHeader title="Ride status" />
           <ErrorBanner message={statusError} />
           <RideStatusChart data={statusBreakdown} loading={loading} />
         </div>
@@ -182,46 +232,10 @@ export function Dashboard() {
 
       <div className="panel">
         <PanelHeader
-          title="Overdue Complaints"
-          action={
-            <Link to="/complaints">
-              <Button variant="outline" tone="neutral" size="sm">
-                Review all
-              </Button>
-            </Link>
-          }
-        />
-        <ErrorBanner message={overdueError} />
-        <DataTable columns={overdueColumns} rows={overdue} getRowKey={(r) => r.id} loading={loading} emptyMessage="No overdue complaints." />
-      </div>
-
-      <div className="panel">
-        <PanelHeader
-          title="Expiring Franchises"
-          action={
-            <Link to="/verification">
-              <Button variant="outline" tone="neutral" size="sm">
-                Open verification
-              </Button>
-            </Link>
-          }
-        />
-        <ErrorBanner message={expiringError} />
-        <DataTable
-          columns={expiringColumns}
-          rows={expiring}
-          getRowKey={(r) => r.tricycleId}
-          loading={loading}
-          emptyMessage="No franchises expiring soon."
-        />
-      </div>
-
-      <div className="panel">
-        <PanelHeader
-          title="Recent Activity"
+          title="Recent trip activity"
           action={
             <Link to="/monitoring">
-              <Button variant="outline" tone="neutral" size="sm">
+              <Button variant="ghost" tone="neutral" size="sm">
                 View all
               </Button>
             </Link>

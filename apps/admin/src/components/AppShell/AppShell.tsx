@@ -55,7 +55,7 @@ export function AppShell() {
           title="Log out"
           message="Are you sure you want to log out of TriSakay Admin?"
           confirmLabel="Log out"
-          tone="danger"
+          tone="primary"
           onCancel={() => setConfirmingLogout(false)}
           onConfirm={async () => {
             // signOut() is a real async Supabase call now — navigating before

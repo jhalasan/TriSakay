@@ -142,7 +142,9 @@ export async function listExpiringFranchises(): Promise<ListExpiringFranchisesRe
 export interface RecentTripActivityRow {
   id: string;
   driverName: string | null;
+  passengerName: string | null;
   status: 'forming' | 'active' | 'completed' | 'cancelled';
+  fare: number | null;
   updatedAt: string;
 }
 
@@ -152,32 +154,56 @@ export interface ListRecentTripActivityResult {
 }
 
 /**
- * Deliberately not a nested PostgREST embed (`driver_profiles(users(...))`)
- * — this codebase has no precedent of multi-hop embeds anywhere, and every
- * existing cross-user join instead uses either a security-definer RPC or,
- * as here, a plain follow-up lookup (same resolveUserNames() helper
- * listOverdueComplaints/listExpiringFranchises above already use). trips.driver_id
- * holds the same value as users.id (driver_profiles.user_id IS users.id),
- * so the follow-up .in() lookup works without hopping through driver_profiles.
+ * One row per ride_request, not per trip — a trip is a shared ride
+ * (trips.max_seats) with zero-to-many ride_requests attached, and each
+ * ride_request is the thing that actually carries a passenger and a fare
+ * (trips itself has neither column). Two flat queries plus the existing
+ * resolveUserNames() follow-up, matching this file's established
+ * no-nested-embeds convention (see listOverdueComplaints/
+ * listExpiringFranchises above) rather than a multi-hop PostgREST embed.
+ *
+ * Ordering/truncation happens after the second query, once each request's
+ * trip.updated_at is known, so the first query over-fetches by 4x on its
+ * own requested_at ordering to give the final recency sort enough rows to
+ * work with.
  */
 export async function listRecentTripActivity(limit = 10): Promise<ListRecentTripActivityResult> {
   const client = getSupabaseClient();
-  const { data, error } = await client
-    .from('trips')
-    .select('id, status, updated_at, driver_id')
-    .order('updated_at', { ascending: false })
-    .limit(limit);
 
-  if (error) return { data: [], error: error.message };
+  const { data: requests, error: requestsError } = await client
+    .from('ride_requests')
+    .select('id, passenger_id, final_fare, trip_id')
+    .not('trip_id', 'is', null)
+    .order('requested_at', { ascending: false })
+    .limit(limit * 4);
 
-  const names = await resolveUserNames(client, (data ?? []).map((row) => row.driver_id));
+  if (requestsError) return { data: [], error: requestsError.message };
+  if (!requests || requests.length === 0) return { data: [], error: null };
 
-  const rows = (data ?? []).map((row) => ({
-    id: row.id,
-    driverName: names.get(row.driver_id) ?? null,
-    status: row.status,
-    updatedAt: row.updated_at,
-  }));
+  const tripIds = [...new Set(requests.map((r) => r.trip_id).filter((id): id is string => id !== null))];
+
+  const { data: trips, error: tripsError } = await client.from('trips').select('id, driver_id, status, updated_at').in('id', tripIds);
+  if (tripsError) return { data: [], error: tripsError.message };
+
+  const tripById = new Map((trips ?? []).map((t) => [t.id, t]));
+  const names = await resolveUserNames(client, [...(trips ?? []).map((t) => t.driver_id), ...requests.map((r) => r.passenger_id)]);
+
+  const rows = requests
+    .map((r): RecentTripActivityRow | null => {
+      const trip = r.trip_id ? tripById.get(r.trip_id) : undefined;
+      if (!trip) return null;
+      return {
+        id: r.id,
+        driverName: names.get(trip.driver_id) ?? null,
+        passengerName: names.get(r.passenger_id) ?? null,
+        status: trip.status,
+        fare: r.final_fare,
+        updatedAt: trip.updated_at,
+      };
+    })
+    .filter((r): r is RecentTripActivityRow => r !== null)
+    .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    .slice(0, limit);
 
   return { data: rows, error: null };
 }
