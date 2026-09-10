@@ -21,5 +21,6 @@ export interface DriverRow {
   ratingCount: number;
   plateNo: string;
   cluster: TricycleCluster | null; // null when the driver has no tricycle on file yet
+  tripCount: number;
   createdAt: string; // ISO
 }

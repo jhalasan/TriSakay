@@ -3,12 +3,15 @@ import { blockPassenger, listPassengers, unblockPassenger } from '../services/pa
 import { runBulkAction, type BulkActionSummary } from '../lib/bulkActions';
 import type { PassengerRow } from '../types/passenger';
 
+/** 'discount_approved' isn't an account status — it's the strip's fourth cell (README §05), filtering on PassengerRow.discount instead. */
+export type PassengerStatusFilter = PassengerRow['accountStatus'] | 'all' | 'discount_approved';
+
 interface PassengersState {
   passengers: PassengerRow[];
   loading: boolean;
   error: string | null;
   search: string;
-  statusFilter: PassengerRow['accountStatus'] | 'all';
+  statusFilter: PassengerStatusFilter;
   page: number;
   fetch: () => Promise<void>;
   setSearch: (value: string) => void;

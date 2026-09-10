@@ -42,11 +42,14 @@ function fakeAccountsClient() {
           }),
         };
       }
-      if (table === 'driver_profiles' || table === 'tricycles') {
+      if (table === 'driver_profiles' || table === 'tricycles' || table === 'trips') {
         return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       }
-      if (table === 'ride_requests' || table === 'passenger_discounts') {
+      if (table === 'ride_requests') {
         return { select: () => ({ eq: () => ({ in: async () => ({ data: [], error: null }) }) }) };
+      }
+      if (table === 'passenger_discounts') {
+        return { select: () => ({ in: () => ({ order: async () => ({ data: [], error: null }) }) }) };
       }
       throw new Error(`unexpected table ${table}`);
     },

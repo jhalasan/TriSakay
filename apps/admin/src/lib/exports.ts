@@ -13,6 +13,7 @@ export const driverCsvColumns: CsvColumn<DriverRow>[] = [
   { header: 'Verification Status', value: (d) => titleCaseLabel(d.verificationStatus) },
   { header: 'Rating', value: (d) => (d.ratingCount > 0 ? d.ratingAvg.toFixed(2) : '') },
   { header: 'Ratings Count', value: (d) => d.ratingCount },
+  { header: 'Trips', value: (d) => d.tripCount },
   { header: 'Registered', value: (d) => formatDate(d.createdAt) },
 ];
 
@@ -22,7 +23,7 @@ export const passengerCsvColumns: CsvColumn<PassengerRow>[] = [
   { header: 'Email', value: (p) => p.email },
   { header: 'Account Status', value: (p) => titleCaseLabel(p.accountStatus) },
   { header: 'Total Rides', value: (p) => p.totalRides },
-  { header: 'Fare Discount', value: (p) => (p.hasApprovedDiscount ? 'Approved' : '') },
+  { header: 'Fare Discount', value: (p) => (p.discount ? `${titleCaseLabel(p.discount.category)} - ${titleCaseLabel(p.discount.status)}` : '') },
   { header: 'Registered', value: (p) => formatDate(p.createdAt) },
 ];
 

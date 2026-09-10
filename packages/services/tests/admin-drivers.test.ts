@@ -41,6 +41,17 @@ test('listDriversForAdmin merges users + driver_profiles + tricycles by id', asy
           }),
         };
       }
+      if (table === 'trips') {
+        return {
+          select: () => ({
+            in: async () => ({
+              // d1 has three trips, d2 has none — the count is tallied client-side, not a per-driver count query.
+              data: [{ driver_id: 'd1' }, { driver_id: 'd1' }, { driver_id: 'd1' }],
+              error: null,
+            }),
+          }),
+        };
+      }
       throw new Error(`unexpected table ${table}`);
     },
   } as any);
@@ -60,6 +71,7 @@ test('listDriversForAdmin merges users + driver_profiles + tricycles by id', asy
       ratingCount: 132,
       plateNo: 'GSC-4521',
       cluster: 'melting_pot',
+      tripCount: 3,
       createdAt: '2026-01-01T00:00:00.000Z',
     },
     {
@@ -73,6 +85,7 @@ test('listDriversForAdmin merges users + driver_profiles + tricycles by id', asy
       ratingCount: 0,
       plateNo: null,
       cluster: null,
+      tripCount: 0,
       createdAt: '2026-02-01T00:00:00.000Z',
     },
   ]);
@@ -112,6 +125,25 @@ test('listDriversForAdmin returns { data: [], error } when the tricycles query f
       }
       if (table === 'driver_profiles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       if (table === 'tricycles') return { select: () => ({ in: async () => ({ data: null, error: { message: 'connection refused' } }) }) };
+      if (table === 'trips') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await listDriversForAdmin();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
+});
+
+test('listDriversForAdmin returns { data: [], error } when the trips query fails', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'users') {
+        return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'd1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
+      }
+      if (table === 'driver_profiles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
+      if (table === 'tricycles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
+      if (table === 'trips') return { select: () => ({ in: async () => ({ data: null, error: { message: 'connection refused' } }) }) };
       throw new Error(`unexpected table ${table}`);
     },
   } as any);

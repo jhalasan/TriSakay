@@ -73,7 +73,34 @@ const STATUS_TONE: Record<DriverRow['accountStatus'], 'neutral' | 'success' | 'w
   deactivated: 'neutral',
 };
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE = 7;
+
+type StripValue = DriverRow['accountStatus'] | 'all';
+
+/** README §05 item 1 "Status strip = the filter" — four clickable cells sharing one panel. */
+function StatusStrip({ drivers, active, onSelect }: { drivers: DriverRow[]; active: StripValue; onSelect: (value: StripValue) => void }) {
+  const cells: { label: string; value: StripValue; count: number }[] = [
+    { label: 'All drivers', value: 'all', count: drivers.length },
+    { label: 'Active', value: 'active', count: drivers.filter((d) => d.accountStatus === 'active').length },
+    { label: 'Flagged', value: 'flagged', count: drivers.filter((d) => d.accountStatus === 'flagged').length },
+    { label: 'Suspended', value: 'suspended', count: drivers.filter((d) => d.accountStatus === 'suspended').length },
+  ];
+  return (
+    <div className="panel status-strip">
+      {cells.map((cell) => (
+        <button
+          key={cell.value}
+          type="button"
+          className={`status-cell ${active === cell.value ? 'status-cell-active' : ''}`}
+          onClick={() => onSelect(cell.value)}
+        >
+          <span className="field-label">{cell.label}</span>
+          <span className="status-count">{cell.count}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 /** Wireframe screen 3 "Driver management" (FR-6.1, 6.2). */
 export function Drivers() {
@@ -232,8 +259,19 @@ export function Drivers() {
           <Avatar fullName={d.fullName} />
           <div>
             <div style={{ fontWeight: 600 }}>{d.fullName}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{d.plateNo}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{d.email}</div>
           </div>
+        </div>
+      ),
+    },
+    {
+      key: 'tricycle',
+      header: 'Tricycle',
+      sortValue: (d) => d.plateNo,
+      render: (d) => (
+        <div>
+          <div className="mono">{d.plateNo}</div>
+          <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{d.cluster ? titleCaseLabel(d.cluster) : '—'}</div>
         </div>
       ),
     },
@@ -242,6 +280,13 @@ export function Drivers() {
       header: 'Rating',
       sortValue: (d) => d.ratingAvg,
       render: (d) => (d.ratingCount > 0 ? <RatingSquares value={d.ratingAvg} /> : <span style={{ color: 'var(--ink-faint)' }}>—</span>),
+    },
+    {
+      key: 'trips',
+      header: 'Trips',
+      align: 'right',
+      sortValue: (d) => d.tripCount,
+      render: (d) => d.tripCount.toLocaleString(),
     },
     {
       key: 'status',
@@ -296,6 +341,7 @@ export function Drivers() {
   return (
     <div className="page">
       <ErrorBanner message={error} />
+      <StatusStrip drivers={drivers} active={statusFilter} onSelect={setStatusFilter} />
       <TableToolbar
         search={search}
         onSearchChange={setSearch}
@@ -350,7 +396,14 @@ export function Drivers() {
         onToggleRow={toggleRow}
         onToggleAll={toggleAllOnPage}
       />
-      <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
+      <div className="list-footer">
+        <span className="list-footer-count">
+          {filtered.length === 0
+            ? 'Showing 0 of 0 drivers'
+            : `Showing ${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, filtered.length)} of ${filtered.length} drivers`}
+        </span>
+        <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
+      </div>
 
       {selected && (
         <div className="panel detail-panel">

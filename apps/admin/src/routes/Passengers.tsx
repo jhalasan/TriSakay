@@ -10,9 +10,9 @@ import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ErrorBanner } from '../components/ErrorBanner';
-import { usePassengersStore } from '../store/usePassengersStore';
+import { usePassengersStore, type PassengerStatusFilter } from '../store/usePassengersStore';
 import type { PassengerRow } from '../types/passenger';
-import { formatDate, passengerStatusLabel } from '../lib/format';
+import { formatDate, passengerStatusLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import { passengerCsvColumns, exportFilename } from '../lib/exports';
 
@@ -23,7 +23,39 @@ const STATUS_TONE: Record<PassengerRow['accountStatus'], 'neutral' | 'success' |
   deactivated: 'neutral',
 };
 
-const PAGE_SIZE = 5;
+const DISCOUNT_STATUS_TONE: Record<string, 'neutral' | 'success' | 'warn' | 'danger'> = {
+  approved: 'success',
+  pending: 'warn',
+  rejected: 'danger',
+  unsubmitted: 'neutral',
+};
+
+const PAGE_SIZE = 7;
+
+/** README §05 item 1 "Status strip = the filter" — Passengers' fourth cell filters on discount, not account status. */
+function StatusStrip({ passengers, active, onSelect }: { passengers: PassengerRow[]; active: PassengerStatusFilter; onSelect: (value: PassengerStatusFilter) => void }) {
+  const cells: { label: string; value: PassengerStatusFilter; count: number }[] = [
+    { label: 'All passengers', value: 'all', count: passengers.length },
+    { label: 'Active', value: 'active', count: passengers.filter((p) => p.accountStatus === 'active').length },
+    { label: 'Fare discount approved', value: 'discount_approved', count: passengers.filter((p) => p.discount?.status === 'approved').length },
+    { label: 'Blocked', value: 'suspended', count: passengers.filter((p) => p.accountStatus === 'suspended').length },
+  ];
+  return (
+    <div className="panel status-strip">
+      {cells.map((cell) => (
+        <button
+          key={cell.value}
+          type="button"
+          className={`status-cell ${active === cell.value ? 'status-cell-active' : ''}`}
+          onClick={() => onSelect(cell.value)}
+        >
+          <span className="field-label">{cell.label}</span>
+          <span className="status-count">{cell.count}</span>
+        </button>
+      ))}
+    </div>
+  );
+}
 
 type PendingActionKind = 'block' | 'unblock';
 
@@ -147,7 +179,8 @@ export function Passengers() {
     const q = search.trim().toLowerCase();
     return passengers.filter((p) => {
       const matchesSearch = !q || p.fullName.toLowerCase().includes(q) || p.email.toLowerCase().includes(q);
-      const matchesStatus = statusFilter === 'all' || p.accountStatus === statusFilter;
+      const matchesStatus =
+        statusFilter === 'all' ? true : statusFilter === 'discount_approved' ? p.discount?.status === 'approved' : p.accountStatus === statusFilter;
       return matchesSearch && matchesStatus;
     });
   }, [passengers, search, statusFilter]);
@@ -169,7 +202,17 @@ export function Passengers() {
         { label: 'Contact No', value: selected.contactNo },
         { label: 'Email', value: selected.email },
         { label: 'Total Rides', value: selected.totalRides },
-        { label: 'Fare Discount', value: selected.hasApprovedDiscount ? <Badge label="Approved" tone="success" /> : '—' },
+        {
+          label: 'Fare Discount',
+          value: selected.discount ? (
+            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {titleCaseLabel(selected.discount.category)}
+              <Badge label={titleCaseLabel(selected.discount.status)} tone={DISCOUNT_STATUS_TONE[selected.discount.status]} />
+            </span>
+          ) : (
+            '—'
+          ),
+        },
         { label: 'Registered', value: formatDate(selected.createdAt) },
         { label: 'Passenger ID', value: <span className="mono">{selected.id}</span> },
       ]
@@ -183,18 +226,24 @@ export function Passengers() {
       render: (p) => (
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Avatar fullName={p.fullName} />
-          <div>
-            <div style={{ fontWeight: 600 }}>{p.fullName}</div>
-            <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{p.contactNo}</div>
-          </div>
+          <div style={{ fontWeight: 600 }}>{p.fullName}</div>
         </div>
       ),
     },
+    { key: 'contact', header: 'Contact', sortValue: (p) => p.contactNo, render: (p) => p.contactNo },
     { key: 'rides', header: 'Total Rides', sortValue: (p) => p.totalRides, render: (p) => p.totalRides, align: 'right' },
     {
       key: 'discount',
       header: 'Fare Discount',
-      render: (p) => (p.hasApprovedDiscount ? <Badge label="Approved" tone="success" /> : <span style={{ color: 'var(--ink-faint)' }}>—</span>),
+      render: (p) =>
+        p.discount ? (
+          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {titleCaseLabel(p.discount.category)}
+            <Badge label={titleCaseLabel(p.discount.status)} tone={DISCOUNT_STATUS_TONE[p.discount.status]} />
+          </span>
+        ) : (
+          <span style={{ color: 'var(--ink-faint)' }}>—</span>
+        ),
     },
     {
       key: 'status',
@@ -246,6 +295,7 @@ export function Passengers() {
   return (
     <div className="page">
       <ErrorBanner message={error} />
+      <StatusStrip passengers={passengers} active={statusFilter} onSelect={setStatusFilter} />
       <TableToolbar
         search={search}
         onSearchChange={setSearch}
@@ -296,7 +346,14 @@ export function Passengers() {
         onToggleRow={toggleRow}
         onToggleAll={toggleAllOnPage}
       />
-      <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
+      <div className="list-footer">
+        <span className="list-footer-count">
+          {filtered.length === 0
+            ? 'Showing 0 of 0 passengers'
+            : `Showing ${(safePage - 1) * PAGE_SIZE + 1}–${Math.min(safePage * PAGE_SIZE, filtered.length)} of ${filtered.length} passengers`}
+        </span>
+        <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
+      </div>
 
       {selected && (
         <div className="panel detail-panel">

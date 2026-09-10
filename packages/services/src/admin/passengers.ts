@@ -1,5 +1,10 @@
 import { getSupabaseClient } from '../supabase/client.ts';
 
+export interface AdminPassengerDiscount {
+  category: 'senior_citizen' | 'pwd' | 'student';
+  status: 'unsubmitted' | 'pending' | 'approved' | 'rejected';
+}
+
 export interface AdminPassengerRow {
   id: string;
   fullName: string;
@@ -7,7 +12,7 @@ export interface AdminPassengerRow {
   email: string;
   accountStatus: 'active' | 'flagged' | 'suspended' | 'deactivated';
   totalRides: number;
-  hasApprovedDiscount: boolean;
+  discount: AdminPassengerDiscount | null;
   createdAt: string;
 }
 
@@ -18,10 +23,14 @@ export interface ListPassengersForAdminResult {
 
 /**
  * users (role='passenger') + a completed-ride count from ride_requests +
- * an approved-discount flag from passenger_discounts, merged client-side.
- * PostgREST has no GROUP BY, so the ride count is a row fetch reduced in
- * JS rather than an aggregate query — fine at this app's pilot-barangay
- * scale (same tradeoff admin/dashboard.ts makes for its follow-up lookups).
+ * each passenger's own discount application (category + review status,
+ * not just an approved/not flag) from passenger_discounts, merged
+ * client-side. PostgREST has no GROUP BY, so the ride count is a row fetch
+ * reduced in JS rather than an aggregate query — fine at this app's
+ * pilot-barangay scale (same tradeoff admin/dashboard.ts makes for its
+ * follow-up lookups). A passenger applies for at most one discount in
+ * practice; ordering by submitted_at desc and keeping the first row seen
+ * per passenger picks their latest application if more than one exists.
  */
 export async function listPassengersForAdmin(): Promise<ListPassengersForAdminResult> {
   const client = getSupabaseClient();
@@ -39,7 +48,7 @@ export async function listPassengersForAdmin(): Promise<ListPassengersForAdminRe
 
   const [{ data: completedRides, error: ridesError }, { data: discounts, error: discountsError }] = await Promise.all([
     client.from('ride_requests').select('passenger_id').eq('status', 'completed').in('passenger_id', ids),
-    client.from('passenger_discounts').select('passenger_id').eq('status', 'approved').in('passenger_id', ids),
+    client.from('passenger_discounts').select('passenger_id, category, status').in('passenger_id', ids).order('submitted_at', { ascending: false }),
   ]);
 
   if (ridesError) return { data: [], error: ridesError.message };
@@ -49,7 +58,12 @@ export async function listPassengersForAdmin(): Promise<ListPassengersForAdminRe
   for (const row of completedRides ?? []) {
     rideCountByPassengerId.set(row.passenger_id, (rideCountByPassengerId.get(row.passenger_id) ?? 0) + 1);
   }
-  const approvedDiscountIds = new Set((discounts ?? []).map((d) => d.passenger_id));
+  const discountByPassengerId = new Map<string, AdminPassengerDiscount>();
+  for (const row of discounts ?? []) {
+    if (!discountByPassengerId.has(row.passenger_id)) {
+      discountByPassengerId.set(row.passenger_id, { category: row.category, status: row.status });
+    }
+  }
 
   const rows = users.map((u) => ({
     id: u.id,
@@ -58,7 +72,7 @@ export async function listPassengersForAdmin(): Promise<ListPassengersForAdminRe
     email: u.email,
     accountStatus: u.status,
     totalRides: rideCountByPassengerId.get(u.id) ?? 0,
-    hasApprovedDiscount: approvedDiscountIds.has(u.id),
+    discount: discountByPassengerId.get(u.id) ?? null,
     createdAt: u.created_at,
   }));
 

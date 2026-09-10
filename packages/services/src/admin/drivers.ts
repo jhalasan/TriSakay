@@ -11,6 +11,7 @@ export interface AdminDriverRow {
   ratingCount: number;
   plateNo: string | null;
   cluster: 'red' | 'white' | 'apple_green' | 'melting_pot' | null;
+  tripCount: number;
   createdAt: string;
 }
 
@@ -20,12 +21,18 @@ export interface ListDriversForAdminResult {
 }
 
 /**
- * users (role='driver') + driver_profiles + tricycles, merged client-side
- * rather than a nested PostgREST embed — same "no multi-hop embed"
- * convention as admin/dashboard.ts's resolveUserNames(). A driver commonly
- * has no tricycle row yet (verification not started) and possibly no
- * driver_profiles values worth trusting until then, so both joins tolerate
- * a miss rather than dropping the driver from the list.
+ * users (role='driver') + driver_profiles + tricycles + a trip tally,
+ * merged client-side rather than a nested PostgREST embed — same "no
+ * multi-hop embed" convention as admin/dashboard.ts's resolveUserNames().
+ * A driver commonly has no tricycle row yet (verification not started) and
+ * possibly no driver_profiles values worth trusting until then, so both
+ * joins tolerate a miss rather than dropping the driver from the list.
+ *
+ * tripCount pulls one (id-only) row per trip rather than a per-driver
+ * count query — this app already fetches full lists and filters/paginates
+ * client-side everywhere (Drivers.tsx's own search box, TopBar's global
+ * search), so a single flat trips.select('driver_id') tallied client-side
+ * matches that existing convention instead of adding a new query shape.
  */
 export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> {
   const client = getSupabaseClient();
@@ -41,16 +48,20 @@ export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> 
 
   const ids = users.map((u) => u.id);
 
-  const [{ data: profiles, error: profilesError }, { data: tricycles, error: tricyclesError }] = await Promise.all([
+  const [{ data: profiles, error: profilesError }, { data: tricycles, error: tricyclesError }, { data: trips, error: tripsError }] = await Promise.all([
     client.from('driver_profiles').select('user_id, verification_status, rating_avg, rating_count').in('user_id', ids),
     client.from('tricycles').select('driver_id, plate_no, cluster').in('driver_id', ids),
+    client.from('trips').select('driver_id').in('driver_id', ids),
   ]);
 
   if (profilesError) return { data: [], error: profilesError.message };
   if (tricyclesError) return { data: [], error: tricyclesError.message };
+  if (tripsError) return { data: [], error: tripsError.message };
 
   const profileByUserId = new Map((profiles ?? []).map((p) => [p.user_id, p]));
   const tricycleByDriverId = new Map((tricycles ?? []).map((t) => [t.driver_id, t]));
+  const tripCountByDriverId = new Map<string, number>();
+  for (const t of trips ?? []) tripCountByDriverId.set(t.driver_id, (tripCountByDriverId.get(t.driver_id) ?? 0) + 1);
 
   const rows = users.map((u) => {
     const profile = profileByUserId.get(u.id);
@@ -66,6 +77,7 @@ export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> 
       ratingCount: profile?.rating_count ?? 0,
       plateNo: tricycle?.plate_no ?? null,
       cluster: tricycle?.cluster ?? null,
+      tripCount: tripCountByDriverId.get(u.id) ?? 0,
       createdAt: u.created_at,
     };
   });

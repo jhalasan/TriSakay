@@ -13,7 +13,7 @@ export async function listPassengers(): Promise<ServiceResult<PassengerRow[]>> {
     email: p.email,
     accountStatus: p.accountStatus,
     totalRides: p.totalRides,
-    hasApprovedDiscount: p.hasApprovedDiscount,
+    discount: p.discount,
     createdAt: p.createdAt,
   }));
 

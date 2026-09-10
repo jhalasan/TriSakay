@@ -21,6 +21,7 @@ export async function listDrivers(): Promise<ServiceResult<DriverRow[]>> {
     ratingCount: d.ratingCount,
     plateNo: d.plateNo ?? '—',
     cluster: d.cluster,
+    tripCount: d.tripCount,
     createdAt: d.createdAt,
   }));
 

@@ -16,6 +16,7 @@ const driver: DriverRow = {
   ratingCount: 10,
   plateNo: 'ABC-123',
   cluster: null,
+  tripCount: 34,
   createdAt: '2026-01-15T00:00:00.000Z',
 };
 
@@ -26,7 +27,7 @@ const passenger: PassengerRow = {
   email: 'maria@example.com',
   accountStatus: 'active',
   totalRides: 12,
-  hasApprovedDiscount: true,
+  discount: { category: 'senior_citizen', status: 'approved' },
   createdAt: '2026-01-15T00:00:00.000Z',
 };
 
@@ -42,6 +43,7 @@ test('driverCsvColumns includes every header once', () => {
     'Verification Status',
     'Rating',
     'Ratings Count',
+    'Trips',
     'Registered',
   ]);
 });

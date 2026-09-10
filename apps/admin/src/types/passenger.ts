@@ -1,4 +1,10 @@
 import type { AccountStatus } from './driver';
+import type { DiscountCategory, DiscountReviewStatus } from './discount';
+
+export interface PassengerDiscount {
+  category: DiscountCategory;
+  status: DiscountReviewStatus;
+}
 
 /** Mirrors docs/SCHEMA.MD `users` where role = 'passenger'. */
 export interface PassengerRow {
@@ -8,6 +14,6 @@ export interface PassengerRow {
   email: string;
   accountStatus: AccountStatus;
   totalRides: number;
-  hasApprovedDiscount: boolean; // passenger_discounts.status = 'approved'
+  discount: PassengerDiscount | null; // the passenger's latest passenger_discounts application, if any
   createdAt: string;
 }
