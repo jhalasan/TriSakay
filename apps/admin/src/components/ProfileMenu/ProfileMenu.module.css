@@ -175,15 +175,6 @@
   justify-content: flex-end;
 }
 
-.success {
-  font-size: 11px;
-  color: var(--success);
-  background: var(--success-soft);
-  border: 1px solid var(--success-border);
-  border-radius: var(--r-sm);
-  padding: 6px 8px;
-}
-
 @keyframes rise {
   from {
     opacity: 0;

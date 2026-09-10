@@ -15,8 +15,14 @@ export function toCsv<T>(rows: T[], columns: CsvColumn<T>[]): string {
   return [header, ...lines].join('\r\n');
 }
 
-/** Triggers a browser download of `content` as a file — the only DOM-touching function in this module, kept isolated so the CSV formatting above stays unit-testable. */
-export function downloadCsv(filename: string, content: string): void {
+/**
+ * Triggers a browser download of `content` as a file — the only DOM-touching
+ * function in this module, kept isolated so the CSV formatting above stays
+ * unit-testable. Returns the object URL so a caller can also offer it via
+ * the export success toast's "Open" link (README §12); the URL stays valid
+ * for two minutes, then is revoked rather than held forever.
+ */
+export function downloadCsv(filename: string, content: string): string {
   const blob = new Blob([content], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
@@ -25,5 +31,6 @@ export function downloadCsv(filename: string, content: string): void {
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 120_000);
+  return url;
 }

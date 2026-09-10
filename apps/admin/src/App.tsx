@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
+import { ToastProvider } from './components/Toast';
 import { Login } from './routes/Login';
 import { Dashboard } from './routes/Dashboard';
 import { Drivers } from './routes/Drivers';
@@ -65,74 +66,76 @@ function RequireAdmin({ children }: { children: ReactNode }) {
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <Routes>
-        <Route
-          path="/login"
-          element={
-            <RedirectIfAuthed>
-              <Login />
-            </RedirectIfAuthed>
-          }
-        />
-
-        <Route
-          path="/force-password-change"
-          element={
-            <RequireForcedPasswordChange>
-              <ForcePasswordChange />
-            </RequireForcedPasswordChange>
-          }
-        />
-
-        <Route
-          element={
-            <RequireAuth>
-              <RequirePasswordSet>
-                <AppShell />
-              </RequirePasswordSet>
-            </RequireAuth>
-          }
-        >
-          <Route index element={<Dashboard />} />
-          <Route path="drivers" element={<Drivers />} />
-          <Route path="verification" element={<DriverVerification />} />
-          <Route path="passengers" element={<Passengers />} />
-          <Route path="monitoring" element={<RideMonitoring />} />
-          <Route path="complaints" element={<Complaints />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="audit-log" element={<AuditLog />} />
-          <Route path="rating-oversight" element={<RatingOversight />} />
-          <Route path="discounts" element={<DiscountReview />} />
-          <Route path="emergency-alerts" element={<EmergencyAlerts />} />
+    <ToastProvider>
+      <BrowserRouter>
+        <Routes>
           <Route
-            path="pso-users"
+            path="/login"
             element={
-              <RequireAdmin>
-                <PsoUsers />
-              </RequireAdmin>
+              <RedirectIfAuthed>
+                <Login />
+              </RedirectIfAuthed>
             }
           />
-          <Route
-            path="barangays"
-            element={
-              <RequireAdmin>
-                <Barangays />
-              </RequireAdmin>
-            }
-          />
-          <Route
-            path="settings"
-            element={
-              <RequireAdmin>
-                <SystemSettings />
-              </RequireAdmin>
-            }
-          />
-        </Route>
 
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
+          <Route
+            path="/force-password-change"
+            element={
+              <RequireForcedPasswordChange>
+                <ForcePasswordChange />
+              </RequireForcedPasswordChange>
+            }
+          />
+
+          <Route
+            element={
+              <RequireAuth>
+                <RequirePasswordSet>
+                  <AppShell />
+                </RequirePasswordSet>
+              </RequireAuth>
+            }
+          >
+            <Route index element={<Dashboard />} />
+            <Route path="drivers" element={<Drivers />} />
+            <Route path="verification" element={<DriverVerification />} />
+            <Route path="passengers" element={<Passengers />} />
+            <Route path="monitoring" element={<RideMonitoring />} />
+            <Route path="complaints" element={<Complaints />} />
+            <Route path="reports" element={<Reports />} />
+            <Route path="audit-log" element={<AuditLog />} />
+            <Route path="rating-oversight" element={<RatingOversight />} />
+            <Route path="discounts" element={<DiscountReview />} />
+            <Route path="emergency-alerts" element={<EmergencyAlerts />} />
+            <Route
+              path="pso-users"
+              element={
+                <RequireAdmin>
+                  <PsoUsers />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="barangays"
+              element={
+                <RequireAdmin>
+                  <Barangays />
+                </RequireAdmin>
+              }
+            />
+            <Route
+              path="settings"
+              element={
+                <RequireAdmin>
+                  <SystemSettings />
+                </RequireAdmin>
+              }
+            />
+          </Route>
+
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </BrowserRouter>
+    </ToastProvider>
   );
 }

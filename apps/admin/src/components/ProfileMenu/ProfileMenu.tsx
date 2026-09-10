@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Avatar } from '../Avatar';
 import { Button } from '../Button';
 import { TextField } from '../TextField';
-import { ErrorBanner } from '../ErrorBanner';
+import { useToast } from '../Toast';
 import { useSessionStore } from '../../store/useSessionStore';
 import { ROLE_LABELS } from '../../lib/rbac';
 import { passwordPolicyError } from '../../lib/passwordPolicy';
@@ -31,8 +31,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [passwordError, setPasswordError] = useState<string | null>(null);
   const [savingPassword, setSavingPassword] = useState(false);
-
-  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -50,7 +49,6 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
     setChangingPassword(false);
     setNameError(null);
     setPasswordError(null);
-    setSuccessMessage(null);
     setPassword('');
     setConfirmPassword('');
   }
@@ -58,7 +56,6 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   function startEditingName() {
     setFullName(user!.fullName);
     setNameError(null);
-    setSuccessMessage(null);
     setEditingName(true);
   }
 
@@ -73,14 +70,13 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
     }
     setNameError(null);
     setEditingName(false);
-    setSuccessMessage('Name updated.');
+    showToast({ message: 'Name updated.' });
   }
 
   function startChangingPassword() {
     setPassword('');
     setConfirmPassword('');
     setPasswordError(null);
-    setSuccessMessage(null);
     setChangingPassword(true);
   }
 
@@ -107,7 +103,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
     setChangingPassword(false);
     setPassword('');
     setConfirmPassword('');
-    setSuccessMessage('Password updated.');
+    showToast({ message: 'Password updated.' });
   }
 
   return (
@@ -140,8 +136,6 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
           </div>
           <span className={styles.roleBand}>{ROLE_LABELS[user.role]}</span>
 
-          {successMessage && <div className={styles.success}>{successMessage}</div>}
-
           <div className={styles.section}>
             <div className={styles.sectionRow}>
               <span className={styles.sectionLabel}>Name</span>
@@ -153,8 +147,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
             </div>
             {editingName ? (
               <div className={styles.form}>
-                <TextField value={fullName} onChange={(e) => setFullName(e.target.value)} autoFocus />
-                <ErrorBanner message={nameError} />
+                <TextField value={fullName} onChange={(e) => setFullName(e.target.value)} error={nameError ?? undefined} autoFocus />
                 <div className={styles.formActions}>
                   <Button variant="outline" tone="neutral" size="sm" onClick={() => setEditingName(false)}>
                     Cancel
@@ -186,6 +179,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
+                  error={passwordError && passwordError !== 'Passwords do not match.' ? passwordError : undefined}
                   autoFocus
                 />
                 <TextField
@@ -194,8 +188,8 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                   autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
+                  error={passwordError === 'Passwords do not match.' ? passwordError : undefined}
                 />
-                <ErrorBanner message={passwordError} />
                 <div className={styles.formActions}>
                   <Button variant="outline" tone="neutral" size="sm" onClick={() => setChangingPassword(false)}>
                     Cancel

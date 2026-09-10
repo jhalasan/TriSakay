@@ -8,6 +8,7 @@ import { Avatar } from '../components/Avatar';
 import { RoleGate } from '../components/RoleGate';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import { useDiscountsStore } from '../store/useDiscountsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import type { DiscountRow } from '../types/discount';
@@ -34,6 +35,8 @@ export function DiscountReview() {
   const fareConfig = useSettingsStore((state) => state.fareConfig);
   const fetchSettings = useSettingsStore((state) => state.fetch);
   const [remarksDraft, setRemarksDraft] = useState('');
+  const [deciding, setDeciding] = useState<'approve' | 'reject' | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -44,6 +47,22 @@ export function DiscountReview() {
   }, [fareConfig, fetchSettings]);
 
   const selected = items.find((d) => d.id === selectedId) ?? null;
+
+  async function handleApprove() {
+    if (!selected) return;
+    setDeciding('approve');
+    const ok = await approve(selected.id, remarksDraft || undefined);
+    setDeciding(null);
+    if (ok) showToast({ message: `${selected.passengerName}'s discount approved.` });
+  }
+
+  async function handleReject() {
+    if (!selected) return;
+    setDeciding('reject');
+    const ok = await reject(selected.id, remarksDraft);
+    setDeciding(null);
+    if (ok) showToast({ message: `${selected.passengerName}'s discount rejected.` });
+  }
   const pending = items.filter((d) => d.status === 'pending');
   const recentlyDecided = items
     .filter((d) => d.status === 'approved' || d.status === 'rejected')
@@ -55,9 +74,25 @@ export function DiscountReview() {
     setRemarksDraft(d.remarks ?? '');
   }
 
+  if (error && items.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load discount applications."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="review-page">
-      <ErrorBanner message={error} />
       <div className="review-grid review-grid-3">
         <div className="panel review-pane">
           <div className="pane-header">
@@ -68,7 +103,7 @@ export function DiscountReview() {
           </div>
           <div className="pane-scroll">
             {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
-            {!loading && pending.length === 0 && <EmptyState message="No discount applications to review." />}
+            {!loading && pending.length === 0 && <EmptyState message="No discount applications to review." hint="New senior, PWD, and student applications appear here." />}
             <div className="case-list">
               {pending.map((d) => (
                 <button key={d.id} className={`case-row ${d.id === selectedId ? 'case-row-active' : ''}`} onClick={() => openReview(d)}>
@@ -144,7 +179,7 @@ export function DiscountReview() {
               </div>
             </>
           ) : (
-            <EmptyState message="Select an application to review its ID." />
+            <EmptyState message="Select an application to review its ID." icon={false} />
           )}
         </div>
 
@@ -165,23 +200,34 @@ export function DiscountReview() {
                   placeholder="Notes on the application, required if rejecting…"
                 />
 
+                <ErrorBanner message={error} />
+
                 <RoleGate
                   min="supervisor"
                   fallback={<div className="read-only-note">Approve / Reject — PSO Supervisor &amp; Administrator only. PSO Staff: read-only review.</div>}
                 >
                   <div className="decision-row">
-                    <Button variant="solid" tone="primary" superscript="S+" fullWidth onClick={() => approve(selected.id, remarksDraft || undefined)}>
-                      Approve
+                    <Button
+                      variant="solid"
+                      tone="primary"
+                      superscript="S+"
+                      fullWidth
+                      loading={deciding === 'approve'}
+                      disabled={deciding !== null}
+                      onClick={handleApprove}
+                    >
+                      {deciding === 'approve' ? 'Approving…' : 'Approve'}
                     </Button>
                     <Button
                       variant="outline"
                       tone="danger"
                       superscript="S+"
                       fullWidth
-                      disabled={!remarksDraft.trim()}
-                      onClick={() => reject(selected.id, remarksDraft)}
+                      loading={deciding === 'reject'}
+                      disabled={deciding !== null || !remarksDraft.trim()}
+                      onClick={handleReject}
                     >
-                      Reject
+                      {deciding === 'reject' ? 'Rejecting…' : 'Reject'}
                     </Button>
                   </div>
                   <p className="footnote">Rejecting requires remarks — the passenger sees them in the app.</p>
@@ -189,7 +235,7 @@ export function DiscountReview() {
               </div>
             </>
           ) : (
-            <EmptyState message="Select an application to decide it." />
+            <EmptyState message="Select an application to decide it." icon={false} />
           )}
         </div>
       </div>

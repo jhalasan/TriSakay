@@ -6,6 +6,8 @@ import { TextField } from '../components/TextField';
 import { Select } from '../components/Select';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import { usePsoUsersStore } from '../store/usePsoUsersStore';
 import type { PsoUserRow } from '../types/psoUser';
 import { ROLE_LABELS } from '../lib/rbac';
@@ -68,6 +70,7 @@ export function PsoUsers() {
   const [sessionsUser, setSessionsUser] = useState<PsoUserRow | null>(null);
   const [pendingRevokeId, setPendingRevokeId] = useState<string | null>(null);
   const [revoking, setRevoking] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -98,7 +101,9 @@ export function PsoUsers() {
     setSubmitting(true);
     const ok = await (pendingAction.kind === 'disable' ? disable : enable)(pendingAction.user.id, reason);
     setSubmitting(false);
-    if (ok) closeActionModal();
+    if (!ok) return;
+    showToast({ message: `${pendingAction.user.fullName} ${pendingAction.kind === 'disable' ? 'disabled' : 'enabled'}.` });
+    closeActionModal();
   }
 
   function openSessions(u: PsoUserRow) {
@@ -111,7 +116,9 @@ export function PsoUsers() {
     setRevoking(true);
     const ok = await revokeSession(pendingRevokeId, sessionsUser.id);
     setRevoking(false);
-    if (ok) setPendingRevokeId(null);
+    if (!ok) return;
+    showToast({ message: 'Session revoked.' });
+    setPendingRevokeId(null);
   }
 
   const columns: DataTableColumn<PsoUserRow>[] = [
@@ -155,10 +162,27 @@ export function PsoUsers() {
     },
   ];
 
+  if (error && users.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load PSO accounts."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  const formError = !pendingAction && !pendingRevokeId ? error : null;
+
   return (
     <div className="page">
-      <ErrorBanner message={error} />
-
       {createdTempPassword && (
         <div className={`panel ${styles.tempPasswordCallout}`}>
           <div>
@@ -193,8 +217,13 @@ export function PsoUsers() {
           ]}
         />
         <Button onClick={handleAdd} loading={creating} disabled={!fullName.trim() || !email.trim()}>
-          Add PSO user
+          {creating ? 'Adding…' : 'Add PSO user'}
         </Button>
+        {formError && (
+          <div className={styles.formErrorRow}>
+            <ErrorBanner message={formError} />
+          </div>
+        )}
       </div>
 
       <div className="panel">
@@ -204,7 +233,7 @@ export function PsoUsers() {
           </h2>
           <Badge label={`${users.length} accounts · ${roleCount} roles`} tone="neutral" />
         </div>
-        <DataTable columns={columns} rows={users} getRowKey={(u) => u.id} loading={loading} />
+        <DataTable columns={columns} rows={users} getRowKey={(u) => u.id} loading={loading} emptyMessage="No PSO accounts yet." emptyHint="Accounts you add above appear here." />
       </div>
       <p className={styles.policyNote}>
         PSO Staff triage and review. PSO Supervisor adds approve, reject, suspend and block. Administrator adds these two screens.
@@ -260,6 +289,7 @@ export function PsoUsers() {
           confirmLabel="Revoke"
           tone="danger"
           confirmLoading={revoking}
+          error={error}
           onCancel={() => setPendingRevokeId(null)}
           onConfirm={handleConfirmRevoke}
         />
@@ -279,6 +309,7 @@ export function PsoUsers() {
           reason={reason}
           onReasonChange={setReason}
           confirmLoading={submitting}
+          error={error}
           onCancel={closeActionModal}
           onConfirm={handleConfirmAction}
         />

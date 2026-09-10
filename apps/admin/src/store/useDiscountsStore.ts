@@ -10,8 +10,8 @@ interface DiscountsState {
   fetch: () => Promise<void>;
   select: (id: string) => void;
   updateFields: (id: string, patch: Partial<Pick<DiscountRow, 'idNumber' | 'dateOfBirth' | 'issuingOffice'>>) => Promise<void>;
-  approve: (id: string, remarks?: string) => Promise<void>;
-  reject: (id: string, remarks: string) => Promise<void>;
+  approve: (id: string, remarks?: string) => Promise<boolean>;
+  reject: (id: string, remarks: string) => Promise<boolean>;
 }
 
 export const useDiscountsStore = create<DiscountsState>()((set, get) => ({
@@ -44,13 +44,21 @@ export const useDiscountsStore = create<DiscountsState>()((set, get) => ({
 
   approve: async (id, remarks) => {
     const { error } = await approveDiscount(id, remarks);
-    if (error) return set({ error });
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 
   reject: async (id, remarks) => {
     const { error } = await rejectDiscount(id, remarks);
-    if (error) return set({ error });
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 }));

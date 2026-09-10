@@ -4,6 +4,7 @@ import { Badge, type BadgeTone } from '../components/Badge';
 import { Button } from '../components/Button';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
 import { RideStatusChart, RidesOverTimeChart } from '../components/charts';
 import {
   getDashboardStats,
@@ -107,8 +108,9 @@ export function Dashboard() {
   const [statusError, setStatusError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  function load() {
     let cancelled = false;
+    setLoading(true);
     (async () => {
       const [statsResult, overdueResult, expiringResult, activityResult, ridesResult, statusResult, alertsResult] = await Promise.all([
         getDashboardStats(),
@@ -138,7 +140,9 @@ export function Dashboard() {
     return () => {
       cancelled = true;
     };
-  }, []);
+  }
+
+  useEffect(load, []);
 
   const loggedAlerts = alerts.filter((a) => a.status === 'logged');
   const mostRecentLogged = loggedAlerts[0];
@@ -158,10 +162,25 @@ export function Dashboard() {
     { key: 'updated', header: 'Updated', render: (r) => formatRelativeTime(r.updatedAt) },
   ];
 
+  if (statsError && !stats && !loading) {
+    return (
+      <div className={styles.page}>
+        <EmptyState
+          message="Couldn't load the dashboard."
+          hint={statsError}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={load}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className={styles.page}>
-      <ErrorBanner message={statsError} />
-
       <section>
         <div className={styles.sectionHeader}>
           <span className={styles.eyebrow}>Needs attention today</span>

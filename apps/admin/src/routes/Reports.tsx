@@ -10,6 +10,8 @@ import type { PeakHourBucket, ReportSummary, RidesRevenuePoint, TransactionRow }
 import { formatCurrency, formatDate, formatDateTime, paymentMethodLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import styles from './Reports.module.css';
 
 const PAYMENT_TONE: Record<TransactionRow['status'], 'neutral' | 'success' | 'warn' | 'danger'> = {
@@ -45,12 +47,13 @@ export function Reports() {
   const [loading, setLoading] = useState(true);
   const fareConfig = useSettingsStore((state) => state.fareConfig);
   const fetchSettings = useSettingsStore((state) => state.fetch);
+  const { showToast } = useToast();
 
   useEffect(() => {
     if (!fareConfig) fetchSettings();
   }, [fareConfig, fetchSettings]);
 
-  useEffect(() => {
+  function load() {
     let cancelled = false;
     setLoading(true);
     Promise.all([
@@ -79,7 +82,9 @@ export function Reports() {
     return () => {
       cancelled = true;
     };
-  }, [dateRange]);
+  }
+
+  useEffect(load, [dateRange]);
 
   function exportCsv() {
     const csv = toCsv(transactions, [
@@ -90,7 +95,9 @@ export function Reports() {
       { header: 'Method', value: (t) => t.method },
       { header: 'Status', value: (t) => t.status },
     ]);
-    downloadCsv(`transactions-${dateRange}-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    const filename = `transactions-${dateRange}-${new Date().toISOString().slice(0, 10)}.csv`;
+    const url = downloadCsv(filename, csv);
+    showToast({ message: `Export ready — ${filename}`, action: { label: 'Open', onClick: () => window.open(url, '_blank') } });
   }
 
   const columns: DataTableColumn<TransactionRow>[] = [
@@ -104,6 +111,23 @@ export function Reports() {
 
   const rangeLabel = dateRange === 'quarter' ? 'this quarter' : dateRange === '7d' ? '7d' : '30d';
   const peakBucket = peakHours.reduce<PeakHourBucket | null>((max, b) => (!max || b.count > max.count ? b : max), null);
+
+  if (summaryError && !summary && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load report data."
+          hint={summaryError}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={load}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -135,7 +159,6 @@ export function Reports() {
         </Button>
       </div>
 
-      <ErrorBanner message={summaryError} />
       <div className="stat-grid">
         <StatTile
           label="Total Rides"

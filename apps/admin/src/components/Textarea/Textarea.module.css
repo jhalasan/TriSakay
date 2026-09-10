@@ -31,3 +31,18 @@
 .textarea::placeholder {
   color: var(--ink-faint);
 }
+
+.textareaError {
+  border-color: var(--danger);
+  border-width: 1.5px;
+}
+
+.textareaError:focus {
+  outline-color: var(--danger-soft);
+  border-color: var(--danger);
+}
+
+.error {
+  font-size: 11.5px;
+  color: var(--danger);
+}

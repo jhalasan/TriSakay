@@ -6,6 +6,7 @@ import { Textarea } from '../components/Textarea';
 import { RoleGate } from '../components/RoleGate';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import { useEmergencyAlertsStore } from '../store/useEmergencyAlertsStore';
 import type { EmergencyAlertRow, EmergencyStatus } from '../types/emergency';
 import { formatDateTime, formatRelativeTime, titleCaseLabel } from '../lib/format';
@@ -39,6 +40,8 @@ export function EmergencyAlerts() {
   const { alerts, loading, error, fetch, markReviewed } = useEmergencyAlertsStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState('');
+  const [reviewing, setReviewing] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -51,6 +54,14 @@ export function EmergencyAlerts() {
   function openDetail(a: EmergencyAlertRow) {
     setSelectedId(a.id);
     setNotesDraft(a.notes ?? '');
+  }
+
+  async function handleMarkReviewed() {
+    if (!selected) return;
+    setReviewing(true);
+    const ok = await markReviewed(selected.id, notesDraft || undefined);
+    setReviewing(false);
+    if (ok) showToast({ message: 'Alert marked reviewed.' });
   }
 
   const columns: DataTableColumn<EmergencyAlertRow>[] = [
@@ -75,10 +86,25 @@ export function EmergencyAlerts() {
     },
   ];
 
+  if (error && alerts.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load emergency alerts."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="page">
-      <ErrorBanner message={error} />
-
       {newest && (
         <div className={styles.banner}>
           <div>
@@ -101,6 +127,7 @@ export function EmergencyAlerts() {
           getRowKey={(a) => a.id}
           loading={loading}
           emptyMessage="No emergency alerts on record."
+          emptyHint="SOS alerts triggered by a passenger or driver appear here."
           onRowClick={openDetail}
           isRowHighlighted={(a) => a.id === selectedId}
         />
@@ -168,6 +195,8 @@ export function EmergencyAlerts() {
                 placeholder="Optional notes on the review…"
               />
 
+              <ErrorBanner message={error} />
+
               <RoleGate
                 min="supervisor"
                 fallback={<div className="read-only-note">Mark Reviewed — PSO Supervisor &amp; Administrator only.</div>}
@@ -177,16 +206,17 @@ export function EmergencyAlerts() {
                   tone="primary"
                   size="sm"
                   superscript="S+"
+                  loading={reviewing}
                   disabled={selected.status !== 'logged'}
-                  onClick={() => markReviewed(selected.id, notesDraft || undefined)}
+                  onClick={handleMarkReviewed}
                   style={{ alignSelf: 'flex-start' }}
                 >
-                  Mark reviewed
+                  {reviewing ? 'Marking reviewed…' : 'Mark reviewed'}
                 </Button>
               </RoleGate>
             </>
           ) : (
-            <EmptyState message="Select an alert to see its detail." />
+            <EmptyState message="Select an alert to see its detail." icon={false} />
           )}
         </div>
       </div>

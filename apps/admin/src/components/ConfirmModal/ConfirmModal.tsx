@@ -1,6 +1,7 @@
 import { useEffect, useRef, type ReactNode } from 'react';
 import { Button } from '../Button';
 import { Textarea } from '../Textarea';
+import { ErrorBanner } from '../ErrorBanner';
 import styles from './ConfirmModal.module.css';
 
 const FOCUSABLE_SELECTOR = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
@@ -42,6 +43,8 @@ export interface ConfirmModalProps {
   reasonLabel?: string;
   /** Disables + shows a loading state on the confirm button while the action is in flight. */
   confirmLoading?: boolean;
+  /** README §4a "submission-wide refusal" — keeps the modal open and shows the failure here instead of a page-top banner. */
+  error?: string | null;
 }
 
 export function ConfirmModal({
@@ -58,6 +61,7 @@ export function ConfirmModal({
   onReasonChange,
   reasonLabel = 'Reason',
   confirmLoading = false,
+  error,
 }: ConfirmModalProps) {
   const reasonMissing = reasonRequired && !reason.trim();
   const cardRef = useRef<HTMLDivElement>(null);
@@ -106,6 +110,7 @@ export function ConfirmModal({
           <h2 className={styles.title}>{title}</h2>
           <p className={styles.message}>{message}</p>
           {reasonRequired && <Textarea label={reasonLabel} rows={3} value={reason} onChange={(e) => onReasonChange?.(e.target.value)} />}
+          <ErrorBanner message={error} />
         </div>
         <div className={styles.actions}>
           <Button variant="outline" tone="neutral" onClick={onCancel} disabled={confirmLoading}>

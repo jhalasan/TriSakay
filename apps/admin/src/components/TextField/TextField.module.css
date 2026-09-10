@@ -58,3 +58,18 @@
   font-size: 10px;
   color: var(--ink-faint);
 }
+
+.inputError {
+  border-color: var(--danger);
+  border-width: 1.5px;
+}
+
+.inputError:focus {
+  border-color: var(--danger);
+  box-shadow: 0 0 0 3px var(--danger-soft);
+}
+
+.error {
+  font-size: 11.5px;
+  color: var(--danger);
+}

@@ -36,6 +36,10 @@
   flex-wrap: wrap;
 }
 
+.formErrorRow {
+  flex-basis: 100%;
+}
+
 .policyNote {
   font-size: 11px;
   color: var(--ink-faint);

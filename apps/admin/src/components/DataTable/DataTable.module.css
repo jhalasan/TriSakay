@@ -72,9 +72,23 @@
 }
 
 
-.loading {
-  padding: var(--sp-xxl);
-  text-align: center;
-  color: var(--ink-soft);
-  font-size: var(--fs-xs);
+/* README §12 "Loading" — three rows fading EBEFF2 -> F1F4F7 -> F6F7F9. */
+.skeletonBar {
+  display: inline-block;
+  height: 12px;
+  width: 70%;
+  min-width: 40px;
+  border-radius: var(--r-sm);
+  background: var(--line-soft);
+  animation: skeleton-fade 1.4s ease-in-out infinite;
+}
+
+@keyframes skeleton-fade {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
 }

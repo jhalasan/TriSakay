@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { DocumentPanel } from '../components/DocumentPanel';
 import { TextField } from '../components/TextField';
 import { Select } from '../components/Select';
@@ -9,6 +9,7 @@ import { Avatar } from '../components/Avatar';
 import { RoleGate } from '../components/RoleGate';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import { useVerificationStore } from '../store/useVerificationStore';
 import type { VerificationCase } from '../types/verification';
 import type { TricycleCluster } from '../types/driver';
@@ -59,6 +60,8 @@ function queueBadge(c: VerificationCase): { label: string; tone: BadgeTone } {
  */
 export function DriverVerification() {
   const { cases, selectedDriverId, loading, error, fetch, select, updateFields, approve, reject } = useVerificationStore();
+  const [deciding, setDeciding] = useState<'approve' | 'reject' | null>(null);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -67,9 +70,41 @@ export function DriverVerification() {
   const selectedCase = cases.find((c) => c.driverId === selectedDriverId) ?? null;
   const verifiedCount = selectedCase ? selectedCase.documents.filter((d) => d.status === 'approved').length : 0;
 
+  async function handleApprove() {
+    if (!selectedCase) return;
+    setDeciding('approve');
+    const ok = await approve(selectedCase.driverId, selectedCase.notes || undefined);
+    setDeciding(null);
+    if (ok) showToast({ message: `${selectedCase.driverFullName} approved.` });
+  }
+
+  async function handleReject() {
+    if (!selectedCase) return;
+    setDeciding('reject');
+    const ok = await reject(selectedCase.driverId, selectedCase.notes);
+    setDeciding(null);
+    if (ok) showToast({ message: `${selectedCase.driverFullName} rejected.` });
+  }
+
+  if (error && cases.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load verification cases."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="review-page">
-      <ErrorBanner message={error} />
       <div className="review-grid review-grid-3">
         <div className="panel review-pane">
           <div className="pane-header">
@@ -80,7 +115,7 @@ export function DriverVerification() {
           </div>
           <div className="pane-scroll">
             {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
-            {!loading && cases.length === 0 && <EmptyState message="No pending verifications." />}
+            {!loading && cases.length === 0 && <EmptyState message="No pending verifications." hint="New driver submissions appear here." />}
             <div className="case-list">
               {cases.map((c) => {
                 const badge = queueBadge(c);
@@ -128,7 +163,7 @@ export function DriverVerification() {
               </div>
             </>
           ) : (
-            <EmptyState message="Select a case to review its documents." />
+            <EmptyState message="Select a case to review its documents." icon={false} />
           )}
         </div>
 
@@ -193,25 +228,29 @@ export function DriverVerification() {
                     placeholder="Required if rejecting…"
                   />
 
+                  <ErrorBanner message={error} />
                   <div className="decision-row">
                     <Button
                       variant="solid"
                       tone="primary"
                       superscript="S+"
                       fullWidth
-                      onClick={() => approve(selectedCase.driverId, selectedCase.notes || undefined)}
+                      loading={deciding === 'approve'}
+                      disabled={deciding !== null}
+                      onClick={handleApprove}
                     >
-                      Approve
+                      {deciding === 'approve' ? 'Approving…' : 'Approve'}
                     </Button>
                     <Button
                       variant="outline"
                       tone="danger"
                       superscript="S+"
                       fullWidth
-                      disabled={!selectedCase.notes.trim()}
-                      onClick={() => reject(selectedCase.driverId, selectedCase.notes)}
+                      loading={deciding === 'reject'}
+                      disabled={deciding !== null || !selectedCase.notes.trim()}
+                      onClick={handleReject}
                     >
-                      Reject
+                      {deciding === 'reject' ? 'Rejecting…' : 'Reject'}
                     </Button>
                   </div>
                   <p className="footnote">
@@ -221,7 +260,7 @@ export function DriverVerification() {
               </div>
             </>
           ) : (
-            <EmptyState message="Select a case to decide it." />
+            <EmptyState message="Select a case to decide it." icon={false} />
           )}
         </div>
       </div>

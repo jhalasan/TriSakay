@@ -3,7 +3,8 @@ import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge, type BadgeTone } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Select } from '../components/Select';
-import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import { useAuditLogStore } from '../store/useAuditLogStore';
 import type { AccountActionRow, ReviewDecisionRow } from '../services/auditLog';
 import { formatDateTime, titleCaseLabel } from '../lib/format';
@@ -102,6 +103,7 @@ export function AuditLog() {
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
   const [dateRange, setDateRange] = useState('7');
   const [performedBy, setPerformedBy] = useState('all');
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -132,13 +134,30 @@ export function AuditLog() {
       { header: 'Reason', value: (a) => a.reason },
       { header: 'Linked Complaint', value: (a) => a.complaintId ?? '' },
     ]);
-    downloadCsv(`account-actions-${new Date().toISOString().slice(0, 10)}.csv`, csv);
+    const filename = `account-actions-${new Date().toISOString().slice(0, 10)}.csv`;
+    const url = downloadCsv(filename, csv);
+    showToast({ message: `Export ready — ${filename}`, action: { label: 'Open', onClick: () => window.open(url, '_blank') } });
+  }
+
+  if (error && actions.length === 0 && decisions.length === 0 && !loading && !decisionsLoading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load account actions."
+          hint="The audit service didn't respond. Nothing has changed — try again."
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
   }
 
   return (
     <div className="page">
-      <ErrorBanner message={error} />
-
       <div className={`panel ${styles.filterStrip}`}>
         <div className="segmented">
           {ACTION_FILTER_TABS.map((tab) => (
@@ -169,7 +188,14 @@ export function AuditLog() {
             </Button>
           </div>
         </div>
-        <DataTable columns={columns} rows={filteredActions} getRowKey={(a) => a.id} loading={loading} emptyMessage="No account actions match these filters." />
+        <DataTable
+          columns={columns}
+          rows={filteredActions}
+          getRowKey={(a) => a.id}
+          loading={loading}
+          emptyMessage="No account actions recorded yet."
+          emptyHint="Flags, suspensions and reinstatements appear here the moment they're made."
+        />
       </div>
 
       <div className="panel">

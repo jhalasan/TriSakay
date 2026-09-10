@@ -9,6 +9,8 @@ import { Toggle } from '../components/Toggle';
 import { TableToolbar } from '../components/TableToolbar';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import { useBarangaysStore } from '../store/useBarangaysStore';
 import type { BarangayInput, BarangayRow, TricycleCluster } from '../services/barangays';
 import { formatDate, titleCaseLabel } from '../lib/format';
@@ -64,6 +66,7 @@ export function Barangays() {
   const [deleting, setDeleting] = useState(false);
   const [search, setSearch] = useState('');
   const [clusterFilter, setClusterFilter] = useState<TricycleCluster | 'all'>('all');
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -92,10 +95,13 @@ export function Barangays() {
 
   async function handleSave() {
     if (!draft.name.trim()) return;
+    const wasEditing = !!editingId;
     setSaving(true);
     const ok = editingId ? await update(editingId, draft) : await create(draft);
     setSaving(false);
-    if (ok) closeForm();
+    if (!ok) return;
+    showToast({ message: wasEditing ? `${draft.name} updated.` : `${draft.name} added.` });
+    closeForm();
   }
 
   async function handleConfirmDelete() {
@@ -103,7 +109,9 @@ export function Barangays() {
     setDeleting(true);
     const ok = await remove(pendingDelete.id);
     setDeleting(false);
-    if (ok) setPendingDelete(null);
+    if (!ok) return;
+    showToast({ message: `${pendingDelete.name} deleted.` });
+    setPendingDelete(null);
   }
 
   const filtered = useMemo(() => {
@@ -152,10 +160,27 @@ export function Barangays() {
     },
   ];
 
+  if (error && barangays.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load barangays."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  const formError = showForm ? error : null;
+
   return (
     <div className="page">
-      <ErrorBanner message={error} />
-
       <div className={`panel ${styles.header}`}>
         <div>
           <h2 className="panel-title" style={{ marginBottom: 2 }}>
@@ -193,6 +218,7 @@ export function Barangays() {
               rows={2}
             />
           </div>
+          <ErrorBanner message={formError} />
           <div className={styles.formFooter}>
             <Toggle label="Split barangay" hint="Two clusters share the barangay; state the boundary in the notes" checked={draft.isSplit} onChange={(isSplit) => setDraft({ ...draft, isSplit })} />
             <div className="row-actions">
@@ -200,7 +226,7 @@ export function Barangays() {
                 Cancel
               </Button>
               <Button onClick={handleSave} loading={saving} disabled={!draft.name.trim()}>
-                {editingId ? 'Save changes' : 'Add barangay'}
+                {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add barangay'}
               </Button>
             </div>
           </div>
@@ -243,6 +269,7 @@ export function Barangays() {
           confirmLabel="Delete"
           tone="danger"
           confirmLoading={deleting}
+          error={error}
           onCancel={() => setPendingDelete(null)}
           onConfirm={handleConfirmDelete}
         />

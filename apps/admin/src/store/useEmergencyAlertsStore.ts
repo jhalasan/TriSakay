@@ -7,7 +7,7 @@ interface EmergencyAlertsState {
   loading: boolean;
   error: string | null;
   fetch: () => Promise<void>;
-  markReviewed: (id: string, notes?: string) => Promise<void>;
+  markReviewed: (id: string, notes?: string) => Promise<boolean>;
 }
 
 export const useEmergencyAlertsStore = create<EmergencyAlertsState>()((set, get) => ({
@@ -23,7 +23,11 @@ export const useEmergencyAlertsStore = create<EmergencyAlertsState>()((set, get)
 
   markReviewed: async (id, notes) => {
     const { error } = await markAlertReviewed(id, notes);
-    if (error) return set({ error });
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 }));

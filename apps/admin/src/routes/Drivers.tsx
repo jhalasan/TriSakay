@@ -10,7 +10,8 @@ import { RatingSquares } from '../components/RatingSquares';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import { useDriversStore } from '../store/useDriversStore';
 import type { DriverRow } from '../types/driver';
 import { formatDate, titleCaseLabel } from '../lib/format';
@@ -24,45 +25,57 @@ interface PendingAction {
   kind: PendingActionKind;
 }
 
-const ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (name: string) => string }> = {
+const ACTION_COPY: Record<
+  PendingActionKind,
+  { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (name: string) => string; pastTense: string }
+> = {
   flag: {
     title: 'Flag driver',
     confirmLabel: 'Flag',
     tone: 'primary',
     message: (name) => `Flag ${name}'s account? This is visible to other PSO staff reviewing this driver.`,
+    pastTense: 'flagged',
   },
   suspend: {
     title: 'Suspend driver',
     confirmLabel: 'Suspend',
     tone: 'danger',
     message: (name) => `Suspend ${name}'s account? They won't be able to accept ride requests until reactivated.`,
+    pastTense: 'suspended',
   },
   reactivate: {
     title: 'Reactivate driver',
     confirmLabel: 'Reactivate',
     tone: 'primary',
     message: (name) => `Reactivate ${name}'s account?`,
+    pastTense: 'reactivated',
   },
 };
 
-const BULK_ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (count: number) => string }> = {
+const BULK_ACTION_COPY: Record<
+  PendingActionKind,
+  { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (count: number) => string; pastTense: string }
+> = {
   flag: {
     title: 'Flag selected drivers',
     confirmLabel: 'Flag',
     tone: 'primary',
     message: (count) => `Flag ${count} selected driver(s)? This is visible to other PSO staff reviewing them.`,
+    pastTense: 'flagged',
   },
   suspend: {
     title: 'Suspend selected drivers',
     confirmLabel: 'Suspend',
     tone: 'danger',
     message: (count) => `Suspend ${count} selected driver(s)? They won't be able to accept ride requests until reactivated.`,
+    pastTense: 'suspended',
   },
   reactivate: {
     title: 'Reactivate selected drivers',
     confirmLabel: 'Reactivate',
     tone: 'primary',
     message: (count) => `Reactivate ${count} selected driver(s)?`,
+    pastTense: 'reactivated',
   },
 };
 
@@ -132,6 +145,7 @@ export function Drivers() {
   const [pendingBulkKind, setPendingBulkKind] = useState<PendingActionKind | null>(null);
   const [bulkReason, setBulkReason] = useState('');
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -160,7 +174,9 @@ export function Drivers() {
     const action = pendingAction.kind === 'flag' ? flag : pendingAction.kind === 'suspend' ? suspend : reactivate;
     const ok = await action(pendingAction.driver.id, reason);
     setSubmitting(false);
-    if (ok) closeModal();
+    if (!ok) return;
+    showToast({ message: `${pendingAction.driver.fullName} ${ACTION_COPY[pendingAction.kind].pastTense}.` });
+    closeModal();
   }
 
   function toggleRow(id: string) {
@@ -193,8 +209,10 @@ export function Drivers() {
     setBulkSubmitting(true);
     const ids = [...selectedRowIds];
     const action = pendingBulkKind === 'flag' ? bulkFlag : pendingBulkKind === 'suspend' ? bulkSuspend : bulkReactivate;
-    await action(ids, bulkReason);
+    const summary = await action(ids, bulkReason);
     setBulkSubmitting(false);
+    if (summary.failed > 0) return; // keep the modal open — store.error (shown in the modal) already names the count that failed
+    showToast({ message: `${summary.succeeded} driver(s) ${BULK_ACTION_COPY[pendingBulkKind].pastTense}.` });
     setSelectedRowIds(new Set());
     closeBulkModal();
   }
@@ -215,7 +233,9 @@ export function Drivers() {
   function exportCsv() {
     // DataTable's column sort is internal state, not lifted here, so this exports in store order (not the on-screen sort order).
     const csv = toCsv(filtered, driverCsvColumns);
-    downloadCsv(exportFilename('drivers', statusFilter), csv);
+    const filename = exportFilename('drivers', statusFilter);
+    const url = downloadCsv(filename, csv);
+    showToast({ message: `Export ready — ${filename}`, action: { label: 'Open', onClick: () => window.open(url, '_blank') } });
   }
 
   const selected = drivers.find((d) => d.id === selectedId) ?? null;
@@ -338,9 +358,25 @@ export function Drivers() {
     },
   ];
 
+  if (error && drivers.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load drivers."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="page">
-      <ErrorBanner message={error} />
       <StatusStrip drivers={drivers} active={statusFilter} onSelect={setStatusFilter} />
       <TableToolbar
         search={search}
@@ -448,6 +484,7 @@ export function Drivers() {
           reason={reason}
           onReasonChange={setReason}
           confirmLoading={submitting}
+          error={error}
           onCancel={closeModal}
           onConfirm={handleConfirm}
         />
@@ -463,6 +500,7 @@ export function Drivers() {
           reason={bulkReason}
           onReasonChange={setBulkReason}
           confirmLoading={bulkSubmitting}
+          error={error}
           onCancel={closeBulkModal}
           onConfirm={handleConfirmBulk}
         />

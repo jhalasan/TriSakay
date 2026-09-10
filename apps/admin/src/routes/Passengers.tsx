@@ -9,7 +9,8 @@ import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal } from '../components/ConfirmModal';
-import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
+import { useToast } from '../components/Toast';
 import { usePassengersStore, type PassengerStatusFilter } from '../store/usePassengersStore';
 import type { PassengerRow } from '../types/passenger';
 import { formatDate, passengerStatusLabel, titleCaseLabel } from '../lib/format';
@@ -64,33 +65,43 @@ interface PendingAction {
   kind: PendingActionKind;
 }
 
-const ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (name: string) => string }> = {
+const ACTION_COPY: Record<
+  PendingActionKind,
+  { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (name: string) => string; pastTense: string }
+> = {
   block: {
     title: 'Block passenger',
     confirmLabel: 'Block',
     tone: 'danger',
     message: (name) => `Block ${name}'s account? They won't be able to request rides until unblocked.`,
+    pastTense: 'blocked',
   },
   unblock: {
     title: 'Unblock passenger',
     confirmLabel: 'Unblock',
     tone: 'primary',
     message: (name) => `Unblock ${name}'s account?`,
+    pastTense: 'unblocked',
   },
 };
 
-const BULK_ACTION_COPY: Record<PendingActionKind, { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (count: number) => string }> = {
+const BULK_ACTION_COPY: Record<
+  PendingActionKind,
+  { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (count: number) => string; pastTense: string }
+> = {
   block: {
     title: 'Block selected passengers',
     confirmLabel: 'Block',
     tone: 'danger',
     message: (count) => `Block ${count} selected passenger(s)? They won't be able to request rides until unblocked.`,
+    pastTense: 'blocked',
   },
   unblock: {
     title: 'Unblock selected passengers',
     confirmLabel: 'Unblock',
     tone: 'primary',
     message: (count) => `Unblock ${count} selected passenger(s)?`,
+    pastTense: 'unblocked',
   },
 };
 
@@ -108,6 +119,7 @@ export function Passengers() {
   const [pendingBulkKind, setPendingBulkKind] = useState<PendingActionKind | null>(null);
   const [bulkReason, setBulkReason] = useState('');
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -136,7 +148,9 @@ export function Passengers() {
     const action = pendingAction.kind === 'block' ? block : unblock;
     const ok = await action(pendingAction.passenger.id, reason);
     setSubmitting(false);
-    if (ok) closeModal();
+    if (!ok) return;
+    showToast({ message: `${pendingAction.passenger.fullName} ${ACTION_COPY[pendingAction.kind].pastTense}.` });
+    closeModal();
   }
 
   function toggleRow(id: string) {
@@ -169,8 +183,10 @@ export function Passengers() {
     setBulkSubmitting(true);
     const ids = [...selectedRowIds];
     const action = pendingBulkKind === 'block' ? bulkBlock : bulkUnblock;
-    await action(ids, bulkReason);
+    const summary = await action(ids, bulkReason);
     setBulkSubmitting(false);
+    if (summary.failed > 0) return; // keep the modal open — store.error (shown in the modal) already names the count that failed
+    showToast({ message: `${summary.succeeded} passenger(s) ${BULK_ACTION_COPY[pendingBulkKind].pastTense}.` });
     setSelectedRowIds(new Set());
     closeBulkModal();
   }
@@ -192,7 +208,9 @@ export function Passengers() {
   function exportCsv() {
     // DataTable's column sort is internal state, not lifted here, so this exports in store order (not the on-screen sort order).
     const csv = toCsv(filtered, passengerCsvColumns);
-    downloadCsv(exportFilename('passengers', statusFilter), csv);
+    const filename = exportFilename('passengers', statusFilter);
+    const url = downloadCsv(filename, csv);
+    showToast({ message: `Export ready — ${filename}`, action: { label: 'Open', onClick: () => window.open(url, '_blank') } });
   }
 
   const selected = passengers.find((p) => p.id === selectedId) ?? null;
@@ -292,9 +310,25 @@ export function Passengers() {
     },
   ];
 
+  if (error && passengers.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load passengers."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="page">
-      <ErrorBanner message={error} />
       <StatusStrip passengers={passengers} active={statusFilter} onSelect={setStatusFilter} />
       <TableToolbar
         search={search}
@@ -392,6 +426,7 @@ export function Passengers() {
           reason={reason}
           onReasonChange={setReason}
           confirmLoading={submitting}
+          error={error}
           onCancel={closeModal}
           onConfirm={handleConfirm}
         />
@@ -407,6 +442,7 @@ export function Passengers() {
           reason={bulkReason}
           onReasonChange={setBulkReason}
           confirmLoading={bulkSubmitting}
+          error={error}
           onCancel={closeBulkModal}
           onConfirm={handleConfirmBulk}
         />

@@ -16,6 +16,8 @@ export interface DataTableProps<T> {
   rows: T[];
   getRowKey: (row: T) => string;
   emptyMessage?: string;
+  /** Second, quieter line under emptyMessage — README §12 "Empty tables". */
+  emptyHint?: string;
   loading?: boolean;
   /** Opt-in row-selection checkboxes (e.g. for bulk actions). Omit all three to render exactly as before. */
   selectedIds?: Set<string>;
@@ -38,6 +40,7 @@ export function DataTable<T>({
   rows,
   getRowKey,
   emptyMessage = 'No records found.',
+  emptyHint,
   loading = false,
   selectedIds,
   onToggleRow,
@@ -74,11 +77,37 @@ export function DataTable<T>({
   }
 
   if (loading) {
-    return <div className={styles.loading}>Loading…</div>;
+    return (
+      <div className={`scroll-x ${styles.wrap}`}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              {columns.map((col) => (
+                <th key={col.key} style={{ width: col.width, textAlign: col.align ?? 'left' }}>
+                  {col.header}
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {/* README §12 "Loading" — skeleton rows keep the real column widths and row height so nothing jumps when data lands. */}
+            {[0, 1, 2].map((rowIndex) => (
+              <tr key={rowIndex}>
+                {columns.map((col) => (
+                  <td key={col.key} style={{ textAlign: col.align ?? 'left' }}>
+                    <span className={styles.skeletonBar} style={{ animationDelay: `${rowIndex * 90}ms` }} />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    );
   }
 
   if (rows.length === 0) {
-    return <EmptyState message={emptyMessage} />;
+    return <EmptyState message={emptyMessage} hint={emptyHint} />;
   }
 
   const allOnPageSelected = selectable && sortedRows.every((row) => selectedIds!.has(getRowKey(row)));

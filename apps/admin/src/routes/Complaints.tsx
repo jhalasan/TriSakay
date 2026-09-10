@@ -11,6 +11,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { Pagination } from '../components/Pagination';
 import { EmptyState } from '../components/EmptyState';
 import { DocumentImage } from '../components/DocumentImage';
+import { useToast } from '../components/Toast';
 import { useComplaintsStore } from '../store/useComplaintsStore';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { formatDate, titleCaseLabel } from '../lib/format';
@@ -83,6 +84,10 @@ export function Complaints() {
   const [meetingLocationDraft, setMeetingLocationDraft] = useState('');
   const [resolutionStatusDraft, setResolutionStatusDraft] = useState<'resolved' | 'dismissed'>('resolved');
   const [resolutionNotesDraft, setResolutionNotesDraft] = useState('');
+  const [savingDirective, setSavingDirective] = useState(false);
+  const [schedulingMediation, setSchedulingMediation] = useState(false);
+  const [savingOutcome, setSavingOutcome] = useState(false);
+  const { showToast } = useToast();
 
   useEffect(() => {
     fetch();
@@ -113,6 +118,30 @@ export function Complaints() {
 
   const selected = complaints.find((c) => c.id === selectedId) ?? null;
   const canScheduleMediation = selected?.status === 'escalated';
+
+  async function handleSaveDirective() {
+    if (!selected) return;
+    setSavingDirective(true);
+    const ok = await setDhDirective(selected.id, directiveDraft);
+    setSavingDirective(false);
+    if (ok) showToast({ message: 'Directive saved.' });
+  }
+
+  async function handleScheduleMediation() {
+    if (!selected) return;
+    setSchedulingMediation(true);
+    const ok = await scheduleMediation(selected.id, new Date(meetingAtDraft).toISOString(), meetingLocationDraft);
+    setSchedulingMediation(false);
+    if (ok) showToast({ message: 'Mediation scheduled.' });
+  }
+
+  async function handleSaveOutcome() {
+    if (!selected) return;
+    setSavingOutcome(true);
+    const ok = await recordResolution(selected.id, resolutionStatusDraft, resolutionNotesDraft);
+    setSavingOutcome(false);
+    if (ok) showToast({ message: 'Outcome saved.' });
+  }
 
   function openReview(c: ComplaintRow) {
     setSelectedId(c.id);
@@ -164,10 +193,25 @@ export function Complaints() {
     },
   ];
 
+  if (error && complaints.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load complaints."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="page">
-      <ErrorBanner message={error} />
-
       <div className={styles.split}>
         <div className={styles.queueCol}>
           <TableToolbar
@@ -221,6 +265,8 @@ export function Complaints() {
 
               {selected.message && <div className={styles.quote}>&ldquo;{selected.message}&rdquo;</div>}
 
+              <ErrorBanner message={error} />
+
               <div className="two-col">
                 <div className="field">
                   <span className="field-label">Complainant</span>
@@ -236,7 +282,10 @@ export function Complaints() {
                 <span className="field-label">Status</span>
                 <Select
                   value={selected.status}
-                  onChange={(e) => updateStatus(selected.id, e.target.value as ComplaintStatus)}
+                  onChange={async (e) => {
+                    const ok = await updateStatus(selected.id, e.target.value as ComplaintStatus);
+                    if (ok) showToast({ message: 'Status updated.' });
+                  }}
                   options={ALL_STATUSES}
                 />
               </div>
@@ -266,10 +315,11 @@ export function Complaints() {
                 variant="solid"
                 tone="primary"
                 size="sm"
-                onClick={() => setDhDirective(selected.id, directiveDraft)}
+                loading={savingDirective}
+                onClick={handleSaveDirective}
                 style={{ alignSelf: 'flex-start' }}
               >
-                Save directive
+                {savingDirective ? 'Saving…' : 'Save directive'}
               </Button>
 
               <RoleGate
@@ -302,11 +352,12 @@ export function Complaints() {
                     tone="primary"
                     size="sm"
                     superscript="S+"
+                    loading={schedulingMediation}
                     disabled={!canScheduleMediation || !meetingAtDraft}
-                    onClick={() => scheduleMediation(selected.id, new Date(meetingAtDraft).toISOString(), meetingLocationDraft)}
+                    onClick={handleScheduleMediation}
                     style={{ alignSelf: 'flex-start' }}
                   >
-                    Schedule mediation
+                    {schedulingMediation ? 'Scheduling…' : 'Schedule mediation'}
                   </Button>
                 </div>
               </RoleGate>
@@ -346,10 +397,11 @@ export function Complaints() {
                       variant="solid"
                       tone="primary"
                       size="sm"
-                      onClick={() => recordResolution(selected.id, resolutionStatusDraft, resolutionNotesDraft)}
+                      loading={savingOutcome}
+                      onClick={handleSaveOutcome}
                       style={{ alignSelf: 'flex-start' }}
                     >
-                      Save Outcome
+                      {savingOutcome ? 'Saving…' : 'Save Outcome'}
                     </Button>
                   </div>
                 </RoleGate>
@@ -363,7 +415,7 @@ export function Complaints() {
               )}
             </>
           ) : (
-            <EmptyState message="Select a complaint to review it." />
+            <EmptyState message="Select a complaint to review it." icon={false} />
           )}
         </div>
       </div>

@@ -18,8 +18,8 @@ interface VerificationState {
     driverId: string,
     patch: Partial<Pick<VerificationCase, 'mtopNo' | 'mtopExpiryDate' | 'cluster' | 'notes'>>
   ) => Promise<void>;
-  approve: (driverId: string, notes?: string) => Promise<void>;
-  reject: (driverId: string, notes: string) => Promise<void>;
+  approve: (driverId: string, notes?: string) => Promise<boolean>;
+  reject: (driverId: string, notes: string) => Promise<boolean>;
 }
 
 export const useVerificationStore = create<VerificationState>()((set, get) => ({
@@ -52,13 +52,21 @@ export const useVerificationStore = create<VerificationState>()((set, get) => ({
 
   approve: async (driverId, notes) => {
     const { error } = await approveVerification(driverId, notes);
-    if (error) return set({ error });
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 
   reject: async (driverId, notes) => {
     const { error } = await rejectVerification(driverId, notes);
-    if (error) return set({ error });
+    if (error) {
+      set({ error });
+      return false;
+    }
     await get().fetch();
+    return true;
   },
 }));

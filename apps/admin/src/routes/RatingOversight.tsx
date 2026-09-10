@@ -4,7 +4,7 @@ import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { RatingSquares } from '../components/RatingSquares';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
-import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
 import { useRatingOversightStore } from '../store/useRatingOversightStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import type { FlaggedLowRatingRow } from '../services/ratings';
@@ -60,10 +60,25 @@ export function RatingOversight() {
     if (!systemSettings) fetchSettings();
   }, [systemSettings, fetchSettings]);
 
+  if (error && drivers.length === 0 && !loading) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load rating oversight."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="page">
-      <ErrorBanner message={error} />
-
       <div className={styles.split}>
         <div className="panel">
           <div className="pane-header">
@@ -72,7 +87,14 @@ export function RatingOversight() {
             </h2>
             <Badge label={`${drivers.length} driver${drivers.length === 1 ? '' : 's'}`} tone="neutral" />
           </div>
-          <DataTable columns={columns} rows={drivers} getRowKey={(d) => d.driverId} loading={loading} emptyMessage="No drivers currently flagged for a low rating." />
+          <DataTable
+            columns={columns}
+            rows={drivers}
+            getRowKey={(d) => d.driverId}
+            loading={loading}
+            emptyMessage="No drivers currently flagged for a low rating."
+            emptyHint="Good news — every driver is at or above the rating threshold."
+          />
         </div>
 
         <div className="panel detail-panel">
