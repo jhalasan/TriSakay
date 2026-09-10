@@ -87,7 +87,7 @@ export function RideMonitoring() {
             </div>
             <div className={styles.mapHeaderRight}>
               <Select value={cluster} onChange={(e) => setCluster(e.target.value)} options={CLUSTER_OPTIONS} />
-              <Button size="sm" variant="outline" tone="neutral" onClick={refresh} disabled={refreshing}>
+              <Button variant="outline" tone="neutral" onClick={refresh} disabled={refreshing}>
                 Refresh
               </Button>
             </div>
