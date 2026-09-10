@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { AlertLocationMap } from '../components/AlertLocationMap';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
@@ -163,11 +164,10 @@ export function EmergencyAlerts() {
 
               <div className="field">
                 <span className="field-label">Location</span>
-                <div className={`ph-box ${styles.locationBox}`}>
-                  <span className={styles.locationPill}>
-                    {selected.lat.toFixed(5)}, {selected.lng.toFixed(5)}
-                  </span>
-                </div>
+                <AlertLocationMap lat={selected.lat} lng={selected.lng} />
+                <span className={styles.coords}>
+                  {selected.lat.toFixed(5)}, {selected.lng.toFixed(5)}
+                </span>
                 <a
                   className={styles.mapsLink}
                   href={`https://www.google.com/maps?q=${selected.lat},${selected.lng}`}

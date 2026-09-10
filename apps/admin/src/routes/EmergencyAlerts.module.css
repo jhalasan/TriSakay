@@ -48,18 +48,11 @@
   gap: var(--sp-sm);
 }
 
-.locationBox {
-  height: 100px;
-}
-
-.locationPill {
-  background: var(--danger);
-  color: var(--white);
+.coords {
   font-family: var(--mono);
   font-size: 11px;
-  font-weight: 700;
-  padding: 5px 10px;
-  border-radius: var(--r-pill);
+  color: var(--ink-soft);
+  margin-top: 6px;
 }
 
 .mapsLink {

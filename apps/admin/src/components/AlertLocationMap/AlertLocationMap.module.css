@@ -1,0 +1,16 @@
+.wrap {
+  height: 160px;
+  border-radius: var(--r-md);
+  overflow: hidden;
+  border: 1px solid var(--line);
+}
+
+.pin {
+  display: block;
+  width: 14px;
+  height: 14px;
+  border-radius: var(--r-pill);
+  background: var(--danger);
+  border: 2px solid var(--white);
+  box-shadow: var(--shadow-button);
+}
