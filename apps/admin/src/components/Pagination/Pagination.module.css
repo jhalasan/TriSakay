@@ -25,6 +25,11 @@
   background: var(--fill);
 }
 
+.pageButton:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
 .pageButtonActive,
 .pageButtonActive:hover {
   background: var(--primary);

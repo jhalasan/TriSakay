@@ -64,6 +64,11 @@
   cursor: pointer;
 }
 
+.rowClickable:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
 /* The alert accent (README §07): a selected emergency-alert row is tinted
    danger-soft, not the usual navy — red is reserved for the Logged state
    and this one accent, nowhere else. */

@@ -20,7 +20,7 @@
   justify-content: center;
   width: 28px;
   height: 28px;
-  border-radius: 999px;
+  border-radius: var(--r-pill);
   background: var(--primary);
   color: var(--white);
   font-family: var(--mono);
