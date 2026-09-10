@@ -13,7 +13,11 @@ const TIME_INTERVAL_MS = 8000;
  * matching heuristic and any passenger watching this driver both read the
  * same column this writes to.
  */
-export function useDriverLocationSync(sessionUserId: string | null, isAvailable: boolean): void {
+export function useDriverLocationSync(
+  sessionUserId: string | null,
+  isAvailable: boolean,
+  locationTrackingEnabled: boolean,
+): void {
   const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
   // Bumped by every start()/stop() call. A start() call captures the
@@ -53,7 +57,7 @@ export function useDriverLocationSync(sessionUserId: string | null, isAvailable:
     }
 
     function shouldRun() {
-      return sessionUserId !== null && isAvailable && appStateRef.current === 'active';
+      return sessionUserId !== null && isAvailable && locationTrackingEnabled && appStateRef.current === 'active';
     }
 
     if (shouldRun()) {
@@ -76,5 +80,5 @@ export function useDriverLocationSync(sessionUserId: string | null, isAvailable:
       stop();
       appStateSubscription.remove();
     };
-  }, [sessionUserId, isAvailable]);
+  }, [sessionUserId, isAvailable, locationTrackingEnabled]);
 }

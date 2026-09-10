@@ -89,8 +89,14 @@ export default function ComplaintsScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      let cancelled = false;
       void loadHistory();
-      listMyComplaints().then(({ data }) => setMyComplaints(data));
+      listMyComplaints().then(({ data }) => {
+        if (!cancelled) setMyComplaints(data);
+      });
+      return () => {
+        cancelled = true;
+      };
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );

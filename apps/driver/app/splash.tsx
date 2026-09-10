@@ -206,7 +206,9 @@ export default function SplashScreen() {
             accessibilityLabel="TriSakay"
           />
           <View style={styles.driverBadge}>
-            <Text style={styles.driverBadgeText}>{t.driver.splash.driverBadge}</Text>
+            <Text style={styles.driverBadgeText} numberOfLines={1}>
+              {t.driver.splash.driverBadge}
+            </Text>
           </View>
           <Text style={styles.tagline}>{t.driver.splash.subtitle}</Text>
         </PopEntrance>

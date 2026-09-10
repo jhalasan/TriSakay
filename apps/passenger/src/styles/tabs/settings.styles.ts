@@ -8,7 +8,9 @@ export const styles = StyleSheet.create({
   },
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    // Matches home.styles.ts's scrollContent — spacing.xxxl alone isn't tall
+    // enough to clear the 60px tab bar, so the last card was clipped behind it.
+    paddingBottom: spacing.tight44 * 1.7,
   },
   headerBlock: {
     gap: 2,

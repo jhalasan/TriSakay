@@ -43,7 +43,7 @@ export const styles = StyleSheet.create({
   },
   driverBadgeText: {
     ...typography.eyebrow,
-    letterSpacing: 4,
+    letterSpacing: 1.5,
     color: colors.accentGreen,
   },
   tagline: {

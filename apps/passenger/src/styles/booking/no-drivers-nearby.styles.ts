@@ -54,4 +54,10 @@ export const styles = StyleSheet.create({
   primaryButton: {
     marginTop: spacing.xs,
   },
+  changePickupError: {
+    ...typography.caption,
+    color: colors.danger,
+    textAlign: 'center',
+    marginTop: spacing.xs,
+  },
 });

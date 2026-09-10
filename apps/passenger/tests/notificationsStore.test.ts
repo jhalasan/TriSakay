@@ -207,3 +207,49 @@ test('markRead(id) surfaces an error and rolls back when the write fails', async
   assert.equal(useNotificationsStore.getState().error, 'network error');
   assert.deepEqual(useNotificationsStore.getState().items, unreadItems, 'failed write should roll back the optimistic read flip');
 });
+
+test('markRead(id) failing after a different concurrent markRead(id) succeeded does not revert the succeeded one', async () => {
+  const { useNotificationsStore } = await import('../src/store/useNotificationsStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  let resolveN1: ((value: { error: { message: string } | null }) => void) | undefined;
+  __setSupabaseClientForTests({
+    channel: () => {
+      throw new Error('channel not needed for this test');
+    },
+    removeChannel: () => {},
+    from: () => ({
+      update: () => ({
+        eq: (_col: string, id: string) => {
+          if (id === 'n1') {
+            return new Promise<{ error: { message: string } | null }>((resolve) => {
+              resolveN1 = resolve;
+            });
+          }
+          // n2's write resolves (succeeds) immediately, before n1's does.
+          return Promise.resolve({ error: null });
+        },
+      }),
+    }),
+  } as any);
+
+  useNotificationsStore.setState({
+    items: [
+      { id: 'n1', title: 'a', body: 'b', read: false, createdAt: 'now', type: 'ride_status' },
+      { id: 'n2', title: 'c', body: 'd', read: false, createdAt: 'now', type: 'ride_status' },
+    ],
+    error: null,
+  });
+
+  const n1Promise = useNotificationsStore.getState().markRead('n1');
+  await useNotificationsStore.getState().markRead('n2');
+  assert.equal(useNotificationsStore.getState().items.find((item) => item.id === 'n2')?.read, true, 'n2 should be confirmed read already');
+
+  resolveN1?.({ error: { message: 'network error' } });
+  await n1Promise;
+
+  const items = useNotificationsStore.getState().items;
+  assert.equal(items.find((item) => item.id === 'n1')?.read, false, 'n1 should roll back since its write failed');
+  assert.equal(items.find((item) => item.id === 'n2')?.read, true, "n2's confirmed read must survive n1's later rollback");
+  assert.equal(useNotificationsStore.getState().error, 'network error');
+});

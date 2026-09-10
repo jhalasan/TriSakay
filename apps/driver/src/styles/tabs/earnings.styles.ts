@@ -12,7 +12,10 @@ const panelShadow = {
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: { padding: spacing.lg, gap: spacing.lg },
+  // Matches dashboard.styles.ts's scrollContent — plain `padding` gave this
+  // no more bottom clearance than any other edge, so the last card was
+  // clipped behind the tab bar (60 + bottom inset).
+  scrollContent: { padding: spacing.lg, paddingBottom: spacing.tight44 * 1.7, gap: spacing.lg },
   // 26/32/-0.7 has no matching heading token (h1b is closest, at 28/32) — a one-off literal shared by every tab screen's page title.
   title: { fontSize: 26, lineHeight: 32, fontFamily: fontFamily.extrabold, letterSpacing: -0.7, color: colors.ink },
   /** Shadow never sits on the clipped GradientSurface itself — see phase0-notes.md Recipe 1. */

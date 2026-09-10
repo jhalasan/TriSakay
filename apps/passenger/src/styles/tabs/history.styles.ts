@@ -68,7 +68,9 @@ export const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.lg,
-    paddingBottom: spacing.xxxl,
+    // Matches home.styles.ts's scrollContent — spacing.xxxl alone isn't tall
+    // enough to clear the 60px tab bar, so the last row was clipped behind it.
+    paddingBottom: spacing.tight44 * 1.7,
     gap: spacing.md,
   },
   errorText: {

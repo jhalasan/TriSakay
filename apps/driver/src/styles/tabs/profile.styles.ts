@@ -12,7 +12,10 @@ const panelShadow = {
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: { paddingBottom: spacing.xl, gap: spacing.lg },
+  // Matches dashboard.styles.ts's scrollContent — spacing.xl alone isn't
+  // tall enough to clear the tab bar (60 + bottom inset), so the last card
+  // was clipped behind it.
+  scrollContent: { paddingBottom: spacing.tight44 * 1.7, gap: spacing.lg },
   /** Shadow never sits on the clipped GradientSurface itself — see phase0-notes.md Recipe 1. */
   heroShadow: {
     shadowColor: colors.accentBlue,

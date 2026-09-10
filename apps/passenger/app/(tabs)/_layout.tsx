@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import type { BottomTabBarButtonProps } from '@react-navigation/bottom-tabs';
 import { Tabs } from 'expo-router';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors, fontFamily, spacing, typography } from '@trisakay/ui';
 import { OfflineStrip } from '../../src/components/OfflineStrip/OfflineStrip';
 import { useConnectivityStore } from '../../src/store/useConnectivityStore';
@@ -81,6 +82,7 @@ function TabLabel({ label, color, focused }: { label: string; color: string; foc
 
 export default function TabsLayout() {
   const isOffline = useConnectivityStore((state) => state.isOffline);
+  const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.root}>
@@ -96,8 +98,12 @@ export default function TabsLayout() {
             backgroundColor: colors.panel,
             borderTopWidth: 1,
             borderTopColor: colors.lineSoft,
-            height: 60,
-            paddingBottom: spacing.xs,
+            // `edgeToEdgeEnabled` (app.json) draws the app behind Android's
+            // system navigation bar by design — without adding the bottom
+            // safe-area inset here, the tab bar's icons/labels sit right
+            // where the system back/home/recents buttons overlay them.
+            height: 60 + insets.bottom,
+            paddingBottom: spacing.xs + insets.bottom,
             paddingTop: spacing.xs,
             opacity: isOffline ? 0.5 : 1,
           },

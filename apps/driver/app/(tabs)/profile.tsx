@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
@@ -45,8 +45,33 @@ export default function ProfileScreen() {
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
+  // A transient failure during login/session-hydration can leave `user`
+  // null with nothing else retrying it — retry once on mount so this screen
+  // doesn't stay permanently blank until some unrelated action happens to
+  // call refreshProfile().
+  useEffect(() => {
+    if (!user) void refreshProfile();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Resync local fields whenever the store's `user` changes (e.g. the retry
+  // above succeeding after mount) — not while actively editing, so an
+  // unrelated refresh can't clobber an in-progress edit.
+  useEffect(() => {
+    if (isEditing) return;
+    setName(user?.name ?? '');
+    setPhone(user?.phone ?? '');
+  }, [user, isEditing]);
+
   async function handleToggleEdit() {
     if (!isEditing) {
+      if (!user) {
+        // Profile still hasn't loaded — entering edit mode here would let a
+        // save write blank name/phone over the real values in the database.
+        Alert.alert(t.driver.profile.couldNotSaveTitle, t.driver.profile.pleaseTryAgain);
+        void refreshProfile();
+        return;
+      }
       setIsEditing(true);
       return;
     }

@@ -6,7 +6,10 @@ export const styles = StyleSheet.create({
   header: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', padding: spacing.lg },
   // 26/32/-0.7 has no matching heading token (h1b is closest, at 28/32) — a one-off literal shared by every tab screen's page title.
   title: { fontSize: 26, lineHeight: 32, fontFamily: fontFamily.extrabold, letterSpacing: -0.7, color: colors.ink },
-  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.xl, gap: spacing.sm },
+  // Matches dashboard.styles.ts's scrollContent — spacing.xl alone isn't
+  // tall enough to clear the tab bar (60 + bottom inset), so the last row
+  // was clipped behind it.
+  listContent: { paddingHorizontal: spacing.lg, paddingBottom: spacing.tight44 * 1.7, gap: spacing.sm },
   tripCard: {
     backgroundColor: colors.panel,
     borderRadius: radius.md3,

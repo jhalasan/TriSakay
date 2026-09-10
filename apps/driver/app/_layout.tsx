@@ -23,6 +23,7 @@ import { useHistoryStore } from '../src/store/useHistoryStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
 import { useRatingsStore } from '../src/store/useRatingsStore';
 import { useRequestsStore } from '../src/store/useRequestsStore';
+import { useSettingsStore } from '../src/store/useSettingsStore';
 import { useTripStore } from '../src/store/useTripStore';
 import { useVerificationStore, type VerificationGateStatus } from '../src/store/useVerificationStore';
 
@@ -304,6 +305,7 @@ function RootLayoutNav() {
   const accountBlocked = accountStatus === 'suspended' || accountStatus === 'deactivated';
   const hasActiveTrip = useTripStore((state) => state.current !== null);
   const isAvailable = useDriverStore((state) => state.isAvailable);
+  const locationTrackingEnabled = useSettingsStore((state) => state.locationTrackingEnabled);
   const consentStatus = useConsentStore((state) => state.status);
   const verificationStatus = useVerificationStore((state) => state.status);
   useConsentSync(sessionUserId);
@@ -312,7 +314,7 @@ function RootLayoutNav() {
   useDriverDataSync(sessionUserId);
   useAvailabilitySync(sessionUserId);
   useRequestsSync(sessionUserId, isAvailable);
-  useDriverLocationSync(sessionUserId, isAvailable);
+  useDriverLocationSync(sessionUserId, isAvailable, locationTrackingEnabled);
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);
   useNotificationsSync(sessionUserId);
