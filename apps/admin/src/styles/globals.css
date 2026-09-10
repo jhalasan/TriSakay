@@ -311,6 +311,7 @@ a {
   align-items: center;
   justify-content: space-between;
   gap: var(--sp-sm);
+  margin-bottom: var(--sp-md);
 }
 
 .pane-header-stack {
