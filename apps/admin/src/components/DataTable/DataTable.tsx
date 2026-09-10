@@ -21,6 +21,9 @@ export interface DataTableProps<T> {
   selectedIds?: Set<string>;
   onToggleRow?: (id: string) => void;
   onToggleAll?: (checked: boolean) => void;
+  /** Opt-in row click + highlight (e.g. a queue table with a detail panel beside it). Independent of the checkbox-selection props above. */
+  onRowClick?: (row: T) => void;
+  isRowHighlighted?: (row: T) => boolean;
 }
 
 /**
@@ -39,6 +42,8 @@ export function DataTable<T>({
   selectedIds,
   onToggleRow,
   onToggleAll,
+  onRowClick,
+  isRowHighlighted,
 }: DataTableProps<T>) {
   const selectable = selectedIds !== undefined && onToggleRow !== undefined && onToggleAll !== undefined;
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -113,7 +118,13 @@ export function DataTable<T>({
         </thead>
         <tbody>
           {sortedRows.map((row) => (
-            <tr key={getRowKey(row)}>
+            <tr
+              key={getRowKey(row)}
+              className={[onRowClick && styles.rowClickable, isRowHighlighted?.(row) && styles.rowHighlighted]
+                .filter(Boolean)
+                .join(' ')}
+              onClick={onRowClick ? () => onRowClick(row) : undefined}
+            >
               {selectable && (
                 <td>
                   <input

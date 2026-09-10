@@ -1,9 +1,12 @@
 import { getSupabaseClient } from '../supabase/client.ts';
 
+export type MonitoringTricycleCluster = 'red' | 'white' | 'apple_green' | 'melting_pot';
+
 export interface AdminActiveTricycleRow {
   driverId: string;
   driverFullName: string;
   plateNo: string;
+  cluster: MonitoringTricycleCluster | null;
   tripStatus: 'active' | 'idle';
   seatsTaken: number;
   maxSeats: number;
@@ -42,7 +45,7 @@ export async function listActiveTricyclesForAdmin(): Promise<ListActiveTricycles
     { data: trips, error: tripsError },
   ] = await Promise.all([
     client.from('users').select('id, full_name').in('id', driverIds),
-    client.from('tricycles').select('driver_id, plate_no, seat_capacity').in('driver_id', driverIds).eq('is_active', true),
+    client.from('tricycles').select('driver_id, plate_no, seat_capacity, cluster').in('driver_id', driverIds).eq('is_active', true),
     client.from('trips').select('id, driver_id, max_seats').in('driver_id', driverIds).eq('status', 'active'),
   ]);
 
@@ -79,6 +82,7 @@ export async function listActiveTricyclesForAdmin(): Promise<ListActiveTricycles
         driverId,
         driverFullName: nameById.get(driverId) ?? '—',
         plateNo: tricycle?.plate_no ?? '—',
+        cluster: (tricycle?.cluster as MonitoringTricycleCluster | undefined) ?? null,
         tripStatus: trip ? ('active' as const) : ('idle' as const),
         seatsTaken: trip ? (seatsByTripId.get(trip.id) ?? 0) : 0,
         maxSeats: trip?.max_seats ?? tricycle?.seat_capacity ?? 0,

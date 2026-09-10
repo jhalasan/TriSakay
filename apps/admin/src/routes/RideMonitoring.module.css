@@ -15,7 +15,15 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--sp-sm);
   margin-bottom: var(--sp-md);
+  flex-wrap: wrap;
+}
+
+.mapHeaderLeft {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
 }
 
 .mapHeaderRight {
@@ -28,6 +36,8 @@
   font-family: var(--mono);
   font-size: 11px;
   color: var(--ink-faint);
+  text-align: center;
+  padding-top: var(--sp-sm);
 }
 
 .caption {

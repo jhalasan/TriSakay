@@ -1,0 +1,68 @@
+/* Unreviewed banner (README §07) — same danger accent as the Logged badge
+   and the selected-row highlight, nowhere else on this screen. */
+.banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  padding: var(--sp-md) var(--sp-lg);
+  border: 1px solid var(--danger);
+  border-radius: var(--r-md);
+  background: var(--danger-soft);
+}
+
+.bannerTitle {
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 2px;
+}
+
+.bannerBody {
+  font-size: 12px;
+  color: var(--ink-soft);
+}
+
+.split {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: var(--sp-md);
+  align-items: start;
+}
+
+@media (max-width: 1000px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+}
+
+.detailHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+}
+
+.locationBox {
+  height: 100px;
+}
+
+.locationPill {
+  background: var(--danger);
+  color: var(--white);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+
+.mapsLink {
+  font-size: 12px;
+  margin-top: 4px;
+}

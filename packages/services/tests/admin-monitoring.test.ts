@@ -28,8 +28,8 @@ function fakeClient(overrides: Record<string, unknown> = {}) {
             in: () => ({
               eq: async () => ({
                 data: [
-                  { driver_id: 'drv1', plate_no: 'GSC-1187', seat_capacity: 6 },
-                  { driver_id: 'drv2', plate_no: 'GSC-2214', seat_capacity: 4 },
+                  { driver_id: 'drv1', plate_no: 'GSC-1187', seat_capacity: 6, cluster: 'red' },
+                  { driver_id: 'drv2', plate_no: 'GSC-2214', seat_capacity: 4, cluster: 'white' },
                 ],
                 error: null,
               }),
@@ -63,8 +63,8 @@ test('listActiveTricyclesForAdmin splits on-duty drivers into active (with summe
   const { data, error } = await listActiveTricyclesForAdmin();
   assert.equal(error, null);
   assert.deepEqual(data, [
-    { driverId: 'drv2', driverFullName: 'Ariel Cabahug', plateNo: 'GSC-2214', tripStatus: 'idle', seatsTaken: 0, maxSeats: 4 },
-    { driverId: 'drv1', driverFullName: 'Ronnie Bautista', plateNo: 'GSC-1187', tripStatus: 'active', seatsTaken: 3, maxSeats: 6 },
+    { driverId: 'drv2', driverFullName: 'Ariel Cabahug', plateNo: 'GSC-2214', cluster: 'white', tripStatus: 'idle', seatsTaken: 0, maxSeats: 4 },
+    { driverId: 'drv1', driverFullName: 'Ronnie Bautista', plateNo: 'GSC-1187', cluster: 'red', tripStatus: 'active', seatsTaken: 3, maxSeats: 6 },
   ]);
 });
 
@@ -104,7 +104,7 @@ test('listActiveTricyclesForAdmin degrades a driver with no tricycle row to "—
 
   const { data, error } = await listActiveTricyclesForAdmin();
   assert.equal(error, null);
-  assert.deepEqual(data, [{ driverId: 'drv1', driverFullName: 'Ronnie Bautista', plateNo: '—', tripStatus: 'idle', seatsTaken: 0, maxSeats: 0 }]);
+  assert.deepEqual(data, [{ driverId: 'drv1', driverFullName: 'Ronnie Bautista', plateNo: '—', cluster: null, tripStatus: 'idle', seatsTaken: 0, maxSeats: 0 }]);
 });
 
 test('getActiveTricycleLocations rounds coordinates to 2 decimals and groups drivers sharing a grid cell', async () => {

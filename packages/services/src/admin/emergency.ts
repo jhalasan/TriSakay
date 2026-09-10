@@ -9,6 +9,7 @@ export interface AdminEmergencyAlertRow {
   triggeredByName: string;
   triggeredRole: AdminEmergencyRole;
   counterpartName: string | null;
+  tricyclePlateNo: string | null;
   rideRequestId: string | null;
   lat: number;
   lng: number;
@@ -53,11 +54,32 @@ export async function listEmergencyAlertsForAdmin(): Promise<ListEmergencyAlerts
 
   const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name]));
 
+  // The driver in the pair is whoever triggered it (if a driver) or the
+  // counterpart (if a passenger triggered it) — same "no multi-hop embed,
+  // one follow-up lookup" convention as the users query above.
+  const driverIdByAlertId = new Map(
+    data.map((a) => [a.id, a.triggered_role === 'driver' ? a.triggered_by : a.counterpart_id])
+  );
+  const driverIds = [...new Set([...driverIdByAlertId.values()].filter((id): id is string => !!id))];
+  let plateByDriverId = new Map<string, string>();
+  if (driverIds.length > 0) {
+    const { data: tricycles, error: tricyclesError } = await client
+      .from('tricycles')
+      .select('driver_id, plate_no')
+      .in('driver_id', driverIds);
+    if (tricyclesError) return { data: [], error: tricyclesError.message };
+    plateByDriverId = new Map((tricycles ?? []).map((t) => [t.driver_id, t.plate_no]));
+  }
+
   const rows: AdminEmergencyAlertRow[] = data.map((a) => ({
     id: a.id,
     triggeredByName: nameById.get(a.triggered_by) ?? '—',
     triggeredRole: a.triggered_role,
     counterpartName: a.counterpart_id ? (nameById.get(a.counterpart_id) ?? null) : null,
+    tricyclePlateNo: (() => {
+      const driverId = driverIdByAlertId.get(a.id);
+      return driverId ? (plateByDriverId.get(driverId) ?? null) : null;
+    })(),
     rideRequestId: a.ride_request_id,
     lat: a.lat,
     lng: a.lng,

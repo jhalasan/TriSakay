@@ -8,6 +8,7 @@ export interface EmergencyAlertRow {
   triggeredByName: string;
   triggeredRole: EmergencyRole;
   counterpartName: string | null;
+  tricyclePlateNo: string | null;
   rideRequestId: string | null;
   lat: number;
   lng: number;

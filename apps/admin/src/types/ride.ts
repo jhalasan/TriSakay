@@ -8,6 +8,7 @@ export interface ActiveTricycleRow {
   driverId: string;
   driverFullName: string;
   plateNo: string;
+  cluster: 'red' | 'white' | 'apple_green' | 'melting_pot' | null;
   tripStatus: 'active' | 'idle';
   seatsTaken: number;
   maxSeats: number;

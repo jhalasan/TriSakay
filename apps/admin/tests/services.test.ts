@@ -318,6 +318,7 @@ function fakeEmergencyClient() {
         };
       }
       if (table === 'users') return { select: () => ({ in: async () => ({ data: users, error: null }) }) };
+      if (table === 'tricycles') return { select: () => ({ in: async () => ({ data: [{ driver_id: 'd1', plate_no: 'GSC-4821' }], error: null }) }) };
       throw new Error(`unexpected table ${table}`);
     },
     auth: { getSession: async () => ({ data: { session: { user: { id: 'supervisor1' } } } }) },

@@ -45,6 +45,9 @@ function fakeClient() {
       if (table === 'users') {
         return { select: () => ({ in: async () => ({ data: users, error: null }) }) };
       }
+      if (table === 'tricycles') {
+        return { select: () => ({ in: async () => ({ data: [{ driver_id: 'd1', plate_no: 'GSC-4821' }], error: null }) }) };
+      }
       throw new Error(`unexpected table ${table}`);
     },
     auth: { getSession: async () => ({ data: SESSION }) },
@@ -62,6 +65,7 @@ test('listEmergencyAlertsForAdmin resolves triggered-by/counterpart names and pa
       triggeredByName: 'Ferdinand Amaro',
       triggeredRole: 'driver',
       counterpartName: 'Maria Fe Santos',
+      tricyclePlateNo: 'GSC-4821',
       rideRequestId: 'rr1',
       lat: 6.1128,
       lng: 125.1717,
