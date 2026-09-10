@@ -1,12 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Badge } from '../Badge';
 import { NotificationBell } from '../NotificationBell';
 import { ProfileMenu } from '../ProfileMenu';
 import { useSessionStore } from '../../store/useSessionStore';
 import { useDriversStore } from '../../store/useDriversStore';
 import { usePassengersStore } from '../../store/usePassengersStore';
-import { ROLE_LABELS } from '../../lib/rbac';
 import { visibleNavItems, matchNavItems } from '../../lib/navigation';
 import { searchDrivers, searchPassengers } from '../../lib/globalSearch';
 import styles from './TopBar.module.css';
@@ -141,7 +139,6 @@ export function TopBar({ title, onLogoutClick }: TopBarProps) {
         )}
       </div>
       <div className={styles.right}>
-        <Badge label={ROLE_LABELS[user.role]} tone="info" />
         <NotificationBell />
         <ProfileMenu onLogoutClick={onLogoutClick} />
       </div>
