@@ -9,8 +9,6 @@ import { NAV_ICONS } from './navIcons';
 import styles from './Sidebar.module.css';
 
 const ADMIN_CAPTION = 'Administration';
-/** The rail's one red count chip (README §1) — every other chip is the neutral white-on-navy pill. */
-const DANGER_CHIP_ROUTE = '/emergency-alerts';
 
 export interface SidebarProps {
   /** Rail count chips, keyed by NavItem.to — Emergency Alerts, Verification, Fare Discounts and Complaints per README §3 item 3. Omit a key to render that item with no chip (data not available yet). */
@@ -76,11 +74,7 @@ export function Sidebar({ counts, onLogoutClick }: SidebarProps) {
                     >
                       {Icon && <Icon className={styles.icon} />}
                       <span className={styles.label}>{item.label}</span>
-                      {count !== undefined && (
-                        <span className={`${styles.chip} ${item.to === DANGER_CHIP_ROUTE ? styles.chipDanger : ''}`}>
-                          {count}
-                        </span>
-                      )}
+                      {count !== undefined && <span className={styles.chip}>{count}</span>}
                     </NavLink>
                   </li>
                 );
