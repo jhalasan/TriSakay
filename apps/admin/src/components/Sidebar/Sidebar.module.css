@@ -80,6 +80,13 @@
   flex-direction: column;
   overflow-y: auto;
   flex: 1;
+  /* Scrolls when the rail runs out of vertical space, but the shell reads
+     as one continuous navy surface — no visible scrollbar chrome. */
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
 }
 
 .divider {
