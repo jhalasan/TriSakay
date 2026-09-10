@@ -108,12 +108,12 @@ export function Reports() {
   return (
     <div className="page">
       <div className={styles.toolbar}>
-        <div className={styles.segmented}>
+        <div className="segmented">
           {DATE_RANGE_OPTIONS.map((opt) => (
             <button
               key={opt.value}
               type="button"
-              className={`${styles.segmentButton} ${dateRange === opt.value ? styles.segmentButtonActive : ''}`}
+              className={`segment-button ${dateRange === opt.value ? 'segment-button-active' : ''}`}
               onClick={() => setDateRange(opt.value)}
             >
               {opt.label}

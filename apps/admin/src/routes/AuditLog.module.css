@@ -1,0 +1,26 @@
+.filterStrip {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+}
+
+.tableHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-md);
+}
+
+.tableHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.recordCount {
+  font-size: 11px;
+  color: var(--ink-faint);
+}

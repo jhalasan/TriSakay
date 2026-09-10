@@ -362,7 +362,14 @@ create table public.barangays (
                                   -- barangay by portion (see is_split)
   is_split    boolean not null default false,
   notes       text,               -- e.g. which portion belongs to which cluster
-  created_at  timestamptz not null default now()
+  created_at  timestamptz not null default now(),
+
+  -- Stamped by createBarangayForAdmin()/updateBarangayForAdmin() on every
+  -- write (no trigger — every write already goes through those two
+  -- functions). Null for a row nobody has touched since these columns
+  -- were added. Feeds the admin Barangays screen's "Last amended" line.
+  updated_at  timestamptz,
+  updated_by  uuid references public.users(id) on delete set null
 );
 
 comment on column public.barangays.cluster is

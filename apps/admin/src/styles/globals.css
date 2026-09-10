@@ -435,3 +435,37 @@ a {
   color: var(--ink-faint);
   margin: 0;
 }
+
+/* Segmented control (README §08/§10) — a row of mutually-exclusive filter
+   buttons in one bordered pill, e.g. Reports' date range and Audit Log's
+   action-type filter. */
+.segmented {
+  display: flex;
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  overflow: hidden;
+}
+
+.segment-button {
+  border: none;
+  border-right: 1px solid var(--line);
+  background: var(--panel);
+  color: var(--ink-soft);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 8px 14px;
+  cursor: pointer;
+}
+
+.segment-button:last-child {
+  border-right: none;
+}
+
+.segment-button:hover {
+  background: var(--fill);
+}
+
+.segment-button-active {
+  background: var(--primary);
+  color: var(--white);
+}

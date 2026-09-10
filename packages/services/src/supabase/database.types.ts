@@ -81,6 +81,8 @@ export type Database = {
           is_split: boolean
           name: string
           notes: string | null
+          updated_at: string | null
+          updated_by: string | null
         }
         Insert: {
           cluster?: Database["public"]["Enums"]["tricycle_cluster"] | null
@@ -89,6 +91,8 @@ export type Database = {
           is_split?: boolean
           name: string
           notes?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Update: {
           cluster?: Database["public"]["Enums"]["tricycle_cluster"] | null
@@ -97,6 +101,8 @@ export type Database = {
           is_split?: boolean
           name?: string
           notes?: string | null
+          updated_at?: string | null
+          updated_by?: string | null
         }
         Relationships: []
       }
