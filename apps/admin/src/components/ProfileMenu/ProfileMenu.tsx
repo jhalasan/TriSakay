@@ -6,9 +6,8 @@ import { TextField } from '../TextField';
 import { ErrorBanner } from '../ErrorBanner';
 import { useSessionStore } from '../../store/useSessionStore';
 import { ROLE_LABELS } from '../../lib/rbac';
+import { passwordPolicyError } from '../../lib/passwordPolicy';
 import styles from './ProfileMenu.module.css';
-
-const MIN_PASSWORD_LENGTH = 8;
 
 export interface ProfileMenuProps {
   onLogoutClick: () => void;
@@ -87,8 +86,9 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   }
 
   async function handleSavePassword() {
-    if (password.length < MIN_PASSWORD_LENGTH) {
-      setPasswordError(`Password must be at least ${MIN_PASSWORD_LENGTH} characters.`);
+    const policyError = passwordPolicyError(password);
+    if (policyError) {
+      setPasswordError(policyError);
       return;
     }
     if (password !== confirmPassword) {
@@ -179,7 +179,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
               <div className={styles.form}>
                 <TextField
                   type="password"
-                  placeholder={`At least ${MIN_PASSWORD_LENGTH} characters`}
+                  placeholder="At least 10 characters"
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}

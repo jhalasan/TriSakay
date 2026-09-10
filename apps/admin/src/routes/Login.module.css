@@ -35,10 +35,22 @@
   margin: auto 0;
 }
 
+.brandLogoPlate {
+  display: inline-flex;
+  align-self: flex-start;
+  padding: 18px 22px;
+  /* 16px — README §01; not one of the three tokens Phase 0 added, so a
+     literal one-off value rather than a new token (see Phase 0 gap notes
+     re: ConfirmModal's card also wanting an unaddressed 16px). */
+  border-radius: 16px;
+  background: var(--white);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.22);
+}
+
 .brandLogo {
-  width: 168px;
+  display: block;
+  width: 150px;
   height: auto;
-  margin-bottom: var(--sp-md);
 }
 
 .brandHeadline {
@@ -119,6 +131,20 @@
   font-size: 13px;
   color: var(--ink-soft);
   margin: 0;
+}
+
+/* README §01 — 46px fields, radius 12, and a 48px submit button. Scoped to
+   this screen's TextField/Button via their className prop rather than
+   changing the shared components' base sizing (Button/TextField are used
+   at their default sizes everywhere else in the app, unreached by this
+   phase). */
+.field {
+  height: 46px;
+  border-radius: var(--r-md);
+}
+
+.submitButton {
+  height: 48px;
 }
 
 .eyeToggle {

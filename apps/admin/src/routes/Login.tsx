@@ -61,7 +61,12 @@ export function Login() {
         </svg>
 
         <div className={styles.brandContent}>
-          <img src="/brand/trisakay-lockup.png" alt="TriSakay" className={styles.brandLogo} />
+          {/* The lockup is navy+green on a transparent ground (hard rule 7)
+              — straight on this navy panel it would nearly vanish, so it
+              sits on its own white plate. */}
+          <span className={styles.brandLogoPlate}>
+            <img src="/brand/trisakay-lockup.png" alt="TriSakay" className={styles.brandLogo} />
+          </span>
           <h1 className={styles.brandHeadline}>PSO Operations Portal</h1>
           <p className={styles.brandTagline}>
             Real-time oversight for tricycle operations, driver verification, and passenger
@@ -90,6 +95,7 @@ export function Login() {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
+              className={styles.field}
             />
 
             <TextField
@@ -100,6 +106,7 @@ export function Login() {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              className={styles.field}
               endAdornment={
                 <button
                   type="button"
@@ -145,7 +152,7 @@ export function Login() {
               </div>
             )}
 
-            <Button type="submit" fullWidth loading={submitting}>
+            <Button type="submit" fullWidth loading={submitting} className={styles.submitButton}>
               {submitting ? 'Signing in…' : 'Log in'}
             </Button>
 
