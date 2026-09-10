@@ -26,6 +26,8 @@ export interface DataTableProps<T> {
   /** Opt-in row click + highlight (e.g. a queue table with a detail panel beside it). Independent of the checkbox-selection props above. */
   onRowClick?: (row: T) => void;
   isRowHighlighted?: (row: T) => boolean;
+  /** Caps the table's width instead of stretching it to fill the panel — for a sparse table (e.g. PSO Users) whose columns would otherwise gain distorting extra width from the browser's table auto-layout. */
+  maxWidth?: number | string;
 }
 
 /**
@@ -47,6 +49,7 @@ export function DataTable<T>({
   onToggleAll,
   onRowClick,
   isRowHighlighted,
+  maxWidth,
 }: DataTableProps<T>) {
   const selectable = selectedIds !== undefined && onToggleRow !== undefined && onToggleAll !== undefined;
   const [sortKey, setSortKey] = useState<string | null>(null);
@@ -78,7 +81,7 @@ export function DataTable<T>({
 
   if (loading) {
     return (
-      <div className={`scroll-x ${styles.wrap}`}>
+      <div className={`scroll-x ${styles.wrap}`} style={{ maxWidth }}>
         <table className={styles.table}>
           <thead>
             <tr>
@@ -113,7 +116,7 @@ export function DataTable<T>({
   const allOnPageSelected = selectable && sortedRows.every((row) => selectedIds!.has(getRowKey(row)));
 
   return (
-    <div className={`scroll-x ${styles.wrap}`}>
+    <div className={`scroll-x ${styles.wrap}`} style={{ maxWidth }}>
       <table className={styles.table}>
         <thead>
           <tr>

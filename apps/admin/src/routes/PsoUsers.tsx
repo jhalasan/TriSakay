@@ -122,18 +122,20 @@ export function PsoUsers() {
   }
 
   const columns: DataTableColumn<PsoUserRow>[] = [
-    { key: 'name', header: 'Name', sortValue: (u) => u.fullName, render: (u) => <span style={{ fontWeight: 600 }}>{u.fullName}</span> },
-    { key: 'email', header: 'Email', render: (u) => u.email },
-    { key: 'role', header: 'Role', render: (u) => <Badge label={ROLE_LABELS[u.role]} tone={ROLE_TONE[u.role]} /> },
+    { key: 'name', header: 'Name', width: '220px', sortValue: (u) => u.fullName, render: (u) => <span style={{ fontWeight: 600 }}>{u.fullName}</span> },
+    { key: 'email', header: 'Email', width: '260px', render: (u) => u.email },
+    { key: 'role', header: 'Role', width: '130px', render: (u) => <Badge label={ROLE_LABELS[u.role]} tone={ROLE_TONE[u.role]} /> },
     {
       key: 'lastSignIn',
       header: 'Last sign-in',
+      width: '160px',
       sortValue: (u) => u.lastSignInAt ?? '',
       render: (u) => <span className="mono" style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{u.lastSignInAt ? formatDateTime(u.lastSignInAt) : 'Never'}</span>,
     },
     {
       key: 'status',
       header: 'Status',
+      width: '110px',
       render: (u) =>
         isInvited(u) ? (
           <Badge label="Invited" tone="warn" />
@@ -144,6 +146,7 @@ export function PsoUsers() {
     {
       key: 'actions',
       header: 'Actions',
+      width: '190px',
       render: (u) => (
         <div className="row-actions">
           <Button variant="outline" tone="neutral" size="sm" onClick={() => openSessions(u)}>
@@ -233,7 +236,15 @@ export function PsoUsers() {
           </h2>
           <Badge label={`${users.length} accounts · ${roleCount} roles`} tone="neutral" />
         </div>
-        <DataTable columns={columns} rows={users} getRowKey={(u) => u.id} loading={loading} emptyMessage="No PSO accounts yet." emptyHint="Accounts you add above appear here." />
+        <DataTable
+          columns={columns}
+          rows={users}
+          getRowKey={(u) => u.id}
+          loading={loading}
+          emptyMessage="No PSO accounts yet."
+          emptyHint="Accounts you add above appear here."
+          maxWidth={1080}
+        />
       </div>
       <p className={styles.policyNote}>
         PSO Staff triage and review. PSO Supervisor adds approve, reject, suspend and block. Administrator adds these two screens.
