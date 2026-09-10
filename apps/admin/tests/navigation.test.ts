@@ -41,7 +41,7 @@ test('matchNavItems is case-insensitive and matches by group caption too', () =>
   const byLabel = matchNavItems('DRIVERS', items);
   assert.ok(byLabel.some((i) => i.to === '/drivers'));
 
-  const byCaption = matchNavItems('directory', items);
+  const byCaption = matchNavItems('people', items);
   assert.ok(byCaption.some((i) => i.to === '/drivers'));
   assert.ok(byCaption.some((i) => i.to === '/passengers'));
 });

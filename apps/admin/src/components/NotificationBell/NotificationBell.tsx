@@ -75,7 +75,7 @@ export function NotificationBell() {
           />
           <path d="M13.73 21a2 2 0 01-3.46 0" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-        {unreadCount > 0 && <span className={styles.dot}>{unreadCount > 9 ? '9+' : unreadCount}</span>}
+        {unreadCount > 0 && <span className={styles.dot} />}
       </button>
 
       {open && (

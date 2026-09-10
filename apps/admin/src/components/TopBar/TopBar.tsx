@@ -104,8 +104,8 @@ export function TopBar({ title, onLogoutClick }: TopBarProps) {
         <input
           ref={inputRef}
           className={styles.search}
-          placeholder="Search pages, drivers, passengers…"
-          aria-label="Search pages, drivers, passengers"
+          placeholder="Search drivers, passengers, complaints…"
+          aria-label="Search drivers, passengers, complaints"
           role="combobox"
           aria-expanded={open}
           aria-controls="topbar-search-results"

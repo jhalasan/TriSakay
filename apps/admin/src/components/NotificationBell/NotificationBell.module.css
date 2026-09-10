@@ -29,20 +29,13 @@
 
 .dot {
   position: absolute;
-  top: 4px;
-  right: 4px;
-  min-width: 15px;
-  height: 15px;
-  padding: 0 3px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  top: 6px;
+  right: 6px;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   background: var(--danger);
-  color: var(--white);
-  font-size: 9px;
-  font-weight: 700;
-  line-height: 1;
+  box-shadow: 0 0 0 1.5px var(--panel);
 }
 
 .panel {

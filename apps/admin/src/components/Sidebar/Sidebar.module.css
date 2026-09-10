@@ -6,7 +6,6 @@
   display: flex;
   flex-direction: column;
   height: 100%;
-  overflow-y: auto;
 }
 
 .brand {
@@ -17,6 +16,7 @@
   padding: var(--sp-lg) var(--sp-md);
   border-bottom: 1px solid var(--sidebar-line);
   overflow: hidden;
+  flex-shrink: 0;
 }
 
 .brandArt {
@@ -27,40 +27,69 @@
   opacity: 0.16;
 }
 
-.brandMark {
+/* The mark is navy+green on a transparent ground — straight on the navy
+   rail it disappears (hard rule 7). It sits on its own white, 4px-padded,
+   7px-radius tile instead, keeping its real brand colours. */
+.brandTile {
   position: relative;
-  width: 24px;
-  height: 29px;
   flex-shrink: 0;
-  /* The mark's navy+green artwork is built for light surfaces; reversed to a
-     white silhouette here since it now sits on the dark sidebar. */
-  filter: brightness(0) invert(1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  border-radius: 7px;
+  background: var(--white);
 }
 
-.brandWordmark {
+.brandMark {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+}
+
+.brandText {
   position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.brandName {
   font-family: var(--font-brand);
-  font-weight: 600;
-  font-size: 13px;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 18px;
   color: var(--sidebar-ink);
+}
+
+.brandCaption {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--sidebar-ink-faint);
 }
 
 .list {
   list-style: none;
   margin: 0;
-  padding: var(--sp-sm) 0;
+  padding: var(--sp-sm) var(--sp-sm) var(--sp-md);
   display: flex;
   flex-direction: column;
+  overflow-y: auto;
+  flex: 1;
 }
 
 .divider {
   height: 1px;
   background: var(--sidebar-line);
-  margin: var(--sp-sm) var(--sp-md);
+  margin: var(--sp-sm) var(--sp-sm);
 }
 
 .captionItem {
-  margin-top: var(--sp-sm);
+  margin-top: var(--sp-xs);
 }
 
 .captionItem:first-child {
@@ -69,35 +98,131 @@
 
 .caption {
   margin: 0;
-  padding: var(--sp-xs) var(--sp-md);
+  padding: 14px 11px 6px;
   font-family: var(--mono);
   font-size: var(--fs-micro);
   font-weight: 600;
-  letter-spacing: 0.03em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--sidebar-ink-faint);
 }
 
-.link,
-.active {
-  display: block;
-  padding: var(--sp-sm) var(--sp-md);
-  font-size: var(--fs-xs);
-  text-decoration: none;
+.item {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 11px;
+  border-radius: 9px;
+  font-size: 13px;
+  line-height: 18px;
+  font-weight: 500;
   color: var(--sidebar-ink-soft);
-  border-left: 3px solid transparent;
-  border-radius: 0 var(--r-sm) var(--r-sm) 0;
+  text-decoration: none;
   transition: background-color 120ms ease, color 120ms ease;
 }
 
-.link:hover {
+.item:hover {
   background: var(--sidebar-hover-bg);
   color: var(--sidebar-ink);
 }
 
-.active {
+.item.active {
   background: var(--sidebar-active-bg);
   color: var(--sidebar-ink);
-  border-left-color: var(--sidebar-ink);
   font-weight: 600;
+}
+
+/* 3px full-height-minus-9px-inset left marker (README §1) — an inset
+   pseudo-element rather than border-left, which cannot stop short of a
+   box's own top/bottom edges. */
+.item.active::before {
+  content: '';
+  position: absolute;
+  left: -8px;
+  top: 9px;
+  bottom: 9px;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: var(--sidebar-ink);
+}
+
+.icon {
+  flex-shrink: 0;
+}
+
+.label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.chip {
+  flex-shrink: 0;
+  font-family: var(--mono);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: var(--r-pill);
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--sidebar-ink);
+}
+
+.chipDanger {
+  background: var(--danger);
+  color: var(--white);
+}
+
+.footer {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  padding: var(--sp-md) var(--sp-lg);
+  border-top: 1px solid var(--sidebar-line);
+}
+
+.footerText {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.footerName {
+  font-size: 12.5px;
+  line-height: 17px;
+  font-weight: 600;
+  color: var(--sidebar-ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.footerRole {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  color: var(--sidebar-ink-faint);
+}
+
+.logoutButton {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--sidebar-ink-faint);
+  cursor: pointer;
+  transition: background-color 120ms ease, color 120ms ease;
+}
+
+.logoutButton:hover {
+  background: var(--sidebar-hover-bg);
+  color: var(--sidebar-ink);
 }
