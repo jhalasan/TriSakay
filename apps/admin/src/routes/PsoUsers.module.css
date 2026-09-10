@@ -1,0 +1,43 @@
+.tempPasswordCallout {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-md);
+  flex-wrap: wrap;
+  border-color: var(--primary);
+  border-width: 1.5px;
+}
+
+.tempPasswordHint {
+  font-size: 12px;
+  color: var(--ink-faint);
+  margin: 4px 0 0;
+}
+
+.tempPasswordRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}
+
+.tempPasswordValue {
+  font-family: var(--mono);
+  font-size: 14px;
+  background: var(--fill);
+  padding: 6px 10px;
+  border-radius: var(--r-sm);
+  user-select: all;
+}
+
+.inviteForm {
+  display: flex;
+  gap: var(--sp-md);
+  align-items: flex-end;
+  flex-wrap: wrap;
+}
+
+.policyNote {
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin: 0;
+}

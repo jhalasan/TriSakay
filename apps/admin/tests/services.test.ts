@@ -494,10 +494,11 @@ function fakePsoUsersClient() {
         return { data: { userId: 'pso2', tempPassword: 'Tq7!generated', error: null }, error: null };
       },
     },
-    rpc: async (fn: string, args: { p_target_user_id: string; p_action_type: string }) => {
+    rpc: async (fn: string, args?: { p_target_user_id: string; p_action_type: string }) => {
+      if (fn === 'admin_list_pso_last_sign_in') return { data: [], error: null };
       if (fn !== 'perform_account_action') throw new Error(`unexpected rpc ${fn}`);
-      const user = users.find((u) => u.id === args.p_target_user_id);
-      if (user) user.status = args.p_action_type === 'suspend' ? 'suspended' : 'active';
+      const user = users.find((u) => u.id === args!.p_target_user_id);
+      if (user) user.status = args!.p_action_type === 'suspend' ? 'suspended' : 'active';
       return { error: null };
     },
   } as any;

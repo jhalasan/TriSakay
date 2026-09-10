@@ -1418,6 +1418,13 @@ export type Database = {
       }
     }
     Functions: {
+      admin_list_pso_last_sign_in: {
+        Args: never
+        Returns: {
+          user_id: string
+          last_sign_in_at: string | null
+        }[]
+      }
       admin_list_user_sessions: {
         Args: { p_user_id: string }
         Returns: {

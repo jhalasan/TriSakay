@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createPsoUserForAdmin, listPsoUserSessions, listPsoUsersForAdmin, revokePsoUserSession } from '../src/admin/psoUsers.ts';
 
-test('listPsoUsersForAdmin maps status to isActive and passes role through', async () => {
+test('listPsoUsersForAdmin maps status to isActive, joins lastSignInAt from the RPC, and passes role through', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
       if (table !== 'users') throw new Error(`unexpected table ${table}`);
@@ -21,24 +21,55 @@ test('listPsoUsersForAdmin maps status to isActive and passes role through', asy
         }),
       };
     },
+    rpc: async (fn: string) => {
+      if (fn !== 'admin_list_pso_last_sign_in') throw new Error(`unexpected rpc ${fn}`);
+      return {
+        data: [
+          { user_id: 'u1', last_sign_in_at: '2026-09-08T05:40:00.000Z' },
+          { user_id: 'u2', last_sign_in_at: null },
+        ],
+        error: null,
+      };
+    },
   } as any);
 
   const { data, error } = await listPsoUsersForAdmin();
   assert.equal(error, null);
   assert.deepEqual(data, [
-    { id: 'u1', fullName: 'Rodel Fernandez', email: 'r.fernandez@pso.gensantos.gov.ph', role: 'admin', isActive: true, createdAt: '2024-09-01T00:00:00.000Z' },
-    { id: 'u2', fullName: 'Jasmin Oclarit', email: 'j.oclarit@pso.gensantos.gov.ph', role: 'pso_staff', isActive: false, createdAt: '2025-05-20T00:00:00.000Z' },
+    { id: 'u1', fullName: 'Rodel Fernandez', email: 'r.fernandez@pso.gensantos.gov.ph', role: 'admin', isActive: true, lastSignInAt: '2026-09-08T05:40:00.000Z', createdAt: '2024-09-01T00:00:00.000Z' },
+    { id: 'u2', fullName: 'Jasmin Oclarit', email: 'j.oclarit@pso.gensantos.gov.ph', role: 'pso_staff', isActive: false, lastSignInAt: null, createdAt: '2025-05-20T00:00:00.000Z' },
   ]);
 });
 
 test('listPsoUsersForAdmin returns { data: [], error } when the query fails', async () => {
   __setSupabaseClientForTests({
     from: () => ({ select: () => ({ in: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+    rpc: async () => ({ data: null, error: null }),
   } as any);
 
   const { data, error } = await listPsoUsersForAdmin();
   assert.deepEqual(data, []);
   assert.equal(error, 'connection refused');
+});
+
+test('listPsoUsersForAdmin degrades every row\'s lastSignInAt to null (not an error) when the RPC fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({
+      select: () => ({
+        in: () => ({
+          order: async () => ({
+            data: [{ id: 'u1', full_name: 'Rodel Fernandez', email: 'r.fernandez@pso.gensantos.gov.ph', role: 'admin', status: 'active', created_at: '2024-09-01T00:00:00.000Z' }],
+            error: null,
+          }),
+        }),
+      }),
+    }),
+    rpc: async () => ({ data: null, error: { message: 'Only an Administrator may view sign-in data' } }),
+  } as any);
+
+  const { data, error } = await listPsoUsersForAdmin();
+  assert.equal(error, null);
+  assert.equal(data[0].lastSignInAt, null);
 });
 
 test('createPsoUserForAdmin invokes the admin-create-pso-user Edge Function and returns the temp password', async () => {

@@ -7,5 +7,6 @@ export interface PsoUserRow {
   email: string;
   role: AdminRole;
   isActive: boolean;
+  lastSignInAt: string | null;
   createdAt: string;
 }

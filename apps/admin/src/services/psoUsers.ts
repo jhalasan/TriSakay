@@ -17,6 +17,7 @@ export async function listPsoUsers(): Promise<ServiceResult<PsoUserRow[]>> {
     email: u.email,
     role: u.role,
     isActive: u.isActive,
+    lastSignInAt: u.lastSignInAt,
     createdAt: u.createdAt,
   }));
 

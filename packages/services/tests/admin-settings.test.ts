@@ -10,7 +10,15 @@ import {
 } from '../src/admin/settings.ts';
 
 function fakeClient(overrides: Record<string, unknown> = {}) {
-  const fareConfig = { base_fare: 15.0, base_km: 4.0, rate_per_km: 1.0, discount_rate_percent: 20.0, ordinance_ref: 'Ordinance No. 08, s.2023' as string | null };
+  const fareConfig = {
+    base_fare: 15.0,
+    base_km: 4.0,
+    rate_per_km: 1.0,
+    discount_rate_percent: 20.0,
+    ordinance_ref: 'Ordinance No. 08, s.2023' as string | null,
+    effective_from: '2026-08-12T00:00:00.000Z',
+    updated_by: 'rhea1' as string | null,
+  };
   const systemSettings = {
     bearing_tolerance_deg: 40.0,
     detour_ratio_max: 1.25,
@@ -25,6 +33,9 @@ function fakeClient(overrides: Record<string, unknown> = {}) {
     from: (table: string) => {
       if (table === 'fare_config') {
         return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: fareConfig, error: null }) }) }) };
+      }
+      if (table === 'users') {
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { full_name: 'Rhea Santillan' }, error: null }) }) }) };
       }
       if (table === 'system_settings') {
         return {
@@ -50,11 +61,51 @@ function fakeClient(overrides: Record<string, unknown> = {}) {
   } as any;
 }
 
-test('getAdminFareConfig maps the active row', async () => {
+test('getAdminFareConfig maps the active row and resolves updatedByName via a follow-up users lookup', async () => {
   __setSupabaseClientForTests(fakeClient());
   const { data, error } = await getAdminFareConfig();
   assert.equal(error, null);
-  assert.deepEqual(data, { baseFare: 15, baseKm: 4, ratePerKm: 1, discountRatePercent: 20, ordinanceRef: 'Ordinance No. 08, s.2023' });
+  assert.deepEqual(data, {
+    baseFare: 15,
+    baseKm: 4,
+    ratePerKm: 1,
+    discountRatePercent: 20,
+    ordinanceRef: 'Ordinance No. 08, s.2023',
+    effectiveFrom: '2026-08-12T00:00:00.000Z',
+    updatedByName: 'Rhea Santillan',
+  });
+});
+
+test('getAdminFareConfig skips the users lookup and leaves updatedByName null when updated_by is null', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'fare_config') {
+        return {
+          select: () => ({
+            eq: () => ({
+              maybeSingle: async () => ({
+                data: {
+                  base_fare: 15,
+                  base_km: 4,
+                  rate_per_km: 1,
+                  discount_rate_percent: 20,
+                  ordinance_ref: null,
+                  effective_from: '2026-01-01T00:00:00.000Z',
+                  updated_by: null,
+                },
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await getAdminFareConfig();
+  assert.equal(error, null);
+  assert.equal(data!.updatedByName, null);
 });
 
 test('getAdminFareConfig returns { data: null, error } on a query failure', async () => {

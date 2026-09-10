@@ -11,10 +11,22 @@
   }
 }
 
+.leftCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+}
+
 .toggleList {
   display: flex;
   flex-direction: column;
   gap: var(--sp-md);
+}
+
+.heuristicNote {
+  font-size: 11px;
+  color: var(--ink-faint);
+  margin: 0 0 var(--sp-sm);
 }
 
 .readonlyGrid {
@@ -23,6 +35,14 @@
   gap: var(--sp-sm) var(--sp-md);
   font-size: 12px;
   color: var(--ink-soft);
+}
+
+.fareHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-md);
 }
 
 .fareForm {
@@ -44,7 +64,25 @@
   margin: 0;
 }
 
-.savedNote {
+.workedExample {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  background: var(--fill);
+  padding: var(--sp-sm) var(--sp-md);
+}
+
+.workedExample p {
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink);
+  margin: 0;
+}
+
+.auditLine {
   font-size: 11px;
-  color: var(--success);
+  color: var(--ink-faint);
 }

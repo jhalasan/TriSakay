@@ -6,6 +6,8 @@ export interface AdminFareConfig {
   ratePerKm: number;
   discountRatePercent: number;
   ordinanceRef: string | null;
+  effectiveFrom: string;
+  updatedByName: string | null;
 }
 
 export interface GetAdminFareConfigResult {
@@ -13,16 +15,29 @@ export interface GetAdminFareConfigResult {
   error: string | null;
 }
 
-/** FR-8.1 — the active tariff. fare_config is versioned (fare_config_one_active partial unique index), so this always reads the current is_active=true row. */
+/**
+ * FR-8.1 — the active tariff. fare_config is versioned (fare_config_one_active
+ * partial unique index), so this always reads the current is_active=true
+ * row; that row's own effective_from/updated_by double as "last changed
+ * when/by whom" for the Fare Matrix audit line, since a fare update is
+ * really a new active row, not an in-place edit (see updateAdminFareConfig).
+ */
 export async function getAdminFareConfig(): Promise<GetAdminFareConfigResult> {
-  const { data, error } = await getSupabaseClient()
+  const client = getSupabaseClient();
+  const { data, error } = await client
     .from('fare_config')
-    .select('base_fare, base_km, rate_per_km, discount_rate_percent, ordinance_ref')
+    .select('base_fare, base_km, rate_per_km, discount_rate_percent, ordinance_ref, effective_from, updated_by')
     .eq('is_active', true)
     .maybeSingle();
 
   if (error) return { data: null, error: error.message };
   if (!data) return { data: null, error: null };
+
+  let updatedByName: string | null = null;
+  if (data.updated_by) {
+    const { data: user } = await client.from('users').select('full_name').eq('id', data.updated_by).maybeSingle();
+    updatedByName = user?.full_name ?? null;
+  }
 
   return {
     data: {
@@ -31,6 +46,8 @@ export async function getAdminFareConfig(): Promise<GetAdminFareConfigResult> {
       ratePerKm: data.rate_per_km,
       discountRatePercent: data.discount_rate_percent,
       ordinanceRef: data.ordinance_ref,
+      effectiveFrom: data.effective_from,
+      updatedByName,
     },
     error: null,
   };

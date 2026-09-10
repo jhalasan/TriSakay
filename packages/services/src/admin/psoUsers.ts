@@ -8,6 +8,7 @@ export interface AdminPsoUserRow {
   email: string;
   role: AdminPsoRole;
   isActive: boolean;
+  lastSignInAt: string | null;
   createdAt: string;
 }
 
@@ -16,17 +17,31 @@ export interface ListPsoUsersForAdminResult {
   error: string | null;
 }
 
-/** FR-6.3 — every PSO-portal account (staff, supervisor, admin), newest first. */
+/**
+ * FR-6.3 — every PSO-portal account (staff, supervisor, admin), newest
+ * first. `lastSignInAt` comes from the admin_list_pso_last_sign_in RPC
+ * (SECURITY DEFINER, is_admin()-gated) since auth.users isn't exposed to
+ * PostgREST — same reasoning as listPsoUserSessions() below, but bulk since
+ * the whole roster needs it at once rather than one account at a time. A
+ * failure there degrades every row's lastSignInAt to null instead of
+ * failing the roster fetch — sign-in history is a nice-to-have column, not
+ * the point of this screen.
+ */
 export async function listPsoUsersForAdmin(): Promise<ListPsoUsersForAdminResult> {
   const client = getSupabaseClient();
 
-  const { data, error } = await client
-    .from('users')
-    .select('id, full_name, email, role, status, created_at')
-    .in('role', ['pso_staff', 'pso_supervisor', 'admin'])
-    .order('created_at', { ascending: false });
+  const [{ data, error }, { data: lastSignIns }] = await Promise.all([
+    client
+      .from('users')
+      .select('id, full_name, email, role, status, created_at')
+      .in('role', ['pso_staff', 'pso_supervisor', 'admin'])
+      .order('created_at', { ascending: false }),
+    client.rpc('admin_list_pso_last_sign_in'),
+  ]);
 
   if (error) return { data: [], error: error.message };
+
+  const lastSignInByUserId = new Map((lastSignIns ?? []).map((row) => [row.user_id, row.last_sign_in_at]));
 
   const rows: AdminPsoUserRow[] = (data ?? []).map((u) => ({
     id: u.id,
@@ -34,6 +49,7 @@ export async function listPsoUsersForAdmin(): Promise<ListPsoUsersForAdminResult
     email: u.email,
     role: u.role as AdminPsoRole,
     isActive: u.status === 'active',
+    lastSignInAt: lastSignInByUserId.get(u.id) ?? null,
     createdAt: u.created_at,
   }));
 

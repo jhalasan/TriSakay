@@ -4,7 +4,7 @@
  * Badge/Badge.module.css. Keep in sync if either source changes.
  */
 export const LINE_COLOR = '#002E60'; // --primary
-export const REVENUE_COLOR = '#477434'; // --success
+export const REVENUE_COLOR = '#e3b341'; // --warn-border — amber reads clearly against the navy bars, unlike the muted green
 export const GRID_COLOR = '#EBEFF2'; // --line-soft
 export const AXIS_COLOR = '#5A646B'; // --ink-soft
 export const TOOLTIP_BG = '#FFFFFF'; // --panel

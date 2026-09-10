@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
@@ -11,6 +11,7 @@ import type { PsoUserRow } from '../types/psoUser';
 import { ROLE_LABELS } from '../lib/rbac';
 import type { AdminRole } from '../types/role';
 import { formatDateTime } from '../lib/format';
+import styles from './PsoUsers.module.css';
 
 const ROLE_TONE: Record<AdminRole, 'info' | 'warn' | 'neutral'> = {
   admin: 'info',
@@ -24,7 +25,20 @@ interface PendingAction {
   kind: PendingActionKind;
 }
 
-/** Wireframe screen 9 "User management" — PSO staff & roles (FR-6.3). Admin-only screen; route access is gated in App.tsx. */
+/** A signed-up account with no recorded sign-in yet — distinct from Active/Inactive, both of which imply the account has been used at least once. */
+function isInvited(u: PsoUserRow): boolean {
+  return u.isActive && u.lastSignInAt === null;
+}
+
+/**
+ * Wireframe screen 9 "User management" — PSO staff & roles (FR-6.3).
+ * Admin-only screen; route access is gated in App.tsx. Restyled per README
+ * §09 — inline invite form above the roster, one-time temp-password
+ * callout. "Sessions" (session/device visibility + revocation) predates
+ * this redesign and isn't in the mock's Actions column, but it's real,
+ * shipped functionality — kept alongside Disable/Enable rather than
+ * dropped to match the screenshot.
+ */
 export function PsoUsers() {
   const {
     users,
@@ -41,7 +55,6 @@ export function PsoUsers() {
     fetchSessions,
     revokeSession,
   } = usePsoUsersStore();
-  const [showAddForm, setShowAddForm] = useState(false);
   const [fullName, setFullName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AdminRole>('pso_staff');
@@ -60,6 +73,8 @@ export function PsoUsers() {
     fetch();
   }, [fetch]);
 
+  const roleCount = useMemo(() => new Set(users.map((u) => u.role)).size, [users]);
+
   async function handleAdd() {
     if (!fullName.trim() || !email.trim()) return;
     setCreating(true);
@@ -70,7 +85,6 @@ export function PsoUsers() {
       setFullName('');
       setEmail('');
       setRole('pso_staff');
-      setShowAddForm(false);
     }
   }
 
@@ -101,10 +115,25 @@ export function PsoUsers() {
   }
 
   const columns: DataTableColumn<PsoUserRow>[] = [
-    { key: 'name', header: 'Name', sortValue: (u) => u.fullName, render: (u) => u.fullName },
+    { key: 'name', header: 'Name', sortValue: (u) => u.fullName, render: (u) => <span style={{ fontWeight: 600 }}>{u.fullName}</span> },
     { key: 'email', header: 'Email', render: (u) => u.email },
     { key: 'role', header: 'Role', render: (u) => <Badge label={ROLE_LABELS[u.role]} tone={ROLE_TONE[u.role]} /> },
-    { key: 'status', header: 'Status', render: (u) => <Badge label={u.isActive ? 'Active' : 'Inactive'} tone={u.isActive ? 'success' : 'neutral'} /> },
+    {
+      key: 'lastSignIn',
+      header: 'Last sign-in',
+      sortValue: (u) => u.lastSignInAt ?? '',
+      render: (u) => <span className="mono" style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{u.lastSignInAt ? formatDateTime(u.lastSignInAt) : 'Never'}</span>,
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (u) =>
+        isInvited(u) ? (
+          <Badge label="Invited" tone="warn" />
+        ) : (
+          <Badge label={u.isActive ? 'Active' : 'Inactive'} tone={u.isActive ? 'success' : 'neutral'} />
+        ),
+    },
     {
       key: 'actions',
       header: 'Actions',
@@ -131,30 +160,16 @@ export function PsoUsers() {
       <ErrorBanner message={error} />
 
       {createdTempPassword && (
-        <div className="panel" style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <h2 className="panel-title">Account created for {createdEmail}</h2>
-          <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: 0 }}>
-            Share this temporary password with them directly — it won't be shown again, and no email was sent.
-          </p>
-          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-            <code
-              style={{
-                fontFamily: 'monospace',
-                fontSize: 14,
-                background: 'var(--fill)',
-                padding: '6px 10px',
-                borderRadius: 'var(--r-sm)',
-                userSelect: 'all',
-              }}
-            >
-              {createdTempPassword}
-            </code>
-            <Button
-              variant="outline"
-              tone="neutral"
-              size="sm"
-              onClick={() => navigator.clipboard?.writeText(createdTempPassword)}
-            >
+        <div className={`panel ${styles.tempPasswordCallout}`}>
+          <div>
+            <h2 className="panel-title" style={{ marginBottom: 2 }}>
+              Account created for {createdEmail}
+            </h2>
+            <p className={styles.tempPasswordHint}>Share this temporary password directly — it will not be shown again and no email was sent.</p>
+          </div>
+          <div className={styles.tempPasswordRow}>
+            <code className={styles.tempPasswordValue}>{createdTempPassword}</code>
+            <Button variant="outline" tone="neutral" size="sm" onClick={() => navigator.clipboard?.writeText(createdTempPassword)}>
               Copy
             </Button>
             <Button variant="solid" tone="primary" size="sm" onClick={clearTempPassword}>
@@ -164,32 +179,37 @@ export function PsoUsers() {
         </div>
       )}
 
-      <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
-        <Button onClick={() => setShowAddForm((v) => !v)}>Add PSO user</Button>
+      <div className={`panel ${styles.inviteForm}`}>
+        <TextField label="Full Name" placeholder="e.g. Jonalyn Carreon" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <TextField label="Work Email" type="email" placeholder="name@gensantos.gov.ph" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <Select
+          label="Role"
+          value={role}
+          onChange={(e) => setRole(e.target.value as AdminRole)}
+          options={[
+            { label: 'PSO Staff', value: 'pso_staff' },
+            { label: 'PSO Supervisor', value: 'pso_supervisor' },
+            { label: 'Administrator', value: 'admin' },
+          ]}
+        />
+        <Button onClick={handleAdd} loading={creating} disabled={!fullName.trim() || !email.trim()}>
+          Add PSO user
+        </Button>
       </div>
 
-      {showAddForm && (
-        <div className="panel" style={{ display: 'flex', gap: 12, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <TextField label="Full Name" value={fullName} onChange={(e) => setFullName(e.target.value)} />
-          <TextField label="Email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
-          <Select
-            label="Role"
-            value={role}
-            onChange={(e) => setRole(e.target.value as AdminRole)}
-            options={[
-              { label: 'PSO Staff', value: 'pso_staff' },
-              { label: 'PSO Supervisor', value: 'pso_supervisor' },
-              { label: 'Administrator', value: 'admin' },
-            ]}
-          />
-          <Button onClick={handleAdd} loading={creating} disabled={!fullName.trim() || !email.trim()}>
-            Save
-          </Button>
+      <div className="panel">
+        <div className="pane-header">
+          <h2 className="panel-title" style={{ marginBottom: 0 }}>
+            PSO accounts
+          </h2>
+          <Badge label={`${users.length} accounts · ${roleCount} roles`} tone="neutral" />
         </div>
-      )}
-
-      <DataTable columns={columns} rows={users} getRowKey={(u) => u.id} loading={loading} />
-      <p style={{ fontSize: 11, color: 'var(--ink-faint)' }}>Roles: PSO Staff · PSO Supervisor (fixed role enum) · Administrator.</p>
+        <DataTable columns={columns} rows={users} getRowKey={(u) => u.id} loading={loading} />
+      </div>
+      <p className={styles.policyNote}>
+        PSO Staff triage and review. PSO Supervisor adds approve, reject, suspend and block. Administrator adds these two screens.
+        Disabling an account requires a reason and is written to the audit log.
+      </p>
 
       {sessionsUser && (
         <div className="panel detail-panel">
