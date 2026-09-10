@@ -18,8 +18,10 @@ export type ComplaintStatus =
 export interface ComplaintRow {
   id: string;
   subject: string;
+  message: string;
   submittedByName: string;
   againstUserName: string | null;
+  rideRequestId: string | null;
   category: ComplaintCategory;
   status: ComplaintStatus;
   dhDirective: string | null; // FR-4.3a Department Head directive

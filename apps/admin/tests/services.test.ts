@@ -201,8 +201,10 @@ function fakeComplaintsClient() {
       id: 'cmp1',
       submitted_by: 'p1',
       against_user_id: 'd1',
+      ride_request_id: 'rr1',
       category: 'fare',
       subject: 'Driver refused agreed fare',
+      message: 'Driver asked for more than the meter showed.',
       status: 'open',
       dh_directive: null as string | null,
       mediation_meeting_at: null as string | null,
@@ -408,14 +410,20 @@ test('monitoring service resolves on-duty drivers, splitting active trips from i
   assert.equal(idle?.maxSeats, 4);
 });
 
-test('reports service resolves a summary', async () => {
+/** Awaitable directly (the current-period query) but also chainable with .lt() (the previous-period comparison query getReportSummary now also fires). */
+function chainableResult<T>(data: T) {
+  const result = { data, error: null };
+  return Object.assign(Promise.resolve(result), { lt: async () => result });
+}
+
+test('reports service resolves a summary, including the vs-previous-period deltas', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
       if (table === 'ride_requests') {
-        return { select: () => ({ eq: () => ({ gte: async () => ({ data: [{ requested_at: '2026-08-05T07:00:00.000Z' }], error: null }) }) }) };
+        return { select: () => ({ eq: () => ({ gte: () => chainableResult([{ requested_at: '2026-08-05T07:00:00.000Z' }]) }) }) };
       }
       if (table === 'transactions') {
-        return { select: () => ({ eq: () => ({ gte: async () => ({ data: [{ amount: '18.00' }], error: null }) }) }) };
+        return { select: () => ({ eq: () => ({ gte: () => chainableResult([{ amount: '18.00' }]) }) }) };
       }
       throw new Error(`unexpected table ${table}`);
     },
@@ -425,6 +433,9 @@ test('reports service resolves a summary', async () => {
   assert.equal(summary.error, null);
   assert.equal(summary.data.totalRides, 1);
   assert.equal(summary.data.totalRevenue, 18);
+  // Same fake data for both periods here, so the delta is 0%, not null.
+  assert.equal(summary.data.totalRidesDeltaPct, 0);
+  assert.equal(summary.data.totalRevenueDeltaPct, 0);
 });
 
 test('reports service resolves a transaction list', async () => {

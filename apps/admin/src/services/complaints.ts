@@ -20,8 +20,10 @@ export async function listComplaints(): Promise<ServiceResult<ComplaintRow[]>> {
   const rows: ComplaintRow[] = data.map((c) => ({
     id: c.id,
     subject: c.subject,
+    message: c.message,
     submittedByName: c.submittedByName,
     againstUserName: c.againstUserName,
+    rideRequestId: c.rideRequestId,
     category: c.category,
     status: c.status,
     dhDirective: c.dhDirective,

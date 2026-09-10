@@ -51,6 +51,52 @@ test('getAdminReportSummary sums paid revenue, counts completed rides, and picks
   assert.equal(data.peakHourLabel, '6:00 AM–8:00 AM');
 });
 
+test('getAdminReportSummary applies an upper bound too when untilIso is given (the previous-period comparison window)', async () => {
+  let capturedRideBound: string | undefined;
+  let capturedTxnBound: string | undefined;
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'ride_requests') {
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: () => ({
+                lt: async (_col: string, bound: string) => {
+                  capturedRideBound = bound;
+                  return { data: [{ requested_at: todayAt(9, 0) }], error: null };
+                },
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'transactions') {
+        return {
+          select: () => ({
+            eq: () => ({
+              gte: () => ({
+                lt: async (_col: string, bound: string) => {
+                  capturedTxnBound = bound;
+                  return { data: [{ amount: '30.00' }], error: null };
+                },
+              }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await getAdminReportSummary('2026-07-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z');
+  assert.equal(error, null);
+  assert.equal(data.totalRides, 1);
+  assert.equal(data.totalRevenue, 30);
+  assert.equal(capturedRideBound, '2026-08-01T00:00:00.000Z');
+  assert.equal(capturedTxnBound, '2026-08-01T00:00:00.000Z');
+});
+
 test('getAdminReportSummary degrades to a 0/— summary (not an error) when there are no rides in range', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {

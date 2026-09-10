@@ -17,6 +17,9 @@ export interface ReportSummary {
   totalRevenue: number;
   averageFare: number;
   peakHourLabel: string;
+  /** % change vs the immediately preceding period of equal length; null when that prior period had nothing to compare against. */
+  totalRidesDeltaPct: number | null;
+  totalRevenueDeltaPct: number | null;
 }
 
 export interface RidesRevenuePoint {

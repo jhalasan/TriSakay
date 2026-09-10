@@ -24,13 +24,17 @@ export interface GetAdminReportSummaryResult {
  * toward the earliest bucket. No rows in range degrades to a `0`/`—`
  * summary rather than an error — an empty report is a valid answer.
  */
-export async function getAdminReportSummary(sinceIso: string): Promise<GetAdminReportSummaryResult> {
+export async function getAdminReportSummary(sinceIso: string, untilIso?: string): Promise<GetAdminReportSummaryResult> {
   const client = getSupabaseClient();
 
-  const [{ data: rides, error: ridesError }, { data: paidTxns, error: txnsError }] = await Promise.all([
-    client.from('ride_requests').select('requested_at').eq('status', 'completed').gte('requested_at', sinceIso),
-    client.from('transactions').select('amount').eq('status', 'paid').gte('created_at', sinceIso),
-  ]);
+  let ridesQuery = client.from('ride_requests').select('requested_at').eq('status', 'completed').gte('requested_at', sinceIso);
+  let txnsQuery = client.from('transactions').select('amount').eq('status', 'paid').gte('created_at', sinceIso);
+  if (untilIso) {
+    ridesQuery = ridesQuery.lt('requested_at', untilIso);
+    txnsQuery = txnsQuery.lt('created_at', untilIso);
+  }
+
+  const [{ data: rides, error: ridesError }, { data: paidTxns, error: txnsError }] = await Promise.all([ridesQuery, txnsQuery]);
 
   if (ridesError) return { data: emptySummary(), error: ridesError.message };
   if (txnsError) return { data: emptySummary(), error: txnsError.message };

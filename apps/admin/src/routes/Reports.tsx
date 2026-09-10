@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Select } from '../components/Select';
 import { Button } from '../components/Button';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { StatTile } from '../components/StatTile';
 import { PeakHoursChart, RidesRevenueChart } from '../components/charts';
-import { getPeakHourHistogram, getReportSummary, getRidesRevenueOverTime, listTransactions, type ReportDateRange } from '../services/reports';
+import { getPeakHourHistogram, getReportSummary, getRidesRevenueOverTime, listTransactions, dateRangeSinceIso, type ReportDateRange } from '../services/reports';
+import { useSettingsStore } from '../store/useSettingsStore';
 import type { PeakHourBucket, ReportSummary, RidesRevenuePoint, TransactionRow } from '../types/report';
-import { formatCurrency, formatDateTime, paymentMethodLabel, titleCaseLabel } from '../lib/format';
+import { formatCurrency, formatDate, formatDateTime, paymentMethodLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import { ErrorBanner } from '../components/ErrorBanner';
 import styles from './Reports.module.css';
@@ -21,10 +21,16 @@ const PAYMENT_TONE: Record<TransactionRow['status'], 'neutral' | 'success' | 'wa
 
 /** Wireframe screen 8 "Reports & analytics" (FR-5.3, 5.4, 9.7). */
 const DATE_RANGE_OPTIONS: { label: string; value: ReportDateRange }[] = [
-  { label: 'Last 7 days', value: '7d' },
   { label: 'Last 30 days', value: '30d' },
+  { label: 'Last 7 days', value: '7d' },
   { label: 'This quarter', value: 'quarter' },
 ];
+
+function formatDeltaHint(pct: number | null, label: string): string | undefined {
+  if (pct == null) return undefined;
+  const sign = pct >= 0 ? '+' : '';
+  return `${sign}${pct.toFixed(1)}% vs previous ${label}`;
+}
 
 export function Reports() {
   const [dateRange, setDateRange] = useState<ReportDateRange>('30d');
@@ -37,6 +43,12 @@ export function Reports() {
   const [peakHours, setPeakHours] = useState<PeakHourBucket[]>([]);
   const [peakHoursError, setPeakHoursError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const fareConfig = useSettingsStore((state) => state.fareConfig);
+  const fetchSettings = useSettingsStore((state) => state.fetch);
+
+  useEffect(() => {
+    if (!fareConfig) fetchSettings();
+  }, [fareConfig, fetchSettings]);
 
   useEffect(() => {
     let cancelled = false;
@@ -90,15 +102,27 @@ export function Reports() {
     { key: 'time', header: 'Date', render: (t) => formatDateTime(t.createdAt) },
   ];
 
+  const rangeLabel = dateRange === 'quarter' ? 'this quarter' : dateRange === '7d' ? '7d' : '30d';
+  const peakBucket = peakHours.reduce<PeakHourBucket | null>((max, b) => (!max || b.count > max.count ? b : max), null);
+
   return (
     <div className="page">
       <div className={styles.toolbar}>
-        <Select
-          aria-label="Date range"
-          value={dateRange}
-          onChange={(e) => setDateRange(e.target.value as ReportDateRange)}
-          options={DATE_RANGE_OPTIONS}
-        />
+        <div className={styles.segmented}>
+          {DATE_RANGE_OPTIONS.map((opt) => (
+            <button
+              key={opt.value}
+              type="button"
+              className={`${styles.segmentButton} ${dateRange === opt.value ? styles.segmentButtonActive : ''}`}
+              onClick={() => setDateRange(opt.value)}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        <span className={styles.resolvedRange}>
+          {formatDate(dateRangeSinceIso(dateRange))} – {formatDate(new Date().toISOString())}
+        </span>
         <Button
           variant="outline"
           tone="neutral"
@@ -113,10 +137,26 @@ export function Reports() {
 
       <ErrorBanner message={summaryError} />
       <div className="stat-grid">
-        <StatTile label="Total Rides" value={loading || !summary ? '—' : summary.totalRides} />
-        <StatTile label="Total Revenue" value={loading || !summary ? '—' : formatCurrency(summary.totalRevenue)} />
-        <StatTile label="Average Fare" value={loading || !summary ? '—' : formatCurrency(summary.averageFare)} />
-        <StatTile label="Peak Hour" value={loading || !summary ? '—' : summary.peakHourLabel} />
+        <StatTile
+          label="Total Rides"
+          value={loading || !summary ? '—' : summary.totalRides}
+          hint={loading || !summary ? undefined : formatDeltaHint(summary.totalRidesDeltaPct, rangeLabel)}
+        />
+        <StatTile
+          label="Total Revenue"
+          value={loading || !summary ? '—' : formatCurrency(summary.totalRevenue)}
+          hint={loading || !summary ? undefined : formatDeltaHint(summary.totalRevenueDeltaPct, rangeLabel)}
+        />
+        <StatTile
+          label="Average Fare"
+          value={loading || !summary ? '—' : formatCurrency(summary.averageFare)}
+          hint={fareConfig ? `Base ${formatCurrency(fareConfig.baseFare)} + ${formatCurrency(fareConfig.ratePerKm)}/km` : undefined}
+        />
+        <StatTile
+          label="Peak Hour"
+          value={loading || !summary ? '—' : summary.peakHourLabel}
+          hint={peakBucket && peakBucket.count > 0 ? `${peakBucket.count} rides in the window` : undefined}
+        />
       </div>
 
       <div className="two-col">

@@ -1,3 +1,67 @@
+.split {
+  display: grid;
+  grid-template-columns: 11fr 9fr;
+  gap: var(--sp-md);
+  align-items: start;
+}
+
+@media (max-width: 1100px) {
+  .split {
+    grid-template-columns: 1fr;
+  }
+}
+
+.queueCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+  min-width: 0;
+}
+
+.slaStrip {
+  display: flex;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+}
+
+.caseCol {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+}
+
+.caseHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+}
+
+.closeButton {
+  border: none;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 18px;
+  line-height: 1;
+  cursor: pointer;
+  padding: 2px 4px;
+  flex-shrink: 0;
+}
+
+.closeButton:hover {
+  color: var(--ink);
+}
+
+.quote {
+  border: 1px solid var(--line-soft);
+  border-radius: var(--r-md);
+  padding: var(--sp-sm) var(--sp-md);
+  background: var(--fill);
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+
 .subsection {
   display: flex;
   flex-direction: column;
@@ -7,6 +71,9 @@
 }
 
 .subsectionTitle {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
   font-size: 12px;
   font-weight: 600;
   color: var(--ink);
@@ -17,4 +84,3 @@
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: var(--sp-sm);
 }
-

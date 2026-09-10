@@ -1,4 +1,7 @@
-import { listFlaggedLowRatings as listFlaggedLowRatingsShared } from '@trisakay/services';
+import {
+  getFleetRatingAverage as getFleetRatingAverageShared,
+  listFlaggedLowRatings as listFlaggedLowRatingsShared,
+} from '@trisakay/services';
 import type { FlaggedLowRatingRow } from '@trisakay/services';
 import type { ServiceResult } from './drivers';
 
@@ -7,5 +10,10 @@ export type { FlaggedLowRatingRow };
 /** Thin wrapper over packages/services/src/admin/ratings.ts, matching this app's one-file-per-feature convention. */
 export async function listFlaggedLowRatings(): Promise<ServiceResult<FlaggedLowRatingRow[]>> {
   const { data, error } = await listFlaggedLowRatingsShared();
+  return { data, error };
+}
+
+export async function getFleetRatingAverage(): Promise<ServiceResult<number | null>> {
+  const { data, error } = await getFleetRatingAverageShared();
   return { data, error };
 }

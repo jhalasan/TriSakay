@@ -7,8 +7,10 @@ export type AdminComplaintStatus = Database['public']['Enums']['complaint_status
 export interface AdminComplaintRow {
   id: string;
   subject: string;
+  message: string;
   submittedByName: string;
   againstUserName: string | null;
+  rideRequestId: string | null;
   category: AdminComplaintCategory;
   status: AdminComplaintStatus;
   dhDirective: string | null;
@@ -39,7 +41,7 @@ export async function listComplaintsForAdmin(): Promise<ListComplaintsForAdminRe
   const { data, error } = await client
     .from('complaints')
     .select(
-      'id, submitted_by, against_user_id, category, subject, status, dh_directive, mediation_meeting_at, mediation_location, resolution_notes, created_at',
+      'id, submitted_by, against_user_id, ride_request_id, category, subject, message, status, dh_directive, mediation_meeting_at, mediation_location, resolution_notes, created_at',
     )
     .order('created_at', { ascending: false });
 
@@ -55,8 +57,10 @@ export async function listComplaintsForAdmin(): Promise<ListComplaintsForAdminRe
   const rows: AdminComplaintRow[] = data.map((c) => ({
     id: c.id,
     subject: c.subject,
+    message: c.message,
     submittedByName: nameById.get(c.submitted_by) ?? '—',
     againstUserName: c.against_user_id ? (nameById.get(c.against_user_id) ?? null) : null,
+    rideRequestId: c.ride_request_id,
     category: c.category,
     status: c.status,
     dhDirective: c.dh_directive,
