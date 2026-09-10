@@ -81,7 +81,7 @@ export function RideMonitoring() {
           <div className={styles.mapHeader}>
             <div className={styles.mapHeaderLeft}>
               <h2 className="panel-title" style={{ marginBottom: 0 }}>
-                Active Tricycles
+                Active tricycles
               </h2>
               <Badge label={refreshing ? 'Updating…' : `Live · ${onTripCount} on trip`} tone={listError || mapError ? 'danger' : 'success'} />
             </div>
@@ -103,7 +103,7 @@ export function RideMonitoring() {
         <div className={`panel ${styles.list}`}>
           <div className="pane-header">
             <h2 className="panel-title" style={{ marginBottom: 0 }}>
-              On the Clock
+              On the clock
             </h2>
             <Badge label={String(visibleTricycles.length)} tone="neutral" />
           </div>
@@ -121,7 +121,7 @@ export function RideMonitoring() {
                 </div>
               </div>
               <Badge
-                label={t.tripStatus === 'active' ? 'On Trip' : 'Idle'}
+                label={t.tripStatus === 'active' ? 'On trip' : 'Idle'}
                 tone={t.tripStatus === 'active' ? 'success' : 'neutral'}
               />
             </div>
