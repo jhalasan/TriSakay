@@ -616,9 +616,12 @@ export type Database = {
       passenger_discounts: {
         Row: {
           category: Database["public"]["Enums"]["discount_category"]
+          date_of_birth: string | null
           id: string
+          id_number: string | null
           id_photo_back_path: string
           id_photo_front_path: string
+          issuing_office: string | null
           passenger_id: string
           remarks: string | null
           reviewed_at: string | null
@@ -628,9 +631,12 @@ export type Database = {
         }
         Insert: {
           category: Database["public"]["Enums"]["discount_category"]
+          date_of_birth?: string | null
           id?: string
+          id_number?: string | null
           id_photo_back_path: string
           id_photo_front_path: string
+          issuing_office?: string | null
           passenger_id: string
           remarks?: string | null
           reviewed_at?: string | null
@@ -640,9 +646,12 @@ export type Database = {
         }
         Update: {
           category?: Database["public"]["Enums"]["discount_category"]
+          date_of_birth?: string | null
           id?: string
+          id_number?: string | null
           id_photo_back_path?: string
           id_photo_front_path?: string
+          issuing_office?: string | null
           passenger_id?: string
           remarks?: string | null
           reviewed_at?: string | null

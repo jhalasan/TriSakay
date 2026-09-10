@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { approveDiscount, listPendingDiscounts, rejectDiscount } from '../src/admin/discounts.ts';
+import { approveDiscount, listPendingDiscounts, rejectDiscount, updateDiscountFields } from '../src/admin/discounts.ts';
 
 function fakeClient() {
   return {
@@ -20,6 +20,9 @@ function fakeClient() {
                   remarks: null,
                   id_photo_front_path: 'discounts/p1/front.jpg',
                   id_photo_back_path: 'discounts/p1/back.jpg',
+                  id_number: null,
+                  date_of_birth: null,
+                  issuing_office: null,
                 },
               ],
               error: null,
@@ -59,6 +62,9 @@ test('listPendingDiscounts maps rows and resolves passengerName', async () => {
       remarks: null,
       idPhotoFrontPath: 'discounts/p1/front.jpg',
       idPhotoBackPath: 'discounts/p1/back.jpg',
+      idNumber: null,
+      dateOfBirth: null,
+      issuingOffice: null,
     },
   ]);
 });
@@ -105,4 +111,31 @@ test('approveDiscount surfaces an error when there is no active session', async 
 
   const { error } = await approveDiscount('disc1');
   assert.equal(error, 'Not signed in');
+});
+
+test('updateDiscountFields writes only the provided fields, mapped to their column names', async () => {
+  __setSupabaseClientForTests(fakeClient());
+
+  const { error } = await updateDiscountFields('disc1', { idNumber: 'OSCA-GSC-114-2019', dateOfBirth: '1994-06-02' });
+  assert.equal(error, null);
+
+  const captured = (globalThis as any).__capturedUpdate;
+  assert.equal(captured.id, 'disc1');
+  assert.deepEqual(captured.patch, { id_number: 'OSCA-GSC-114-2019', date_of_birth: '1994-06-02' });
+});
+
+test('updateDiscountFields is a no-op when the patch is empty', async () => {
+  let updateCalled = false;
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'passenger_discounts') {
+        return { update: () => { updateCalled = true; return { eq: async () => ({ error: null }) }; } };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { error } = await updateDiscountFields('disc1', {});
+  assert.equal(error, null);
+  assert.equal(updateCalled, false);
 });

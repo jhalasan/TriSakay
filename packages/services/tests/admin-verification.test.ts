@@ -16,7 +16,7 @@ function fakeClient() {
           select: () => ({
             neq: () => ({
               order: async () => ({
-                data: [{ user_id: 'drv1', verification_status: 'pending' }],
+                data: [{ user_id: 'drv1', verification_status: 'pending', updated_at: '2026-08-01T00:00:00.000Z' }],
                 error: null,
               }),
             }),
@@ -24,7 +24,7 @@ function fakeClient() {
         };
       }
       if (table === 'users') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'drv1', full_name: 'Ariel Cabahug' }], error: null }) }) };
+        return { select: () => ({ in: async () => ({ data: [{ id: 'drv1', full_name: 'Ariel Cabahug', contact_no: '0917-555-0100' }], error: null }) }) };
       }
       if (table === 'tricycles') {
         return {
@@ -80,6 +80,7 @@ test('listPendingVerifications maps a pending driver with its tricycle and docum
     {
       driverId: 'drv1',
       driverFullName: 'Ariel Cabahug',
+      contactNo: '0917-555-0100',
       tricycleId: 'tri1',
       plateNo: 'GSC-1187',
       mtopNo: null,
@@ -91,6 +92,7 @@ test('listPendingVerifications maps a pending driver with its tricycle and docum
         { id: 'doc1', docType: 'drivers_license', status: 'pending', storagePath: 'a.jpg' },
         { id: 'doc2', docType: 'or_cr', status: 'pending', storagePath: 'b.jpg' },
       ],
+      updatedAt: '2026-08-01T00:00:00.000Z',
     },
   ]);
 });
@@ -128,7 +130,7 @@ test('listPendingVerifications includes already-decided cases, not just pending 
               assert.equal(value, 'unsubmitted');
               return {
                 order: async () => ({
-                  data: [{ user_id: 'drv1', verification_status: 'approved' }],
+                  data: [{ user_id: 'drv1', verification_status: 'approved', updated_at: '2026-08-01T00:00:00.000Z' }],
                   error: null,
                 }),
               };
@@ -136,7 +138,7 @@ test('listPendingVerifications includes already-decided cases, not just pending 
           }),
         };
       }
-      if (table === 'users') return { select: () => ({ in: async () => ({ data: [{ id: 'drv1', full_name: 'Ariel Cabahug' }], error: null }) }) };
+      if (table === 'users') return { select: () => ({ in: async () => ({ data: [{ id: 'drv1', full_name: 'Ariel Cabahug', contact_no: '0917-555-0100' }], error: null }) }) };
       if (table === 'tricycles') return { select: () => ({ in: () => ({ eq: async () => ({ data: [], error: null }) }) }) };
       if (table === 'driver_documents') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       throw new Error(`unexpected table ${table}`);

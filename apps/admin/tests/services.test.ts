@@ -121,7 +121,7 @@ test('listPassengers() / blockPassenger() / unblockPassenger() round-trip accoun
  * fakeAccountsClient() above, kept separate since the table shapes differ.
  */
 function fakeVerificationClient() {
-  const driverProfiles = [{ user_id: 'drv1', verification_status: 'pending' }];
+  const driverProfiles = [{ user_id: 'drv1', verification_status: 'pending', updated_at: '2026-08-01T00:00:00.000Z' }];
   const tricycles = [
     { id: 'tri1', driver_id: 'drv1', plate_no: 'GSC-1187', mtop_no: null as string | null, mtop_expiry_date: null as string | null, cluster: null as string | null },
   ];

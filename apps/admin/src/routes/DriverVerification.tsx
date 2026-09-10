@@ -4,12 +4,15 @@ import { TextField } from '../components/TextField';
 import { Select } from '../components/Select';
 import { Textarea } from '../components/Textarea';
 import { Button } from '../components/Button';
-import { Badge } from '../components/Badge';
+import { Badge, type BadgeTone } from '../components/Badge';
+import { Avatar } from '../components/Avatar';
 import { RoleGate } from '../components/RoleGate';
 import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
 import { useVerificationStore } from '../store/useVerificationStore';
+import type { VerificationCase } from '../types/verification';
 import type { TricycleCluster } from '../types/driver';
-import { titleCaseLabel } from '../lib/format';
+import { formatRelativeTime, titleCaseLabel } from '../lib/format';
 import styles from './DriverVerification.module.css';
 
 const CLUSTER_OPTIONS: { label: string; value: TricycleCluster | '' }[] = [
@@ -20,12 +23,39 @@ const CLUSTER_OPTIONS: { label: string; value: TricycleCluster | '' }[] = [
   { label: 'Melting Pot', value: 'melting_pot' },
 ];
 
+function daysUntil(isoDate: string): number {
+  return Math.round((new Date(isoDate).getTime() - Date.now()) / 86_400_000);
+}
+
+/**
+ * README §06 queue row context clause. "Resubmitted" (a driver replacing a
+ * previously-rejected document) appears in the mock but isn't derivable —
+ * nothing in this data model records that a document was ever replaced, so
+ * it's not implemented here; flagged as an open item.
+ */
+function queueContext(c: VerificationCase): string {
+  if (c.mtopExpiryDate) {
+    const days = daysUntil(c.mtopExpiryDate);
+    return days < 0 ? `MTOP lapsed ${Math.abs(days)}d ago` : `MTOP expires in ${days}d`;
+  }
+  return `submitted ${formatRelativeTime(c.updatedAt)}`;
+}
+
+function queueBadge(c: VerificationCase): { label: string; tone: BadgeTone } {
+  if (c.overallStatus === 'approved') return { label: 'Approved', tone: 'success' };
+  if (c.overallStatus === 'rejected') return { label: 'Rejected', tone: 'danger' };
+  if (c.mtopExpiryDate && daysUntil(c.mtopExpiryDate) < 0) return { label: 'Expired', tone: 'danger' };
+  return { label: 'Pending', tone: 'warn' };
+}
+
 /**
  * Wireframe screen 4 "Driver & tricycle verification" (FR-1.5). MTOP
  * number / expiry / cluster inputs implement FR-1.4a — the app does not
  * OCR the uploaded Franchise/Permit document, so PSO Supervisor/Admin
  * transcribes these fields by hand while reviewing it (docs/CONTEXT.MD
- * §11 item 6).
+ * §11 item 6). Restyled per docs/design_handoff_trisakay_admin/README.md
+ * §06 — three independently-scrolling panes (queue / evidence / decision),
+ * no page scroll.
  */
 export function DriverVerification() {
   const { cases, selectedDriverId, loading, error, fetch, select, updateFields, approve, reject } = useVerificationStore();
@@ -35,105 +65,166 @@ export function DriverVerification() {
   }, [fetch]);
 
   const selectedCase = cases.find((c) => c.driverId === selectedDriverId) ?? null;
+  const verifiedCount = selectedCase ? selectedCase.documents.filter((d) => d.status === 'approved').length : 0;
 
   return (
-    <div className="page">
+    <div className="review-page">
       <ErrorBanner message={error} />
-      <div className="panel">
-        <h2 className="panel-title">Pending Cases</h2>
-        <div className={styles.caseList}>
-          {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
-          {!loading && cases.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>No pending verifications.</div>}
-          {cases.map((c) => (
-            <button
-              key={c.driverId}
-              className={c.driverId === selectedDriverId ? styles.caseActive : styles.case}
-              onClick={() => select(c.driverId)}
-            >
-              <span>
-                {c.driverFullName} <span className={styles.plate}>{c.plateNo}</span>
-              </span>
-              <Badge label={titleCaseLabel(c.overallStatus)} tone={c.overallStatus === 'approved' ? 'success' : c.overallStatus === 'rejected' ? 'danger' : 'warn'} />
-            </button>
-          ))}
+      <div className="review-grid review-grid-3">
+        <div className="panel review-pane">
+          <div className="pane-header">
+            <h2 className="panel-title" style={{ marginBottom: 0 }}>
+              Pending Cases
+            </h2>
+            <Badge label={String(cases.length)} tone="neutral" />
+          </div>
+          <div className="pane-scroll">
+            {loading && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
+            {!loading && cases.length === 0 && <EmptyState message="No pending verifications." />}
+            <div className="case-list">
+              {cases.map((c) => {
+                const badge = queueBadge(c);
+                return (
+                  <button
+                    key={c.driverId}
+                    className={`case-row ${c.driverId === selectedDriverId ? 'case-row-active' : ''}`}
+                    onClick={() => select(c.driverId)}
+                  >
+                    <div className="case-top">
+                      <span className="case-name">{c.driverFullName}</span>
+                      <Badge label={badge.label} tone={badge.tone} />
+                    </div>
+                    <span className="case-sub">
+                      {c.plateNo} · {queueContext(c)}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        <div className="panel review-pane">
+          {selectedCase ? (
+            <>
+              <div className="evidence-header">
+                <Avatar fullName={selectedCase.driverFullName} size={34} />
+                <div className="evidence-header-text">
+                  <span className="evidence-name">{selectedCase.driverFullName}</span>
+                  <span className="case-sub">
+                    {selectedCase.plateNo}
+                    {selectedCase.cluster ? ` · ${titleCaseLabel(selectedCase.cluster)} cluster` : ''}
+                    {selectedCase.contactNo ? ` · ${selectedCase.contactNo}` : ''}
+                  </span>
+                </div>
+                <Badge label={`${verifiedCount} of ${selectedCase.documents.length} documents verified`} tone="neutral" />
+              </div>
+              <div className="pane-scroll">
+                <div className="evidence-grid">
+                  {selectedCase.documents.map((doc) => (
+                    <DocumentPanel key={doc.docType} label={doc.label} status={doc.status} storagePath={doc.storagePath} />
+                  ))}
+                </div>
+              </div>
+            </>
+          ) : (
+            <EmptyState message="Select a case to review its documents." />
+          )}
+        </div>
+
+        <div className="panel review-pane">
+          {selectedCase ? (
+            <>
+              <div className="pane-header-stack">
+                <h2 className="panel-title" style={{ marginBottom: 2 }}>
+                  Franchise details
+                </h2>
+                <p className="pane-subtitle">Ordinance 21, s.2024 — transcribed by hand from the permit.</p>
+              </div>
+              <div className="pane-scroll decision-body">
+                <RoleGate
+                  min="supervisor"
+                  fallback={
+                    <>
+                      <div className={styles.readOnlyField}>
+                        <span>MTOP Number</span>
+                        {selectedCase.mtopNo || '—'}
+                      </div>
+                      <div className={styles.readOnlyField}>
+                        <span>MTOP Expiry Date</span>
+                        {selectedCase.mtopExpiryDate || '—'}
+                      </div>
+                      <div className={styles.readOnlyField}>
+                        <span>Cluster</span>
+                        {selectedCase.cluster || '—'}
+                      </div>
+                      <div className={styles.readOnlyField}>
+                        <span>Notes</span>
+                        {selectedCase.notes || '—'}
+                      </div>
+                      <div className="read-only-note">
+                        Editing &amp; Approve / Reject — PSO Supervisor &amp; Administrator only. PSO Staff sees this panel read-only.
+                      </div>
+                    </>
+                  }
+                >
+                  <TextField
+                    label="MTOP Number"
+                    value={selectedCase.mtopNo}
+                    onChange={(e) => updateFields(selectedCase.driverId, { mtopNo: e.target.value })}
+                    placeholder="e.g. MTOP-2026-00123"
+                  />
+                  <TextField
+                    label="MTOP Expiry Date"
+                    type="date"
+                    value={selectedCase.mtopExpiryDate}
+                    onChange={(e) => updateFields(selectedCase.driverId, { mtopExpiryDate: e.target.value })}
+                  />
+                  <Select
+                    label="Cluster"
+                    value={selectedCase.cluster}
+                    onChange={(e) => updateFields(selectedCase.driverId, { cluster: e.target.value as TricycleCluster | '' })}
+                    options={CLUSTER_OPTIONS}
+                  />
+                  <Textarea
+                    label="Reviewer Notes"
+                    value={selectedCase.notes}
+                    onChange={(e) => updateFields(selectedCase.driverId, { notes: e.target.value })}
+                    placeholder="Required if rejecting…"
+                  />
+
+                  <div className="decision-row">
+                    <Button
+                      variant="solid"
+                      tone="primary"
+                      superscript="S+"
+                      fullWidth
+                      onClick={() => approve(selectedCase.driverId, selectedCase.notes || undefined)}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      variant="outline"
+                      tone="danger"
+                      superscript="S+"
+                      fullWidth
+                      disabled={!selectedCase.notes.trim()}
+                      onClick={() => reject(selectedCase.driverId, selectedCase.notes)}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                  <p className="footnote">
+                    Approve / Reject is limited to PSO Supervisor and Administrator. PSO Staff sees this panel read-only.
+                  </p>
+                </RoleGate>
+              </div>
+            </>
+          ) : (
+            <EmptyState message="Select a case to decide it." />
+          )}
         </div>
       </div>
-
-      {selectedCase && (
-        <div className={styles.review}>
-          <div className={styles.documents}>
-            {selectedCase.documents.map((doc) => (
-              <DocumentPanel key={doc.docType} label={doc.label} status={doc.status} storagePath={doc.storagePath} />
-            ))}
-          </div>
-
-          <div className={`panel ${styles.sidebar}`}>
-            <h2 className="panel-title">Franchise / Permit (Ordinance 21, s.2024)</h2>
-
-            <RoleGate
-              min="supervisor"
-              fallback={
-                <>
-                  <div className={styles.readOnlyField}><span>MTOP Number</span>{selectedCase.mtopNo || '—'}</div>
-                  <div className={styles.readOnlyField}><span>MTOP Expiry Date</span>{selectedCase.mtopExpiryDate || '—'}</div>
-                  <div className={styles.readOnlyField}><span>Cluster</span>{selectedCase.cluster || '—'}</div>
-                  <div className={styles.readOnlyField}><span>Notes</span>{selectedCase.notes || '—'}</div>
-                  <div className="read-only-note">
-                    Editing &amp; Approve / Reject — PSO Supervisor &amp; Administrator only. PSO Staff: read-only review.
-                  </div>
-                </>
-              }
-            >
-              <TextField
-                label="MTOP Number"
-                value={selectedCase.mtopNo}
-                onChange={(e) => updateFields(selectedCase.driverId, { mtopNo: e.target.value })}
-                placeholder="e.g. MTOP-2026-00123"
-              />
-              <TextField
-                label="MTOP Expiry Date"
-                type="date"
-                value={selectedCase.mtopExpiryDate}
-                onChange={(e) => updateFields(selectedCase.driverId, { mtopExpiryDate: e.target.value })}
-              />
-              <Select
-                label="Cluster"
-                value={selectedCase.cluster}
-                onChange={(e) => updateFields(selectedCase.driverId, { cluster: e.target.value as TricycleCluster | '' })}
-                options={CLUSTER_OPTIONS}
-              />
-              <Textarea
-                label="Notes"
-                value={selectedCase.notes}
-                onChange={(e) => updateFields(selectedCase.driverId, { notes: e.target.value })}
-                placeholder="Reviewer notes, required if rejecting…"
-              />
-
-              <div className={styles.decisionRow}>
-                <Button
-                  variant="solid"
-                  tone="primary"
-                  superscript="S+"
-                  fullWidth
-                  onClick={() => approve(selectedCase.driverId, selectedCase.notes || undefined)}
-                >
-                  Approve
-                </Button>
-                <Button
-                  variant="outline"
-                  tone="danger"
-                  superscript="S+"
-                  fullWidth
-                  disabled={!selectedCase.notes.trim()}
-                  onClick={() => reject(selectedCase.driverId, selectedCase.notes)}
-                >
-                  Reject
-                </Button>
-              </div>
-            </RoleGate>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

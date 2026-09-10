@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { approveDiscount, listPendingDiscounts, rejectDiscount } from '../services/discounts';
+import { approveDiscount, listPendingDiscounts, rejectDiscount, updateDiscountCase } from '../services/discounts';
 import type { DiscountRow } from '../types/discount';
 
 interface DiscountsState {
@@ -9,6 +9,7 @@ interface DiscountsState {
   error: string | null;
   fetch: () => Promise<void>;
   select: (id: string) => void;
+  updateFields: (id: string, patch: Partial<Pick<DiscountRow, 'idNumber' | 'dateOfBirth' | 'issuingOffice'>>) => Promise<void>;
   approve: (id: string, remarks?: string) => Promise<void>;
   reject: (id: string, remarks: string) => Promise<void>;
 }
@@ -31,6 +32,15 @@ export const useDiscountsStore = create<DiscountsState>()((set, get) => ({
   },
 
   select: (id) => set({ selectedId: id }),
+
+  updateFields: async (id, patch) => {
+    // Optimistic — this is a low-stakes transcription field, not an S+ decision.
+    set((state) => ({
+      items: state.items.map((d) => (d.id === id ? { ...d, ...patch } : d)),
+    }));
+    const { error } = await updateDiscountCase(id, patch);
+    if (error) set({ error });
+  },
 
   approve: async (id, remarks) => {
     const { error } = await approveDiscount(id, remarks);

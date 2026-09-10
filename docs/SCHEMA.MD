@@ -306,7 +306,14 @@ create table public.passenger_discounts (
   reviewed_by   uuid references public.users(id) on delete set null,
   reviewed_at   timestamptz,
   remarks       text,
-  submitted_at  timestamptz not null default now()
+  submitted_at  timestamptz not null default now(),
+
+  -- Transcribed by hand by the reviewer while reading the ID photo (the app
+  -- doesn't OCR it), same pattern as tricycles.mtop_no/mtop_expiry_date for
+  -- driver verification (FR-1.4a). Null until a reviewer fills them in.
+  id_number        text,
+  date_of_birth    date,
+  issuing_office   text
 );
 
 -- A passenger may only have one pending-or-approved discount claim at a time.

@@ -21,6 +21,7 @@ export async function listVerificationCases(): Promise<ServiceResult<Verificatio
   const cases: VerificationCase[] = data.map((c) => ({
     driverId: c.driverId,
     driverFullName: c.driverFullName,
+    contactNo: c.contactNo ?? '',
     plateNo: c.plateNo,
     documents: c.documents.map((d) => ({
       id: d.id,
@@ -34,6 +35,7 @@ export async function listVerificationCases(): Promise<ServiceResult<Verificatio
     cluster: c.cluster ?? '',
     overallStatus: c.overallStatus,
     notes: c.notes ?? '',
+    updatedAt: c.updatedAt,
   }));
 
   return { data: cases, error: null };

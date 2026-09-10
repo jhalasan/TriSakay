@@ -12,4 +12,7 @@ export interface DiscountRow {
   remarks: string | null;
   idPhotoFrontPath: string;
   idPhotoBackPath: string;
+  idNumber: string;
+  dateOfBirth: string; // ISO date, '' if not yet transcribed
+  issuingOffice: string;
 }

@@ -10,6 +10,9 @@ export interface PendingDiscountRow {
   remarks: string | null;
   idPhotoFrontPath: string;
   idPhotoBackPath: string;
+  idNumber: string | null;
+  dateOfBirth: string | null;
+  issuingOffice: string | null;
 }
 
 export interface ListPendingDiscountsResult {
@@ -23,7 +26,7 @@ export async function listPendingDiscounts(): Promise<ListPendingDiscountsResult
 
   const { data, error } = await client
     .from('passenger_discounts')
-    .select('id, passenger_id, category, status, submitted_at, remarks, id_photo_front_path, id_photo_back_path')
+    .select('id, passenger_id, category, status, submitted_at, remarks, id_photo_front_path, id_photo_back_path, id_number, date_of_birth, issuing_office')
     .order('submitted_at', { ascending: true });
 
   if (error) return { data: [], error: error.message };
@@ -43,9 +46,42 @@ export async function listPendingDiscounts(): Promise<ListPendingDiscountsResult
     remarks: d.remarks,
     idPhotoFrontPath: d.id_photo_front_path,
     idPhotoBackPath: d.id_photo_back_path,
+    idNumber: d.id_number,
+    dateOfBirth: d.date_of_birth,
+    issuingOffice: d.issuing_office,
   }));
 
   return { data: rows, error: null };
+}
+
+export interface UpdateDiscountFieldsInput {
+  idNumber?: string;
+  dateOfBirth?: string;
+  issuingOffice?: string;
+}
+
+export interface UpdateDiscountFieldsResult {
+  error: string | null;
+}
+
+/**
+ * PSO Supervisor/Admin transcribing the ID's own fields while reviewing the
+ * photo (the app never OCRs it) — not itself an S+ decision, but scoped by
+ * the same discounts_review_supervisor RLS policy the approve/reject update
+ * below uses, so PSO Staff calling this gets a clean RLS rejection.
+ */
+export async function updateDiscountFields(id: string, patch: UpdateDiscountFieldsInput): Promise<UpdateDiscountFieldsResult> {
+  const client = getSupabaseClient();
+
+  const dbPatch: { id_number?: string | null; date_of_birth?: string | null; issuing_office?: string | null } = {};
+  if (patch.idNumber !== undefined) dbPatch.id_number = patch.idNumber || null;
+  if (patch.dateOfBirth !== undefined) dbPatch.date_of_birth = patch.dateOfBirth || null;
+  if (patch.issuingOffice !== undefined) dbPatch.issuing_office = patch.issuingOffice || null;
+
+  if (Object.keys(dbPatch).length === 0) return { error: null };
+
+  const { error } = await client.from('passenger_discounts').update(dbPatch).eq('id', id);
+  return { error: error?.message ?? null };
 }
 
 export interface ReviewDiscountResult {

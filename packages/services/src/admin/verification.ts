@@ -15,6 +15,7 @@ export interface VerificationDocumentRow {
 export interface VerificationCaseRow {
   driverId: string;
   driverFullName: string;
+  contactNo: string | null;
   tricycleId: string | null;
   plateNo: string;
   mtopNo: string | null;
@@ -23,6 +24,7 @@ export interface VerificationCaseRow {
   overallStatus: AdminVerificationStatus;
   notes: string | null;
   documents: VerificationDocumentRow[];
+  updatedAt: string;
 }
 
 export interface ListPendingVerificationsResult {
@@ -50,7 +52,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
 
   const { data: profiles, error: profilesError } = await client
     .from('driver_profiles')
-    .select('user_id, verification_status')
+    .select('user_id, verification_status, updated_at')
     .neq('verification_status', 'unsubmitted')
     .order('updated_at', { ascending: true });
 
@@ -64,7 +66,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
     { data: tricycles, error: tricyclesError },
     { data: documents, error: documentsError },
   ] = await Promise.all([
-    client.from('users').select('id, full_name').in('id', driverIds),
+    client.from('users').select('id, full_name, contact_no').in('id', driverIds),
     client
       .from('tricycles')
       .select('id, driver_id, plate_no, mtop_no, mtop_expiry_date, cluster')
@@ -78,6 +80,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
   if (documentsError) return { data: [], error: documentsError.message };
 
   const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name]));
+  const contactNoById = new Map((users ?? []).map((u) => [u.id, u.contact_no]));
   const tricycleByDriverId = new Map((tricycles ?? []).map((t) => [t.driver_id, t]));
 
   const documentsByDriverId = new Map<string, NonNullable<typeof documents>>();
@@ -95,6 +98,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
     return {
       driverId: p.user_id,
       driverFullName: nameById.get(p.user_id) ?? '—',
+      contactNo: contactNoById.get(p.user_id) ?? null,
       tricycleId: tricycle?.id ?? null,
       plateNo: tricycle?.plate_no ?? '—',
       mtopNo: tricycle?.mtop_no ?? null,
@@ -102,6 +106,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
       cluster: tricycle?.cluster ?? null,
       overallStatus: p.verification_status,
       notes,
+      updatedAt: p.updated_at,
       documents: docs.map((d) => ({
         id: d.id,
         docType: d.doc_type,

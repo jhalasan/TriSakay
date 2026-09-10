@@ -2,6 +2,7 @@ import {
   listPendingDiscounts as listPendingDiscountsShared,
   approveDiscount as approveDiscountShared,
   rejectDiscount as rejectDiscountShared,
+  updateDiscountFields as updateDiscountFieldsShared,
 } from '@trisakay/services';
 import type { DiscountRow } from '../types/discount';
 import type { ServiceResult } from './drivers';
@@ -20,9 +21,21 @@ export async function listPendingDiscounts(): Promise<ServiceResult<DiscountRow[
     remarks: d.remarks,
     idPhotoFrontPath: d.idPhotoFrontPath,
     idPhotoBackPath: d.idPhotoBackPath,
+    idNumber: d.idNumber ?? '',
+    dateOfBirth: d.dateOfBirth ?? '',
+    issuingOffice: d.issuingOffice ?? '',
   }));
 
   return { data: rows, error: null };
+}
+
+/** PSO Staff+ — transcription only, not an S+ decision (see updateDiscountFields's own doc comment on the RLS boundary). */
+export async function updateDiscountCase(
+  id: string,
+  patch: Partial<Pick<DiscountRow, 'idNumber' | 'dateOfBirth' | 'issuingOffice'>>
+): Promise<ServiceResult<null>> {
+  const { error } = await updateDiscountFieldsShared(id, patch);
+  return { data: null, error };
 }
 
 /** S+ action. */

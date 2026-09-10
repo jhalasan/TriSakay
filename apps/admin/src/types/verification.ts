@@ -21,6 +21,7 @@ export interface DriverDocument {
 export interface VerificationCase {
   driverId: string;
   driverFullName: string;
+  contactNo: string;
   plateNo: string;
   documents: DriverDocument[];
   mtopNo: string;
@@ -28,4 +29,5 @@ export interface VerificationCase {
   cluster: TricycleCluster | '';
   overallStatus: VerificationStatus;
   notes: string;
+  updatedAt: string; // ISO — driver_profiles.updated_at, drives the queue row's "submitted/expires Nd ago" clause
 }
