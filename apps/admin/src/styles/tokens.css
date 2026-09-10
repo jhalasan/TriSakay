@@ -50,9 +50,11 @@
 
   --overlay: rgba(10, 14, 17, 0.58);
 
-  /* Layout — ported from the wireframe kit exactly */
-  --sidebar-w: 176px;
-  --topbar-h: 56px;
+  /* Layout — 236/62 per the locked redesign (docs/design_handoff_trisakay_admin/README.md
+     §3 item 1); the prior 176/56 wireframe-kit values could not hold the
+     rail's icon + label + count chip. */
+  --sidebar-w: 236px;
+  --topbar-h: 62px;
 
   /* Radius scale — mirrors packages/ui/src/theme/radius.ts. The old flat
      wireframe radius token (--r) has been fully migrated away and removed;
@@ -61,6 +63,9 @@
   --r-md: 12px;
   --r-lg: 20px;
   --r-pill: 999px;
+  /* Redesign panel radius (README §3 item 5) — kept distinct from --r-lg
+     (modals, 20px) since panels use 14px. */
+  --r-panel: 14px;
 
   /* Elevation — navy-tinted shadows, mirrors packages/ui/src/theme/elevation.ts.
      Shadow color is the brand navy (#002E60) rather than near-black, same
@@ -69,6 +74,10 @@
   --shadow-card: 0 4px 12px rgba(0, 46, 96, 0.12);
   --shadow-button: 0 4px 10px rgba(0, 46, 96, 0.22);
   --shadow-sheet: 0 -6px 24px rgba(0, 46, 96, 0.16);
+  /* Redesign-only panel shadow (README §3 item 4) — flatter than
+     --shadow-card; used on the white canvas panels introduced by the
+     redesign. */
+  --shadow-panel: 0 3px 8px rgba(0, 46, 96, 0.1);
 
   /* Hero gradient — mirrors the `hero` token in packages/ui/src/theme/gradients.ts.
      Used on Login's brand pane and the Sidebar, the app's two dark brand surfaces. */
