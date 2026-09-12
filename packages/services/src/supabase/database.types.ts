@@ -1541,6 +1541,13 @@ export type Database = {
           status: Database["public"]["Enums"]["ride_status"]
         }[]
       }
+      get_peak_hour_histogram: {
+        Args: { p_since: string }
+        Returns: {
+          bucket_index: number
+          bucket_count: number
+        }[]
+      }
       get_trip_driver_info: {
         Args: { p_ride_request_id: string }
         Returns: {

@@ -2,17 +2,14 @@ import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Badge, BrandMotif, Button, EmptyState, GradientSurface, colors } from '@trisakay/ui';
+import { BrandMotif, EmptyState, GradientSurface, colors } from '@trisakay/ui';
 import { EarningsBarChart } from '../../src/components/EarningsBarChart';
+import { PeakHoursBarChart } from '../../src/components/PeakHoursBarChart/PeakHoursBarChart';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useEarningsStore } from '../../src/store/useEarningsStore';
 import { formatCurrency } from '../../src/utils/currency';
 import { interpolate } from '../../src/utils/interpolate';
 import { styles } from '../../src/styles/tabs/earnings.styles';
-
-function formatDate(iso: string) {
-  return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
-}
 
 export default function EarningsScreen() {
   const t = useTranslation();
@@ -21,10 +18,8 @@ export default function EarningsScreen() {
   const loading = useEarningsStore((state) => state.loading);
   const earningsError = useEarningsStore((state) => state.error);
   const load = useEarningsStore((state) => state.load);
-  const settlementLog = useEarningsStore((state) => state.settlementLog);
-  const settlementsError = useEarningsStore((state) => state.settlementsError);
-  const notifying = useEarningsStore((state) => state.notifying);
-  const notifyPsoForSettlement = useEarningsStore((state) => state.notifyPsoForSettlement);
+  const peakHours = useEarningsStore((state) => state.peakHours);
+  const peakHoursError = useEarningsStore((state) => state.peakHoursError);
 
   useEffect(() => {
     void load();
@@ -73,26 +68,17 @@ export default function EarningsScreen() {
           </View>
         )}
 
-        <Text style={styles.sectionLabel}>{t.driver.earnings.settlementLog}</Text>
-        {settlementLog.length === 0 ? (
-          <EmptyState title={t.driver.earnings.noSettlementsTitle} message={t.driver.earnings.noSettlementsMessage} />
+        <Text style={styles.sectionLabel}>{t.driver.earnings.peakHoursLabel}</Text>
+        {peakHoursError ? (
+          <Text style={styles.error}>{peakHoursError}</Text>
+        ) : !loading && peakHours.every((bucket) => bucket.count === 0) ? (
+          <EmptyState title={t.driver.earnings.noPeakHoursTitle} message={t.driver.earnings.noPeakHoursMessage} />
         ) : (
-          <View style={styles.logPanel}>
-            {settlementLog.map((entry, index) => (
-              <View key={entry.id} style={[styles.logRow, index === settlementLog.length - 1 && styles.logRowLast]}>
-                <View style={styles.logTextSlot}>
-                  <Text style={styles.logAmount}>{formatCurrency(entry.amount)}</Text>
-                  <Text style={styles.logDate}>{formatDate(entry.loggedAt)}</Text>
-                </View>
-                <Badge label={t.driver.earnings.logged} tone="neutral" />
-              </View>
-            ))}
+          <View style={styles.chartPanel}>
+            <PeakHoursBarChart data={peakHours} height={130} />
           </View>
         )}
-
-        {settlementsError && <Text style={styles.error}>{settlementsError}</Text>}
-        <Button label={t.driver.earnings.notifyPso} fullWidth loading={notifying} onPress={() => void notifyPsoForSettlement()} />
-        <Text style={styles.caption}>{t.driver.earnings.caption}</Text>
+        <Text style={styles.caption}>{t.driver.earnings.peakHoursCaption}</Text>
       </ScrollView>
     </SafeAreaView>
   );

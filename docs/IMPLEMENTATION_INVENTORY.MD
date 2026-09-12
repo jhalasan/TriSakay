@@ -50,7 +50,7 @@ This is a prototype for an undergraduate BSIT capstone, not a production system 
 - Emergency/SOS screen (same dial-out + PSO incident-log pattern as passenger)
 
 **Account & earnings:**
-- Earnings tab: simulated/tracked earnings, "Notify PSO for settlement" action wired to a real settlement backend (no real payout — tracking/notification only, per FR-9.6)
+- Earnings tab: simulated/tracked earnings, plus a peak-demand-hours chart (FR-2.12) backed by a city-wide aggregate RPC — replaces the earlier settlement-notice button
 - Trip history
 - Ratings (own ratings view)
 - Profile (brought to parity with passenger's) / Settings
@@ -96,7 +96,7 @@ The entire Admin UI went through a full multi-phase visual redesign (shell/nav, 
 **Notable backend capabilities beyond the original ERD/architecture sections of CONTEXT.MD:**
 - Live location tracking end-to-end: driver push + passenger subscription, with an RLS fix (`20260831012119_fix_driver_location_pii_exposure.sql`) specifically closing a PII leak to unmatched users
 - `start_ride_leg` RPC and per-passenger ride-leg status (supports mid-trip pooled pickups)
-- Settlement tracking (`settlements` table/migration) backing the driver "Notify PSO" action
+- `get_peak_hour_histogram` RPC (aggregate-only, Asia/Manila local time) backing the driver Earnings peak-hours chart (FR-2.12). The earlier `settlements` table/trigger backing the removed "Notify PSO" action are left in the database, unused, rather than dropped.
 - Ride-request decline persistence (`ride_request_declines`)
 - Driver accept-rate computed via `get_driver_accept_rate`
 - Admin session-management RPCs, PSO last-sign-in RPC, forced-password-change flag
@@ -108,5 +108,5 @@ When you paste this into a fresh conversation, the useful question is whether th
 
 - **Saved Places** (passenger) has no corresponding FR in CONTEXT.MD — it's a real, shipped feature with its own table, service module, and three screens' worth of UI. Decide: formally document as an FR, or frame as a UX convenience under FR-2.1/2.2.
 - MTFRB mediation scheduling/outcome recording (admin Complaints) is *more* fully built than FR-4.5/4.6 describe — worth confirming the UI matches PSO-MTPS-PR-03's actual workflow.
-- Live driver tracking, settlement tracking, and the i18n layer are all real, working code, not just design intent — Sections 9/14 of CONTEXT.MD undersell how far along these are.
+- Live driver tracking and the i18n layer are all real, working code, not just design intent — Sections 9/14 of CONTEXT.MD undersell how far along these are.
 - The Admin, Passenger, and Driver apps have all been through complete visual redesigns since the wireframe-kit review in CONTEXT.MD Section 11 — that section's screen-by-screen change list is describing an earlier version of the UI, not the current one.

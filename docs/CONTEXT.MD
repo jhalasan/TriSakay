@@ -121,6 +121,7 @@ Two matching moments, both governed by the same system-assisted route-corridor h
 - FR-2.9 Passenger views assigned driver/tricycle info post-acceptance (name, photo, tricycle plate/details — no in-app messaging or calling; contact between Passenger and Driver is out of scope)
 - FR-2.10 Ride status tracked: requested → matched → ongoing → completed → cancelled
 - FR-2.11 Completed/cancelled rides logged to ride history
+- FR-2.12 *(New — replaces the earlier settlement-notice feature, see Section 11 item 2 and Section 16)* Driver views a peak-demand-hours chart (12 two-hour buckets, aggregated city-wide from completed rides, no per-ride or per-user data exposed) on the Earnings screen, to help decide when to go online. Backed by a SECURITY DEFINER aggregate function (`get_peak_hour_histogram`), the same pattern already used for the Dashboard's Accept-rate stat (`get_driver_accept_rate`).
 
 > **Open item (pending PSO/driver/passenger data gathering):** actual bearing-tolerance and detour-ratio threshold values need field validation; documented as a stated limitation in the meantime.
 
@@ -332,7 +333,7 @@ All other state changes (verification approval, complaint status, account suspen
 
 A low-fidelity wireframe kit (42 screens: Driver 14, Passenger 17, Admin 11) was reviewed against all locked phases. Required edits identified:
 1. Remove **Call** and **Message** buttons (Driver Found screen, Active Trip screen) — no in-app messaging/calling feature exists.
-2. Rename **"Request payout"** to something like "Submit settlement request" — no real money is disbursed; earnings are simulated/tracked only (see FR-9.6).
+2. ~~Rename **"Request payout"** to "Submit settlement request"~~ — **superseded 2026-09-12.** The settlement-notice button was removed entirely rather than kept and renamed: it was self-reported and unverifiable, and gated no account state (see the peak-hours FR-2.12 addition instead). The underlying `settlements` table/trigger are left in the database, unused, rather than dropped.
 3. Add role-based visibility: Verify/Suspend (Driver Management), Approve/Reject (Verification), Block/Unblock (Passenger Management) should only be visible to PSO Supervisor/Admin — PSO Staff sees View/Flag only.
 4. Add a **"Confirm cash received"** step to the Driver's trip-completion flow for cash-method trips (see FR-9.9).
 5. *(New)* On the Driver's "Documents & tricycle" upload screen, add a hint under the Driver's License upload: "Must be a Professional license (Code A or A1)" — an ordinary license is not valid for MTH under Ord. 21 Sec. 16 (see FR-1.4).
@@ -396,7 +397,7 @@ This section tracks what's actually built, refreshed periodically — the phases
 
 **Passenger app (`apps/passenger`):** Fully redesigned (new brand/theme tokens, Phase 0–9 rollout covering auth, legal/permission gates, Home, booking flow, history, payment, complaints, notifications, profile/settings). Functionally covers: manual pickup search, live driver location + straight-line ETA during an active trip, mid-trip multi-passenger pickup status, Saved Places (fully customizable, not just Home/Work), Expo push notification registration (FR-7), first-launch walkthrough, and a distinct trip-complete screen before rating.
 
-**Driver app (`apps/driver`):** Dashboard rebuilt per the redesign spec; real settlement backend wired to the earnings "Notify PSO" button (renamed from "Request payout" per Section 11 item 2 — no real payout, tracking only); persisted declined requests so they don't resurface; real computed Accept-rate stat; per-passenger Start/Complete actions on the active trip screen; foreground location sync while online; Profile screen brought to parity with passenger's.
+**Driver app (`apps/driver`):** Dashboard rebuilt per the redesign spec; a peak-demand-hours chart on the Earnings screen (FR-2.12), replacing the earlier settlement-notice button — see Section 11 item 2; persisted declined requests so they don't resurface; real computed Accept-rate stat; per-passenger Start/Complete actions on the active trip screen; foreground location sync while online; Profile screen brought to parity with passenger's.
 
 **Backend/shared:** Live location tracking implemented end-to-end (driver-side push, passenger-side subscription, RLS tightened to avoid leaking driver PII to unmatched users — directly satisfying NFR-2.5); `start_ride_leg` RPC and per-passenger ride-leg status; English/Filipino i18n package (`packages/shared/src/i18n`, NFR-3); haversine/ETA helpers in `packages/shared`. Emergency SOS (FR-12) is implemented in code, not just specified. `saved_places`, `barangays`, and `user_consents` tables exist but aren't yet reflected in the Section 14 ERD diagram itself (see Section 14's "Added post-ERD-lock" note).
 
