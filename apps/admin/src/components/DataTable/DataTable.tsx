@@ -155,19 +155,15 @@ export function DataTable<T>({
               className={[onRowClick && styles.rowClickable, isRowHighlighted?.(row) && styles.rowHighlighted]
                 .filter(Boolean)
                 .join(' ')}
+              // Mouse-only convenience click — every current onRowClick caller also
+              // renders an explicit, labeled Actions-column button for the same
+              // action, so the row itself is deliberately not focusable/keyboard-
+              // activatable: that would just be a second, unlabeled Tab stop doing
+              // the same thing as the button right next to it. Not role="button"
+              // either, for the same reason — nesting an interactive role inside a
+              // row that already contains a real <button> is invalid ARIA, and
+              // <tr> already carries a native row role on its own.
               onClick={onRowClick ? () => onRowClick(row) : undefined}
-              tabIndex={onRowClick ? 0 : undefined}
-              role={onRowClick ? 'button' : undefined}
-              onKeyDown={
-                onRowClick
-                  ? (e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault();
-                        onRowClick(row);
-                      }
-                    }
-                  : undefined
-              }
             >
               {selectable && (
                 <td>

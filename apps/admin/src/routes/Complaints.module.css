@@ -1,14 +1,10 @@
-.split {
-  display: grid;
-  grid-template-columns: 11fr 9fr;
+/* Single column: the case detail opens directly beneath the table a
+   reviewer clicked into, instead of beside it — nothing here needs to be
+   compared side by side with the queue while it's being decided. */
+.stack {
+  display: flex;
+  flex-direction: column;
   gap: var(--sp-md);
-  align-items: start;
-}
-
-@media (max-width: 1100px) {
-  .split {
-    grid-template-columns: 1fr;
-  }
 }
 
 .queueCol {

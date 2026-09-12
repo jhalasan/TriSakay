@@ -9,7 +9,7 @@ export const GRID_COLOR = '#EBEFF2'; // --line-soft
 export const AXIS_COLOR = '#5A646B'; // --ink-soft
 export const TOOLTIP_BG = '#FFFFFF'; // --panel
 export const TOOLTIP_BORDER = '#DCE2E6'; // --line
-export const MONO_FONT = 'ui-monospace, Menlo, Consolas, monospace'; // --mono
+export const MONO_FONT = "'Inter', system-ui, \"Segoe UI\", Roboto, sans-serif"; // --mono
 
 /** Mirrors Badge's tone colors so the Ride Status donut matches status badges elsewhere on the dashboard. */
 export const STATUS_COLORS: Record<'forming' | 'active' | 'completed' | 'cancelled', string> = {

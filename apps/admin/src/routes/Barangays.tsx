@@ -40,7 +40,6 @@ const CLUSTER_FILTER_OPTIONS: { label: string; value: TricycleCluster | 'all' }[
 ];
 
 const EMPTY_DRAFT: BarangayInput = { name: '', cluster: null, isSplit: false, notes: null };
-const ROW_CAP = 6;
 
 function draftsEqual(a: BarangayInput, b: BarangayInput): boolean {
   return a.name === b.name && a.cluster === b.cluster && a.isSplit === b.isSplit && (a.notes ?? '') === (b.notes ?? '');
@@ -52,8 +51,13 @@ function draftsEqual(a: BarangayInput, b: BarangayInput): boolean {
  * Users/System Settings. Any authenticated user can already read this table
  * (barangays_read_all); this is the write side for when the MTFRB amends
  * cluster boundaries, previously only reachable via direct SQL. Restyled
- * per README §11 — inline add/edit panel above the list, six-row cap
- * ("reference data, not a work queue") instead of a pager.
+ * per README §11 — inline add/edit panel above the list. No pager: this is
+ * reference data amended rarely, not a work queue, so the whole filtered
+ * list (currently 26 barangays) just renders in one scrollable table rather
+ * than adding click-through friction to a "see everyone in this cluster"
+ * glance. (A fixed six-row cap lived here before this pass — written before
+ * the real barangay count was known, it silently hid most of the table with
+ * no way to reach the rest.)
  */
 export function Barangays() {
   const { barangays, loading, error, fetch, create, update, remove } = useBarangaysStore();
@@ -122,8 +126,6 @@ export function Barangays() {
       return matchesSearch && matchesCluster;
     });
   }, [barangays, search, clusterFilter]);
-
-  const visible = filtered.slice(0, ROW_CAP);
 
   const lastAmended = useMemo(
     () =>
@@ -248,10 +250,10 @@ export function Barangays() {
       />
 
       <div className="panel">
-        <DataTable columns={columns} rows={visible} getRowKey={(b) => b.id} loading={loading} emptyMessage="No barangays match these filters." />
+        <DataTable columns={columns} rows={filtered} getRowKey={(b) => b.id} loading={loading} emptyMessage="No barangays match these filters." />
         <div className="list-footer">
           <span className="list-footer-count">
-            Showing {visible.length} of {filtered.length} barangays
+            Showing {filtered.length} of {barangays.length} barangays
           </span>
           {lastAmended?.updatedAt && (
             <span className="list-footer-count">

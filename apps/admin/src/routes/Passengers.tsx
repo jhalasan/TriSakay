@@ -8,7 +8,7 @@ import { Badge } from '../components/Badge';
 import { Avatar } from '../components/Avatar';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
-import { ConfirmModal } from '../components/ConfirmModal';
+import { ConfirmModal, SevereIcon } from '../components/ConfirmModal';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { usePassengersStore, type PassengerStatusFilter } from '../store/usePassengersStore';
@@ -16,6 +16,7 @@ import type { PassengerRow } from '../types/passenger';
 import { formatDate, passengerStatusLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import { passengerCsvColumns, exportFilename } from '../lib/exports';
+import { formatBulkTargets } from '../lib/bulkActions';
 
 const STATUS_TONE: Record<PassengerRow['accountStatus'], 'neutral' | 'success' | 'warn' | 'danger'> = {
   active: 'success',
@@ -87,20 +88,21 @@ const ACTION_COPY: Record<
 
 const BULK_ACTION_COPY: Record<
   PendingActionKind,
-  { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (count: number) => string; pastTense: string }
+  { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (rows: PassengerRow[]) => string; pastTense: string }
 > = {
   block: {
     title: 'Block selected passengers',
     confirmLabel: 'Block',
     tone: 'danger',
-    message: (count) => `Block ${count} selected passenger(s)? They won't be able to request rides until unblocked.`,
+    message: (rows) =>
+      `Block ${rows.length} selected passenger(s)? They won't be able to request rides until unblocked. ${formatBulkTargets(rows.map((r) => r.fullName))}`,
     pastTense: 'blocked',
   },
   unblock: {
     title: 'Unblock selected passengers',
     confirmLabel: 'Unblock',
     tone: 'primary',
-    message: (count) => `Unblock ${count} selected passenger(s)?`,
+    message: (rows) => `Unblock ${rows.length} selected passenger(s)? ${formatBulkTargets(rows.map((r) => r.fullName))}`,
     pastTense: 'unblocked',
   },
 };
@@ -422,6 +424,7 @@ export function Passengers() {
           message={ACTION_COPY[pendingAction.kind].message(pendingAction.passenger.fullName)}
           confirmLabel={ACTION_COPY[pendingAction.kind].confirmLabel}
           tone={ACTION_COPY[pendingAction.kind].tone}
+          icon={pendingAction.kind === 'block' ? <SevereIcon /> : undefined}
           reasonRequired
           reason={reason}
           onReasonChange={setReason}
@@ -435,9 +438,10 @@ export function Passengers() {
       {pendingBulkKind && (
         <ConfirmModal
           title={BULK_ACTION_COPY[pendingBulkKind].title}
-          message={BULK_ACTION_COPY[pendingBulkKind].message(selectedRowIds.size)}
+          message={BULK_ACTION_COPY[pendingBulkKind].message(passengers.filter((p) => selectedRowIds.has(p.id)))}
           confirmLabel={BULK_ACTION_COPY[pendingBulkKind].confirmLabel}
           tone={BULK_ACTION_COPY[pendingBulkKind].tone}
+          icon={pendingBulkKind === 'block' ? <SevereIcon /> : undefined}
           reasonRequired
           reason={bulkReason}
           onReasonChange={setBulkReason}

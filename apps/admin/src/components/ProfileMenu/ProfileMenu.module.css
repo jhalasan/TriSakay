@@ -158,7 +158,7 @@
   text-decoration: underline;
 }
 
-.logoutButton {
+.logoutRow {
   margin-top: var(--sp-xs);
   padding-top: var(--sp-md);
   border-top: 1px solid var(--line-soft);

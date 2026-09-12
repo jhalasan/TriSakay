@@ -9,13 +9,14 @@ import { Avatar } from '../components/Avatar';
 import { RatingSquares } from '../components/RatingSquares';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
-import { ConfirmModal } from '../components/ConfirmModal';
+import { ConfirmModal, SevereIcon } from '../components/ConfirmModal';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { useDriversStore } from '../store/useDriversStore';
 import type { DriverRow } from '../types/driver';
 import { formatDate, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
+import { formatBulkTargets } from '../lib/bulkActions';
 import { driverCsvColumns, exportFilename } from '../lib/exports';
 
 type PendingActionKind = 'flag' | 'suspend' | 'reactivate';
@@ -54,27 +55,28 @@ const ACTION_COPY: Record<
 
 const BULK_ACTION_COPY: Record<
   PendingActionKind,
-  { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (count: number) => string; pastTense: string }
+  { title: string; confirmLabel: string; tone: 'primary' | 'danger'; message: (rows: DriverRow[]) => string; pastTense: string }
 > = {
   flag: {
     title: 'Flag selected drivers',
     confirmLabel: 'Flag',
     tone: 'primary',
-    message: (count) => `Flag ${count} selected driver(s)? This is visible to other PSO staff reviewing them.`,
+    message: (rows) => `Flag ${rows.length} selected driver(s)? This is visible to other PSO staff reviewing them. ${formatBulkTargets(rows.map((r) => r.fullName))}`,
     pastTense: 'flagged',
   },
   suspend: {
     title: 'Suspend selected drivers',
     confirmLabel: 'Suspend',
     tone: 'danger',
-    message: (count) => `Suspend ${count} selected driver(s)? They won't be able to accept ride requests until reactivated.`,
+    message: (rows) =>
+      `Suspend ${rows.length} selected driver(s)? They won't be able to accept ride requests until reactivated. ${formatBulkTargets(rows.map((r) => r.fullName))}`,
     pastTense: 'suspended',
   },
   reactivate: {
     title: 'Reactivate selected drivers',
     confirmLabel: 'Reactivate',
     tone: 'primary',
-    message: (count) => `Reactivate ${count} selected driver(s)?`,
+    message: (rows) => `Reactivate ${rows.length} selected driver(s)? ${formatBulkTargets(rows.map((r) => r.fullName))}`,
     pastTense: 'reactivated',
   },
 };
@@ -480,6 +482,7 @@ export function Drivers() {
           message={ACTION_COPY[pendingAction.kind].message(pendingAction.driver.fullName)}
           confirmLabel={ACTION_COPY[pendingAction.kind].confirmLabel}
           tone={ACTION_COPY[pendingAction.kind].tone}
+          icon={pendingAction.kind === 'suspend' ? <SevereIcon /> : undefined}
           reasonRequired
           reason={reason}
           onReasonChange={setReason}
@@ -493,9 +496,10 @@ export function Drivers() {
       {pendingBulkKind && (
         <ConfirmModal
           title={BULK_ACTION_COPY[pendingBulkKind].title}
-          message={BULK_ACTION_COPY[pendingBulkKind].message(selectedRowIds.size)}
+          message={BULK_ACTION_COPY[pendingBulkKind].message(drivers.filter((d) => selectedRowIds.has(d.id)))}
           confirmLabel={BULK_ACTION_COPY[pendingBulkKind].confirmLabel}
           tone={BULK_ACTION_COPY[pendingBulkKind].tone}
+          icon={pendingBulkKind === 'suspend' ? <SevereIcon /> : undefined}
           reasonRequired
           reason={bulkReason}
           onReasonChange={setBulkReason}

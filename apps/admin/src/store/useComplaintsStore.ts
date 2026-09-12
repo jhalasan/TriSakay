@@ -9,6 +9,7 @@ import {
 } from '../services/complaints';
 import type { ComplaintAttachmentRow } from '../services/complaints';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
+import { runBulkAction, type BulkActionSummary } from '../lib/bulkActions';
 
 interface ComplaintsState {
   complaints: ComplaintRow[];
@@ -24,6 +25,10 @@ interface ComplaintsState {
   setStatusFilter: (value: ComplaintsState['statusFilter']) => void;
   setPage: (page: number) => void;
   updateStatus: (id: string, status: ComplaintStatus) => Promise<boolean>;
+  /** Bulk triage only — mirrors the same "open/under_review/escalated" restriction as the single-row
+   * Status <select> in Complaints.tsx (see that file's TRIAGE_STATUSES comment): resolving/dismissing
+   * always needs case-specific outcome notes, so there's no bulk path for those, by design. */
+  bulkUpdateStatus: (ids: string[], status: ComplaintStatus) => Promise<BulkActionSummary>;
   setDhDirective: (id: string, directive: string) => Promise<boolean>;
   scheduleMediation: (id: string, meetingAt: string, location: string) => Promise<boolean>;
   recordResolution: (id: string, status: 'resolved' | 'dismissed', notes: string) => Promise<boolean>;
@@ -59,6 +64,13 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     }
     await get().fetch();
     return true;
+  },
+
+  bulkUpdateStatus: async (ids, status) => {
+    const summary = await runBulkAction(ids, (id) => setComplaintStatus(id, status), '');
+    if (summary.failed > 0) set({ error: `${summary.failed} of ${ids.length} complaint(s) could not be updated.` });
+    await get().fetch();
+    return summary;
   },
 
   setDhDirective: async (id, directive) => {

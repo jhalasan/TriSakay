@@ -74,7 +74,7 @@ export function Sidebar({ counts, onLogoutClick }: SidebarProps) {
                     >
                       {Icon && <Icon className={styles.icon} />}
                       <span className={styles.label}>{item.label}</span>
-                      {count !== undefined && <span className={styles.chip}>{count}</span>}
+                      {!!count && <span className={styles.chip}>{count}</span>}
                     </NavLink>
                   </li>
                 );

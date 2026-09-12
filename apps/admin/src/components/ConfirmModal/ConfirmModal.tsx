@@ -6,6 +6,23 @@ import styles from './ConfirmModal.module.css';
 
 const FOCUSABLE_SELECTOR = 'button:not(:disabled), [href], input:not(:disabled), select:not(:disabled), textarea:not(:disabled), [tabindex]:not([tabindex="-1"])';
 
+/**
+ * A "no entry" glyph for the small set of danger actions with real livelihood/access
+ * consequences (Suspend driver, Block passenger, Disable PSO user) — passed via the
+ * `icon` override at those specific call sites. Everything else stays on the plain
+ * warning-triangle DefaultIcon below: the 2026-09 critique's Minor Observation was
+ * that "revoke one session" and "suspend a driver's livelihood" looked visually
+ * identical, not that every danger action needs its own icon.
+ */
+export function SevereIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      <circle cx="12" cy="12" r="9" />
+      <path d="M5.5 5.5 18.5 18.5" />
+    </svg>
+  );
+}
+
 /** Icon glyphs are tone-based defaults (§12 "red is spent only on the confirm button" — the tile itself never turns red), overridable per call site via `icon`. */
 function DefaultIcon({ tone }: { tone: 'primary' | 'danger' }) {
   if (tone === 'danger') {

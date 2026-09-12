@@ -8,7 +8,7 @@ interface DiscountsState {
   loading: boolean;
   error: string | null;
   fetch: () => Promise<void>;
-  select: (id: string) => void;
+  select: (id: string | null) => void;
   updateFields: (id: string, patch: Partial<Pick<DiscountRow, 'idNumber' | 'dateOfBirth' | 'issuingOffice'>>) => Promise<void>;
   approve: (id: string, remarks?: string) => Promise<boolean>;
   reject: (id: string, remarks: string) => Promise<boolean>;
@@ -25,7 +25,6 @@ export const useDiscountsStore = create<DiscountsState>()((set, get) => ({
     const { data, error } = await listPendingDiscounts();
     set({
       items: data,
-      selectedId: get().selectedId ?? data[0]?.id ?? null,
       loading: false,
       error,
     });

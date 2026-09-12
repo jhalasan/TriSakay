@@ -207,9 +207,11 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
             )}
           </div>
 
-          <Button variant="outline" tone="danger" fullWidth onClick={onLogoutClick} className={styles.logoutButton}>
-            Log out
-          </Button>
+          <div className={styles.logoutRow}>
+            <Button variant="outline" tone="danger" fullWidth onClick={onLogoutClick}>
+              Log out
+            </Button>
+          </div>
         </div>
       )}
     </div>

@@ -125,6 +125,14 @@ a {
   margin-bottom: var(--sp-md);
 }
 
+.pane-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  margin-bottom: var(--sp-md);
+}
+
 /* Shared row of table-row action buttons — replaces the repeated inline
    `style={{ display: 'flex', gap: 6 }}` wrapper in route files. */
 .row-actions {
@@ -268,50 +276,37 @@ a {
   color: var(--primary);
 }
 
-/* Review workbench (README §1 item 4: "any screen where a PSO officer
-   decides something is a two- or three-pane layout: queue left, evidence
-   centre, decision right — nothing a decision depends on ever sits below
-   the fold"). Shared by DriverVerification, DiscountReview, and Complaints
-   (Phase 7). The page fills the remaining canvas height and each pane
-   scrolls its own body instead of the page growing. */
+/* Review workbench — single-column case list where each row expands
+   in place into its own evidence + decision panel (an accordion, one
+   case open at a time). Shared by DriverVerification, DiscountReview,
+   and Complaints. Replaces the earlier queue/evidence/decision 3-pane
+   split: a decision-maker reads one case fully before moving to the
+   next, so nothing is gained by tiling three panes a reviewer must
+   glance between — a single focused column reads top-to-bottom instead. */
 .review-page {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  gap: var(--sp-md);
+  gap: var(--sp-xl);
 }
 
-.review-grid {
-  display: grid;
-  gap: var(--sp-md);
-  flex: 1;
-  min-height: 0;
-}
-
-.review-grid-3 {
-  grid-template-columns: 1fr 1.35fr 1fr;
-}
-
-@media (max-width: 1100px) {
-  .review-grid-3 {
-    grid-template-columns: 1fr;
-    height: auto;
-  }
-}
-
-.review-pane {
+.review-section {
   display: flex;
   flex-direction: column;
-  min-height: 0;
   gap: var(--sp-sm);
 }
 
-.pane-header {
+.review-section-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--sp-sm);
-  margin-bottom: var(--sp-md);
+}
+
+.review-section-title {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
 .pane-header-stack {
@@ -326,44 +321,71 @@ a {
   margin: 0;
 }
 
-.pane-scroll {
-  flex: 1;
-  min-height: 0;
-  overflow-y: auto;
-}
-
 .case-list {
   display: flex;
   flex-direction: column;
   gap: var(--sp-sm);
 }
 
+.case-item {
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--panel);
+  overflow: hidden;
+}
+
+.case-item-active {
+  border-color: var(--primary);
+}
+
 .case-row {
   width: 100%;
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-sm);
   padding: var(--sp-sm) var(--sp-md);
-  border: 1px solid var(--line);
-  border-left: 3px solid transparent;
-  border-radius: var(--r-sm);
-  background: var(--panel);
+  border: none;
+  background: transparent;
+  font: inherit;
   font-size: 12px;
   color: var(--ink);
   cursor: pointer;
   text-align: left;
 }
 
-.case-row-active {
-  border-color: var(--primary);
-  border-left-color: var(--primary);
-  background: var(--primary-soft);
+.case-row:hover {
+  background: var(--fill);
+}
+
+.case-row-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.case-row-right {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  flex-shrink: 0;
+}
+
+.case-chevron {
+  color: var(--ink-faint);
+  flex-shrink: 0;
+  transition: transform 0.15s ease;
+}
+
+.case-chevron-open {
+  transform: rotate(180deg);
+  color: var(--ink-soft);
 }
 
 .case-top {
   display: flex;
   align-items: center;
-  justify-content: space-between;
   gap: var(--sp-sm);
 }
 
@@ -374,6 +396,15 @@ a {
 .case-sub {
   color: var(--ink-faint);
   font-size: 11px;
+}
+
+.case-detail {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-lg);
+  padding: var(--sp-lg);
+  border-top: 1px solid var(--line);
+  background: var(--fill);
 }
 
 .evidence-header {

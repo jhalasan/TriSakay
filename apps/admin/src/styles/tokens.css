@@ -102,9 +102,9 @@
   --sp-xxl: 32px;
   --sp-xxxl: 48px;
 
-  --mono: ui-monospace, Menlo, Consolas, monospace;
-  --sans: system-ui, "Segoe UI", Roboto, sans-serif;
-  --font-brand: 'Poppins', var(--sans);
+  --sans: 'Inter', system-ui, "Segoe UI", Roboto, sans-serif;
+  --mono: var(--sans);
+  --font-brand: var(--sans);
 
   /* Type scale — names the sizes already in use plus two missing hierarchy
      steps (section, page), so page title > section title > body is a real

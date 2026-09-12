@@ -4,7 +4,7 @@ import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { TextField } from '../components/TextField';
 import { Select } from '../components/Select';
-import { ConfirmModal } from '../components/ConfirmModal';
+import { ConfirmModal, SevereIcon } from '../components/ConfirmModal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
@@ -316,6 +316,7 @@ export function PsoUsers() {
           }
           confirmLabel={pendingAction.kind === 'disable' ? 'Disable' : 'Enable'}
           tone={pendingAction.kind === 'disable' ? 'danger' : 'primary'}
+          icon={pendingAction.kind === 'disable' ? <SevereIcon /> : undefined}
           reasonRequired
           reason={reason}
           onReasonChange={setReason}

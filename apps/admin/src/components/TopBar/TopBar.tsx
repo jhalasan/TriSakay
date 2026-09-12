@@ -42,7 +42,26 @@ export function TopBar({ title, onLogoutClick }: TopBarProps) {
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
   const [highlight, setHighlight] = useState(0);
+  const [searchFocused, setSearchFocused] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  // "/" jumps to search from anywhere — mirrors the shortcut GitHub/Linear
+  // use for the same reason: Alex (power user) and Sam (keyboard-only) both
+  // otherwise have to hunt for the box via mouse or Tab. Guarded against any
+  // element that already consumes typed characters, so "/" still types
+  // normally inside notes, remarks, and every other text field in the app.
+  useEffect(() => {
+    function handleGlobalKeyDown(e: KeyboardEvent) {
+      if (e.key !== '/' || e.metaKey || e.ctrlKey || e.altKey) return;
+      const target = e.target as HTMLElement | null;
+      const tag = target?.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || target?.isContentEditable) return;
+      e.preventDefault();
+      inputRef.current?.focus();
+    }
+    document.addEventListener('keydown', handleGlobalKeyDown);
+    return () => document.removeEventListener('keydown', handleGlobalKeyDown);
+  }, []);
 
   const items = useMemo(() => visibleNavItems(user?.role), [user?.role]);
   const pageMatches = useMemo(() => matchNavItems(query, items).slice(0, 4), [query, items]);
@@ -115,7 +134,14 @@ export function TopBar({ title, onLogoutClick }: TopBarProps) {
             setHighlight(0);
           }}
           onKeyDown={handleKeyDown}
+          onFocus={() => setSearchFocused(true)}
+          onBlur={() => setSearchFocused(false)}
         />
+        {!searchFocused && !query && (
+          <kbd className={styles.shortcutHint} aria-hidden="true">
+            /
+          </kbd>
+        )}
         {open && (
           <ul id="topbar-search-results" className={styles.results} role="listbox">
             {matches.length === 0 && <li className={styles.noResults}>No matches</li>}

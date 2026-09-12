@@ -7,6 +7,7 @@ import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { Pagination } from '../components/Pagination';
 import { EmptyState } from '../components/EmptyState';
@@ -15,6 +16,7 @@ import { useToast } from '../components/Toast';
 import { useComplaintsStore } from '../store/useComplaintsStore';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { formatDate, titleCaseLabel } from '../lib/format';
+import { formatBulkTargets } from '../lib/bulkActions';
 import styles from './Complaints.module.css';
 
 const STATUS_TONE: Record<ComplaintStatus, 'neutral' | 'success' | 'warn' | 'danger' | 'info'> = {
@@ -35,7 +37,29 @@ const CATEGORY_LABEL: Record<ComplaintRow['category'], string> = {
   other: 'Other',
 };
 
-const PAGE_SIZE = 5;
+const PAGE_SIZE_OPTIONS = [
+  { label: '5 / page', value: '5' },
+  { label: '10 / page', value: '10' },
+  { label: '25 / page', value: '25' },
+];
+
+/** Bulk triage — same two forward transitions the single-row Status select allows, offered for
+ * multiple selected rows at once (Alex/power-user finding: clearing a backlog of open complaints
+ * one row at a time doesn't scale). No reason field — this mirrors the single-row select's own
+ * lack of one, since it's the same RLS-ungated, no-notes-required staff triage step. */
+type BulkTriageKind = 'under_review' | 'escalated';
+const BULK_TRIAGE_COPY: Record<BulkTriageKind, { label: string; title: string; message: (rows: ComplaintRow[]) => string }> = {
+  under_review: {
+    label: 'Mark Under Review',
+    title: 'Mark complaints Under Review',
+    message: (rows) => `Mark ${rows.length} selected complaint(s) as Under Review? ${formatBulkTargets(rows.map((r) => r.subject))}`,
+  },
+  escalated: {
+    label: 'Escalate',
+    title: 'Escalate complaints',
+    message: (rows) => `Escalate ${rows.length} selected complaint(s)? ${formatBulkTargets(rows.map((r) => r.subject))}`,
+  },
+};
 
 const ALL_STATUSES: { label: string; value: ComplaintStatus }[] = [
   { label: 'Open', value: 'open' },
@@ -45,6 +69,21 @@ const ALL_STATUSES: { label: string; value: ComplaintStatus }[] = [
   { label: 'Resolved', value: 'resolved' },
   { label: 'Dismissed', value: 'dismissed' },
 ];
+
+/**
+ * The status <select> below is the plain FR-4.3 staff-triage step — no
+ * reason capture, no role gate, since `complaints_triage_staff` RLS lets
+ * any is_pso() account write it directly. It must therefore never offer a
+ * status that has its own dedicated, correctly-gated flow with real data
+ * requirements: "Mediation Scheduled" needs a meeting date/location
+ * (Schedule Mediation, below), and "Resolved"/"Dismissed" need Supervisor+
+ * and outcome notes (Record Outcome, below). Offering those here would let
+ * any PSO Staff close a complaint with zero notes and zero role check,
+ * silently bypassing FR-4.5/4.6 through a plain dropdown.
+ */
+const TRIAGE_STATUSES: { label: string; value: ComplaintStatus }[] = ALL_STATUSES.filter((s) =>
+  ['open', 'under_review', 'escalated'].includes(s.value)
+);
 
 /**
  * Wireframe screen 7 "Complaints management" — two-step flow per FR-4.3-4.8:
@@ -71,6 +110,7 @@ export function Complaints() {
     setStatusFilter,
     setPage,
     updateStatus,
+    bulkUpdateStatus,
     setDhDirective,
     scheduleMediation,
     recordResolution,
@@ -87,6 +127,10 @@ export function Complaints() {
   const [savingDirective, setSavingDirective] = useState(false);
   const [schedulingMediation, setSchedulingMediation] = useState(false);
   const [savingOutcome, setSavingOutcome] = useState(false);
+  const [pageSize, setPageSize] = useState(5);
+  const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
+  const [pendingBulkKind, setPendingBulkKind] = useState<BulkTriageKind | null>(null);
+  const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -102,9 +146,9 @@ export function Complaints() {
     });
   }, [complaints, search, statusFilter]);
 
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+  const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount);
-  const pageRows = filtered.slice((safePage - 1) * PAGE_SIZE, safePage * PAGE_SIZE);
+  const pageRows = filtered.slice((safePage - 1) * pageSize, safePage * pageSize);
 
   const slaCounts = useMemo(
     () => ({
@@ -141,6 +185,37 @@ export function Complaints() {
     const ok = await recordResolution(selected.id, resolutionStatusDraft, resolutionNotesDraft);
     setSavingOutcome(false);
     if (ok) showToast({ message: 'Outcome saved.' });
+  }
+
+  function toggleRow(id: string) {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleAllOnPage(checked: boolean) {
+    setSelectedRowIds((prev) => {
+      const next = new Set(prev);
+      for (const row of pageRows) {
+        if (checked) next.add(row.id);
+        else next.delete(row.id);
+      }
+      return next;
+    });
+  }
+
+  async function handleConfirmBulk() {
+    if (!pendingBulkKind) return;
+    setBulkSubmitting(true);
+    const summary = await bulkUpdateStatus([...selectedRowIds], pendingBulkKind);
+    setBulkSubmitting(false);
+    if (summary.failed > 0) return; // keep the modal open — store.error (shown in the modal) already names the count that failed
+    showToast({ message: `${summary.succeeded} complaint(s) marked ${titleCaseLabel(pendingBulkKind)}.` });
+    setSelectedRowIds(new Set());
+    setPendingBulkKind(null);
   }
 
   function openReview(c: ComplaintRow) {
@@ -212,19 +287,30 @@ export function Complaints() {
 
   return (
     <div className="page">
-      <div className={styles.split}>
+      <div className={styles.stack}>
         <div className={styles.queueCol}>
           <TableToolbar
             search={search}
             onSearchChange={setSearch}
             searchPlaceholder="Search by subject or complainant…"
             filters={
-              <Select
-                aria-label="Filter by status"
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                options={[{ label: 'All statuses', value: 'all' }, ...ALL_STATUSES]}
-              />
+              <>
+                <Select
+                  aria-label="Filter by status"
+                  value={statusFilter}
+                  onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                  options={[{ label: 'All statuses', value: 'all' }, ...ALL_STATUSES]}
+                />
+                <Select
+                  aria-label="Rows per page"
+                  value={String(pageSize)}
+                  onChange={(e) => {
+                    setPageSize(Number(e.target.value));
+                    setPage(1);
+                  }}
+                  options={PAGE_SIZE_OPTIONS}
+                />
+              </>
             }
           />
           <div className={styles.slaStrip}>
@@ -233,6 +319,20 @@ export function Complaints() {
             <Badge label={`Under review ${slaCounts.underReview}`} tone="info" />
             <Badge label={`Resolved ${slaCounts.resolved}`} tone="neutral" />
           </div>
+          {selectedRowIds.size > 0 && (
+            <div className="panel" style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ fontSize: 12, fontWeight: 600 }}>{selectedRowIds.size} selected</span>
+              <Button variant="outline" tone="neutral" size="sm" onClick={() => setPendingBulkKind('under_review')}>
+                {BULK_TRIAGE_COPY.under_review.label}
+              </Button>
+              <Button variant="outline" tone="neutral" size="sm" onClick={() => setPendingBulkKind('escalated')}>
+                {BULK_TRIAGE_COPY.escalated.label}
+              </Button>
+              <Button variant="ghost" tone="neutral" size="sm" onClick={() => setSelectedRowIds(new Set())} style={{ marginLeft: 'auto' }}>
+                Clear selection
+              </Button>
+            </div>
+          )}
           <DataTable
             columns={columns}
             rows={pageRows}
@@ -241,6 +341,9 @@ export function Complaints() {
             emptyMessage="No complaints match your filters."
             onRowClick={openReview}
             isRowHighlighted={(c) => c.id === selectedId}
+            selectedIds={selectedRowIds}
+            onToggleRow={toggleRow}
+            onToggleAll={toggleAllOnPage}
           />
           <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
         </div>
@@ -280,14 +383,25 @@ export function Complaints() {
 
               <div className="field">
                 <span className="field-label">Status</span>
-                <Select
-                  value={selected.status}
-                  onChange={async (e) => {
-                    const ok = await updateStatus(selected.id, e.target.value as ComplaintStatus);
-                    if (ok) showToast({ message: 'Status updated.' });
-                  }}
-                  options={ALL_STATUSES}
-                />
+                {['mediation_scheduled', 'resolved', 'dismissed'].includes(selected.status) ? (
+                  <>
+                    <Badge label={titleCaseLabel(selected.status)} tone={STATUS_TONE[selected.status]} />
+                    <span className="footnote">
+                      {selected.status === 'mediation_scheduled'
+                        ? 'A mediation meeting is scheduled — see Record Outcome below to close this complaint.'
+                        : "This complaint is closed. Status can't be changed here."}
+                    </span>
+                  </>
+                ) : (
+                  <Select
+                    value={selected.status}
+                    onChange={async (e) => {
+                      const ok = await updateStatus(selected.id, e.target.value as ComplaintStatus);
+                      if (ok) showToast({ message: 'Status updated.' });
+                    }}
+                    options={TRIAGE_STATUSES}
+                  />
+                )}
               </div>
 
               <div className={styles.subsection}>
@@ -322,45 +436,42 @@ export function Complaints() {
                 {savingDirective ? 'Saving…' : 'Save directive'}
               </Button>
 
-              <RoleGate
-                min="supervisor"
-                fallback={<div className="read-only-note">Schedule Mediation — PSO Supervisor &amp; Administrator only.</div>}
-              >
-                <div className={styles.subsection}>
-                  <div className={styles.subsectionTitle}>
-                    Schedule mediation
-                    {!canScheduleMediation && <Badge label="Unlocks on Escalated" tone="warn" />}
+              {canScheduleMediation && (
+                <RoleGate
+                  min="supervisor"
+                  fallback={<div className="read-only-note">Schedule Mediation — PSO Supervisor &amp; Administrator only.</div>}
+                >
+                  <div className={styles.subsection}>
+                    <div className={styles.subsectionTitle}>Schedule mediation</div>
+                    <div className="two-col">
+                      <TextField
+                        label="Meeting date/time"
+                        type="datetime-local"
+                        value={meetingAtDraft}
+                        onChange={(e) => setMeetingAtDraft(e.target.value)}
+                      />
+                      <TextField
+                        label="Location"
+                        value={meetingLocationDraft}
+                        onChange={(e) => setMeetingLocationDraft(e.target.value)}
+                        placeholder="e.g. PSO Office, City Hall"
+                      />
+                    </div>
+                    <Button
+                      variant="solid"
+                      tone="primary"
+                      size="sm"
+                      superscript="S+"
+                      loading={schedulingMediation}
+                      disabled={!meetingAtDraft}
+                      onClick={handleScheduleMediation}
+                      style={{ alignSelf: 'flex-start' }}
+                    >
+                      {schedulingMediation ? 'Scheduling…' : 'Schedule mediation'}
+                    </Button>
                   </div>
-                  <div className="two-col" style={{ opacity: canScheduleMediation ? 1 : 0.45 }}>
-                    <TextField
-                      label="Meeting date/time"
-                      type="datetime-local"
-                      value={meetingAtDraft}
-                      onChange={(e) => setMeetingAtDraft(e.target.value)}
-                      disabled={!canScheduleMediation}
-                    />
-                    <TextField
-                      label="Location"
-                      value={meetingLocationDraft}
-                      onChange={(e) => setMeetingLocationDraft(e.target.value)}
-                      placeholder="e.g. PSO Office, City Hall"
-                      disabled={!canScheduleMediation}
-                    />
-                  </div>
-                  <Button
-                    variant="solid"
-                    tone="primary"
-                    size="sm"
-                    superscript="S+"
-                    loading={schedulingMediation}
-                    disabled={!canScheduleMediation || !meetingAtDraft}
-                    onClick={handleScheduleMediation}
-                    style={{ alignSelf: 'flex-start' }}
-                  >
-                    {schedulingMediation ? 'Scheduling…' : 'Schedule mediation'}
-                  </Button>
-                </div>
-              </RoleGate>
+                </RoleGate>
+              )}
 
               {selected.mediationMeetingAt && (
                 <div className="field">
@@ -419,6 +530,19 @@ export function Complaints() {
           )}
         </div>
       </div>
+
+      {pendingBulkKind && (
+        <ConfirmModal
+          title={BULK_TRIAGE_COPY[pendingBulkKind].title}
+          message={BULK_TRIAGE_COPY[pendingBulkKind].message(complaints.filter((c) => selectedRowIds.has(c.id)))}
+          confirmLabel={BULK_TRIAGE_COPY[pendingBulkKind].label}
+          tone="primary"
+          confirmLoading={bulkSubmitting}
+          error={error}
+          onCancel={() => setPendingBulkKind(null)}
+          onConfirm={handleConfirmBulk}
+        />
+      )}
     </div>
   );
 }

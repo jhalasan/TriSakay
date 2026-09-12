@@ -1,0 +1,23 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "overused-font",
+        "value": "inter",
+        "createdAt": "2026-09-11T13:38:07.266Z",
+        "reason": "User confirmed: picked Inter as recommended option for admin font readability change"
+      },
+      {
+        "rule": "single-font",
+        "value": "*",
+        "files": [
+          "apps/admin/index.html"
+        ],
+        "createdAt": "2026-09-11T13:38:12.603Z",
+        "reason": "User confirmed: single-family Inter with weight/size hierarchy chosen over font pairing"
+      }
+    ]
+  }
+}

@@ -71,6 +71,10 @@ function AttentionCard({ accent, eyebrow, count, context, linkLabel, onLinkClick
   );
 }
 
+function CountSkeleton() {
+  return <span className={styles.countSkeleton} aria-hidden="true" />;
+}
+
 function VolumeCell({ label, value }: { label: string; value: ReactNode }) {
   return (
     <div className={styles.volumeCell}>
@@ -192,7 +196,7 @@ export function Dashboard() {
           <AttentionCard
             accent="danger"
             eyebrow="Overdue complaints"
-            count={loading ? '—' : overdue.length}
+            count={loading ? <CountSkeleton /> : overdue.length}
             context={loading ? '' : overdue.length > 0 ? `oldest is ${oldestOverdueDays} business days old` : 'No complaints past target.'}
             linkLabel="Open complaints queue"
             onLinkClick={() => navigate('/complaints')}
@@ -202,7 +206,7 @@ export function Dashboard() {
           <AttentionCard
             accent="warn"
             eyebrow="Expiring franchises"
-            count={loading ? '—' : expiring.length}
+            count={loading ? <CountSkeleton /> : expiring.length}
             context={loading ? '' : expiring.length > 0 ? `${lapsedCount} already lapsed, MTOP renewal due within 30 days` : 'No franchises expiring soon.'}
             linkLabel="Review verification cases"
             onLinkClick={() => navigate('/verification')}
@@ -212,7 +216,7 @@ export function Dashboard() {
           <AttentionCard
             accent="danger"
             eyebrow="Unreviewed SOS"
-            count={loading ? '—' : loggedAlerts.length}
+            count={loading ? <CountSkeleton /> : loggedAlerts.length}
             context={
               loading
                 ? ''

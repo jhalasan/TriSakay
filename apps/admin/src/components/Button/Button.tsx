@@ -49,7 +49,15 @@ export function Button({
         </svg>
       )}
       {children}
-      {superscript && <sup className={styles.superscript}>{superscript}</sup>}
+      {superscript && (
+        // aria-hidden: RoleGate already keeps this button from rendering at all for
+        // anyone below the gate, so a screen-reader user who reaches it doesn't need
+        // telling it's gated — they're already past that check. The title is a plain
+        // hover hint for sighted users who don't already know the "S+" convention.
+        <sup className={styles.superscript} aria-hidden="true" title="Supervisor and Administrator only">
+          {superscript}
+        </sup>
+      )}
     </button>
   );
 }
