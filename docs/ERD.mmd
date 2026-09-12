@@ -14,6 +14,8 @@ erDiagram
   USERS ||--o{ COMPLAINTS : submits
   USERS o|--o{ COMPLAINTS : "named in (optional)"
   RIDE_REQUESTS o|--o{ COMPLAINTS : "concerns (optional)"
+  COMPLAINTS ||--o{ COMPLAINT_ATTACHMENTS : "has evidence"
+  USERS ||--o{ COMPLAINT_ATTACHMENTS : uploads
   USERS ||--o{ ACCOUNT_ACTIONS : "target of"
   COMPLAINTS o|--o{ ACCOUNT_ACTIONS : "resulted in (optional)"
   USERS ||--o{ NOTIFICATIONS : receives
@@ -21,6 +23,9 @@ erDiagram
   USERS ||--o{ USER_CONSENTS : accepts
   USERS ||--o{ EMERGENCY_ALERTS : triggers
   RIDE_REQUESTS o|--o{ EMERGENCY_ALERTS : "during (optional)"
+  DRIVER_PROFILES ||--o{ SETTLEMENTS : notifies
+  RIDE_REQUESTS ||--o{ RIDE_REQUEST_DECLINES : "declined via"
+  DRIVER_PROFILES ||--o{ RIDE_REQUEST_DECLINES : declines
 
   USERS {
     uuid id PK
@@ -30,6 +35,8 @@ erDiagram
     user_role role
     account_status status
     text avatar_url
+    text push_token
+    boolean must_change_password
     timestamp created_at
     timestamp updated_at
   }
@@ -82,12 +89,16 @@ erDiagram
     uuid id PK
     uuid passenger_id FK
     discount_category category
-    text id_photo_path
+    text id_photo_front_path
+    text id_photo_back_path
     verification_status status
     uuid reviewed_by FK
     timestamp reviewed_at
     text remarks
     timestamp submitted_at
+    text id_number
+    date date_of_birth
+    text issuing_office
   }
   TRIPS {
     uuid id PK
@@ -111,6 +122,8 @@ erDiagram
     boolean is_split
     text notes
     timestamp created_at
+    timestamp updated_at
+    uuid updated_by FK
   }
   RIDE_REQUESTS {
     uuid id PK
@@ -184,6 +197,13 @@ erDiagram
     timestamp created_at
     timestamp updated_at
   }
+  COMPLAINT_ATTACHMENTS {
+    uuid id PK
+    uuid complaint_id FK
+    text storage_path
+    uuid uploaded_by FK
+    timestamp created_at
+  }
   ACCOUNT_ACTIONS {
     uuid id PK
     uuid target_user_id FK
@@ -255,4 +275,15 @@ erDiagram
     timestamp reviewed_at
     text notes
     timestamp created_at
+  }
+  SETTLEMENTS {
+    uuid id PK
+    uuid driver_id FK
+    numeric amount
+    timestamp notified_at
+  }
+  RIDE_REQUEST_DECLINES {
+    uuid ride_request_id PK, FK
+    uuid driver_id PK, FK
+    timestamp declined_at
   }

@@ -160,7 +160,8 @@ create type notification_type as enum (
   'payment_status',
   'discount_status',    -- FR-3.10-3.15 / UC48 fare-discount review outcome
   'franchise_expiring', -- FR-1.7/FR-7.5 MTOP franchise-expiry notification job
-  'emergency_alert'     -- FR-12/UC49-50 emergency alert, immediate PSO Staff+ notification
+  'emergency_alert',    -- FR-12/UC49-50 emergency alert, immediate PSO Staff+ notification
+  'settlement_notice'   -- FR-9.6: driver's "Notify PSO for settlement" action, immediate PSO Staff+ notification
 );
 
 
@@ -732,6 +733,34 @@ comment on table public.emergency_alerts is
   'FR-12 incident log only, not on the complaints/ARTA pipeline. Real safety action is the client-side 911/PNP dial-out, not represented in this schema.';
 
 
+-- 3.8 settlements ---------------------------------------------------------
+-- Real backend for the driver Earnings screen's "Notify PSO for
+-- settlement" button (FR-9.6) — no real payout, tracking/notification
+-- only. Mirrors emergency_alerts' shape: a self-scoped log table + a
+-- trigger that fans out a notifications row to every PSO Staff+ account.
+create table public.settlements (
+  id          uuid primary key default gen_random_uuid(),
+  driver_id   uuid not null references public.driver_profiles(user_id) on delete restrict,
+  amount      numeric(8, 2) not null,
+  notified_at timestamptz not null default now()
+);
+
+comment on table public.settlements is
+  'FR-9.6 settlement notice log only. No real money is disbursed or tracked as a balance here.';
+
+
+-- 3.9 ride_request_declines ------------------------------------------------
+-- Persists a driver's decline of a pending ride_request so it doesn't
+-- resurface on the request board after app relaunch or a fresh
+-- subscribe() call.
+create table public.ride_request_declines (
+  ride_request_id uuid not null references public.ride_requests(id) on delete cascade,
+  driver_id       uuid not null references public.driver_profiles(user_id) on delete cascade,
+  declined_at     timestamptz not null default now(),
+  primary key (ride_request_id, driver_id)
+);
+
+
 -- ---------------------------------------------------------------------
 -- 4. FUNCTIONS & TRIGGERS
 -- ---------------------------------------------------------------------
@@ -1257,6 +1286,39 @@ create trigger trg_emergency_notify_pso
   for each row execute function public.notify_pso_on_emergency();
 
 
+-- 4.11 settlement notice -> PSO notification (FR-9.6) --------------------
+-- Fires when a driver notifies PSO of a settlement. Notifies every PSO
+-- Staff+ account, same fan-out pattern as notify_pso_on_emergency().
+create or replace function public.notify_pso_on_settlement()
+returns trigger
+language plpgsql
+security definer
+set search_path = public
+as $$
+declare
+  v_driver_name text;
+begin
+  select full_name into v_driver_name from public.users where id = new.driver_id;
+
+  insert into public.notifications (user_id, type, title, message, ref_id)
+  select
+    u.id,
+    'settlement_notice'::notification_type,
+    'Driver settlement notice',
+    format('%s notified PSO of a ₱%s settlement.', coalesce(v_driver_name, 'A driver'), new.amount),
+    new.id
+  from public.users u
+  where u.role in ('pso_staff', 'pso_supervisor', 'admin');
+
+  return new;
+end;
+$$;
+
+create trigger trg_notify_pso_on_settlement
+  after insert on public.settlements
+  for each row execute function public.notify_pso_on_settlement();
+
+
 -- ---------------------------------------------------------------------
 -- 5. INDEXES
 -- ---------------------------------------------------------------------
@@ -1441,6 +1503,8 @@ alter table public.notifications    enable row level security;
 alter table public.saved_places     enable row level security;
 alter table public.user_consents    enable row level security;
 alter table public.emergency_alerts enable row level security;
+alter table public.settlements       enable row level security;
+alter table public.ride_request_declines enable row level security;
 
 -- 7.1 users -----------------------------------------------------------
 create policy users_select_self on public.users
@@ -1672,6 +1736,28 @@ create policy emergency_read on public.emergency_alerts
 
 create policy emergency_review_supervisor on public.emergency_alerts
   for update using (public.is_supervisor()) with check (public.is_supervisor());
+
+-- 7.14 settlements -------------------------------------------------------
+create policy settlements_driver_insert on public.settlements
+  for insert to authenticated
+  with check (driver_id = auth.uid());
+
+create policy settlements_driver_read on public.settlements
+  for select to authenticated
+  using (driver_id = auth.uid());
+
+create policy settlements_pso_read on public.settlements
+  for select to authenticated
+  using (public.is_pso());
+
+-- 7.15 ride_request_declines ---------------------------------------------
+create policy ride_request_declines_driver_insert on public.ride_request_declines
+  for insert to authenticated
+  with check (driver_id = auth.uid());
+
+create policy ride_request_declines_driver_read on public.ride_request_declines
+  for select to authenticated
+  using (driver_id = auth.uid());
 
 
 -- ---------------------------------------------------------------------
