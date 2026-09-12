@@ -66,8 +66,8 @@ Shared across PSO Staff / PSO Supervisor / Admin, with role-gated actions:
 - **Drivers / Passengers directories** — search, filter, inline detail panels, bulk actions, CSV export
 - **Driver Verification** — review queue for driver/tricycle documents, approve/reject, MTOP number + expiry transcription fields (FR-1.4a), in-app notification to driver on decision
 - **Fare Discount review** (`DiscountReview`) — review queue for passenger discount ID uploads, approve/reject, ID transcription fields
-- **Ride Monitoring** — auto-refreshing live view of active rides with a real map
-- **Emergency Alerts** — list + detail with a real map (replacing an earlier placeholder box), mark-reviewed action (Supervisor+)
+- **Ride Monitoring** — auto-refreshing live view of active rides with a real Leaflet/OSM map showing **deliberately coarse** locations only (privacy-by-design, NFR-2.5 — not a placeholder, an intentional precision limit)
+- **Emergency Alerts** — list + detail with a real map showing **precise** locations (replacing an earlier placeholder box; precision is appropriate here since it's an active safety event), mark-reviewed action (Supervisor+)
 - **Complaints** — triage, categorize, and now full MTFRB mediation workflow: schedule mediation meeting (date/time/location), record outcome/settlement, status flow through `resolved`/`dismissed`
 - **Rating Oversight** — view rating trends, review flagged low ratings
 - **Reports** — ride volume / complaints / driver activity analytics by date range, with error handling and pagination
@@ -106,7 +106,7 @@ The entire Admin UI went through a full multi-phase visual redesign (shell/nav, 
 
 When you paste this into a fresh conversation, the useful question is whether the above still maps cleanly onto CONTEXT.MD Section 1's SOP objectives and the locked FR-1–FR-12 / NFR-1–NFR-8:
 
-- **Saved Places** (passenger) has no corresponding FR in CONTEXT.MD — it's a real, shipped feature with its own table, service module, and three screens' worth of UI. Decide: formally document as an FR, or frame as a UX convenience under FR-2.1/2.2.
-- MTFRB mediation scheduling/outcome recording (admin Complaints) is *more* fully built than FR-4.5/4.6 describe — worth confirming the UI matches PSO-MTPS-PR-03's actual workflow.
+- ~~**Saved Places** (passenger) has no corresponding FR in CONTEXT.MD~~ — **resolved 2026-09-12**: formally specified as FR-2.13.
+- MTFRB mediation scheduling/outcome recording (admin Complaints) — **checked 2026-09-12** against CONTEXT.MD's own FR-4 description (staff triage → DH directive → Supervisor+ mediation scheduling → Supervisor+ outcome recording): the built `Complaints.tsx` implements exactly that status flow. What this check could NOT do: compare against PSO-MTPS-PR-03's actual physical/official document, which isn't in this repo — only against what CONTEXT.MD already says that document requires. If you have the real PSO procedure, a direct comparison is still worth doing.
 - Live driver tracking and the i18n layer are all real, working code, not just design intent — Sections 9/14 of CONTEXT.MD undersell how far along these are.
-- The Admin, Passenger, and Driver apps have all been through complete visual redesigns since the wireframe-kit review in CONTEXT.MD Section 11 — that section's screen-by-screen change list is describing an earlier version of the UI, not the current one.
+- The Admin, Passenger, and Driver apps have all been through complete visual redesigns since the wireframe-kit review in CONTEXT.MD Section 11 — **re-verified 2026-09-12** against current code: 9 of that section's 10 functional items are confirmed built, 1 (the driver's license "Code A/A1" upload hint) is a genuine, still-open gap. See Section 11 for the per-item status tags.
