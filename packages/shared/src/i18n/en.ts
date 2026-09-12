@@ -714,7 +714,7 @@ export const en = {
       statusClosed: 'Closed',
     },
     tabs: {
-      dashboard: 'Dashboard',
+      dashboard: 'Home',
       requests: 'Requests',
       history: 'History',
       earnings: 'Earnings',
