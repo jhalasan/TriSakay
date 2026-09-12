@@ -1,8 +1,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { FlatList, RefreshControl, Text, View } from 'react-native';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, Badge, Button, EmptyState, colors } from '@trisakay/ui';
+import { Avatar, Badge, BrandMotif, EmptyState, GradientSurface, colors } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { formatCurrency } from '../../src/utils/currency';
@@ -14,6 +14,12 @@ function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
 }
 
+function isThisMonth(iso: string) {
+  const d = new Date(iso);
+  const now = new Date();
+  return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+}
+
 export default function HistoryScreen() {
   const t = useTranslation();
   const trips = useHistoryStore((state) => state.trips);
@@ -22,12 +28,11 @@ export default function HistoryScreen() {
   const load = useHistoryStore((state) => state.load);
   const [filter, setFilter] = useState<FilterMode>('all');
 
-  const FILTER_LABEL: Record<FilterMode, string> = {
-    all: t.driver.history.filterAll,
-    done: t.driver.history.filterDone,
-    cancelled: t.driver.history.filterCancelled,
-  };
-  const NEXT_FILTER: Record<FilterMode, FilterMode> = { all: 'done', done: 'cancelled', cancelled: 'all' };
+  const filterOptions = [
+    { value: 'all' as const, label: t.driver.history.filterAll },
+    { value: 'done' as const, label: t.driver.history.filterDone },
+    { value: 'cancelled' as const, label: t.driver.history.filterCancelled },
+  ];
 
   useEffect(() => {
     void load();
@@ -38,17 +43,39 @@ export default function HistoryScreen() {
     return trips.filter((trip) => trip.status === filter);
   }, [trips, filter]);
 
+  const thisMonthSummary = useMemo(() => {
+    const monthTrips = trips.filter((trip) => isThisMonth(trip.date));
+    const total = monthTrips
+      .filter((trip) => trip.status === 'done' && trip.fare !== null)
+      .reduce((sum, trip) => sum + (trip.fare ?? 0), 0);
+    const tripWord = monthTrips.length === 1 ? t.driver.history.tripSuffix : t.driver.history.tripsSuffix;
+    return `${monthTrips.length} ${tripWord} · ${formatCurrency(total)}`;
+  }, [trips, t]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <View style={styles.header}>
-        <Text style={styles.title}>{t.driver.history.title}</Text>
-        <Button
-          label={FILTER_LABEL[filter]}
-          size="sm"
-          variant="outline"
-          tone="neutral"
-          onPress={() => setFilter((current) => NEXT_FILTER[current])}
-        />
+      <View style={styles.heroShadow}>
+        <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
+          <BrandMotif size={200} color={colors.white} opacity={0.12} style={styles.motif} />
+          <Text style={styles.heroEyebrow}>{t.driver.history.eyebrow}</Text>
+          <Text style={styles.heroTitle}>{t.driver.history.title}</Text>
+          <View style={styles.filterRow}>
+            {filterOptions.map((option) => {
+              const active = option.value === filter;
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setFilter(option.value)}
+                  style={[styles.filterPill, active && styles.filterPillActive]}
+                >
+                  <Text style={[styles.filterPillLabel, active && styles.filterPillLabelActive]}>{option.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </GradientSurface>
       </View>
 
       {historyError && <Text style={styles.error}>{historyError}</Text>}
@@ -58,6 +85,14 @@ export default function HistoryScreen() {
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
+        ListHeaderComponent={
+          filteredTrips.length > 0 ? (
+            <View style={styles.monthRow}>
+              <Text style={styles.monthLabel}>{t.driver.history.thisMonth}</Text>
+              <Text style={styles.monthSummary}>{thisMonthSummary}</Text>
+            </View>
+          ) : null
+        }
         ListEmptyComponent={
           loading ? null : <EmptyState title={t.driver.history.emptyTitle} message={t.driver.history.emptyMessage} />
         }

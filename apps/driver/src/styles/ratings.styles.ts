@@ -3,6 +3,45 @@ import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
+  // Same shadow recipe as profile.styles.ts's heroShadow.
+  heroShadow: {
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.22,
+    shadowRadius: 30,
+    elevation: 10,
+  },
+  heroBand: {
+    borderBottomLeftRadius: radius.heroBottom,
+    borderBottomRightRadius: radius.heroBottom,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.xl,
+  },
+  motif: { position: 'absolute', top: -46, right: -52 },
+  backButton: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    marginBottom: spacing.md,
+  },
+  heroEyebrow: { ...typography.eyebrow, color: colors.white, opacity: 0.75 },
+  heroTitle: { ...typography.h1b, color: colors.white, marginTop: 2 },
+  filterRow: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.lg },
+  filterPill: {
+    borderRadius: radius.pill,
+    paddingVertical: 7,
+    paddingHorizontal: spacing.lg,
+    backgroundColor: 'rgba(255,255,255,0.14)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.28)',
+  },
+  filterPillActive: { backgroundColor: colors.white, borderColor: colors.white },
+  filterPillLabel: { ...typography.bodyStrong, fontSize: 13, color: colors.white },
+  filterPillLabelActive: { color: colors.accentBlue },
   listContent: { padding: spacing.lg, gap: spacing.md },
   summaryCard: {
     backgroundColor: colors.panel,

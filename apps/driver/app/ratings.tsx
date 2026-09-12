@@ -1,14 +1,16 @@
-import { useEffect } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { FlatList, RefreshControl, Text, View } from 'react-native';
+import { useRouter } from 'expo-router';
+import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { EmptyState, colors } from '@trisakay/ui';
-import { ScreenHeader } from '../src/components/ScreenHeader';
+import { BrandMotif, EmptyState, GradientSurface, colors } from '@trisakay/ui';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useDriverStore } from '../src/store/useDriverStore';
 import { useRatingsStore } from '../src/store/useRatingsStore';
 import { interpolate } from '../src/utils/interpolate';
 import { styles } from '../src/styles/ratings.styles';
+
+type RatingsFilter = 'all' | 'withComments' | 'low';
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
@@ -26,6 +28,7 @@ function StaticStars({ value, size }: { value: number; size: number }) {
 }
 
 export default function RatingsScreen() {
+  const router = useRouter();
   const t = useTranslation();
   const ratings = useRatingsStore((state) => state.ratings);
   const loading = useRatingsStore((state) => state.loading);
@@ -33,6 +36,13 @@ export default function RatingsScreen() {
   const load = useRatingsStore((state) => state.load);
   const rating = useDriverStore((state) => state.rating);
   const ratingCount = useDriverStore((state) => state.ratingCount);
+  const [filter, setFilter] = useState<RatingsFilter>('all');
+
+  const filterOptions = [
+    { value: 'all' as const, label: t.driver.ratings.filterAll },
+    { value: 'withComments' as const, label: t.driver.ratings.filterWithComments },
+    { value: 'low' as const, label: t.driver.ratings.filterLow },
+  ];
 
   useEffect(() => {
     void load();
@@ -45,14 +55,51 @@ export default function RatingsScreen() {
     return { stars, percent: ratings.length > 0 ? (count / ratings.length) * 100 : 0 };
   });
 
+  const filteredRatings = useMemo(() => {
+    if (filter === 'withComments') return ratings.filter((item) => Boolean(item.comment));
+    if (filter === 'low') return ratings.filter((item) => item.stars <= 2);
+    return ratings;
+  }, [ratings, filter]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <ScreenHeader title={t.driver.ratings.title} />
+      <View style={styles.heroShadow}>
+        <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
+          <BrandMotif size={200} color={colors.white} opacity={0.12} style={styles.motif} />
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
+            hitSlop={8}
+            onPress={() => router.back()}
+            style={styles.backButton}
+          >
+            <Ionicons name="chevron-back" size={22} color={colors.white} />
+          </Pressable>
+          <Text style={styles.heroEyebrow}>{t.driver.ratings.eyebrow}</Text>
+          <Text style={styles.heroTitle}>{t.driver.ratings.title}</Text>
+          <View style={styles.filterRow}>
+            {filterOptions.map((option) => {
+              const active = option.value === filter;
+              return (
+                <Pressable
+                  key={option.value}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: active }}
+                  onPress={() => setFilter(option.value)}
+                  style={[styles.filterPill, active && styles.filterPillActive]}
+                >
+                  <Text style={[styles.filterPillLabel, active && styles.filterPillLabelActive]}>{option.label}</Text>
+                </Pressable>
+              );
+            })}
+          </View>
+        </GradientSurface>
+      </View>
 
       {ratingsError && <Text style={styles.error}>{ratingsError}</Text>}
 
       <FlatList
-        data={ratings}
+        data={filteredRatings}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContent}
         refreshControl={<RefreshControl refreshing={loading} onRefresh={() => void load()} />}
