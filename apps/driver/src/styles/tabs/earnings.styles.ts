@@ -44,12 +44,6 @@ export const styles = StyleSheet.create({
   totalStatText: { ...typography.bodySm, color: colors.white },
   sectionLabel: { ...typography.label, color: colors.inkSoft },
   chartPanel: { backgroundColor: colors.panel, borderRadius: radius.lg, padding: spacing.md, ...panelShadow },
-  logPanel: { backgroundColor: colors.panel, borderRadius: radius.lg, paddingHorizontal: spacing.lg, ...panelShadow },
-  logRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: spacing.md, borderBottomWidth: 1, borderBottomColor: colors.lineSoft },
-  logRowLast: { borderBottomWidth: 0 },
-  logTextSlot: { gap: 2 },
-  logAmount: { ...typography.body, color: colors.ink },
-  logDate: { ...typography.caption, color: colors.inkSoft },
   caption: { ...typography.label, fontSize: 10, color: colors.inkFaint, textAlign: 'center' },
   error: { ...typography.caption, color: colors.danger },
 });
