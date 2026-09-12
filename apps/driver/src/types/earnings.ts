@@ -9,3 +9,8 @@ export interface DailyEarning {
   ridesCompleted: number;
   totalCollected: number;
 }
+
+export interface PeakHourBucket {
+  hourLabel: string;
+  count: number;
+}
