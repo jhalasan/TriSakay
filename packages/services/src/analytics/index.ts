@@ -37,7 +37,7 @@ export async function getDriverPeakHourHistogram(sinceIso: string): Promise<GetD
   if (error) return { data: [], error: error.message };
 
   const counts = new Array(12).fill(0);
-  for (const row of (data ?? []) as { bucket_index: number; bucket_count: number }[]) {
+  for (const row of data ?? []) {
     counts[row.bucket_index] = row.bucket_count;
   }
 

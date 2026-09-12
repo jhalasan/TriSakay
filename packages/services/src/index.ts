@@ -17,6 +17,7 @@ export * from './saved-places/index.ts';
 export * from './location/index.ts';
 export * from './storage/index.ts';
 export * from './trip-history/index.ts';
+export * from './analytics/index.ts';
 export * from './admin/accounts.ts';
 export * from './admin/auditLog.ts';
 export * from './admin/barangays.ts';
@@ -30,7 +31,6 @@ export * from './admin/passengers.ts';
 export * from './admin/psoUsers.ts';
 export * from './admin/ratings.ts';
 export * from './admin/reports.ts';
-export * from './analytics/index.ts';
 export * from './admin/settings.ts';
 export * from './admin/verification.ts';
 

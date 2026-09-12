@@ -29,12 +29,6 @@ export const styles = StyleSheet.create({
   barPeak: {
     backgroundColor: colors.accentGreen,
   },
-  barValue: {
-    ...typography.caption,
-    fontSize: 9,
-    lineHeight: 12,
-    color: colors.inkSoft,
-  },
   barLabel: {
     fontSize: 8,
     lineHeight: 11,

@@ -1357,6 +1357,9 @@ $$;
 comment on function public.get_peak_hour_histogram is
   'Driver-facing peak-hours chart (Earnings screen). Aggregate-only (12 two-hour bucket counts, Asia/Manila local time) — no PII. See get_driver_accept_rate for the same SECURITY DEFINER aggregate-only pattern.';
 
+revoke execute on function public.get_peak_hour_histogram(timestamptz) from public, anon;
+grant  execute on function public.get_peak_hour_histogram(timestamptz) to authenticated;
+
 
 -- ---------------------------------------------------------------------
 -- 5. INDEXES

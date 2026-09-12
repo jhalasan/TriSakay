@@ -69,14 +69,15 @@ export default function EarningsScreen() {
         )}
 
         <Text style={styles.sectionLabel}>{t.driver.earnings.peakHoursLabel}</Text>
-        {peakHours.every((bucket) => bucket.count === 0) ? (
+        {peakHoursError ? (
+          <Text style={styles.error}>{peakHoursError}</Text>
+        ) : !loading && peakHours.every((bucket) => bucket.count === 0) ? (
           <EmptyState title={t.driver.earnings.noPeakHoursTitle} message={t.driver.earnings.noPeakHoursMessage} />
         ) : (
           <View style={styles.chartPanel}>
             <PeakHoursBarChart data={peakHours} height={130} />
           </View>
         )}
-        {peakHoursError && <Text style={styles.error}>{peakHoursError}</Text>}
         <Text style={styles.caption}>{t.driver.earnings.peakHoursCaption}</Text>
       </ScrollView>
     </SafeAreaView>
