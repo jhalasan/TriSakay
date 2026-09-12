@@ -108,5 +108,5 @@ When you paste this into a fresh conversation, the useful question is whether th
 
 - **Saved Places** (passenger) has no corresponding FR in CONTEXT.MD — it's a real, shipped feature with its own table, service module, and three screens' worth of UI. Decide: formally document as an FR, or frame as a UX convenience under FR-2.1/2.2.
 - MTFRB mediation scheduling/outcome recording (admin Complaints) is *more* fully built than FR-4.5/4.6 describe — worth confirming the UI matches PSO-MTPS-PR-03's actual workflow.
-- Live driver tracking, settlement tracking, and the i18n layer are all real, working code, not just design intent — Sections 9/14 of CONTEXT.MD undersell how far along these are.
+- Live driver tracking and the i18n layer are all real, working code, not just design intent — Sections 9/14 of CONTEXT.MD undersell how far along these are.
 - The Admin, Passenger, and Driver apps have all been through complete visual redesigns since the wireframe-kit review in CONTEXT.MD Section 11 — that section's screen-by-screen change list is describing an earlier version of the UI, not the current one.
