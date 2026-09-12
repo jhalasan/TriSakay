@@ -42,6 +42,7 @@ Three separate applications sharing one backend/database:
 | State management | Zustand |
 | Forms | React Hook Form |
 | Validation | Zod |
+| Localization | Custom i18n in `packages/shared/src/i18n` (English + Filipino), implements NFR-3 |
 | Payment | PayMongo — GCash channel, kept in Test Mode only (prototype scope, no Live Mode activation) |
 | Deployment — Passenger/Driver | EAS Build → Android + iOS, internal distribution only (EAS internal / TestFlight, no public store listing) |
 | Deployment — Admin | Vercel |
@@ -365,7 +366,11 @@ Two algorithmic flowcharts, detailed enough to hand directly to implementation:
 
 **Core entities:** `users` (id, name, contact, role enum, created_at) → `driver_profiles` (1:1, user_id FK, license_no, verification_status, rating_avg) → `tricycles` (1:many, driver_id FK, plate_no, cluster, mtop_no, mtop_expiry_date, verification_status) → `driver_documents` (1:many, driver_id FK, tricycle_id nullable FK, doc_type, status, reviewed_by FK→users) and `trips` (1:many, driver_id FK, status, timestamps) → `ride_requests` (many:1 to trips via trip_id nullable FK, many:1 to users via passenger_id FK; pickup/destination coords, seats_requested, fare, status enum) → `transactions` (1:1, ride_request_id FK, amount, method, status, paymongo_session_id) and `ratings` (1:1, ride_request_id FK, stars 1-5, comment).
 
-**Support entities (all reference `users`):** `complaints` (submitted_by, against_user_id nullable, ride_request_id nullable, category, status, dh_directive, resolved_by nullable), `emergency_alerts` (triggered_by, triggered_role, counterpart_id nullable, ride_request_id nullable, lat, lng, status, reviewed_by nullable), `fare_config` (base_fare, base_km, rate_per_km, updated_by), `system_settings` (bearing_tolerance, detour_ratio_max, updated_by), `notifications` (user_id, type, message, read_status).
+**Support entities (all reference `users`):** `complaints` (submitted_by, against_user_id nullable, ride_request_id nullable, category, status, dh_directive, resolved_by nullable, plus MTFRB mediation fields — see Section 16), `complaint_attachments` (complaint_id FK, file path — evidence uploads for FR-4), `emergency_alerts` (triggered_by, triggered_role, counterpart_id nullable, ride_request_id nullable, lat, lng, status, reviewed_by nullable), `fare_config` (base_fare, base_km, rate_per_km, updated_by), `system_settings` (bearing_tolerance, detour_ratio_max, updated_by), `notifications` (user_id, type, message, read_status), `account_actions` (append-only audit log — never updated/deleted, reversed by appending an opposite action), `user_consents` (user_id FK, policy_version, timestamp — implements FR-11.3's auditable consent record).
+
+**Added post-ERD-lock, not yet reflected in the diagram itself:**
+- `barangays` — reference data for the cluster/pilot-area model (Section 4 FR-2.5), CRUD'd from the Admin app.
+- `saved_places` (user_id FK, label, lat, lng) — passenger-customizable saved locations (Home/Work slots were dropped in favor of fully user-named places). **This is a feature not in the original FR-1–FR-12 list** — worth deciding whether to formally add it as an FR or document it as a UX convenience layered on top of FR-2.1/2.2 (pickup/destination selection).
 
 No many-to-many relationships exist in this domain, so no junction tables are needed — all relationships are one-to-one or one-to-many via foreign keys, consistent with the project's normalization requirement.
 
@@ -373,10 +378,29 @@ No many-to-many relationships exist in this domain, so no junction tables are ne
 
 ## 15. Next Phases
 
-12. ~~Database Schema~~ — substantially built (`trisakay_schema.sql`); treat as living/iterative alongside CONTEXT.md rather than "not started."
-13. ~~Folder Architecture~~ — monorepo layout already sketched in Section 3; refine as the real build progresses.
-14. API Design
-15. Development Roadmap
-16. Sprint Planning
+12. ~~Database Schema~~ — built and iterating (`docs/SCHEMA.MD`, 15 migrations applied to the live Supabase project as of 2026-09-10); see Section 16.
+13. ~~Folder Architecture~~ — monorepo layout in active use, matches Section 3.
+14. API Design — largely implicit in the two Edge Functions + direct RLS-protected table access described in Section 9; no separate formal API spec document exists.
+15. Development Roadmap — superseded in practice by the per-app TODO trackers (`docs/ADMIN_TODO.MD`, `docs/DRIVER_TODO.MD`, `docs/PASSENGER_TODO.MD`, `docs/CHECKLIST.MD`), which are the living source of truth for what's left; not formally written as a standalone roadmap doc.
+16. Sprint Planning — not formally documented; work has proceeded feature-by-feature per the Development rule in Section 3, tracked via git history and the TODO docs above.
 
 > Reminder: every phase above, including all "locked" sections, remains open to revision as the research progresses — reopen any phase explicitly when needed.
+
+---
+
+## 16. Implementation Status (as of 2026-09-12)
+
+This section tracks what's actually built, refreshed periodically — the phases above describe the *plan*, this describes *reality*. All three apps are functional prototypes, not just wireframes/plans anymore. For line-item task tracking, see the per-app TODO docs named in Section 15 item 15; this is a summary for orienting a new conversation.
+
+**Admin app (`apps/admin`):** Fully redesigned (multi-phase visual overhaul — shell/nav, dashboard, directory, review queues, live operations, casework, audit log, barangays, feedback/toast system). Functionally covers: driver/tricycle verification review, fare discount review, complaint triage through MTFRB mediation scheduling + outcome recording (FR-4.5/4.6 implemented, not just specified), ride monitoring with a live map, emergency alerts with a live map (replacing an earlier placeholder), PSO/admin account management with session/device revocation, barangay reference-data CRUD, CSV export, cross-entity global search, bulk actions, franchise-expiry cron scheduling, and an audit log reading `account_actions`.
+
+**Passenger app (`apps/passenger`):** Fully redesigned (new brand/theme tokens, Phase 0–9 rollout covering auth, legal/permission gates, Home, booking flow, history, payment, complaints, notifications, profile/settings). Functionally covers: manual pickup search, live driver location + straight-line ETA during an active trip, mid-trip multi-passenger pickup status, Saved Places (fully customizable, not just Home/Work), Expo push notification registration (FR-7), first-launch walkthrough, and a distinct trip-complete screen before rating.
+
+**Driver app (`apps/driver`):** Dashboard rebuilt per the redesign spec; real settlement backend wired to the earnings "Notify PSO" button (renamed from "Request payout" per Section 11 item 2 — no real payout, tracking only); persisted declined requests so they don't resurface; real computed Accept-rate stat; per-passenger Start/Complete actions on the active trip screen; foreground location sync while online; Profile screen brought to parity with passenger's.
+
+**Backend/shared:** Live location tracking implemented end-to-end (driver-side push, passenger-side subscription, RLS tightened to avoid leaking driver PII to unmatched users — directly satisfying NFR-2.5); `start_ride_leg` RPC and per-passenger ride-leg status; English/Filipino i18n package (`packages/shared/src/i18n`, NFR-3); haversine/ETA helpers in `packages/shared`. Emergency SOS (FR-12) is implemented in code, not just specified. `saved_places`, `barangays`, and `user_consents` tables exist but aren't yet reflected in the Section 14 ERD diagram itself (see Section 14's "Added post-ERD-lock" note).
+
+**Open/stale items to reconcile:**
+- Saved Places has no corresponding FR — decide whether to formally add one (see Section 14).
+- The ERD diagram (`docs/ERD.mmd`) needs a pass to add `barangays`, `saved_places`, `user_consents`, `complaint_attachments`, `account_actions`.
+- Sections 10–13 (data gaps, wireframe review, sequence diagrams, flowcharts) describe *design intent*; cross-check against the shipped admin/passenger/driver UIs before citing them as current in the thesis write-up, since a large volume of redesign work has landed since those were written.
