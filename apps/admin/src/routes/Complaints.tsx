@@ -8,6 +8,7 @@ import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { Modal } from '../components/Modal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { Pagination } from '../components/Pagination';
 import { EmptyState } from '../components/EmptyState';
@@ -87,9 +88,9 @@ const TRIAGE_STATUSES: { label: string; value: ComplaintStatus }[] = ALL_STATUSE
 
 /**
  * Wireframe screen 7 "Complaints management" — two-step flow per FR-4.3-4.8:
- * PSO Staff triage, then a Department Head directive (FR-4.3a). Restyled
- * per README §08 — an SLA strip above a 55/45 queue/case split, the case
- * column never below the table.
+ * PSO Staff triage, then a Department Head directive (FR-4.3a). An SLA strip
+ * sits above the queue table; reviewing a complaint opens its case detail in
+ * a modal rather than expanding the page.
  *
  * The SLA strip's "Overdue" count reuses the exact rule the SLA table
  * column already applies (open/under_review past the 3-day ARTA clock,
@@ -287,8 +288,7 @@ export function Complaints() {
 
   return (
     <div className="page">
-      <div className={styles.stack}>
-        <div className={styles.queueCol}>
+      <div className={styles.queueCol}>
           <TableToolbar
             search={search}
             onSearchChange={setSearch}
@@ -346,26 +346,20 @@ export function Complaints() {
             onToggleAll={toggleAllOnPage}
           />
           <Pagination page={safePage} pageCount={pageCount} onChange={setPage} />
-        </div>
+      </div>
 
-        <div className={`panel ${styles.caseCol}`}>
-          {selected ? (
+      {selected && (
+        <Modal
+          title={selected.subject}
+          subtitle={
             <>
-              <div className={styles.caseHeader}>
-                <div>
-                  <h2 className="panel-title" style={{ marginBottom: 2 }}>
-                    {selected.subject}
-                  </h2>
-                  <span className="case-sub">
-                    filed {formatDate(selected.createdAt)}
-                    {selected.rideRequestId ? ` · ride ${selected.rideRequestId}` : ''}
-                  </span>
-                </div>
-                <button type="button" className={styles.closeButton} aria-label="Close" onClick={() => setSelectedId(null)}>
-                  ×
-                </button>
-              </div>
-
+              filed {formatDate(selected.createdAt)}
+              {selected.rideRequestId ? ` · ride ${selected.rideRequestId}` : ''}
+            </>
+          }
+          onClose={() => setSelectedId(null)}
+          size="lg"
+        >
               {selected.message && <div className={styles.quote}>&ldquo;{selected.message}&rdquo;</div>}
 
               <ErrorBanner message={error} />
@@ -524,12 +518,8 @@ export function Complaints() {
                   <span style={{ fontSize: 13 }}>{selected.resolutionNotes}</span>
                 </div>
               )}
-            </>
-          ) : (
-            <EmptyState message="Select a complaint to review it." icon={false} />
-          )}
-        </div>
-      </div>
+        </Modal>
+      )}
 
       {pendingBulkKind && (
         <ConfirmModal

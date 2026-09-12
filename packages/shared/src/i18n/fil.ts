@@ -731,7 +731,7 @@ export const fil: Translations = {
       statusClosed: 'Sarado',
     },
     tabs: {
-      dashboard: 'Dashboard',
+      dashboard: 'Home',
       requests: 'Requests',
       history: 'Kasaysayan',
       earnings: 'Kita',

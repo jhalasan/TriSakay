@@ -1,12 +1,3 @@
-/* Single column: the case detail opens directly beneath the table a
-   reviewer clicked into, instead of beside it — nothing here needs to be
-   compared side by side with the queue while it's being decided. */
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-md);
-}
-
 .queueCol {
   display: flex;
   flex-direction: column;
@@ -18,34 +9,6 @@
   display: flex;
   gap: var(--sp-sm);
   flex-wrap: wrap;
-}
-
-.caseCol {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-md);
-}
-
-.caseHeader {
-  display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--sp-sm);
-}
-
-.closeButton {
-  border: none;
-  background: transparent;
-  color: var(--ink-faint);
-  font-size: 18px;
-  line-height: 1;
-  cursor: pointer;
-  padding: 2px 4px;
-  flex-shrink: 0;
-}
-
-.closeButton:hover {
-  color: var(--ink);
 }
 
 .quote {

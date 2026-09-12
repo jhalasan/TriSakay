@@ -33,7 +33,7 @@ export default function TabsLayout() {
     >
       <Tabs.Screen
         name="dashboard"
-        options={{ title: t.driver.tabs.dashboard, tabBarIcon: ({ color }) => <Ionicons name="speedometer" size={24} color={color} /> }}
+        options={{ title: t.driver.tabs.dashboard, tabBarIcon: ({ color }) => <Ionicons name="home" size={24} color={color} /> }}
       />
       <Tabs.Screen
         name="requests"

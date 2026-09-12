@@ -10,6 +10,7 @@ import { RatingSquares } from '../components/RatingSquares';
 import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal, SevereIcon } from '../components/ConfirmModal';
+import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { useDriversStore } from '../store/useDriversStore';
@@ -444,17 +445,16 @@ export function Drivers() {
       </div>
 
       {selected && (
-        <div className="panel detail-panel">
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
-            <Avatar fullName={selected.fullName} />
-            <div>
-              <h2 className="panel-title" style={{ marginBottom: 2 }}>
-                {selected.fullName}
-              </h2>
-              <Badge label={titleCaseLabel(selected.accountStatus)} tone={STATUS_TONE[selected.accountStatus]} />
-            </div>
-          </div>
-
+        <Modal
+          title={
+            <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Avatar fullName={selected.fullName} />
+              {selected.fullName}
+            </span>
+          }
+          subtitle={<Badge label={titleCaseLabel(selected.accountStatus)} tone={STATUS_TONE[selected.accountStatus]} />}
+          onClose={() => setSelectedId(null)}
+        >
           {detailFields.map((f) => (
             <div className="field" key={f.label}>
               <span className="field-label">{f.label}</span>
@@ -469,11 +469,7 @@ export function Drivers() {
           )}
 
           <div className="read-only-note">Showing the record loaded with this list. Full ride history isn't available in the admin portal yet.</div>
-
-          <Button variant="outline" tone="neutral" size="sm" onClick={() => setSelectedId(null)} style={{ alignSelf: 'flex-start' }}>
-            Close
-          </Button>
-        </div>
+        </Modal>
       )}
 
       {pendingAction && (

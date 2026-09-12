@@ -7,6 +7,7 @@ import { Badge, type BadgeTone } from '../components/Badge';
 import { Avatar } from '../components/Avatar';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { Modal } from '../components/Modal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
@@ -143,7 +144,7 @@ export function DiscountReview() {
 
   function renderDetail(d: DiscountRow) {
     return (
-      <div className="case-detail" id={`discount-case-detail-${d.id}`}>
+      <div className="case-detail-modal">
         <div className="evidence-header">
           <Avatar fullName={d.passengerName} size={34} />
           <div className="evidence-header-text">
@@ -247,12 +248,7 @@ export function DiscountReview() {
             const isOpen = d.id === selectedId;
             return (
               <div key={d.id} className={`case-item ${isOpen ? 'case-item-active' : ''}`}>
-                <button
-                  className="case-row"
-                  onClick={() => toggle(d)}
-                  aria-expanded={isOpen}
-                  aria-controls={`discount-case-detail-${d.id}`}
-                >
+                <button className="case-row" onClick={() => toggle(d)}>
                   <div className="case-row-left">
                     <div className="case-top">
                       <span className="case-name">{d.passengerName}</span>
@@ -266,7 +262,6 @@ export function DiscountReview() {
                     <ChevronIcon open={isOpen} />
                   </div>
                 </button>
-                {isOpen && renderDetail(d)}
               </div>
             );
           })}
@@ -285,6 +280,12 @@ export function DiscountReview() {
         {pending.length > 0 && renderSection('Pending Review', pending)}
         {decided.length > 0 && renderSection('Decided', decided)}
       </div>
+
+      {selected && !pendingDecision && (
+        <Modal title={selected.passengerName} onClose={() => toggle(selected)} size="lg">
+          {renderDetail(selected)}
+        </Modal>
+      )}
 
       {selected && pendingDecision && (
         <ConfirmModal
