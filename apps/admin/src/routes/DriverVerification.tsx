@@ -8,6 +8,7 @@ import { Badge, type BadgeTone } from '../components/Badge';
 import { Avatar } from '../components/Avatar';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal } from '../components/ConfirmModal';
+import { Modal } from '../components/Modal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
@@ -156,7 +157,7 @@ export function DriverVerification() {
 
   function renderCaseDetail(c: VerificationCase) {
     return (
-      <div className="case-detail" id={`verification-case-detail-${c.driverId}`}>
+      <div className="case-detail-modal">
         <div className="evidence-header">
           <Avatar fullName={c.driverFullName} size={34} />
           <div className="evidence-header-text">
@@ -284,12 +285,7 @@ export function DriverVerification() {
             const isOpen = c.driverId === selectedDriverId;
             return (
               <div key={c.driverId} className={`case-item ${isOpen ? 'case-item-active' : ''}`}>
-                <button
-                  className="case-row"
-                  onClick={() => toggle(c.driverId)}
-                  aria-expanded={isOpen}
-                  aria-controls={`verification-case-detail-${c.driverId}`}
-                >
+                <button className="case-row" onClick={() => toggle(c.driverId)}>
                   <div className="case-row-left">
                     <div className="case-top">
                       <span className="case-name">{c.driverFullName}</span>
@@ -303,7 +299,6 @@ export function DriverVerification() {
                     <ChevronIcon open={isOpen} />
                   </div>
                 </button>
-                {isOpen && renderCaseDetail(c)}
               </div>
             );
           })}
@@ -320,6 +315,12 @@ export function DriverVerification() {
         {pendingCases.length > 0 && renderSection('Pending Review', pendingCases)}
         {decidedCases.length > 0 && renderSection('Decided', decidedCases)}
       </div>
+
+      {selectedCase && !pendingDecision && (
+        <Modal title={selectedCase.driverFullName} onClose={() => select(null)} size="lg">
+          {renderCaseDetail(selectedCase)}
+        </Modal>
+      )}
 
       {pendingDecision && (
         <ConfirmModal

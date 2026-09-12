@@ -407,6 +407,13 @@ a {
   background: var(--fill);
 }
 
+/* Same content layout as .case-detail, without the inline-expand chrome (border/background/padding) — used when this content renders inside a Modal, which already supplies its own padding. */
+.case-detail-modal {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-lg);
+}
+
 .evidence-header {
   display: flex;
   align-items: center;
