@@ -51,7 +51,7 @@ async function resolveUserNames(client: ReturnType<typeof getSupabaseClient>, id
 
   const { data } = await client.from('users').select('id, full_name').in('id', uniqueIds);
   const names = new Map<string, string>();
-  for (const row of data ?? []) names.set(row.id, row.full_name);
+  for (const row of data ?? []) names.set(row.id, row.full_name!);
   return names;
 }
 

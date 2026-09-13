@@ -37,7 +37,7 @@ export async function listAccountActions(): Promise<ListAccountActionsResult> {
   const names = new Map<string, string>();
   if (ids.length > 0) {
     const { data: userRows } = await client.from('users').select('id, full_name').in('id', ids);
-    for (const row of userRows ?? []) names.set(row.id, row.full_name);
+    for (const row of userRows ?? []) names.set(row.id, row.full_name!);
   }
 
   const rows = (data ?? []).map((row) => ({
@@ -115,7 +115,7 @@ export async function listReviewDecisions(): Promise<ListReviewDecisionsResult> 
   const names = new Map<string, string>();
   if (ids.length > 0) {
     const { data: userRows } = await client.from('users').select('id, full_name').in('id', ids);
-    for (const row of userRows ?? []) names.set(row.id, row.full_name);
+    for (const row of userRows ?? []) names.set(row.id, row.full_name!);
   }
 
   const driverDecisions: ReviewDecisionRow[] = (driverRows ?? [])

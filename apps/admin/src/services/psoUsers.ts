@@ -29,7 +29,7 @@ export interface AddPsoUserResult {
   error: string | null;
 }
 
-export async function addPsoUser(input: { fullName: string; email: string; role: AdminRole }): Promise<AddPsoUserResult> {
+export async function addPsoUser(input: { firstName: string; lastName: string; email: string; role: AdminRole }): Promise<AddPsoUserResult> {
   const { tempPassword, error } = await createPsoUserForAdmin(input);
   return { tempPassword, error };
 }

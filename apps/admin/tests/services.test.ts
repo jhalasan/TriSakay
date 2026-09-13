@@ -481,11 +481,11 @@ function fakePsoUsersClient() {
       };
     },
     functions: {
-      invoke: async (fn: string, opts: { body: { fullName: string; email: string; role: string } }) => {
+      invoke: async (fn: string, opts: { body: { firstName: string; lastName: string; email: string; role: string } }) => {
         if (fn !== 'admin-create-pso-user') throw new Error(`unexpected function ${fn}`);
         users.push({
           id: 'pso2',
-          full_name: opts.body.fullName,
+          full_name: `${opts.body.firstName} ${opts.body.lastName}`,
           email: opts.body.email,
           role: opts.body.role,
           status: 'active',
@@ -508,7 +508,7 @@ test('psoUsers service: add + disable/enable', async () => {
   __setSupabaseClientForTests(fakePsoUsersClient());
 
   const before = (await listPsoUsers()).data.length;
-  const { tempPassword, error: addError } = await addPsoUser({ fullName: 'Test User', email: 'test.user@example.com', role: 'pso_staff' });
+  const { tempPassword, error: addError } = await addPsoUser({ firstName: 'Test', lastName: 'User', email: 'test.user@example.com', role: 'pso_staff' });
   assert.equal(addError, null);
   assert.equal(tempPassword, 'Tq7!generated');
 

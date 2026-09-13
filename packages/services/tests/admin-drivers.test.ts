@@ -12,8 +12,8 @@ test('listDriversForAdmin merges users + driver_profiles + tricycles by id', asy
             eq: () => ({
               order: async () => ({
                 data: [
-                  { id: 'd1', full_name: 'Ronnie Bautista', contact_no: '0917-000-0001', email: 'ronnie@example.com', status: 'active', created_at: '2026-01-01T00:00:00.000Z' },
-                  { id: 'd2', full_name: 'Ariel Cabahug', contact_no: null, email: 'ariel@example.com', status: 'active', created_at: '2026-02-01T00:00:00.000Z' },
+                  { id: 'd1', first_name: 'Ronnie', last_name: 'Bautista', full_name: 'Ronnie Bautista', contact_no: '0917-000-0001', email: 'ronnie@example.com', status: 'active', created_at: '2026-01-01T00:00:00.000Z' },
+                  { id: 'd2', first_name: 'Ariel', last_name: 'Cabahug', full_name: 'Ariel Cabahug', contact_no: null, email: 'ariel@example.com', status: 'active', created_at: '2026-02-01T00:00:00.000Z' },
                 ],
                 error: null,
               }),
@@ -62,6 +62,8 @@ test('listDriversForAdmin merges users + driver_profiles + tricycles by id', asy
   assert.deepEqual(data, [
     {
       id: 'd1',
+      firstName: 'Ronnie',
+      lastName: 'Bautista',
       fullName: 'Ronnie Bautista',
       contactNo: '0917-000-0001',
       email: 'ronnie@example.com',
@@ -76,6 +78,8 @@ test('listDriversForAdmin merges users + driver_profiles + tricycles by id', asy
     },
     {
       id: 'd2',
+      firstName: 'Ariel',
+      lastName: 'Cabahug',
       fullName: 'Ariel Cabahug',
       contactNo: null,
       email: 'ariel@example.com',

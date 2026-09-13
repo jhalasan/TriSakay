@@ -7,6 +7,8 @@ export interface AdminPassengerDiscount {
 
 export interface AdminPassengerRow {
   id: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   contactNo: string | null;
   email: string;
@@ -37,7 +39,7 @@ export async function listPassengersForAdmin(): Promise<ListPassengersForAdminRe
 
   const { data: users, error: usersError } = await client
     .from('users')
-    .select('id, full_name, contact_no, email, status, created_at')
+    .select('id, first_name, last_name, full_name, contact_no, email, status, created_at')
     .eq('role', 'passenger')
     .order('created_at', { ascending: false });
 
@@ -67,7 +69,9 @@ export async function listPassengersForAdmin(): Promise<ListPassengersForAdminRe
 
   const rows = users.map((u) => ({
     id: u.id,
-    fullName: u.full_name,
+    firstName: u.first_name,
+    lastName: u.last_name,
+    fullName: u.full_name!,
     contactNo: u.contact_no,
     email: u.email,
     accountStatus: u.status,

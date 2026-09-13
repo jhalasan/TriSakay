@@ -104,7 +104,15 @@ export type Database = {
           updated_at?: string | null
           updated_by?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "barangays_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       complaint_attachments: {
         Row: {
@@ -1256,8 +1264,10 @@ export type Database = {
           contact_no: string | null
           created_at: string
           email: string
-          full_name: string
+          first_name: string
+          full_name: string | null
           id: string
+          last_name: string
           must_change_password: boolean
           push_token: string | null
           role: Database["public"]["Enums"]["user_role"]
@@ -1269,8 +1279,10 @@ export type Database = {
           contact_no?: string | null
           created_at?: string
           email: string
-          full_name: string
+          first_name: string
+          full_name?: string | null
           id: string
+          last_name: string
           must_change_password?: boolean
           push_token?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -1282,8 +1294,10 @@ export type Database = {
           contact_no?: string | null
           created_at?: string
           email?: string
-          full_name?: string
+          first_name?: string
+          full_name?: string | null
           id?: string
+          last_name?: string
           must_change_password?: boolean
           push_token?: string | null
           role?: Database["public"]["Enums"]["user_role"]
@@ -1427,18 +1441,18 @@ export type Database = {
       admin_list_pso_last_sign_in: {
         Args: never
         Returns: {
+          last_sign_in_at: string
           user_id: string
-          last_sign_in_at: string | null
         }[]
       }
       admin_list_user_sessions: {
         Args: { p_user_id: string }
         Returns: {
-          id: string
           created_at: string
+          id: string
+          ip: unknown
           updated_at: string
-          user_agent: string | null
-          ip: string | null
+          user_agent: string
         }[]
       }
       admin_revoke_user_session: {
@@ -1544,8 +1558,8 @@ export type Database = {
       get_peak_hour_histogram: {
         Args: { p_since: string }
         Returns: {
-          bucket_index: number
           bucket_count: number
+          bucket_index: number
         }[]
       }
       get_trip_driver_info: {

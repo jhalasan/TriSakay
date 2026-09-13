@@ -45,7 +45,7 @@ export async function listPsoUsersForAdmin(): Promise<ListPsoUsersForAdminResult
 
   const rows: AdminPsoUserRow[] = (data ?? []).map((u) => ({
     id: u.id,
-    fullName: u.full_name,
+    fullName: u.full_name!,
     email: u.email,
     role: u.role as AdminPsoRole,
     isActive: u.status === 'active',
@@ -57,7 +57,8 @@ export async function listPsoUsersForAdmin(): Promise<ListPsoUsersForAdminResult
 }
 
 export interface CreatePsoUserInput {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   role: AdminPsoRole;
 }
@@ -138,7 +139,7 @@ export async function listPsoUserSessions(userId: string): Promise<ListPsoUserSe
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     userAgent: row.user_agent,
-    ip: row.ip,
+    ip: row.ip as string | null,
   }));
 
   return { data: rows, error: null };

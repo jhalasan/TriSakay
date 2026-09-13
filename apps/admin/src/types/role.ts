@@ -7,6 +7,8 @@ export type AdminRole = 'pso_staff' | 'pso_supervisor' | 'admin';
 
 export interface AdminSessionUser {
   id: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   email: string;
   role: AdminRole;

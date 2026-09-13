@@ -14,7 +14,8 @@ import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/valid
 import { styles } from '../../src/styles/auth/register.styles';
 
 interface FormState {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   password: string;
@@ -40,7 +41,8 @@ export default function RegisterScreen() {
 
   const [step, setStep] = useState<1 | 2>(1);
   const [form, setForm] = useState<FormState>({
-    name: '',
+    firstName: '',
+    lastName: '',
     email: '',
     phone: '',
     password: '',
@@ -76,7 +78,8 @@ export default function RegisterScreen() {
 
   function handleNext() {
     const nextErrors: Partial<FormState> = {};
-    if (!isNonEmpty(form.name)) nextErrors.name = 'Enter your full name.';
+    if (!isNonEmpty(form.firstName)) nextErrors.firstName = 'Enter your first name.';
+    if (!isNonEmpty(form.lastName)) nextErrors.lastName = 'Enter your last name.';
     if (!isValidEmail(form.email)) nextErrors.email = 'Enter a valid email address.';
     if (!isNonEmpty(form.phone)) nextErrors.phone = 'Enter a contact number.';
     if (!isValidPassword(form.password)) nextErrors.password = 'Password must be at least 6 characters.';
@@ -89,7 +92,7 @@ export default function RegisterScreen() {
   async function handleCreateAccount() {
     clearError();
     setSubmitting(true);
-    const outcome = await register(form.name, form.email, form.phone, form.password);
+    const outcome = await register(form.firstName, form.lastName, form.email, form.phone, form.password);
 
     // Upload only when signUp returned an active session — Storage RLS
     // requires auth.uid(), which isn't available yet on the check_email
@@ -189,11 +192,19 @@ export default function RegisterScreen() {
 
             <View style={styles.fields}>
               <TextField
-                label="Full name"
-                placeholder="Juan Dela Cruz"
-                value={form.name}
-                onChangeText={(v) => update('name', v)}
-                error={errors.name}
+                label="First name"
+                placeholder="Juan"
+                value={form.firstName}
+                onChangeText={(v) => update('firstName', v)}
+                error={errors.firstName}
+                autoCapitalize="words"
+              />
+              <TextField
+                label="Last name"
+                placeholder="Dela Cruz"
+                value={form.lastName}
+                onChangeText={(v) => update('lastName', v)}
+                error={errors.lastName}
                 autoCapitalize="words"
               />
               <TextField

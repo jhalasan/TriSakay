@@ -83,12 +83,12 @@ test('createPsoUserForAdmin invokes the admin-create-pso-user Edge Function and 
     },
   } as any);
 
-  const { userId, tempPassword, error } = await createPsoUserForAdmin({ fullName: 'Test User', email: 'test@example.com', role: 'pso_staff' });
+  const { userId, tempPassword, error } = await createPsoUserForAdmin({ firstName: 'Test', lastName: 'User', email: 'test@example.com', role: 'pso_staff' });
   assert.equal(error, null);
   assert.equal(userId, 'new1');
   assert.equal(tempPassword, 'Tq7!abc123');
   assert.equal(captured!.fn, 'admin-create-pso-user');
-  assert.deepEqual(captured!.body, { fullName: 'Test User', email: 'test@example.com', role: 'pso_staff' });
+  assert.deepEqual(captured!.body, { firstName: 'Test', lastName: 'User', email: 'test@example.com', role: 'pso_staff' });
 });
 
 test('createPsoUserForAdmin surfaces the Edge Function\'s in-body error message on a non-2xx response', async () => {
@@ -104,7 +104,7 @@ test('createPsoUserForAdmin surfaces the Edge Function\'s in-body error message 
     },
   } as any);
 
-  const { userId, tempPassword, error } = await createPsoUserForAdmin({ fullName: 'Test User', email: 'test@example.com', role: 'admin' });
+  const { userId, tempPassword, error } = await createPsoUserForAdmin({ firstName: 'Test', lastName: 'User', email: 'test@example.com', role: 'admin' });
   assert.equal(userId, null);
   assert.equal(tempPassword, null);
   assert.equal(error, 'Only an Administrator may create PSO accounts');
@@ -120,7 +120,7 @@ test('createPsoUserForAdmin falls back to the generic error message when the res
     },
   } as any);
 
-  const { error } = await createPsoUserForAdmin({ fullName: 'Test User', email: 'test@example.com', role: 'pso_staff' });
+  const { error } = await createPsoUserForAdmin({ firstName: 'Test', lastName: 'User', email: 'test@example.com', role: 'pso_staff' });
   assert.equal(error, 'Edge Function returned a non-2xx status code');
 });
 

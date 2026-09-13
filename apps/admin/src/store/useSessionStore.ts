@@ -22,7 +22,9 @@ function toSessionUser(profile: PublicUser): AdminSessionUser | null {
   if (!isAdminRole(profile.role)) return null;
   return {
     id: profile.id,
-    fullName: profile.full_name,
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    fullName: profile.full_name!,
     email: profile.email,
     role: profile.role,
     avatarUrl: profile.avatar_url ?? undefined,
@@ -41,7 +43,7 @@ interface SessionState {
   /** Sets the new password on the current session, then clears must_change_password so RequireForcedPasswordChange lets the user through. */
   completePasswordChange: (newPassword: string) => Promise<string | null>;
   /** Renames the signed-in user's own account, from the ProfileMenu. */
-  updateFullName: (fullName: string) => Promise<string | null>;
+  updateName: (firstName: string, lastName: string) => Promise<string | null>;
 }
 
 export const useSessionStore = create<SessionState>()((set, get) => {
@@ -140,15 +142,21 @@ export const useSessionStore = create<SessionState>()((set, get) => {
       return null;
     },
 
-    updateFullName: async (fullName) => {
-      const trimmed = fullName.trim();
-      if (!trimmed) return 'Full name is required.';
+    updateName: async (firstName, lastName) => {
+      const trimmedFirst = firstName.trim();
+      const trimmedLast = lastName.trim();
+      if (!trimmedFirst) return 'First name is required.';
+      if (!trimmedLast) return 'Last name is required.';
 
-      const { error } = await authService.updateProfile({ fullName: trimmed });
+      const { error } = await authService.updateProfile({ firstName: trimmedFirst, lastName: trimmedLast });
       if (error) return error;
 
       const current = get().user;
-      if (current) set({ user: { ...current, fullName: trimmed } });
+      if (current) {
+        set({
+          user: { ...current, firstName: trimmedFirst, lastName: trimmedLast, fullName: `${trimmedFirst} ${trimmedLast}`.trim() },
+        });
+      }
       return null;
     },
   };

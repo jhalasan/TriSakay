@@ -4,7 +4,8 @@ import type { PassengerRow } from '../types/passenger.ts';
 import { formatDate, titleCaseLabel } from './format.ts';
 
 export const driverCsvColumns: CsvColumn<DriverRow>[] = [
-  { header: 'Name', value: (d) => d.fullName },
+  { header: 'Last Name', value: (d) => d.lastName },
+  { header: 'First Name', value: (d) => d.firstName },
   { header: 'Contact No', value: (d) => d.contactNo },
   { header: 'Email', value: (d) => d.email },
   { header: 'Plate No', value: (d) => d.plateNo },
@@ -18,7 +19,8 @@ export const driverCsvColumns: CsvColumn<DriverRow>[] = [
 ];
 
 export const passengerCsvColumns: CsvColumn<PassengerRow>[] = [
-  { header: 'Name', value: (p) => p.fullName },
+  { header: 'Last Name', value: (p) => p.lastName },
+  { header: 'First Name', value: (p) => p.firstName },
   { header: 'Contact No', value: (p) => p.contactNo },
   { header: 'Email', value: (p) => p.email },
   { header: 'Account Status', value: (p) => titleCaseLabel(p.accountStatus) },

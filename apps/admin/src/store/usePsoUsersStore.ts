@@ -20,7 +20,7 @@ interface PsoUsersState {
   sessions: PsoUserSessionRow[];
   sessionsLoading: boolean;
   fetch: () => Promise<void>;
-  addUser: (input: { fullName: string; email: string; role: AdminRole }) => Promise<boolean>;
+  addUser: (input: { firstName: string; lastName: string; email: string; role: AdminRole }) => Promise<boolean>;
   clearTempPassword: () => void;
   disable: (id: string, reason: string) => Promise<boolean>;
   enable: (id: string, reason: string) => Promise<boolean>;

@@ -14,7 +14,7 @@ import {
   verifyPasswordReset,
 } from '../src/auth/index.ts';
 
-test('signUp sends full name, phone, and default role as signup metadata', async () => {
+test('signUp sends first/last name, phone, and default role as signup metadata', async () => {
   let capturedArgs: any = null;
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
@@ -26,7 +26,8 @@ test('signUp sends full name, phone, and default role as signup metadata', async
   );
 
   await signUp({
-    fullName: 'Juan Dela Cruz',
+    firstName: 'Juan',
+    lastName: 'Dela Cruz',
     email: 'juan@example.com',
     phone: '09171234567',
     password: 'secret1',
@@ -35,7 +36,8 @@ test('signUp sends full name, phone, and default role as signup metadata', async
   assert.equal(capturedArgs.email, 'juan@example.com');
   assert.equal(capturedArgs.password, 'secret1');
   assert.deepEqual(capturedArgs.options.data, {
-    full_name: 'Juan Dela Cruz',
+    first_name: 'Juan',
+    last_name: 'Dela Cruz',
     phone: '09171234567',
     role: 'passenger',
   });
@@ -52,7 +54,7 @@ test('signUp defaults role to passenger when omitted', async () => {
     })
   );
 
-  await signUp({ fullName: 'Juan', email: 'juan@example.com', phone: '0900', password: 'secret1' });
+  await signUp({ firstName: 'Juan', lastName: 'Cruz', email: 'juan@example.com', phone: '0900', password: 'secret1' });
 
   assert.equal(capturedArgs.options.data.role, 'passenger');
 });
@@ -68,7 +70,7 @@ test('signUp passes role through when provided', async () => {
     })
   );
 
-  await signUp({ fullName: 'Ana', email: 'ana@example.com', phone: '0911', password: 'secret1', role: 'driver' });
+  await signUp({ firstName: 'Ana', lastName: 'Reyes', email: 'ana@example.com', phone: '0911', password: 'secret1', role: 'driver' });
 
   assert.equal(capturedArgs.options.data.role, 'driver');
 });
@@ -80,7 +82,7 @@ test('signUp returns the error message when Supabase rejects the signup', async 
     })
   );
 
-  const result = await signUp({ fullName: 'A', email: 'dup@example.com', phone: '0917', password: 'secret1' });
+  const result = await signUp({ firstName: 'A', lastName: 'B', email: 'dup@example.com', phone: '0917', password: 'secret1' });
   assert.equal(result.error, 'Email already registered');
   assert.equal(result.session, null);
 });
@@ -121,7 +123,9 @@ test('getCurrentUserProfile returns the public.users row for the active session'
   const fakeSession = { user: { id: 'u1' } };
   const userRow = {
     id: 'u1',
-    full_name: 'Juan',
+    first_name: 'Juan',
+    last_name: 'Dela Cruz',
+    full_name: 'Juan Dela Cruz',
     email: 'juan@example.com',
     contact_no: '0917',
     role: 'passenger',
@@ -136,12 +140,12 @@ test('getCurrentUserProfile returns the public.users row for the active session'
   assert.deepEqual(profile, userRow);
 });
 
-test('updateProfile updates full_name and reports no error on success', async () => {
+test('updateProfile updates first_name/last_name and reports no error on success', async () => {
   const fakeSession = { user: { id: 'u1' } };
   __setSupabaseClientForTests(
     createFakeSupabaseClient({ getSession: async () => ({ data: { session: fakeSession } }), updateError: null })
   );
-  const result = await updateProfile({ fullName: 'New Name' });
+  const result = await updateProfile({ firstName: 'New', lastName: 'Name' });
   assert.equal(result.error, null);
 });
 
@@ -157,9 +161,9 @@ test('updateProfile writes contact_no when phone is provided', async () => {
       },
     })
   );
-  const result = await updateProfile({ fullName: 'New Name', phone: '09171234567' });
+  const result = await updateProfile({ firstName: 'New', lastName: 'Name', phone: '09171234567' });
   assert.equal(result.error, null);
-  assert.deepEqual(capturedUpdate, { full_name: 'New Name', contact_no: '09171234567' });
+  assert.deepEqual(capturedUpdate, { first_name: 'New', last_name: 'Name', contact_no: '09171234567' });
 });
 
 test('updateProfile omits contact_no when phone is not provided', async () => {
@@ -174,14 +178,14 @@ test('updateProfile omits contact_no when phone is not provided', async () => {
       },
     })
   );
-  const result = await updateProfile({ fullName: 'New Name' });
+  const result = await updateProfile({ firstName: 'New', lastName: 'Name' });
   assert.equal(result.error, null);
-  assert.deepEqual(capturedUpdate, { full_name: 'New Name' });
+  assert.deepEqual(capturedUpdate, { first_name: 'New', last_name: 'Name' });
 });
 
 test('updateProfile returns an error when there is no active session', async () => {
   __setSupabaseClientForTests(createFakeSupabaseClient({ getSession: async () => ({ data: { session: null } }) }));
-  const result = await updateProfile({ fullName: 'New Name' });
+  const result = await updateProfile({ firstName: 'New', lastName: 'Name' });
   assert.equal(result.error, 'Not signed in');
 });
 

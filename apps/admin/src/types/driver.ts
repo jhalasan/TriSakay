@@ -12,6 +12,8 @@ export type TricycleCluster = 'red' | 'white' | 'apple_green' | 'melting_pot';
 
 export interface DriverRow {
   id: string; // users.id
+  firstName: string;
+  lastName: string;
   fullName: string;
   contactNo: string;
   email: string;

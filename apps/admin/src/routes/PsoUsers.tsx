@@ -57,7 +57,8 @@ export function PsoUsers() {
     fetchSessions,
     revokeSession,
   } = usePsoUsersStore();
-  const [fullName, setFullName] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
   const [role, setRole] = useState<AdminRole>('pso_staff');
   const [creating, setCreating] = useState(false);
@@ -79,13 +80,14 @@ export function PsoUsers() {
   const roleCount = useMemo(() => new Set(users.map((u) => u.role)).size, [users]);
 
   async function handleAdd() {
-    if (!fullName.trim() || !email.trim()) return;
+    if (!firstName.trim() || !lastName.trim() || !email.trim()) return;
     setCreating(true);
-    const ok = await addUser({ fullName, email, role });
+    const ok = await addUser({ firstName, lastName, email, role });
     setCreating(false);
     if (ok) {
       setCreatedEmail(email);
-      setFullName('');
+      setFirstName('');
+      setLastName('');
       setEmail('');
       setRole('pso_staff');
     }
@@ -207,7 +209,8 @@ export function PsoUsers() {
       )}
 
       <div className={`panel ${styles.inviteForm}`}>
-        <TextField label="Full Name" placeholder="e.g. Jonalyn Carreon" value={fullName} onChange={(e) => setFullName(e.target.value)} />
+        <TextField label="First Name" placeholder="e.g. Jonalyn" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+        <TextField label="Last Name" placeholder="e.g. Carreon" value={lastName} onChange={(e) => setLastName(e.target.value)} />
         <TextField label="Work Email" type="email" placeholder="name@gensantos.gov.ph" value={email} onChange={(e) => setEmail(e.target.value)} />
         <Select
           label="Role"
@@ -219,7 +222,7 @@ export function PsoUsers() {
             { label: 'Administrator', value: 'admin' },
           ]}
         />
-        <Button onClick={handleAdd} loading={creating} disabled={!fullName.trim() || !email.trim()}>
+        <Button onClick={handleAdd} loading={creating} disabled={!firstName.trim() || !lastName.trim() || !email.trim()}>
           {creating ? 'Adding…' : 'Add PSO user'}
         </Button>
         {formError && (

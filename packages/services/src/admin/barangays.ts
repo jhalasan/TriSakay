@@ -38,7 +38,7 @@ export async function listBarangaysForAdmin(): Promise<ListBarangaysResult> {
   if (updaterIds.length > 0) {
     const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', updaterIds);
     if (usersError) return { data: [], error: usersError.message };
-    nameById = new Map((users ?? []).map((u) => [u.id, u.full_name]));
+    nameById = new Map((users ?? []).map((u) => [u.id, u.full_name!]));
   }
 
   const rows: BarangayRow[] = data.map((row) => ({

@@ -7,7 +7,9 @@ import type { PassengerRow } from '../src/types/passenger.ts';
 
 const driver: DriverRow = {
   id: 'd1',
-  fullName: 'Doe, Juan',
+  firstName: 'Juan',
+  lastName: 'Dela Cruz, Jr.',
+  fullName: 'Juan Dela Cruz, Jr.',
   contactNo: '09171234567',
   email: 'juan@example.com',
   accountStatus: 'active',
@@ -22,7 +24,9 @@ const driver: DriverRow = {
 
 const passenger: PassengerRow = {
   id: 'p1',
-  fullName: 'Santos, Maria',
+  firstName: 'Maria',
+  lastName: 'Santos',
+  fullName: 'Maria Santos',
   contactNo: '09181234567',
   email: 'maria@example.com',
   accountStatus: 'active',
@@ -34,7 +38,8 @@ const passenger: PassengerRow = {
 test('driverCsvColumns includes every header once', () => {
   const headers = driverCsvColumns.map((c) => c.header);
   assert.deepEqual(headers, [
-    'Name',
+    'Last Name',
+    'First Name',
     'Contact No',
     'Email',
     'Plate No',
@@ -55,13 +60,13 @@ test('driverCsvColumns renders a null cluster as an empty string', () => {
 
 test('passengerCsvColumns includes every header once', () => {
   const headers = passengerCsvColumns.map((c) => c.header);
-  assert.deepEqual(headers, ['Name', 'Contact No', 'Email', 'Account Status', 'Total Rides', 'Fare Discount', 'Registered']);
+  assert.deepEqual(headers, ['Last Name', 'First Name', 'Contact No', 'Email', 'Account Status', 'Total Rides', 'Fare Discount', 'Registered']);
 });
 
-test('a comma-containing name round-trips quoted through toCsv', () => {
+test('a comma-containing last name round-trips quoted through toCsv', () => {
   const csv = toCsv([driver], driverCsvColumns);
   const lines = csv.split('\r\n');
-  assert.ok(lines[1].startsWith('"Doe, Juan"'), `expected quoted name, got: ${lines[1]}`);
+  assert.ok(lines[1].startsWith('"Dela Cruz, Jr."'), `expected quoted last name, got: ${lines[1]}`);
 });
 
 test('exportFilename builds "<prefix>-<filter>-<date>.csv"', () => {

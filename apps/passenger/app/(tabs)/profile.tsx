@@ -23,8 +23,10 @@ export default function ProfileScreen() {
   const isOffline = useConnectivityStore((state) => state.isOffline);
 
   const [isEditing, setIsEditing] = useState(false);
-  const [name, setName] = useState(user?.name ?? '');
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
+  const [lastName, setLastName] = useState(user?.lastName ?? '');
   const [phone, setPhone] = useState(user?.phone ?? '');
+  const name = `${firstName} ${lastName}`.trim();
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
 
@@ -40,7 +42,7 @@ export default function ProfileScreen() {
       return;
     }
     setSaving(true);
-    const { error } = await updateProfile({ fullName: name, phone });
+    const { error } = await updateProfile({ firstName, lastName, phone });
     setSaving(false);
     if (error) {
       Alert.alert(t.profile.couldNotSaveTitle, error);
@@ -153,7 +155,8 @@ export default function ProfileScreen() {
             </Pressable>
             {isEditing ? (
               <View style={styles.editFieldWrap}>
-                <TextField value={name} onChangeText={setName} autoCapitalize="words" />
+                <TextField value={firstName} onChangeText={setFirstName} autoCapitalize="words" placeholder={t.profile.firstNamePlaceholder} />
+                <TextField value={lastName} onChangeText={setLastName} autoCapitalize="words" placeholder={t.profile.lastNamePlaceholder} />
               </View>
             ) : (
               <>

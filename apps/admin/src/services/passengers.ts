@@ -8,6 +8,8 @@ export async function listPassengers(): Promise<ServiceResult<PassengerRow[]>> {
 
   const passengers: PassengerRow[] = data.map((p) => ({
     id: p.id,
+    firstName: p.firstName,
+    lastName: p.lastName,
     fullName: p.fullName,
     contactNo: p.contactNo ?? '',
     email: p.email,

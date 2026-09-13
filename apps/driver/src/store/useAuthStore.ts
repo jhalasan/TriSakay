@@ -10,7 +10,9 @@ type AuthSession = Awaited<ReturnType<typeof authService.getSession>>;
 function toAppUser(profile: PublicUser): User {
   return {
     id: profile.id,
-    name: profile.full_name,
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    name: profile.full_name!,
     email: profile.email,
     phone: profile.contact_no ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
@@ -26,7 +28,8 @@ interface AuthState {
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
   register: (
-    name: string,
+    firstName: string,
+    lastName: string,
     email: string,
     phone: string,
     password: string
@@ -77,10 +80,11 @@ export const useAuthStore = create<AuthState>()((set) => {
       if (error) set({ error });
     },
 
-    register: async (name, email, phone, password) => {
+    register: async (firstName, lastName, email, phone, password) => {
       set({ error: null });
       const { session, error } = await authService.signUp({
-        fullName: name,
+        firstName,
+        lastName,
         email,
         phone,
         password,

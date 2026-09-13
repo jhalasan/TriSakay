@@ -9,6 +9,8 @@ export interface PassengerDiscount {
 /** Mirrors docs/SCHEMA.MD `users` where role = 'passenger'. */
 export interface PassengerRow {
   id: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   contactNo: string;
   email: string;

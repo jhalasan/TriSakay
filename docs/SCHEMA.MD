@@ -174,7 +174,9 @@ create type notification_type as enum (
 -- and role. Created via trigger on auth.users insert (see section 4).
 create table public.users (
   id            uuid primary key references auth.users(id) on delete cascade,
-  full_name     text        not null,
+  first_name    text        not null,
+  last_name     text        not null,
+  full_name     text        generated always as (trim(both ' ' from first_name || ' ' || last_name)) stored,
   contact_no    text,
   email         text        not null,
   role          user_role   not null default 'passenger',
@@ -191,6 +193,9 @@ create table public.users (
 );
 
 comment on table  public.users is 'All system users across the three apps; role drives RBAC.';
+comment on column public.users.first_name is 'Given name; collected separately from last_name for official-report formatting (Last, First).';
+comment on column public.users.last_name  is 'Surname; see first_name.';
+comment on column public.users.full_name  is 'Generated from first_name + last_name for display; not directly writable.';
 comment on column public.users.status is 'Set by PSO Supervisor/Admin via account_actions.';
 comment on column public.users.must_change_password is 'Set true when admin-create-pso-user issues a temp password; cleared by the user via the forced password-change screen.';
 
@@ -800,10 +805,11 @@ declare
 begin
   new_role := coalesce((new.raw_user_meta_data->>'role')::user_role, 'passenger');
 
-  insert into public.users (id, full_name, email, role, contact_no)
+  insert into public.users (id, first_name, last_name, email, role, contact_no)
   values (
     new.id,
-    coalesce(new.raw_user_meta_data->>'full_name', 'Unnamed User'),
+    coalesce(new.raw_user_meta_data->>'first_name', 'Unnamed'),
+    coalesce(new.raw_user_meta_data->>'last_name', 'User'),
     new.email,
     new_role,
     new.raw_user_meta_data->>'phone'

@@ -69,11 +69,13 @@ Deno.serve(async (req: Request) => {
     }
 
     const body = await req.json().catch(() => ({}) as Record<string, unknown>);
-    const fullName = typeof body.fullName === 'string' ? body.fullName.trim() : '';
+    const firstName = typeof body.firstName === 'string' ? body.firstName.trim() : '';
+    const lastName = typeof body.lastName === 'string' ? body.lastName.trim() : '';
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const role = typeof body.role === 'string' ? body.role : '';
 
-    if (!fullName) return json({ userId: null, tempPassword: null, error: 'Full name is required' }, 400);
+    if (!firstName) return json({ userId: null, tempPassword: null, error: 'First name is required' }, 400);
+    if (!lastName) return json({ userId: null, tempPassword: null, error: 'Last name is required' }, 400);
     if (!email) return json({ userId: null, tempPassword: null, error: 'Email is required' }, 400);
     if (!VALID_ROLES.includes(role as PsoRole)) {
       return json({ userId: null, tempPassword: null, error: 'Role must be pso_staff, pso_supervisor, or admin' }, 400);
@@ -86,7 +88,7 @@ Deno.serve(async (req: Request) => {
       email,
       password: tempPassword,
       email_confirm: true,
-      user_metadata: { full_name: fullName },
+      user_metadata: { first_name: firstName, last_name: lastName },
     });
 
     if (createError || !created.user) {

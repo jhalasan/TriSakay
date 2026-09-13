@@ -12,8 +12,8 @@ test('listPassengersForAdmin merges users + completed ride counts + approved dis
             eq: () => ({
               order: async () => ({
                 data: [
-                  { id: 'p1', full_name: 'Maria Fe Santos', contact_no: '0917-000-0002', email: 'maria@example.com', status: 'active', created_at: '2026-01-01T00:00:00.000Z' },
-                  { id: 'p2', full_name: 'Juan Dela Cruz', contact_no: null, email: 'juan@example.com', status: 'active', created_at: '2026-02-01T00:00:00.000Z' },
+                  { id: 'p1', first_name: 'Maria', last_name: 'Fe Santos', full_name: 'Maria Fe Santos', contact_no: '0917-000-0002', email: 'maria@example.com', status: 'active', created_at: '2026-01-01T00:00:00.000Z' },
+                  { id: 'p2', first_name: 'Juan', last_name: 'Dela Cruz', full_name: 'Juan Dela Cruz', contact_no: null, email: 'juan@example.com', status: 'active', created_at: '2026-02-01T00:00:00.000Z' },
                 ],
                 error: null,
               }),
@@ -52,6 +52,8 @@ test('listPassengersForAdmin merges users + completed ride counts + approved dis
   assert.deepEqual(data, [
     {
       id: 'p1',
+      firstName: 'Maria',
+      lastName: 'Fe Santos',
       fullName: 'Maria Fe Santos',
       contactNo: '0917-000-0002',
       email: 'maria@example.com',
@@ -62,6 +64,8 @@ test('listPassengersForAdmin merges users + completed ride counts + approved dis
     },
     {
       id: 'p2',
+      firstName: 'Juan',
+      lastName: 'Dela Cruz',
       fullName: 'Juan Dela Cruz',
       contactNo: null,
       email: 'juan@example.com',

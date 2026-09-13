@@ -18,7 +18,8 @@ import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/valid
 import { styles } from '../../src/styles/auth/register.styles';
 
 interface FormState {
-  name: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   password: string;
@@ -48,7 +49,7 @@ export default function RegisterScreen() {
   const removeDocument = useDocumentsStore((state) => state.remove);
 
   const [step, setStep] = useState<1 | 2>(1);
-  const [form, setForm] = useState<FormState>({ name: '', email: '', phone: '', password: '', confirmPassword: '' });
+  const [form, setForm] = useState<FormState>({ firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [plateNo, setPlateNo] = useState('');
   const [plateNoError, setPlateNoError] = useState<string | undefined>();
@@ -63,7 +64,8 @@ export default function RegisterScreen() {
 
   function handleNext() {
     const nextErrors: Partial<FormState> = {};
-    if (!isNonEmpty(form.name)) nextErrors.name = t.driver.register.enterFullName;
+    if (!isNonEmpty(form.firstName)) nextErrors.firstName = t.driver.register.enterFirstName;
+    if (!isNonEmpty(form.lastName)) nextErrors.lastName = t.driver.register.enterLastName;
     if (!isValidEmail(form.email)) nextErrors.email = t.driver.register.enterValidEmail;
     if (!isNonEmpty(form.phone)) nextErrors.phone = t.driver.register.enterContactNumber;
     if (!isValidPassword(form.password)) nextErrors.password = t.driver.register.passwordMinLength;
@@ -95,7 +97,7 @@ export default function RegisterScreen() {
 
     clearError();
     setSubmitting(true);
-    const { outcome, userId } = await register(form.name, form.email, form.phone, form.password);
+    const { outcome, userId } = await register(form.firstName, form.lastName, form.email, form.phone, form.password);
 
     if (outcome === 'error') {
       setSubmitting(false);
@@ -177,11 +179,19 @@ export default function RegisterScreen() {
           </GradientSurface>
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <TextField
-              label={t.driver.register.fullName}
-              placeholder={t.driver.register.fullNamePlaceholder}
-              value={form.name}
-              onChangeText={(v) => update('name', v)}
-              error={errors.name}
+              label={t.driver.register.firstName}
+              placeholder={t.driver.register.firstNamePlaceholder}
+              value={form.firstName}
+              onChangeText={(v) => update('firstName', v)}
+              error={errors.firstName}
+              autoCapitalize="words"
+            />
+            <TextField
+              label={t.driver.register.lastName}
+              placeholder={t.driver.register.lastNamePlaceholder}
+              value={form.lastName}
+              onChangeText={(v) => update('lastName', v)}
+              error={errors.lastName}
               autoCapitalize="words"
             />
             <TextField

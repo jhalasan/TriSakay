@@ -13,7 +13,9 @@ type AuthSession = Awaited<ReturnType<typeof authService.getSession>>;
 function toAppUser(profile: PublicUser): User {
   return {
     id: profile.id,
-    name: profile.full_name,
+    firstName: profile.first_name,
+    lastName: profile.last_name,
+    name: profile.full_name!,
     email: profile.email,
     phone: profile.contact_no ?? undefined,
     avatarUrl: profile.avatar_url ?? undefined,
@@ -35,7 +37,13 @@ interface AuthState {
   isHydrating: boolean;
   error: string | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, phone: string, password: string) => Promise<'signed_in' | 'check_email' | 'error'>;
+  register: (
+    firstName: string,
+    lastName: string,
+    email: string,
+    phone: string,
+    password: string
+  ) => Promise<'signed_in' | 'check_email' | 'error'>;
   logout: () => Promise<void>;
   clearError: () => void;
   /** Re-fetches the profile row and refreshes `user` in place — for updates (e.g. avatar upload) made outside the auth-event flow. */
@@ -117,9 +125,9 @@ export const useAuthStore = create<AuthState>()((set) => {
       if (error) set({ error });
     },
 
-    register: async (name, email, phone, password) => {
+    register: async (firstName, lastName, email, phone, password) => {
       set({ error: null });
-      const { session, error } = await authService.signUp({ fullName: name, email, phone, password });
+      const { session, error } = await authService.signUp({ firstName, lastName, email, phone, password });
       if (error) {
         set({ error });
         return 'error';

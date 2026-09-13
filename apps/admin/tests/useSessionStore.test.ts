@@ -58,8 +58,8 @@ __setSupabaseClientForTests(
 );
 const { useSessionStore } = await import('../src/store/useSessionStore.ts');
 
-const PSO_ROW = { id: 'u1', full_name: 'Engr. Wilhelmina Nazareno', email: 'w.nazareno@pso.gensantos.gov.ph', role: 'pso_supervisor', avatar_url: null, must_change_password: false };
-const DRIVER_ROW = { id: 'u2', full_name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'driver', avatar_url: null, must_change_password: false };
+const PSO_ROW = { id: 'u1', first_name: 'Engr. Wilhelmina', last_name: 'Nazareno', full_name: 'Engr. Wilhelmina Nazareno', email: 'w.nazareno@pso.gensantos.gov.ph', role: 'pso_supervisor', avatar_url: null, must_change_password: false };
+const DRIVER_ROW = { id: 'u2', first_name: 'Juan', last_name: 'Dela Cruz', full_name: 'Juan Dela Cruz', email: 'juan@example.com', role: 'driver', avatar_url: null, must_change_password: false };
 
 test('signIn() with a PSO account authenticates and populates user', async () => {
   __setSupabaseClientForTests(fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW }));
@@ -186,7 +186,7 @@ test('completePasswordChange() surfaces an auth error without clearing the flag'
   assert.equal(useSessionStore.getState().user?.mustChangePassword, true);
 });
 
-test('updateFullName() renames the account and updates local state', async () => {
+test('updateName() renames the account and updates local state', async () => {
   const usersUpdateCalls: Record<string, unknown>[] = [];
   __setSupabaseClientForTests(
     fakeClient({
@@ -197,14 +197,14 @@ test('updateFullName() renames the account and updates local state', async () =>
   );
   await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
 
-  const failure = await useSessionStore.getState().updateFullName('  New Name  ');
+  const failure = await useSessionStore.getState().updateName('  New  ', '  Name  ');
 
   assert.equal(failure, null);
-  assert.deepEqual(usersUpdateCalls, [{ full_name: 'New Name' }]);
+  assert.deepEqual(usersUpdateCalls, [{ first_name: 'New', last_name: 'Name' }]);
   assert.equal(useSessionStore.getState().user?.fullName, 'New Name');
 });
 
-test('updateFullName() rejects a blank name without calling the service', async () => {
+test('updateName() rejects a blank first or last name without calling the service', async () => {
   const usersUpdateCalls: Record<string, unknown>[] = [];
   __setSupabaseClientForTests(
     fakeClient({
@@ -215,7 +215,7 @@ test('updateFullName() rejects a blank name without calling the service', async 
   );
   await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
 
-  const failure = await useSessionStore.getState().updateFullName('   ');
+  const failure = await useSessionStore.getState().updateName('   ', 'Nazareno');
 
   assert.match(failure ?? '', /required/);
   assert.deepEqual(usersUpdateCalls, []);

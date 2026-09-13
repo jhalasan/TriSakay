@@ -5,7 +5,8 @@ import type { Database } from '../supabase/database.types.ts';
 export type PublicUser = Database['public']['Tables']['users']['Row'];
 
 export interface SignUpInput {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   email: string;
   phone: string;
   password: string;
@@ -22,13 +23,14 @@ export interface AuthResult {
   error: string | null;
 }
 
-export async function signUp({ fullName, email, phone, password, role = 'passenger' }: SignUpInput): Promise<AuthResult> {
+export async function signUp({ firstName, lastName, email, phone, password, role = 'passenger' }: SignUpInput): Promise<AuthResult> {
   const { data, error } = await getSupabaseClient().auth.signUp({
     email,
     password,
     options: {
       data: {
-        full_name: fullName,
+        first_name: firstName,
+        last_name: lastName,
         phone,
         role,
       },
@@ -113,10 +115,12 @@ export async function getCurrentUserProfile(): Promise<PublicUser | null> {
 }
 
 export async function updateProfile({
-  fullName,
+  firstName,
+  lastName,
   phone,
 }: {
-  fullName: string;
+  firstName: string;
+  lastName: string;
   phone?: string;
 }): Promise<{ error: string | null }> {
   const { data: sessionData } = await getSupabaseClient().auth.getSession();
@@ -125,7 +129,7 @@ export async function updateProfile({
 
   const { error } = await getSupabaseClient()
     .from('users')
-    .update({ full_name: fullName, ...(phone !== undefined ? { contact_no: phone } : {}) })
+    .update({ first_name: firstName, last_name: lastName, ...(phone !== undefined ? { contact_no: phone } : {}) })
     .eq('id', userId);
   return { error: error?.message ?? null };
 }

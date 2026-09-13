@@ -2,6 +2,8 @@ import { getSupabaseClient } from '../supabase/client.ts';
 
 export interface AdminDriverRow {
   id: string;
+  firstName: string;
+  lastName: string;
   fullName: string;
   contactNo: string | null;
   email: string;
@@ -39,7 +41,7 @@ export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> 
 
   const { data: users, error: usersError } = await client
     .from('users')
-    .select('id, full_name, contact_no, email, status, created_at')
+    .select('id, first_name, last_name, full_name, contact_no, email, status, created_at')
     .eq('role', 'driver')
     .order('created_at', { ascending: false });
 
@@ -68,7 +70,9 @@ export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> 
     const tricycle = tricycleByDriverId.get(u.id);
     return {
       id: u.id,
-      fullName: u.full_name,
+      firstName: u.first_name,
+      lastName: u.last_name,
+      fullName: u.full_name!,
       contactNo: u.contact_no,
       email: u.email,
       accountStatus: u.status,

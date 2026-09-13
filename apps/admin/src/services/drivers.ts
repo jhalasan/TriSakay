@@ -12,6 +12,8 @@ export async function listDrivers(): Promise<ServiceResult<DriverRow[]>> {
 
   const drivers: DriverRow[] = data.map((d) => ({
     id: d.id,
+    firstName: d.firstName,
+    lastName: d.lastName,
     fullName: d.fullName,
     contactNo: d.contactNo ?? '',
     email: d.email,

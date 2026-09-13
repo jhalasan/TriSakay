@@ -15,14 +15,15 @@ export interface ProfileMenuProps {
 /** Avatar-triggered popover — every signed-in PSO user's own account: name, email, role, edit name, change password, log out. */
 export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   const user = useSessionStore((state) => state.user);
-  const updateFullName = useSessionStore((state) => state.updateFullName);
+  const updateName = useSessionStore((state) => state.updateName);
   const completePasswordChange = useSessionStore((state) => state.completePasswordChange);
 
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
 
   const [editingName, setEditingName] = useState(false);
-  const [fullName, setFullName] = useState(user?.fullName ?? '');
+  const [firstName, setFirstName] = useState(user?.firstName ?? '');
+  const [lastName, setLastName] = useState(user?.lastName ?? '');
   const [nameError, setNameError] = useState<string | null>(null);
   const [savingName, setSavingName] = useState(false);
 
@@ -54,14 +55,15 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   }
 
   function startEditingName() {
-    setFullName(user!.fullName);
+    setFirstName(user!.firstName);
+    setLastName(user!.lastName);
     setNameError(null);
     setEditingName(true);
   }
 
   async function handleSaveName() {
     setSavingName(true);
-    const failure = await updateFullName(fullName);
+    const failure = await updateName(firstName, lastName);
     setSavingName(false);
 
     if (failure) {
@@ -147,7 +149,14 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
             </div>
             {editingName ? (
               <div className={styles.form}>
-                <TextField value={fullName} onChange={(e) => setFullName(e.target.value)} error={nameError ?? undefined} autoFocus />
+                <TextField
+                  label="First Name"
+                  value={firstName}
+                  onChange={(e) => setFirstName(e.target.value)}
+                  error={nameError ?? undefined}
+                  autoFocus
+                />
+                <TextField label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 <div className={styles.formActions}>
                   <Button variant="outline" tone="neutral" size="sm" onClick={() => setEditingName(false)}>
                     Cancel
