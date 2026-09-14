@@ -96,7 +96,7 @@ export function RideMonitoring() {
           <LiveMap cells={cells} loading={initialLoading} />
           <p className={styles.caption}>
             Locations shown are coarse and update only while a Driver is available or on an active trip — no continuous GPS trail is
-            persisted (NFR-2.5).
+            persisted.
           </p>
         </div>
 

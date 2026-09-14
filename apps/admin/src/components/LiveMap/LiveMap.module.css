@@ -1,12 +1,12 @@
 .wrap {
-  height: 420px;
+  height: 640px;
   border-radius: var(--r-md);
   overflow: hidden;
   border: 1px solid var(--line);
 }
 
 .loading {
-  height: 420px;
+  height: 640px;
   display: flex;
   align-items: center;
   justify-content: center;

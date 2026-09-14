@@ -5,6 +5,7 @@ import { Badge } from '../components/Badge';
 import { Button } from '../components/Button';
 import { Textarea } from '../components/Textarea';
 import { RoleGate } from '../components/RoleGate';
+import { Modal } from '../components/Modal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
@@ -29,13 +30,14 @@ const ROLE_LABEL: Record<EmergencyAlertRow['triggeredRole'], string> = {
  * SOS alerts, visible to any PSO Staff+ account; "Mark Reviewed" gated to
  * Supervisor+. A one-shot fetch on load, not Realtime — matches every other
  * admin screen, and FR-12.7 explicitly says this isn't meant to be
- * 24/7-monitored. Restyled per README §07 — 60/40 split, unreviewed banner,
- * and the danger-accent selected row (DataTable's isRowHighlighted/onRowClick).
+ * 24/7-monitored. Restyled per README §07 — unreviewed banner, danger-accent
+ * selected row (DataTable's isRowHighlighted/onRowClick), and a Modal detail
+ * view to match every other list screen in the admin app.
  *
- * The detail panel keeps exact coordinates + a real Google Maps link,
- * unlike Ride Monitoring's intentionally-coarse map: an SOS location is
- * safety-critical, so softening its precision to match that screen's
- * privacy rule would work against the feature's purpose.
+ * The detail view keeps exact coordinates, unlike Ride Monitoring's
+ * intentionally-coarse map: an SOS location is safety-critical, so softening
+ * its precision to match that screen's privacy rule would work against the
+ * feature's purpose.
  */
 export function EmergencyAlerts() {
   const { alerts, loading, error, fetch, markReviewed } = useEmergencyAlertsStore();
@@ -112,7 +114,7 @@ export function EmergencyAlerts() {
             <div className={styles.bannerTitle}>{unreviewed.length === 1 ? '1 alert is still unreviewed' : `${unreviewed.length} alerts are still unreviewed`}</div>
             <p className={styles.bannerBody}>
               Triggered {formatRelativeTime(newest.createdAt)} by a {newest.triggeredRole} on an active trip. SOS is not 24/7-monitored
-              (FR-12.7) — review during office hours.
+              — review during office hours.
             </p>
           </div>
           <Button variant="solid" tone="primary" size="sm" onClick={() => openDetail(newest)}>
@@ -121,105 +123,88 @@ export function EmergencyAlerts() {
         </div>
       )}
 
-      <div className={styles.split}>
-        <DataTable
-          columns={columns}
-          rows={alerts}
-          getRowKey={(a) => a.id}
-          loading={loading}
-          emptyMessage="No emergency alerts on record."
-          emptyHint="SOS alerts triggered by a passenger or driver appear here."
-          onRowClick={openDetail}
-          isRowHighlighted={(a) => a.id === selectedId}
-        />
+      <DataTable
+        columns={columns}
+        rows={alerts}
+        getRowKey={(a) => a.id}
+        loading={loading}
+        emptyMessage="No emergency alerts on record."
+        emptyHint="SOS alerts triggered by a passenger or driver appear here."
+        onRowClick={openDetail}
+        isRowHighlighted={(a) => a.id === selectedId}
+      />
 
-        <div className={`panel ${styles.detail}`}>
-          {selected ? (
-            <>
-              <div className={styles.detailHeader}>
-                <h2 className="panel-title" style={{ marginBottom: 0 }}>
-                  {selected.triggeredByName} · {ROLE_LABEL[selected.triggeredRole]}
-                </h2>
-                <Badge label={titleCaseLabel(selected.status)} tone={STATUS_TONE[selected.status]} />
-              </div>
+      {selected && (
+        <Modal
+          title={`${selected.triggeredByName} · ${ROLE_LABEL[selected.triggeredRole]}`}
+          subtitle={<Badge label={titleCaseLabel(selected.status)} tone={STATUS_TONE[selected.status]} />}
+          onClose={() => setSelectedId(null)}
+        >
+          <div className="two-col">
+            <div className="field">
+              <span className="field-label">Triggered at</span>
+              <span>{formatDateTime(selected.createdAt)}</span>
+            </div>
+            <div className="field">
+              <span className="field-label">Linked ride</span>
+              <span className="mono">{selected.rideRequestId ?? '—'}</span>
+            </div>
+            <div className="field">
+              <span className="field-label">Counterpart</span>
+              <span>{selected.counterpartName ?? '—'}</span>
+            </div>
+            <div className="field">
+              <span className="field-label">Tricycle</span>
+              <span className="mono">{selected.tricyclePlateNo ?? '—'}</span>
+            </div>
+          </div>
 
-              <div className="two-col">
-                <div className="field">
-                  <span className="field-label">Triggered at</span>
-                  <span>{formatDateTime(selected.createdAt)}</span>
-                </div>
-                <div className="field">
-                  <span className="field-label">Linked ride</span>
-                  <span className="mono">{selected.rideRequestId ?? '—'}</span>
-                </div>
-                <div className="field">
-                  <span className="field-label">Counterpart</span>
-                  <span>{selected.counterpartName ?? '—'}</span>
-                </div>
-                <div className="field">
-                  <span className="field-label">Tricycle</span>
-                  <span className="mono">{selected.tricyclePlateNo ?? '—'}</span>
-                </div>
-              </div>
+          <div className="field">
+            <span className="field-label">Location</span>
+            <AlertLocationMap lat={selected.lat} lng={selected.lng} />
+            <span className={styles.coords}>
+              {selected.lat.toFixed(5)}, {selected.lng.toFixed(5)}
+            </span>
+          </div>
 
-              <div className="field">
-                <span className="field-label">Location</span>
-                <AlertLocationMap lat={selected.lat} lng={selected.lng} />
-                <span className={styles.coords}>
-                  {selected.lat.toFixed(5)}, {selected.lng.toFixed(5)}
-                </span>
-                <a
-                  className={styles.mapsLink}
-                  href={`https://www.google.com/maps?q=${selected.lat},${selected.lng}`}
-                  target="_blank"
-                  rel="noreferrer"
-                >
-                  Open in Google Maps
-                </a>
-              </div>
-
-              {selected.status !== 'logged' && (
-                <div className="field">
-                  <span className="field-label">Reviewed by</span>
-                  <span>
-                    {selected.reviewedByName ?? '—'}
-                    {selected.reviewedAt ? ` · ${formatDateTime(selected.reviewedAt)}` : ''}
-                  </span>
-                </div>
-              )}
-
-              <Textarea
-                label="Review notes"
-                value={notesDraft}
-                onChange={(e) => setNotesDraft(e.target.value)}
-                placeholder="Optional notes on the review…"
-              />
-
-              <ErrorBanner message={error} />
-
-              <RoleGate
-                min="supervisor"
-                fallback={<div className="read-only-note">Mark Reviewed — PSO Supervisor &amp; Administrator only.</div>}
-              >
-                <Button
-                  variant="solid"
-                  tone="primary"
-                  size="sm"
-                  superscript="S+"
-                  loading={reviewing}
-                  disabled={selected.status !== 'logged'}
-                  onClick={handleMarkReviewed}
-                  style={{ alignSelf: 'flex-start' }}
-                >
-                  {reviewing ? 'Marking reviewed…' : 'Mark reviewed'}
-                </Button>
-              </RoleGate>
-            </>
-          ) : (
-            <EmptyState message="Select an alert to see its detail." icon={false} />
+          {selected.status !== 'logged' && (
+            <div className="field">
+              <span className="field-label">Reviewed by</span>
+              <span>
+                {selected.reviewedByName ?? '—'}
+                {selected.reviewedAt ? ` · ${formatDateTime(selected.reviewedAt)}` : ''}
+              </span>
+            </div>
           )}
-        </div>
-      </div>
+
+          <Textarea
+            label="Review notes"
+            value={notesDraft}
+            onChange={(e) => setNotesDraft(e.target.value)}
+            placeholder="Optional notes on the review…"
+          />
+
+          <ErrorBanner message={error} />
+
+          <RoleGate
+            min="supervisor"
+            fallback={<div className="read-only-note">Mark Reviewed — PSO Supervisor &amp; Administrator only.</div>}
+          >
+            <Button
+              variant="solid"
+              tone="primary"
+              size="sm"
+              superscript="S+"
+              loading={reviewing}
+              disabled={selected.status !== 'logged'}
+              onClick={handleMarkReviewed}
+              style={{ alignSelf: 'flex-start' }}
+            >
+              {reviewing ? 'Marking reviewed…' : 'Mark reviewed'}
+            </Button>
+          </RoleGate>
+        </Modal>
+      )}
     </div>
   );
 }

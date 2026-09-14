@@ -399,7 +399,7 @@ export function Complaints() {
               </div>
 
               <div className={styles.subsection}>
-                <div className={styles.subsectionTitle}>Evidence (FR-4.7)</div>
+                <div className={styles.subsectionTitle}>Evidence</div>
                 {attachmentsLoading && <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Loading…</span>}
                 {!attachmentsLoading && attachments.length === 0 && (
                   <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No evidence attached to this complaint.</span>
@@ -483,7 +483,7 @@ export function Complaints() {
                   fallback={<div className="read-only-note">Recording the outcome is limited to PSO Supervisor and Administrator.</div>}
                 >
                   <div className={styles.subsection}>
-                    <div className={styles.subsectionTitle}>Record Outcome (FR-4.6)</div>
+                    <div className={styles.subsectionTitle}>Record Outcome</div>
                     <Select
                       value={resolutionStatusDraft}
                       onChange={(e) => setResolutionStatusDraft(e.target.value as 'resolved' | 'dismissed')}

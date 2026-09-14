@@ -3,6 +3,7 @@ import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { ToastProvider } from './components/Toast';
 import { Login } from './routes/Login';
+import { ForgotPassword } from './routes/ForgotPassword';
 import { Dashboard } from './routes/Dashboard';
 import { Drivers } from './routes/Drivers';
 import { DriverVerification } from './routes/DriverVerification';
@@ -74,6 +75,15 @@ export default function App() {
             element={
               <RedirectIfAuthed>
                 <Login />
+              </RedirectIfAuthed>
+            }
+          />
+
+          <Route
+            path="/forgot-password"
+            element={
+              <RedirectIfAuthed>
+                <ForgotPassword />
               </RedirectIfAuthed>
             }
           />

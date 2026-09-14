@@ -26,3 +26,15 @@ export function haversineDistanceKm(from: GeoPoint, to: GeoPoint): number {
 
   return EARTH_RADIUS_KM * c;
 }
+
+/** Same strictness as the admin portal's password policy (`apps/admin/src/lib/passwordPolicy.ts`) — used at every NEW-password creation point (register, reset), never at login, since tightening login-time validation would lock out accounts created under an older, weaker rule. */
+export const MIN_PASSWORD_LENGTH = 10;
+
+export function isPasswordPolicyMet(password: string): boolean {
+  return (
+    password.length >= MIN_PASSWORD_LENGTH &&
+    /[a-z]/.test(password) &&
+    /[A-Z]/.test(password) &&
+    (/\d/.test(password) || /[^A-Za-z0-9]/.test(password))
+  );
+}
