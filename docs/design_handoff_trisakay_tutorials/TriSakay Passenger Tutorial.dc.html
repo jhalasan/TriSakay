@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics="">
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e9eaec;font-family:Poppins,system-ui,sans-serif}
+a{color:#002E60}a:hover{color:#002043}
+.i-nf{fill:none}.i-sw{stroke-width:32px}
+.ph{width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9}
+.tb{position:absolute;left:0;right:0;bottom:0;height:60px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0;box-sizing:border-box}
+.tbi{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75}
+.fx{padding:52px 56px 44px;display:flex;flex-direction:column;align-items:flex-start}
+.fh{display:flex;align-items:baseline;gap:12px;margin:0 0 6px}
+.fn{font:700 10px ui-monospace,Menlo,monospace;padding:4px 8px;background:#002E60;color:#fff;border-radius:5px;letter-spacing:.6px}
+.ft{font:700 20px/26px Poppins;color:#14191D;letter-spacing:-.3px}
+.fs{font:400 13px/20px Poppins;color:#5A646B;max-width:820px;margin:0 0 26px}
+@keyframes tsRing{0%{transform:scale(.96);opacity:.7}70%{transform:scale(1.04);opacity:0}100%{transform:scale(1.04);opacity:0}}
+</style>
+</helmet>
+
+<section class="fx" data-screen-label="Driver in-app tutorial">
+  <div class="fh"><span class="fn">NEW</span><span class="ft">Driver — In-app tutorial (guided walkthrough)</span></div>
+  <p class="fs">The same coach-mark pattern as the passenger tour, pointed at the four things a driver actually does: go online, take a request, run the trip, and read the earnings record. Eight steps across four screens — Dashboard, Requests, Active trip, Earnings — with the screen behind the dim advancing as you tap Next. Skip is on every step; Replay lives in Settings → Help.</p>
+
+  <div style="display:flex;gap:28px;align-items:flex-start">
+
+    <div class="ph" data-screen-label="Driver tutorial — live">
+
+      <sc-if value="{{ dOnDash }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#F6F7F9">
+        <div style="height:52px"></div>
+        <div style="padding:12px 16px 76px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:12px;height:44px">
+            <div style="width:44px;height:44px;border-radius:22px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 16px Poppins;color:#002043;flex:none">JS</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:600 16px/21px Poppins;color:#14191D">Jomar Santos</div>
+              <div style="display:flex;align-items:center;gap:5px"><svg viewBox="0 0 512 512" style="width:13px;height:13px;flex:none;color:#477434;fill:currentColor"><path d="M479.07 111.36a16 16 0 00-13.15-14.74c-86.5-15.52-122.61-26.74-203.33-63.2a16 16 0 00-13.18 0C168.69 69.88 132.58 81.1 46.08 96.62a16 16 0 00-13.15 14.74c-3.85 61.11 4.36 118.05 24.43 169.24A349.47 349.47 0 00129 393.11c53.47 56.73 110.24 81.37 121.07 85.73a16 16 0 0012 0c10.83-4.36 67.6-29 121.07-85.73a349.47 349.47 0 0071.5-112.51c20.07-51.19 28.28-108.13 24.43-169.24zm-131 75.11l-110.8 128a16 16 0 01-11.41 5.53h-.66a16 16 0 01-11.2-4.57l-49.2-48.2a16 16 0 1122.4-22.86l37 36.29 99.7-115.13a16 16 0 0124.2 20.94z"></path></svg><div style="font:400 12px/16px Poppins;color:#5A646B">PSO verified · Body no. 042</div></div>
+            </div>
+            <div style="position:relative;width:44px;height:44px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,46,96,.09);flex:none"><svg viewBox="0 0 512 512" style="width:21px;height:21px;flex:none;color:#14191D;stroke:currentColor"><path d="M427.68 351.43C402 320 383.87 304 383.87 217.35 383.87 138 343.35 109.73 310 96c-4.43-1.82-8.6-6-9.95-10.55C294.2 65.54 277.8 48 256 48s-38.21 17.55-44 37.47c-1.35 4.6-5.52 8.71-9.95 10.53-33.39 13.75-73.87 41.92-73.87 121.35C128.13 304 110 320 84.32 351.43 73.68 364.45 83 384 101.61 384h308.88c18.51 0 27.77-19.61 17.19-32.57zM320 384v16a64 64 0 01-128 0v-16" stroke-linecap="round" stroke-linejoin="round" class="i-nf i-sw"></path></svg><div style="position:absolute;top:9px;right:9px;width:9px;height:9px;border-radius:5px;background:#B3261E;border:2px solid #fff"></div></div>
+          </div>
+
+          <div style="position:relative;overflow:hidden;border-radius:22px;background:linear-gradient(150deg,#002E60 0%,#001A38 100%);box-shadow:0 12px 28px rgba(0,46,96,.3)">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+            <div style="position:absolute;bottom:-60px;right:-46px;opacity:.12"><svg width="210" height="210" viewBox="0 0 100 100"><path d="M 22 46 A 28 28 0 1 1 78 46" stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"></path><path d="M 28 58 L 50 80 L 72 58" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></div>
+            <div style="position:relative;padding:18px 18px 20px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;height:32px;margin-bottom:18px">
+                <div style="display:flex;align-items:center;gap:9px">
+                  <div style="width:10px;height:10px;border-radius:5px;background:#E9F7E3;flex:none"></div>
+                  <div style="font:700 12px/16px Poppins;letter-spacing:.9px;text-transform:uppercase;color:#fff">You're online</div>
+                </div>
+                <div style="width:56px;height:32px;border-radius:16px;background:#E9F7E3;position:relative;flex:none"><div style="position:absolute;top:3px;left:27px;width:26px;height:26px;border-radius:13px;background:#002E60"></div></div>
+              </div>
+              <div style="font:700 11px/15px Poppins;letter-spacing:.9px;text-transform:uppercase;color:#fff;opacity:.6">Earnings today</div>
+              <div style="font:800 40px/46px Poppins;letter-spacing:-1.2px;color:#fff">₱845.00</div>
+              <div style="display:flex;align-items:center;gap:14px;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.16)">
+                <div style="font:600 13px/18px Poppins;color:#fff">12 trips</div>
+                <div style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 512 512" style="width:14px;height:14px;flex:none;color:#E9F7E3;fill:currentColor"><path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"></path></svg><div style="font:600 13px/18px Poppins;color:#fff">4.8</div></div>
+                <div style="font:600 13px/18px Poppins;color:#fff">92% accepted</div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div style="display:flex;align-items:center;gap:8px;height:16px;margin-bottom:12px">
+              <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Incoming request</div>
+              <div style="font:700 11px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#B3261E;background:#FBEAE8;border-radius:999px;padding:0 8px">18s</div>
+            </div>
+            <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 6px 20px rgba(0,46,96,.14)">
+              <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 16px;background:#E9F7E3">
+                <div style="font:700 12px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#3B602B">Cash · 2 seats</div>
+                <div style="font:800 22px/26px Poppins;letter-spacing:-.6px;color:#3B602B">₱45</div>
+              </div>
+              <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;gap:12px">
+                  <div style="display:flex;flex-direction:column;align-items:center;padding-top:5px">
+                    <div style="width:9px;height:9px;border-radius:5px;border:2.5px solid #002E60;box-sizing:border-box"></div>
+                    <div style="width:2px;flex:1;min-height:22px;background:#DCE2E6;margin:3px 0"></div>
+                    <div style="width:9px;height:9px;border-radius:2px;background:#477434"></div>
+                  </div>
+                  <div style="flex:1;display:flex;flex-direction:column;gap:12px;min-width:0">
+                    <div><div style="font:400 11px/15px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#666F75">Pickup · 400 m away</div><div style="font:600 15px/21px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Poblacion Plaza, waiting shed</div></div>
+                    <div><div style="font:400 11px/15px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#666F75">Drop-off</div><div style="font:600 15px/21px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Public Market, Stall 14</div></div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:12px">
+                  <div style="flex:none;width:96px;height:48px;border-radius:14px;border:1.5px solid #838B91;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 14px/18px Poppins;color:#14191D">Decline</div>
+                  <div style="flex:1;height:48px;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 14px rgba(0,46,96,.28);font:700 16px/20px Poppins;color:#fff">Accept ride</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tb">
+          <div class="tbi" style="color:#002E60;font-weight:700"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M261.56 101.28a8 8 0 00-11.06 0L66.4 277.15a8 8 0 00-2.47 5.79L63.9 448a32 32 0 0032 32H192a16 16 0 0016-16V328a8 8 0 018-8h80a8 8 0 018 8v136a16 16 0 0016 16h96.06a32 32 0 0032-32V282.94a8 8 0 00-2.47-5.79z"></path><path d="M490.91 244.15l-74.8-71.56V64a16 16 0 00-16-16h-48a16 16 0 00-16 16v32l-57.92-55.38C272.77 35.14 264.71 32 256 32c-8.68 0-16.72 3.14-22.14 8.63l-212.7 203.5c-6.22 6-7 15.87-1.34 22.37A16 16 0 0043 267.56L250.5 69.28a8 8 0 0111.06 0l207.52 198.28a16 16 0 0022.59-.44c6.14-6.36 5.63-16.86-.76-22.97z"></path></svg>Dashboard</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor;stroke:currentColor"><path stroke-linecap="round" stroke-width="48" d="M160 144h288M160 256h288M160 368h288" class="i-nf"></path><circle cx="80" cy="144" r="18"></circle><circle cx="80" cy="256" r="18"></circle><circle cx="80" cy="368" r="18"></circle></svg>Requests</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm96 240h-96a16 16 0 01-16-16V128a16 16 0 0132 0v128h80a16 16 0 010 32z"></path></svg>History</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M95.5 104h320a87.73 87.73 0 0111.18.71 66 66 0 00-77.51-55.56L86 94.08h-.3a66 66 0 00-41.07 26.13A87.57 87.57 0 0195.5 104zM415.5 128h-320a64.07 64.07 0 00-64 64v192a64.07 64.07 0 0064 64h320a64.07 64.07 0 0064-64V192a64.07 64.07 0 00-64-64zM368 320a32 32 0 1132-32 32 32 0 01-32 32z"></path></svg>Earnings</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M332.64 64.58C313.18 43.57 286 32 256 32c-30.16 0-57.43 11.5-76.8 32.38-19.58 21.11-29.12 49.8-26.88 80.78C156.76 206.28 203.27 256 256 256s99.16-49.71 103.67-110.82c2.27-30.7-7.33-59.33-27.03-80.6zM432 480H80a31 31 0 01-24.2-11.13c-6.5-7.77-9.12-18.38-7.18-29.11C57.06 392.94 83.4 353.61 124.8 326c36.78-24.51 83.37-38 131.2-38s94.42 13.5 131.2 38c41.4 27.6 67.74 66.93 76.18 113.75 1.94 10.73-.68 21.34-7.18 29.11A31 31 0 01432 480z"></path></svg>Profile</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ dOnReq }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#F6F7F9">
+        <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+          <div style="height:52px"></div>
+          <div style="position:relative;padding:8px 18px 20px">
+            <div style="font:700 11px/16px Poppins;letter-spacing:.8px;text-transform:uppercase;color:#fff;opacity:.66">Incoming</div>
+            <div style="font:800 28px/32px Poppins;letter-spacing:-.7px;color:#fff;margin-top:2px">Ride requests</div>
+            <div style="display:flex;gap:8px;margin-top:16px;height:32px">
+              <div style="background:#fff;border-radius:999px;padding:7px 16px;box-sizing:border-box;font:600 13px/18px Poppins;color:#002E60">Along route</div>
+              <div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 16px;box-sizing:border-box;font:600 13px/18px Poppins;color:#fff">Nearby</div>
+              <div style="background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.28);border-radius:999px;padding:7px 16px;box-sizing:border-box;font:600 13px/18px Poppins;color:#fff">All</div>
+            </div>
+          </div>
+        </div>
+        <div style="padding:18px 18px 0;display:flex;align-items:baseline;justify-content:space-between">
+          <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Available now</div>
+          <div style="font:400 12px/16px Poppins;color:#666F75">2 requests · ₱70.00</div>
+        </div>
+        <div style="padding:12px 18px 0;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 6px 20px rgba(0,46,96,.14)">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:#E9F7E3"><div style="font:700 12px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#3B602B">Cash · 2 seats</div><div style="font:800 22px/26px Poppins;letter-spacing:-.6px;color:#3B602B">₱45</div></div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div><div style="font:400 11px/15px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#666F75">Pickup · 400 m away</div><div style="font:600 15px/21px Poppins;color:#14191D">Poblacion Plaza, waiting shed</div></div>
+              <div><div style="font:400 11px/15px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#666F75">Drop-off</div><div style="font:600 15px/21px Poppins;color:#14191D">Public Market, Stall 14</div></div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 4px 14px rgba(0,46,96,.1)">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:13px 16px;background:#E3EDF7"><div style="font:700 12px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#002043">GCash · 1 seat</div><div style="font:800 22px/26px Poppins;letter-spacing:-.6px;color:#002043">₱25</div></div>
+            <div style="padding:16px;display:flex;flex-direction:column;gap:12px">
+              <div><div style="font:400 11px/15px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#666F75">Pickup · 850 m away</div><div style="font:600 15px/21px Poppins;color:#14191D">Dadiangas West Elementary</div></div>
+              <div><div style="font:400 11px/15px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#666F75">Drop-off</div><div style="font:600 15px/21px Poppins;color:#14191D">Bulaong Terminal</div></div>
+            </div>
+          </div>
+        </div>
+        <div class="tb">
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M261.56 101.28a8 8 0 00-11.06 0L66.4 277.15a8 8 0 00-2.47 5.79L63.9 448a32 32 0 0032 32H192a16 16 0 0016-16V328a8 8 0 018-8h80a8 8 0 018 8v136a16 16 0 0016 16h96.06a32 32 0 0032-32V282.94a8 8 0 00-2.47-5.79z"></path></svg>Dashboard</div>
+          <div class="tbi" style="color:#002E60;font-weight:700"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor;stroke:currentColor"><path stroke-linecap="round" stroke-width="48" d="M160 144h288M160 256h288M160 368h288" class="i-nf"></path><circle cx="80" cy="144" r="18"></circle><circle cx="80" cy="256" r="18"></circle><circle cx="80" cy="368" r="18"></circle></svg>Requests</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm96 240h-96a16 16 0 01-16-16V128a16 16 0 0132 0v128h80a16 16 0 010 32z"></path></svg>History</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M95.5 104h320a87.73 87.73 0 0111.18.71 66 66 0 00-77.51-55.56L86 94.08h-.3a66 66 0 00-41.07 26.13A87.57 87.57 0 0195.5 104zM415.5 128h-320a64.07 64.07 0 00-64 64v192a64.07 64.07 0 0064 64h320a64.07 64.07 0 0064-64V192a64.07 64.07 0 00-64-64zM368 320a32 32 0 1132-32 32 32 0 01-32 32z"></path></svg>Earnings</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M332.64 64.58C313.18 43.57 286 32 256 32c-30.16 0-57.43 11.5-76.8 32.38-19.58 21.11-29.12 49.8-26.88 80.78C156.76 206.28 203.27 256 256 256s99.16-49.71 103.67-110.82c2.27-30.7-7.33-59.33-27.03-80.6zM432 480H80a31 31 0 01-24.2-11.13c-6.5-7.77-9.12-18.38-7.18-29.11C57.06 392.94 83.4 353.61 124.8 326c36.78-24.51 83.37-38 131.2-38s94.42 13.5 131.2 38c41.4 27.6 67.74 66.93 76.18 113.75 1.94 10.73-.68 21.34-7.18 29.11A31 31 0 01432 480z"></path></svg>Profile</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ dOnTrip }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#E7EBE4">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.6) 0 3px,transparent 3px 46px),repeating-linear-gradient(0deg,rgba(255,255,255,.6) 0 3px,transparent 3px 52px)"></div>
+        <div style="position:absolute;left:-20px;top:150px;width:430px;height:26px;background:#fff;transform:rotate(-12deg)"></div>
+        <div style="position:absolute;left:120px;top:0;width:22px;height:420px;background:#fff"></div>
+        <svg viewBox="0 0 390 420" style="position:absolute;left:0;top:0;width:390px;height:420px"><path d="M132 390 L132 300 L300 264 L300 150" fill="none" stroke="#002E60" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div style="position:absolute;left:118px;top:376px;width:28px;height:28px;border-radius:14px;background:#002E60;border:4px solid #fff;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,46,96,.35)"></div>
+        <div style="position:absolute;left:288px;top:136px;width:26px;height:26px;border-radius:8px;background:#477434;border:3px solid #fff;box-sizing:border-box;box-shadow:0 4px 12px rgba(0,46,96,.3)"></div>
+        <div style="position:absolute;left:18px;top:60px;display:flex;align-items:center;gap:7px;background:#fff;border-radius:999px;padding:7px 13px;box-shadow:0 4px 14px rgba(0,20,45,.18)"><div style="width:8px;height:8px;border-radius:4px;background:#002E60"></div><div style="font:700 11px/15px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#002043">In progress</div></div>
+        <div style="position:absolute;left:10px;right:10px;bottom:10px;background:#fff;border-radius:26px;padding:18px 18px 20px;box-sizing:border-box;box-shadow:0 -8px 34px rgba(0,20,45,.18);display:flex;flex-direction:column;gap:14px">
+          <div style="display:flex;align-items:center;justify-content:space-between;height:16px"><div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Aboard · 1 passenger</div><div style="font:600 12px/16px Poppins;color:#666F75">Body no. 042</div></div>
+          <div style="border:1px solid #EBEFF2;border-radius:20px;padding:14px;box-sizing:border-box;display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:12px;height:46px">
+              <div style="width:46px;height:46px;border-radius:23px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 15px Poppins;color:#002043;flex:none">MR</div>
+              <div style="flex:1;min-width:0"><div style="font:600 15px/20px Poppins;color:#14191D">Maria Reyes</div><div style="font:400 12.5px/17px Poppins;color:#5A646B">2 seats · ₱45.00</div></div>
+              <div style="font:700 10px/14px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#3B602B;background:#E9F7E3;border-radius:999px;padding:4px 9px">Ongoing</div>
+            </div>
+            <div style="display:flex;align-items:center;justify-content:space-between;background:#F6F7F9;border-radius:14px;padding:11px 13px;box-sizing:border-box;height:52px">
+              <div style="font:600 13.5px/19px Poppins;color:#14191D">Confirm cash received</div>
+              <div style="width:52px;height:30px;border-radius:15px;background:#DCE2E6;position:relative;flex:none"><div style="position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:12px;background:#fff;box-shadow:0 1px 4px rgba(0,0,0,.2)"></div></div>
+            </div>
+            <div style="display:flex;gap:10px;height:46px">
+              <div style="flex:none;width:92px;border-radius:14px;border:1.5px solid #E0A8A2;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 14px/18px Poppins;color:#B3261E">Cancel</div>
+              <div style="flex:1;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 15px/20px Poppins;color:#fff;box-shadow:0 6px 14px rgba(0,46,96,.26)">Complete</div>
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:6px">
+            <div style="width:100%;height:52px;border-radius:14px;background:#B3261E;display:flex;align-items:center;justify-content:center;gap:9px;box-shadow:0 8px 18px rgba(179,38,30,.28);box-sizing:border-box"><svg viewBox="0 0 512 512" style="width:19px;height:19px;flex:none;color:#fff;fill:currentColor"><path d="M85 435h342c22 0 36-24 25-43L281 85c-11-19-39-19-50 0L60 392c-11 19 3 43 25 43zm171-56a22 22 0 110-44 22 22 0 010 44zm22-96a22 22 0 01-44 0V190a22 22 0 0144 0z"></path></svg><div style="font:700 16px/21px Poppins;letter-spacing:.4px;color:#fff">Emergency SOS</div></div>
+            <div style="font:400 11.5px/16px Poppins;color:#666F75">Press and hold if you're in immediate danger</div>
+          </div>
+          <div style="height:48px;border-radius:14px;border:1.5px solid #C7D0D6;box-sizing:border-box;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#8D959B">End trip</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ dOnEarn }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#F6F7F9">
+        <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+          <div style="height:52px"></div>
+          <div style="position:relative;padding:8px 18px 20px">
+            <div style="font:700 11px/16px Poppins;letter-spacing:.8px;text-transform:uppercase;color:#fff;opacity:.66">This week</div>
+            <div style="font:800 28px/32px Poppins;letter-spacing:-.7px;color:#fff;margin-top:2px">Earnings</div>
+            <div style="font:700 11px/15px Poppins;letter-spacing:.9px;text-transform:uppercase;color:#fff;opacity:.6;margin-top:14px">Tracked total</div>
+            <div style="font:800 40px/46px Poppins;letter-spacing:-1.2px;color:#fff">₱4,320.00</div>
+            <div style="font:400 12px/20px Poppins;color:#fff;opacity:.72">58 trips · Sep 8 – Sep 14</div>
+          </div>
+        </div>
+        <div style="padding:18px 16px 76px;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#fff;border-radius:20px;padding:18px;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:14px">
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Last seven days</div>
+            <div style="display:flex;align-items:flex-end;gap:10px;height:96px">
+              <div style="flex:1;height:48%;background:#E3EDF7;border-radius:6px"></div>
+              <div style="flex:1;height:66%;background:#E3EDF7;border-radius:6px"></div>
+              <div style="flex:1;height:38%;background:#E3EDF7;border-radius:6px"></div>
+              <div style="flex:1;height:80%;background:#E3EDF7;border-radius:6px"></div>
+              <div style="flex:1;height:58%;background:#E3EDF7;border-radius:6px"></div>
+              <div style="flex:1;height:92%;background:#002E60;border-radius:6px"></div>
+              <div style="flex:1;height:44%;background:#E3EDF7;border-radius:6px"></div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:20px;padding:16px;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:12px">
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Settlement log</div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font:600 14px/20px Poppins;color:#14191D">Sep 13 · Cash trips</div><div style="font:700 14px/20px Poppins;color:#14191D">₱845.00</div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font:600 14px/20px Poppins;color:#14191D">Sep 12 · Cash trips</div><div style="font:700 14px/20px Poppins;color:#14191D">₱690.00</div></div>
+            <div style="font:400 12px/18px Poppins;color:#5A646B;text-wrap:pretty">No money moves through the app — this is your record of fares collected.</div>
+          </div>
+        </div>
+        <div class="tb">
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M261.56 101.28a8 8 0 00-11.06 0L66.4 277.15a8 8 0 00-2.47 5.79L63.9 448a32 32 0 0032 32H192a16 16 0 0016-16V328a8 8 0 018-8h80a8 8 0 018 8v136a16 16 0 0016 16h96.06a32 32 0 0032-32V282.94a8 8 0 00-2.47-5.79z"></path></svg>Dashboard</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor;stroke:currentColor"><path stroke-linecap="round" stroke-width="48" d="M160 144h288M160 256h288M160 368h288" class="i-nf"></path><circle cx="80" cy="144" r="18"></circle><circle cx="80" cy="256" r="18"></circle><circle cx="80" cy="368" r="18"></circle></svg>Requests</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm96 240h-96a16 16 0 01-16-16V128a16 16 0 0132 0v128h80a16 16 0 010 32z"></path></svg>History</div>
+          <div class="tbi" style="color:#002E60;font-weight:700"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M95.5 104h320a87.73 87.73 0 0111.18.71 66 66 0 00-77.51-55.56L86 94.08h-.3a66 66 0 00-41.07 26.13A87.57 87.57 0 0195.5 104zM415.5 128h-320a64.07 64.07 0 00-64 64v192a64.07 64.07 0 0064 64h320a64.07 64.07 0 0064-64V192a64.07 64.07 0 00-64-64zM368 320a32 32 0 1132-32 32 32 0 01-32 32z"></path></svg>Earnings</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M332.64 64.58C313.18 43.57 286 32 256 32c-30.16 0-57.43 11.5-76.8 32.38-19.58 21.11-29.12 49.8-26.88 80.78C156.76 206.28 203.27 256 256 256s99.16-49.71 103.67-110.82c2.27-30.7-7.33-59.33-27.03-80.6zM432 480H80a31 31 0 01-24.2-11.13c-6.5-7.77-9.12-18.38-7.18-29.11C57.06 392.94 83.4 353.61 124.8 326c36.78-24.51 83.37-38 131.2-38s94.42 13.5 131.2 38c41.4 27.6 67.74 66.93 76.18 113.75 1.94 10.73-.68 21.34-7.18 29.11A31 31 0 01432 480z"></path></svg>Profile</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ dShowWelcome }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;background:rgba(2,16,32,.62);display:flex;align-items:flex-end;padding:18px;box-sizing:border-box">
+          <div style="position:relative;overflow:hidden;width:100%;border-radius:26px;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);box-shadow:0 18px 40px rgba(0,26,56,.4)">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 2px,transparent 2px 14px)"></div>
+            <div style="position:absolute;top:-34px;right:-32px;opacity:.14"><svg width="160" height="160" viewBox="0 0 100 100"><path d="M 22 46 A 28 28 0 1 1 78 46" stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"></path><path d="M 28 58 L 50 80 L 72 58" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></div>
+            <div style="position:relative;padding:22px 22px 20px;display:flex;flex-direction:column;gap:14px">
+              <div style="width:60px;height:60px;border-radius:18px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center"><img src="assets/trike-white.png" alt="" style="width:34px;height:auto"></div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="font:800 26px/31px Poppins;letter-spacing:-.6px;color:#fff">Hi Jomar!</div>
+                <div style="font:400 14px/21px Poppins;color:#fff;opacity:.82;text-wrap:pretty">Your account is verified. Eight taps and you will know the whole app — going online, taking a request, running the trip, and reading your earnings.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+                <div onClick="{{ dSkip }}" style="flex:none;min-height:48px;padding:0 18px;border-radius:14px;border:1px solid rgba(255,255,255,.34);display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#fff;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">Skip</div>
+                <div onClick="{{ dNext }}" style="flex:1;min-height:48px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:700 16px/21px Poppins;color:#002E60;cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.22)" style-hover="background:#F0F4F8">Take the tour<svg viewBox="0 0 512 512" style="width:18px;height:18px;flex:none;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M268 112l144 144-144 144M392 256H100" class="i-nf"></path></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ dShowTour }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0">
+          <div style="{{ dSpotStyle }}"></div>
+          <div style="{{ dRingStyle }}"></div>
+          <div style="{{ dTipStyle }}">
+            <div style="{{ dArrowStyle }}"></div>
+            <div style="position:relative;background:#fff;border-radius:20px;padding:18px;box-shadow:0 14px 34px rgba(0,26,56,.34);display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="padding:4px 9px;border-radius:8px;background:#E3EDF7;flex:none;font:800 11px/16px Poppins;letter-spacing:.4px;color:#002E60">{{ dStepLabel }}</div>
+                <div style="font:700 17px/22px Poppins;letter-spacing:-.2px;color:#14191D">{{ dTitle }}</div>
+              </div>
+              <div style="font:400 14px/21px Poppins;color:#5A646B;text-wrap:pretty">{{ dBody }}</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="flex:1;height:4px;border-radius:2px;background:#EBEFF2;overflow:hidden"><div style="{{ dBarStyle }}"></div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding-top:2px">
+                <div onClick="{{ dSkip }}" style="font:600 13px/18px Poppins;color:#666F75;cursor:pointer;padding:6px 2px" style-hover="color:#14191D">Skip tour</div>
+                <div onClick="{{ dBack }}" style="{{ dBackStyle }}" style-hover="color:#14191D">Back</div>
+                <div style="flex:1"></div>
+                <div onClick="{{ dNext }}" style="min-height:44px;padding:0 20px;border-radius:13px;background:#002E60;display:flex;align-items:center;justify-content:center;font:700 15px/20px Poppins;color:#fff;cursor:pointer;box-shadow:0 6px 14px rgba(0,46,96,.24)" style-hover="background:#002043">{{ dNextLabel }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ dFinished }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:16px;right:16px;bottom:74px;display:flex;align-items:center;gap:12px;background:#14191D;border-radius:16px;padding:13px 16px;box-shadow:0 12px 28px rgba(0,26,56,.3)">
+          <svg viewBox="0 0 512 512" style="width:20px;height:20px;flex:none;color:#9BD47F;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="44" d="M416 128L192 384l-96-96" class="i-nf"></path></svg>
+          <div style="flex:1;font:600 13px/18px Poppins;color:#fff">You're set. Drive safe out there!</div>
+          <div onClick="{{ dRestart }}" style="font:700 13px/18px Poppins;color:#9BD47F;cursor:pointer">Restart</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:320px">
+      <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">The walkthrough</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div onClick="{{ dg1 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#477434">1</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Go online</div><div style="font:400 12px/17px Poppins;color:#5A646B">Dashboard · the duty switch</div></div>
+        </div>
+        <div onClick="{{ dg2 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#477434">2</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Earnings today</div><div style="font:400 12px/17px Poppins;color:#5A646B">Dashboard · trips, rating, acceptance</div></div>
+        </div>
+        <div onClick="{{ dg3 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">3</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Accept or decline</div><div style="font:400 12px/17px Poppins;color:#5A646B">Dashboard · the incoming request</div></div>
+        </div>
+        <div onClick="{{ dg4 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">4</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">The tab bar</div><div style="font:400 12px/17px Poppins;color:#5A646B">Requests, History, Earnings, Profile</div></div>
+        </div>
+        <div onClick="{{ dg5 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">5</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Filter the queue</div><div style="font:400 12px/17px Poppins;color:#5A646B">Requests · along route, nearby, all</div></div>
+        </div>
+        <div onClick="{{ dg6 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">6</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Run the trip</div><div style="font:400 12px/17px Poppins;color:#5A646B">Active trip · cash, then Complete</div></div>
+        </div>
+        <div onClick="{{ dg7 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#FBE6E5;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#B3261E">7</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Emergency SOS</div><div style="font:400 12px/17px Poppins;color:#5A646B">Active trip · press and hold</div></div>
+        </div>
+        <div onClick="{{ dg8 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">8</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Your earnings record</div><div style="font:400 12px/17px Poppins;color:#5A646B">Earnings · weekly total, settlement log</div></div>
+        </div>
+      </div>
+      <div onClick="{{ dRestart }}" style="min-height:44px;border-radius:13px;border:1px solid #C9D3DB;display:flex;align-items:center;justify-content:center;font:700 14px/19px Poppins;color:#002E60;cursor:pointer" style-hover="background:#fff">Replay from the start</div>
+      <div style="font:400 12px/18px Poppins;color:#5A646B;text-wrap:pretty">Runs once after a driver's documents are approved — the first moment the duty switch actually works. Available again from Settings → Help → Replay app tour.</div>
+    </div>
+  </div>
+</section>
+
+<section class="fx" data-screen-label="In-app tutorial">
+  <div class="fh"><span class="fn">NEW</span><span class="ft">Passenger — In-app tutorial (guided walkthrough)</span></div>
+  <p class="fs">Ten coach marks across six screens, not one. The tour advances the screen behind the dim as you tap Next, so the copy always points at the thing you would really tap: home (header, Request a Tricycle, Saved places, tab bar), a real booking (pickup and destination, fare confirmation, live trip with Emergency SOS), and then the complaint path this app exists for — filing against a specific trip, attaching evidence, and tracking the case to a resolution. Skip is on every step; Restart replays it from Settings → Help.</p>
+
+  <div style="display:flex;gap:28px;align-items:flex-start">
+
+    <div class="ph" data-screen-label="Tutorial — live">
+
+      <sc-if value="{{ onHome }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;inset:0;overflow:hidden">
+        <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+          <div style="position:absolute;top:-46px;right:-52px;opacity:.12"><svg width="230" height="230" viewBox="0 0 100 100"><path d="M 22 46 A 28 28 0 1 1 78 46" stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"></path><path d="M 28 58 L 50 80 L 72 58" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></div>
+          <div style="height:52px"></div>
+          <div style="position:relative;padding:8px 18px 22px;display:flex;align-items:center;justify-content:space-between;gap:12px">
+            <div style="display:flex;align-items:center;gap:14px;flex:1;min-width:0">
+              <div style="padding:3px;border-radius:999px;background:rgba(255,255,255,.22);flex:none"><div style="padding:2px;border-radius:999px;border:1.5px solid #E9F7E3"><div style="width:56px;height:56px;border-radius:28px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 20px Poppins;color:#002043">MR</div></div></div>
+              <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:3px">
+                <div style="display:flex;align-items:center;gap:5px;opacity:.8"><svg viewBox="0 0 512 512" style="width:14px;height:14px;flex:none;color:#fff;fill:currentColor;stroke:currentColor"><path d="M256 48v48M256 416v48M403.08 108.92l-33.94 33.94M142.86 369.14l-33.94 33.94M464 256h-48M96 256H48M403.08 403.08l-33.94-33.94M142.86 142.86l-33.94-33.94" stroke-linecap="round" stroke-linejoin="round" class="i-nf i-sw"></path><circle cx="256" cy="256" r="80" class="i-nf i-sw"></circle></svg><div style="font:700 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#fff">Good morning</div></div>
+                <div style="font:800 28px/32px Poppins;letter-spacing:-.7px;color:#fff">Maria</div>
+                <div style="font:400 13px/18px Poppins;color:#fff;opacity:.72">Your ride is just a tap away.</div>
+              </div>
+            </div>
+            <div style="position:relative;width:40px;height:40px;border-radius:999px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);flex:none"><svg viewBox="0 0 512 512" style="width:20px;height:20px;flex:none;color:#fff;fill:currentColor;stroke:currentColor"><path d="M427.68 351.43C402 320 383.87 304 383.87 217.35 383.87 138 343.35 109.73 310 96c-4.43-1.82-8.6-6-9.95-10.55C294.2 65.54 277.8 48 256 48s-38.21 17.55-44 37.47c-1.35 4.6-5.52 8.71-9.95 10.53-33.39 13.75-73.87 41.92-73.87 121.35C128.13 304 110 320 84.32 351.43 73.68 364.45 83 384 101.61 384h308.88c18.51 0 27.77-19.61 17.19-32.57zM320 384v16a64 64 0 01-128 0v-16" stroke-linecap="round" stroke-linejoin="round" class="i-nf i-sw"></path></svg><div style="position:absolute;top:6px;right:6px;width:10px;height:10px;border-radius:5px;background:#B3261E;border:2px solid #001A38"></div></div>
+          </div>
+          <div style="position:relative;display:flex;border-top:1px solid rgba(255,255,255,.14)">
+            <div style="flex:1;padding:12px 18px 16px;display:flex;flex-direction:column;gap:1px"><div style="font:700 10px/14px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#fff;opacity:.6">Trips</div><div style="font:700 15px/20px Poppins;color:#fff">48</div></div>
+            <div style="width:1px;background:rgba(255,255,255,.14)"></div>
+            <div style="flex:1;padding:12px 18px 16px;display:flex;flex-direction:column;gap:1px"><div style="font:700 10px/14px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#fff;opacity:.6">Discount</div><div style="font:700 15px/20px Poppins;color:#E9F7E3">Student 20%</div></div>
+          </div>
+        </div>
+        <div style="padding:18px 16px 76px;display:flex;flex-direction:column;gap:16px">
+          <div style="border-radius:22px;margin-top:-4px;position:relative;overflow:hidden;background:#477434;box-shadow:0 8px 20px rgba(71,116,52,.28)">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 2px,transparent 2px 14px)"></div>
+            <div style="position:absolute;top:-34px;right:-30px;opacity:.14"><svg width="150" height="150" viewBox="0 0 100 100"><path d="M 22 46 A 28 28 0 1 1 78 46" stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"></path><path d="M 28 58 L 50 80 L 72 58" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></div>
+            <div style="position:relative;display:flex;align-items:center;gap:14px;padding:18px">
+              <div style="width:52px;height:52px;border-radius:999px;background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center;flex:none"><img src="assets/trike-white.png" alt="" style="width:30px;height:auto;flex:none"></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:4px">
+                <div style="font:700 20px/25px Poppins;letter-spacing:-.3px;color:#fff">Request a Tricycle</div>
+                <div style="display:flex;align-items:center;gap:6px"><div style="font:600 12px/16px Poppins;color:#fff;background:rgba(255,255,255,.18);border-radius:999px;padding:2px 8px">Fares from ₱25</div><div style="font:400 12px/16px Poppins;color:#fff;opacity:.8">· 4 nearby</div></div>
+              </div>
+              <svg viewBox="0 0 512 512" style="width:22px;height:22px;flex:none;color:#fff;fill:currentColor;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M268 112l144 144-144 144M392 256H100" class="i-nf"></path></svg>
+            </div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:12px">
+              <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Saved places</div>
+              <div style="font:600 12px/16px Poppins;color:#002E60">Manage</div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:10px">
+              <div style="display:flex;align-items:center;gap:14px;border-radius:16px;padding:13px 16px;background:#fff;min-height:70px;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,46,96,.07)">
+                <div style="width:42px;height:42px;border-radius:12px;background:#002E60;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 512 512" style="width:20px;height:20px;flex:none;color:#fff;fill:currentColor"><path d="M261.56 101.28a8 8 0 00-11.06 0L66.4 277.15a8 8 0 00-2.47 5.79L63.9 448a32 32 0 0032 32H192a16 16 0 0016-16V328a8 8 0 018-8h80a8 8 0 018 8v136a16 16 0 0016 16h96.06a32 32 0 0032-32V282.94a8 8 0 00-2.47-5.79z"></path><path d="M490.91 244.15l-74.8-71.56V64a16 16 0 00-16-16h-48a16 16 0 00-16 16v32l-57.92-55.38C272.77 35.14 264.71 32 256 32c-8.68 0-16.72 3.14-22.14 8.63l-212.7 203.5c-6.22 6-7 15.87-1.34 22.37A16 16 0 0043 267.56L250.5 69.28a8 8 0 0111.06 0l207.52 198.28a16 16 0 0022.59-.44c6.14-6.36 5.63-16.86-.76-22.97z"></path></svg></div>
+                <div style="flex:1;min-width:0"><div style="font:600 16px/22px Poppins;color:#14191D">Home</div><div style="font:400 13px/18px Poppins;color:#5A646B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">12 Rizal St, Barangay Poblacion</div></div>
+                <svg viewBox="0 0 512 512" style="width:18px;height:18px;flex:none;color:#666F75;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M184 112l144 144-144 144" class="i-nf"></path></svg>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;border-radius:16px;padding:13px 16px;background:#fff;min-height:70px;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,46,96,.07)">
+                <div style="width:42px;height:42px;border-radius:12px;background:#477434;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 512 512" style="width:20px;height:20px;flex:none;color:#fff;fill:currentColor"><path d="M496 176a64.07 64.07 0 00-64-64h-48V96a48.05 48.05 0 00-48-48H176a48.05 48.05 0 00-48 48v16H80a64.07 64.07 0 00-64 64v48h480zm-144-64H160V96a16 16 0 0116-16h160a16 16 0 0116 16zM336 264a24 24 0 01-24 24H200a24 24 0 01-24-24v-4a4 4 0 00-4-4H16v144a64 64 0 0064 64h352a64 64 0 0064-64V256H340a4 4 0 00-4 4z"></path></svg></div>
+                <div style="flex:1;min-width:0"><div style="font:600 16px/22px Poppins;color:#14191D">Work</div><div style="font:400 13px/18px Poppins;color:#5A646B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Public Market, Stall 14</div></div>
+                <svg viewBox="0 0 512 512" style="width:18px;height:18px;flex:none;color:#666F75;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M184 112l144 144-144 144" class="i-nf"></path></svg>
+              </div>
+              <div style="display:flex;align-items:center;gap:14px;border-radius:16px;padding:13px 16px;background:#fff;min-height:70px;box-sizing:border-box;box-shadow:0 2px 8px rgba(0,46,96,.07)">
+                <div style="width:42px;height:42px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 512 512" style="width:20px;height:20px;flex:none;color:#002043;fill:currentColor"><path d="M256 368a16 16 0 01-7.94-2.11L108 285.84a8 8 0 00-12 6.94V368a16 16 0 008.23 14l144 80a16 16 0 0015.54 0l144-80a16 16 0 008.23-14v-75.22a8 8 0 00-12-6.94l-140.06 80.05A16 16 0 01256 368z"></path><path d="M495.92 190.5v-.11a16 16 0 00-8-12.28l-224-128a16 16 0 00-15.88 0l-224 128a16 16 0 000 27.78l224 128a16 16 0 0015.88 0L461 221.28a2 2 0 013 1.74v144.53c0 8.61 6.62 16 15.23 16.43A16 16 0 00496 368V192a14.76 14.76 0 00-.08-1.5z"></path></svg></div>
+                <div style="flex:1;min-width:0"><div style="font:600 16px/22px Poppins;color:#14191D">Campus</div><div style="font:400 13px/18px Poppins;color:#5A646B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">National High School, Gate 2</div></div>
+                <svg viewBox="0 0 512 512" style="width:18px;height:18px;flex:none;color:#666F75;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M184 112l144 144-144 144" class="i-nf"></path></svg>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tb">
+          <div class="tbi" style="color:#002E60;font-weight:700"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M261.56 101.28a8 8 0 00-11.06 0L66.4 277.15a8 8 0 00-2.47 5.79L63.9 448a32 32 0 0032 32H192a16 16 0 0016-16V328a8 8 0 018-8h80a8 8 0 018 8v136a16 16 0 0016 16h96.06a32 32 0 0032-32V282.94a8 8 0 00-2.47-5.79z"></path><path d="M490.91 244.15l-74.8-71.56V64a16 16 0 00-16-16h-48a16 16 0 00-16 16v32l-57.92-55.38C272.77 35.14 264.71 32 256 32c-8.68 0-16.72 3.14-22.14 8.63l-212.7 203.5c-6.22 6-7 15.87-1.34 22.37A16 16 0 0043 267.56L250.5 69.28a8 8 0 0111.06 0l207.52 198.28a16 16 0 0022.59-.44c6.14-6.36 5.63-16.86-.76-22.97z"></path></svg>Home</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm96 240h-96a16 16 0 01-16-16V128a16 16 0 0132 0v128h80a16 16 0 010 32z"></path></svg>History</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M408 48H104a72.08 72.08 0 00-72 72v192a72.08 72.08 0 0072 72h24v64a16 16 0 0026.25 12.29L245.74 384H408a72.08 72.08 0 0072-72V120a72.08 72.08 0 00-72-72zM160 248a32 32 0 1132-32 32 32 0 01-32 32zm96 0a32 32 0 1132-32 32 32 0 01-32 32zm96 0a32 32 0 1132-32 32 32 0 01-32 32z"></path></svg>Complaints</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M332.64 64.58C313.18 43.57 286 32 256 32c-30.16 0-57.43 11.5-76.8 32.38-19.58 21.11-29.12 49.8-26.88 80.78C156.76 206.28 203.27 256 256 256s99.16-49.71 103.67-110.82c2.27-30.7-7.33-59.33-27.03-80.6zM432 480H80a31 31 0 01-24.2-11.13c-6.5-7.77-9.12-18.38-7.18-29.11C57.06 392.94 83.4 353.61 124.8 326c36.78-24.51 83.37-38 131.2-38s94.42 13.5 131.2 38c41.4 27.6 67.74 66.93 76.18 113.75 1.94 10.73-.68 21.34-7.18 29.11A31 31 0 01432 480z"></path></svg>Profile</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 176a80 80 0 1080 80 80.24 80.24 0 00-80-80zm172.72 80a165.53 165.53 0 01-1.64 22.34l48.69 38.12a11.59 11.59 0 012.63 14.78l-46.06 79.52a11.64 11.64 0 01-14.14 4.93l-57.25-23a176.56 176.56 0 01-38.82 22.67l-8.56 60.78a11.93 11.93 0 01-11.51 9.86h-92.12a12 12 0 01-11.51-9.53l-8.56-60.78A169.3 169.3 0 01151.05 393L93.8 416a11.64 11.64 0 01-14.14-4.92L33.6 331.57a11.59 11.59 0 012.63-14.78l48.69-38.12A174.58 174.58 0 0183.28 256a165.53 165.53 0 011.64-22.34l-48.69-38.12a11.59 11.59 0 01-2.63-14.78l46.06-79.52a11.64 11.64 0 0114.14-4.93l57.25 23a176.56 176.56 0 0138.82-22.67l8.56-60.78A11.93 11.93 0 01209.94 26h92.12a12 12 0 0111.51 9.53l8.56 60.78A169.3 169.3 0 01361 119l57.2-23a11.64 11.64 0 0114.14 4.92l46.06 79.52a11.59 11.59 0 01-2.63 14.78l-48.69 38.12a174.58 174.58 0 011.64 22.66z"></path></svg>Settings</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ onBook }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#E6EBEC">
+        <div style="position:absolute;left:-30px;top:96px;width:190px;height:170px;background:#E0E7E9;border-radius:8px"></div>
+        <div style="position:absolute;right:-26px;top:230px;width:210px;height:190px;background:#DFE6E3;border-radius:8px"></div>
+        <div style="position:absolute;left:40px;top:420px;width:240px;height:200px;background:#E1E8EA;border-radius:8px"></div>
+        <div style="position:absolute;left:0;right:0;top:300px;height:22px;background:#fff;opacity:.8"></div>
+        <div style="position:absolute;top:0;bottom:0;left:150px;width:20px;background:#fff;opacity:.8"></div>
+        <div style="position:absolute;left:182px;top:352px;display:flex;flex-direction:column;align-items:center">
+          <div style="width:20px;height:20px;border-radius:10px;background:#002E60;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,46,96,.35)"></div>
+        </div>
+        <div style="position:absolute;left:52px;top:60px;right:16px;display:flex;flex-direction:column;gap:12px">
+          <div style="background:#fff;border-radius:22px;padding:16px;box-shadow:0 8px 22px rgba(0,46,96,.14);display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:11px;height:11px;border-radius:6px;background:#477434;flex:none"></div>
+              <div style="flex:1;min-width:0"><div style="font:700 10px/14px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Pickup</div><div style="font:600 14px/20px Poppins;color:#14191D">Current location · Rizal St</div></div>
+            </div>
+            <div style="height:1px;background:#EBEFF2"></div>
+            <div style="display:flex;align-items:center;gap:12px">
+              <div style="width:11px;height:11px;border-radius:3px;background:#002E60;flex:none"></div>
+              <div style="flex:1;min-width:0"><div style="font:700 10px/14px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Destination</div><div style="font:600 14px/20px Poppins;color:#14191D">Public Market, Stall 14</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="position:absolute;left:14px;top:56px;width:36px;height:36px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,46,96,.14)"><svg viewBox="0 0 512 512" style="width:18px;height:18px;color:#14191D;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="46" d="M328 112L184 256l144 144" class="i-nf"></path></svg></div>
+        <div style="position:absolute;left:16px;right:16px;bottom:16px;background:#fff;border-radius:26px;padding:18px;box-shadow:0 -6px 26px rgba(0,46,96,.14);display:flex;flex-direction:column;gap:14px">
+          <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Suggestions</div>
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:38px;height:38px;border-radius:12px;background:#477434;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 512 512" style="width:18px;height:18px;color:#fff;fill:currentColor"><path d="M496 176a64.07 64.07 0 00-64-64h-48V96a48.05 48.05 0 00-48-48H176a48.05 48.05 0 00-48 48v16H80a64.07 64.07 0 00-64 64v48h480zm-144-64H160V96a16 16 0 0116-16h160a16 16 0 0116 16zM336 264a24 24 0 01-24 24H200a24 24 0 01-24-24v-4a4 4 0 00-4-4H16v144a64 64 0 0064 64h352a64 64 0 0064-64V256H340a4 4 0 00-4 4z"></path></svg></div><div style="flex:1"><div style="font:600 15px/21px Poppins;color:#14191D">Work</div><div style="font:400 12px/17px Poppins;color:#5A646B">Public Market, Stall 14</div></div></div>
+          <div style="display:flex;align-items:center;gap:12px"><div style="width:38px;height:38px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 512 512" style="width:18px;height:18px;color:#002043;stroke:currentColor"><path d="M256 48c-79.5 0-144 61.4-144 137 0 87 96 224 144 279 48-55 144-192 144-279 0-75.6-64.5-137-144-137z" stroke-width="32" stroke-linejoin="round" class="i-nf"></path><circle cx="256" cy="184" r="48" stroke-width="32" class="i-nf"></circle></svg></div><div style="flex:1"><div style="font:600 15px/21px Poppins;color:#14191D">Barangay Health Center</div><div style="font:400 12px/17px Poppins;color:#5A646B">Mabini Ave</div></div></div>
+          <div style="min-height:54px;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 17px/21px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.26)">See fare</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ onConfirm }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#E6EBEC">
+        <div style="position:absolute;left:-24px;top:110px;width:200px;height:150px;background:#DFE6E3;border-radius:8px"></div>
+        <div style="position:absolute;right:-30px;top:210px;width:220px;height:170px;background:#E0E7E9;border-radius:8px"></div>
+        <div style="position:absolute;left:0;right:0;top:286px;height:22px;background:#fff;opacity:.8"></div>
+        <div style="position:absolute;top:0;bottom:0;left:168px;width:20px;background:#fff;opacity:.8"></div>
+        <div style="position:absolute;left:70px;top:190px;width:200px;height:130px"><svg viewBox="0 0 200 130" style="width:200px;height:130px"><path d="M12 118 C 60 110, 40 40, 120 30 L 188 18" stroke="#002E60" stroke-width="6" fill="none" stroke-linecap="round" stroke-dasharray="0"></path></svg></div>
+        <div style="position:absolute;left:14px;top:56px;width:36px;height:36px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 12px rgba(0,46,96,.14)"><svg viewBox="0 0 512 512" style="width:18px;height:18px;color:#14191D;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="46" d="M328 112L184 256l144 144" class="i-nf"></path></svg></div>
+        <div style="position:absolute;left:16px;right:16px;bottom:16px;background:#fff;border-radius:26px;padding:18px;box-shadow:0 -6px 26px rgba(0,46,96,.16);display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:14px">
+            <div style="width:52px;height:52px;border-radius:16px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><img src="assets/trike-navy.png" alt="" style="width:30px;height:auto"></div>
+            <div style="flex:1"><div style="font:700 17px/22px Poppins;color:#14191D">Tricycle · 3 seats</div><div style="font:400 13px/18px Poppins;color:#5A646B">4 mins away · 2.1 km trip</div></div>
+            <div style="text-align:right"><div style="font:800 24px/28px Poppins;letter-spacing:-.6px;color:#14191D">₱45</div><div style="font:600 11px/15px Poppins;color:#477434">Student −20%</div></div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="flex:1;display:flex;align-items:center;gap:9px;border:1.5px solid #002E60;border-radius:14px;padding:12px 14px;background:#F4F8FB"><svg viewBox="0 0 512 512" style="width:18px;height:18px;flex:none;color:#002E60;stroke:currentColor"><rect x="32" y="112" width="448" height="256" rx="24" stroke-width="32" class="i-nf"></rect><circle cx="256" cy="240" r="64" stroke-width="32" class="i-nf"></circle></svg><div style="font:700 14px/19px Poppins;color:#002E60">Cash</div></div>
+            <div style="flex:1;display:flex;align-items:center;gap:9px;border:1px solid #DCE2E6;border-radius:14px;padding:12px 14px"><svg viewBox="0 0 512 512" style="width:18px;height:18px;flex:none;color:#666F75;stroke:currentColor"><rect x="32" y="96" width="448" height="320" rx="48" stroke-width="32" class="i-nf"></rect><path d="M32 200h448" stroke-width="32" class="i-nf"></path></svg><div style="font:600 14px/19px Poppins;color:#666F75">GCash</div></div>
+          </div>
+          <div style="min-height:56px;border-radius:16px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 17px/22px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.26)">Confirm ride · ₱45</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ onTrip }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#E6EBEC">
+        <div style="position:absolute;left:-24px;top:100px;width:200px;height:160px;background:#DFE6E3;border-radius:8px"></div>
+        <div style="position:absolute;right:-28px;top:200px;width:210px;height:150px;background:#E0E7E9;border-radius:8px"></div>
+        <div style="position:absolute;left:0;right:0;top:276px;height:22px;background:#fff;opacity:.8"></div>
+        <div style="position:absolute;top:0;bottom:0;left:140px;width:20px;background:#fff;opacity:.8"></div>
+        <div style="position:absolute;left:150px;top:246px;width:44px;height:44px;border-radius:999px;background:rgba(71,116,52,.18);display:flex;align-items:center;justify-content:center"><div style="width:24px;height:24px;border-radius:999px;background:#477434;border:3px solid #fff;box-shadow:0 3px 10px rgba(0,0,0,.2)"></div></div>
+        <div style="position:absolute;left:16px;top:56px;right:16px;background:#fff;border-radius:18px;padding:12px 16px;box-shadow:0 6px 18px rgba(0,46,96,.14);display:flex;align-items:center;gap:12px">
+          <div style="width:10px;height:10px;border-radius:5px;background:#477434;flex:none"></div>
+          <div style="flex:1;font:600 14px/20px Poppins;color:#14191D">On the way · arrives 4 min</div>
+          <div style="font:700 12px/17px Poppins;color:#002E60">Share trip</div>
+        </div>
+        <div style="position:absolute;left:16px;right:16px;bottom:16px;display:flex;flex-direction:column;gap:12px">
+          <div style="position:relative;overflow:hidden;border-radius:26px;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);box-shadow:0 14px 32px rgba(0,26,56,.3)">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+            <div style="position:relative;padding:18px;display:flex;flex-direction:column;gap:16px">
+              <div style="display:flex;align-items:center;gap:14px">
+                <div style="width:54px;height:54px;border-radius:999px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 18px Poppins;color:#002043;flex:none">JD</div>
+                <div style="flex:1"><div style="font:700 17px/22px Poppins;color:#fff">Juan Dela Cruz</div><div style="display:flex;align-items:center;gap:6px"><svg viewBox="0 0 512 512" style="width:13px;height:13px;color:#FFC94D;fill:currentColor"><path d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"></path></svg><div style="font:400 12px/17px Poppins;color:#fff;opacity:.8">4.9 · Plate TRK 2841</div></div></div>
+                <div style="padding:6px 10px;border-radius:999px;background:rgba(255,255,255,.16);font:700 12px/17px Poppins;color:#fff">₱45</div>
+              </div>
+              <div style="display:flex;gap:10px">
+                <div style="flex:1;min-height:46px;border-radius:13px;background:#B3261E;display:flex;align-items:center;justify-content:center;gap:8px;font:800 14px/19px Poppins;color:#fff;letter-spacing:.4px"><svg viewBox="0 0 512 512" style="width:17px;height:17px;flex:none;fill:currentColor"><path d="M85 435h342c22 0 36-24 25-43L281 85c-11-19-39-19-50 0L60 392c-11 19 3 43 25 43zm171-56a22 22 0 110-44 22 22 0 010 44zm22-96a22 22 0 01-44 0V190a22 22 0 0144 0z"></path></svg>Emergency SOS</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ onComplaint }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#F6F7F9">
+        <div style="height:52px"></div>
+        <div style="padding:10px 16px 76px;display:flex;flex-direction:column;gap:16px">
+          <div>
+            <div style="font:800 28px/34px Poppins;letter-spacing:-.7px;color:#14191D">Complaints</div>
+            <div style="font:400 13px/19px Poppins;color:#5A646B;margin-top:2px">We are here to help make things right.</div>
+          </div>
+          <div>
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B;margin-bottom:7px">Related trip</div>
+            <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px;box-sizing:border-box;min-height:48px">
+              <div style="width:30px;height:30px;border-radius:15px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 11px Poppins;color:#002043;flex:none">JD</div>
+              <div style="flex:1;min-width:0;font:600 14px/20px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Juan Dela Cruz · Sep 12</div>
+              <svg viewBox="0 0 512 512" style="width:16px;height:16px;flex:none;color:#5A646B;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="46" d="M112 184l144 144 144-144" class="i-nf"></path></svg>
+            </div>
+          </div>
+          <div>
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B;margin-bottom:7px">Category</div>
+            <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px;box-sizing:border-box;min-height:48px">
+              <div style="width:30px;height:30px;border-radius:10px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 512 512" style="width:15px;height:15px;color:#3B602B;stroke:currentColor"><rect x="32" y="112" width="448" height="256" rx="24" stroke-width="32" class="i-nf"></rect><circle cx="256" cy="240" r="64" stroke-width="32" class="i-nf"></circle></svg></div>
+              <div style="flex:1;font:600 14px/20px Poppins;color:#14191D">Fare dispute</div>
+              <svg viewBox="0 0 512 512" style="width:16px;height:16px;flex:none;color:#5A646B;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="46" d="M112 184l144 144 144-144" class="i-nf"></path></svg>
+            </div>
+          </div>
+          <div>
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B;margin-bottom:7px">Subject</div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px;box-sizing:border-box;min-height:48px;font:600 14px/20px Poppins;color:#14191D">Charged above the fare matrix</div>
+          </div>
+          <div>
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B;margin-bottom:7px">Message</div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px;min-height:88px;box-sizing:border-box;font:400 14px/20px Poppins;color:#666F75;text-wrap:pretty">Describe what happened — the fare quoted, what you paid, and where you were dropped off.</div>
+          </div>
+          <div>
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+              <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Evidence (optional)</div>
+              <div style="font:600 11px/16px Poppins;color:#5A646B;background:#EDF1F4;border-radius:999px;padding:2px 8px">1/3</div>
+            </div>
+            <div style="display:flex;gap:10px">
+              <div style="position:relative;width:72px;height:72px;border-radius:14px;background:#E3EDF7;display:flex;align-items:center;justify-content:center">
+                <svg viewBox="0 0 512 512" style="width:24px;height:24px;color:#002043;opacity:.5;stroke:currentColor"><rect x="48" y="80" width="416" height="352" rx="48" stroke-width="32" class="i-nf"></rect><path d="M64 372l112-112 96 96 64-64 112 96" stroke-width="32" stroke-linejoin="round" class="i-nf"></path></svg>
+                <div style="position:absolute;top:-5px;right:-5px;width:22px;height:22px;border-radius:11px;background:#14191D;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 512 512" style="width:10px;height:10px;color:#fff;stroke:currentColor"><path stroke-linecap="round" stroke-width="52" d="M368 368L144 144M368 144L144 368" class="i-nf"></path></svg></div>
+              </div>
+              <div style="width:72px;height:72px;border-radius:14px;border:1px dashed #DCE2E6;background:#fff;display:flex;align-items:center;justify-content:center"><svg viewBox="0 0 512 512" style="width:22px;height:22px;color:#5A646B;stroke:currentColor"><rect x="48" y="144" width="416" height="288" rx="52" stroke-width="32" class="i-nf"></rect><circle cx="256" cy="288" r="76" stroke-width="32" class="i-nf"></circle></svg></div>
+            </div>
+          </div>
+          <div style="min-height:54px;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 17px/21px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.26)">Submit complaint</div>
+        </div>
+        <div class="tb">
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M261.56 101.28a8 8 0 00-11.06 0L66.4 277.15a8 8 0 00-2.47 5.79L63.9 448a32 32 0 0032 32H192a16 16 0 0016-16V328a8 8 0 018-8h80a8 8 0 018 8v136a16 16 0 0016 16h96.06a32 32 0 0032-32V282.94a8 8 0 00-2.47-5.79z"></path></svg>Home</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm96 240h-96a16 16 0 01-16-16V128a16 16 0 0132 0v128h80a16 16 0 010 32z"></path></svg>History</div>
+          <div class="tbi" style="color:#002E60;font-weight:700"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M408 48H104a72.08 72.08 0 00-72 72v192a72.08 72.08 0 0072 72h24v64a16 16 0 0026.25 12.29L245.74 384H408a72.08 72.08 0 0072-72V120a72.08 72.08 0 00-72-72zM160 248a32 32 0 1132-32 32 32 0 01-32 32zm96 0a32 32 0 1132-32 32 32 0 01-32 32zm96 0a32 32 0 1132-32 32 32 0 01-32 32z"></path></svg>Complaints</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M332.64 64.58C313.18 43.57 286 32 256 32c-30.16 0-57.43 11.5-76.8 32.38-19.58 21.11-29.12 49.8-26.88 80.78C156.76 206.28 203.27 256 256 256s99.16-49.71 103.67-110.82c2.27-30.7-7.33-59.33-27.03-80.6zM432 480H80a31 31 0 01-24.2-11.13c-6.5-7.77-9.12-18.38-7.18-29.11C57.06 392.94 83.4 353.61 124.8 326c36.78-24.51 83.37-38 131.2-38s94.42 13.5 131.2 38c41.4 27.6 67.74 66.93 76.18 113.75 1.94 10.73-.68 21.34-7.18 29.11A31 31 0 01432 480z"></path></svg>Profile</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 176a80 80 0 1080 80 80.24 80.24 0 00-80-80zm172.72 80a165.53 165.53 0 01-1.64 22.34l48.69 38.12a11.59 11.59 0 012.63 14.78l-46.06 79.52a11.64 11.64 0 01-14.14 4.93l-57.25-23a176.56 176.56 0 01-38.82 22.67l-8.56 60.78a11.93 11.93 0 01-11.51 9.86h-92.12a12 12 0 01-11.51-9.53l-8.56-60.78A169.3 169.3 0 01151.05 393L93.8 416a11.64 11.64 0 01-14.14-4.92L33.6 331.57a11.59 11.59 0 012.63-14.78l48.69-38.12A174.58 174.58 0 0183.28 256a165.53 165.53 0 011.64-22.34l-48.69-38.12a11.59 11.59 0 01-2.63-14.78l46.06-79.52a11.64 11.64 0 0114.14-4.93l57.25 23a176.56 176.56 0 0138.82-22.67l8.56-60.78A11.93 11.93 0 01209.94 26h92.12a12 12 0 0111.51 9.53l8.56 60.78A169.3 169.3 0 01361 119l57.2-23a11.64 11.64 0 0114.14 4.92l46.06 79.52a11.59 11.59 0 01-2.63 14.78l-48.69 38.12a174.58 174.58 0 011.64 22.66z"></path></svg>Settings</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ onStatus }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;inset:0;overflow:hidden;background:#F6F7F9">
+        <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+          <div style="height:52px"></div>
+          <div style="position:relative;padding:6px 18px 22px;display:flex;flex-direction:column;gap:6px">
+            <div style="font:700 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#fff;opacity:.72">Complaint #1042</div>
+            <div style="font:800 24px/30px Poppins;letter-spacing:-.6px;color:#fff">Charged above the fare matrix</div>
+            <div style="display:flex;align-items:center;gap:8px"><div style="font:700 11px/16px Poppins;color:#002043;background:#E9F7E3;border-radius:999px;padding:3px 10px">Under review</div><div style="font:400 12px/17px Poppins;color:#fff;opacity:.72">Filed Sep 12 · Fare dispute</div></div>
+          </div>
+        </div>
+        <div style="padding:18px 16px 76px;display:flex;flex-direction:column;gap:14px">
+          <div style="background:#fff;border-radius:20px;padding:18px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:16px">
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Progress</div>
+            <div style="display:flex;gap:14px">
+              <div style="width:20px;display:flex;flex-direction:column;align-items:center;gap:0">
+                <div style="width:14px;height:14px;border-radius:7px;background:#477434;flex:none"></div>
+                <div style="width:2px;flex:1;background:#477434"></div>
+                <div style="width:14px;height:14px;border-radius:7px;background:#477434;flex:none"></div>
+                <div style="width:2px;flex:1;background:#DCE2E6"></div>
+                <div style="width:14px;height:14px;border-radius:7px;background:#fff;border:2px solid #DCE2E6;flex:none"></div>
+              </div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:20px">
+                <div><div style="font:700 14px/19px Poppins;color:#14191D">Received</div><div style="font:400 12px/17px Poppins;color:#5A646B">Sep 12, 9:14 AM · reference sent by SMS</div></div>
+                <div><div style="font:700 14px/19px Poppins;color:#14191D">Under review by the operator</div><div style="font:400 12px/17px Poppins;color:#5A646B">Sep 13 · driver asked to respond within 48 hours</div></div>
+                <div><div style="font:700 14px/19px Poppins;color:#666F75">Resolution</div><div style="font:400 12px/17px Poppins;color:#5A646B">You will get a decision and any refund here</div></div>
+              </div>
+            </div>
+          </div>
+          <div style="background:#fff;border-radius:20px;padding:16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;align-items:center;gap:12px">
+            <div style="width:38px;height:38px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg viewBox="0 0 512 512" style="width:18px;height:18px;color:#002043;stroke:currentColor"><circle cx="256" cy="256" r="200" stroke-width="32" class="i-nf"></circle><path d="M256 232v128" stroke-width="34" stroke-linecap="round" class="i-nf"></path><circle cx="256" cy="170" r="20" fill="currentColor"></circle></svg></div>
+            <div style="flex:1;font:400 13px/19px Poppins;color:#5A646B;text-wrap:pretty">Keep your receipt handy. You can add more evidence while the case is open.</div>
+          </div>
+        </div>
+        <div class="tb">
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M261.56 101.28a8 8 0 00-11.06 0L66.4 277.15a8 8 0 00-2.47 5.79L63.9 448a32 32 0 0032 32H192a16 16 0 0016-16V328a8 8 0 018-8h80a8 8 0 018 8v136a16 16 0 0016 16h96.06a32 32 0 0032-32V282.94a8 8 0 00-2.47-5.79z"></path></svg>Home</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm96 240h-96a16 16 0 01-16-16V128a16 16 0 0132 0v128h80a16 16 0 010 32z"></path></svg>History</div>
+          <div class="tbi" style="color:#002E60;font-weight:700"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M408 48H104a72.08 72.08 0 00-72 72v192a72.08 72.08 0 0072 72h24v64a16 16 0 0026.25 12.29L245.74 384H408a72.08 72.08 0 0072-72V120a72.08 72.08 0 00-72-72zM160 248a32 32 0 1132-32 32 32 0 01-32 32zm96 0a32 32 0 1132-32 32 32 0 01-32 32zm96 0a32 32 0 1132-32 32 32 0 01-32 32z"></path></svg>Complaints</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M332.64 64.58C313.18 43.57 286 32 256 32c-30.16 0-57.43 11.5-76.8 32.38-19.58 21.11-29.12 49.8-26.88 80.78C156.76 206.28 203.27 256 256 256s99.16-49.71 103.67-110.82c2.27-30.7-7.33-59.33-27.03-80.6zM432 480H80a31 31 0 01-24.2-11.13c-6.5-7.77-9.12-18.38-7.18-29.11C57.06 392.94 83.4 353.61 124.8 326c36.78-24.51 83.37-38 131.2-38s94.42 13.5 131.2 38c41.4 27.6 67.74 66.93 76.18 113.75 1.94 10.73-.68 21.34-7.18 29.11A31 31 0 01432 480z"></path></svg>Profile</div>
+          <div class="tbi"><svg viewBox="0 0 512 512" style="width:24px;height:24px;flex:none;fill:currentColor"><path d="M256 176a80 80 0 1080 80 80.24 80.24 0 00-80-80zm172.72 80a165.53 165.53 0 01-1.64 22.34l48.69 38.12a11.59 11.59 0 012.63 14.78l-46.06 79.52a11.64 11.64 0 01-14.14 4.93l-57.25-23a176.56 176.56 0 01-38.82 22.67l-8.56 60.78a11.93 11.93 0 01-11.51 9.86h-92.12a12 12 0 01-11.51-9.53l-8.56-60.78A169.3 169.3 0 01151.05 393L93.8 416a11.64 11.64 0 01-14.14-4.92L33.6 331.57a11.59 11.59 0 012.63-14.78l48.69-38.12A174.58 174.58 0 0183.28 256a165.53 165.53 0 011.64-22.34l-48.69-38.12a11.59 11.59 0 01-2.63-14.78l46.06-79.52a11.64 11.64 0 0114.14-4.93l57.25 23a176.56 176.56 0 0138.82-22.67l8.56-60.78A11.93 11.93 0 01209.94 26h92.12a12 12 0 0111.51 9.53l8.56 60.78A169.3 169.3 0 01361 119l57.2-23a11.64 11.64 0 0114.14 4.92l46.06 79.52a11.59 11.59 0 01-2.63 14.78l-48.69 38.12a174.58 174.58 0 011.64 22.66z"></path></svg>Settings</div>
+        </div>
+      </div>
+      </sc-if>
+
+      <sc-if value="{{ showWelcome }}" hint-placeholder-val="{{ true }}">
+        <div style="position:absolute;inset:0;background:rgba(2,16,32,.62);display:flex;align-items:flex-end;padding:18px;box-sizing:border-box">
+          <div style="position:relative;overflow:hidden;width:100%;border-radius:26px;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);box-shadow:0 18px 40px rgba(0,26,56,.4)">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.06) 0 2px,transparent 2px 14px)"></div>
+            <div style="position:absolute;top:-34px;right:-32px;opacity:.14"><svg width="160" height="160" viewBox="0 0 100 100"><path d="M 22 46 A 28 28 0 1 1 78 46" stroke="#fff" stroke-width="9" stroke-linecap="round" fill="none"></path><path d="M 28 58 L 50 80 L 72 58" stroke="#fff" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></svg></div>
+            <div style="position:relative;padding:22px 22px 20px;display:flex;flex-direction:column;gap:14px">
+              <div style="width:60px;height:60px;border-radius:18px;background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.28);display:flex;align-items:center;justify-content:center"><img src="assets/trike-white.png" alt="" style="width:34px;height:auto"></div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="font:800 26px/31px Poppins;letter-spacing:-.6px;color:#fff">Hi Maria!</div>
+                <div style="font:400 14px/21px Poppins;color:#fff;opacity:.82;text-wrap:pretty">Welcome to TriSakay. Let us walk you through one full booking — seven taps and you will know how the whole app works.</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;margin-top:2px">
+                <div onClick="{{ skip }}" style="flex:none;min-height:48px;padding:0 18px;border-radius:14px;border:1px solid rgba(255,255,255,.34);display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#fff;cursor:pointer" style-hover="background:rgba(255,255,255,.12)">Skip</div>
+                <div onClick="{{ next }}" style="flex:1;min-height:48px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font:700 16px/21px Poppins;color:#002E60;cursor:pointer;box-shadow:0 8px 18px rgba(0,0,0,.22)" style-hover="background:#F0F4F8">Take the tour<svg viewBox="0 0 512 512" style="width:18px;height:18px;flex:none;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="48" d="M268 112l144 144-144 144M392 256H100" class="i-nf"></path></svg></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ showTour }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0">
+          <div style="{{ spotStyle }}"></div>
+          <div style="{{ ringStyle }}"></div>
+          <div style="{{ tipStyle }}">
+            <div style="{{ arrowStyle }}"></div>
+            <div style="position:relative;background:#fff;border-radius:20px;padding:18px;box-shadow:0 14px 34px rgba(0,26,56,.34);display:flex;flex-direction:column;gap:12px">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="padding:4px 9px;border-radius:8px;background:#E3EDF7;flex:none;font:800 11px/16px Poppins;letter-spacing:.4px;color:#002E60">{{ stepLabel }}</div>
+                <div style="font:700 17px/22px Poppins;letter-spacing:-.2px;color:#14191D">{{ title }}</div>
+              </div>
+              <div style="font:400 14px/21px Poppins;color:#5A646B;text-wrap:pretty">{{ body }}</div>
+              <div style="display:flex;align-items:center;gap:6px">
+                <div style="flex:1;height:4px;border-radius:2px;background:#EBEFF2;overflow:hidden"><div style="{{ barStyle }}"></div></div>
+              </div>
+              <div style="display:flex;align-items:center;gap:10px;padding-top:2px">
+                <div onClick="{{ skip }}" style="font:600 13px/18px Poppins;color:#666F75;cursor:pointer;padding:6px 2px" style-hover="color:#14191D">Skip tour</div>
+                <div onClick="{{ back }}" style="{{ backStyle }}" style-hover="color:#14191D">Back</div>
+                <div style="flex:1"></div>
+                <div onClick="{{ next }}" style="min-height:44px;padding:0 20px;border-radius:13px;background:#002E60;display:flex;align-items:center;justify-content:center;font:700 15px/20px Poppins;color:#fff;cursor:pointer;box-shadow:0 6px 14px rgba(0,46,96,.24)" style-hover="background:#002043">{{ nextLabel }}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ finished }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;left:16px;right:16px;bottom:74px;display:flex;align-items:center;gap:12px;background:#14191D;border-radius:16px;padding:13px 16px;box-shadow:0 12px 28px rgba(0,26,56,.3)">
+          <svg viewBox="0 0 512 512" style="width:20px;height:20px;flex:none;color:#9BD47F;stroke:currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="44" d="M416 128L192 384l-96-96" class="i-nf"></path></svg>
+          <div style="flex:1;font:600 13px/18px Poppins;color:#fff">That is the whole app. Enjoy the ride!</div>
+          <div onClick="{{ restart }}" style="font:700 13px/18px Poppins;color:#9BD47F;cursor:pointer">Restart</div>
+        </div>
+      </sc-if>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;max-width:320px">
+      <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">The walkthrough</div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div onClick="{{ go1 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">1</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Your header</div><div style="font:400 12px/17px Poppins;color:#5A646B">Home · profile, trips, discount, alerts</div></div>
+        </div>
+        <div onClick="{{ go2 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">2</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Request a Tricycle</div><div style="font:400 12px/17px Poppins;color:#5A646B">Home · the one way to book</div></div>
+        </div>
+        <div onClick="{{ go3 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">3</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Saved places</div><div style="font:400 12px/17px Poppins;color:#5A646B">Home · one-tap destinations</div></div>
+        </div>
+        <div onClick="{{ go4 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">4</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">The tab bar</div><div style="font:400 12px/17px Poppins;color:#5A646B">Home · History, Complaints, Profile, Settings</div></div>
+        </div>
+        <div onClick="{{ go5 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#477434">5</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Pickup &amp; destination</div><div style="font:400 12px/17px Poppins;color:#5A646B">Booking · set both, then see the fare</div></div>
+        </div>
+        <div onClick="{{ go6 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#477434">6</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Fare &amp; payment</div><div style="font:400 12px/17px Poppins;color:#5A646B">Confirm · price before you commit</div></div>
+        </div>
+        <div onClick="{{ go7 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#FBE6E5;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#B3261E">7</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Your driver &amp; safety</div><div style="font:400 12px/17px Poppins;color:#5A646B">Live trip · plate check and Emergency SOS</div></div>
+        </div>
+        <div onClick="{{ go8 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">8</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Report a problem</div><div style="font:400 12px/17px Poppins;color:#5A646B">Complaints · pick the trip and a category</div></div>
+        </div>
+        <div onClick="{{ go9 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">9</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Evidence &amp; submit</div><div style="font:400 12px/17px Poppins;color:#5A646B">Complaints · up to three photos</div></div>
+        </div>
+        <div onClick="{{ go10 }}" style="display:flex;gap:12px;background:#fff;border-radius:14px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07);cursor:pointer" style-hover="box-shadow:0 6px 18px rgba(0,46,96,.14)">
+          <div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">10</div>
+          <div><div style="font:700 14px/19px Poppins;color:#14191D">Follow your case</div><div style="font:400 12px/17px Poppins;color:#5A646B">Case status · received, review, resolved</div></div>
+        </div>
+      </div>
+      <div onClick="{{ restart }}" style="min-height:44px;border-radius:13px;border:1px solid #C9D3DB;display:flex;align-items:center;justify-content:center;font:700 14px/19px Poppins;color:#002E60;cursor:pointer" style-hover="background:#fff">Replay from the start</div>
+      <div style="font:400 12px/18px Poppins;color:#5A646B;text-wrap:pretty">Runs once on first launch after login. The screen behind the dim advances with the steps, so riders see the real flow instead of one static page. Available again from Settings → Help → Replay app tour.</div>
+    </div>
+  </div>
+</section>
+
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;dimOpacity&quot;:{&quot;editor&quot;:&quot;range&quot;,&quot;default&quot;:0.66,&quot;min&quot;:0.3,&quot;max&quot;:0.85,&quot;step&quot;:0.02,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Tour&quot;}}">
+const STEPS = [
+  {screen:"home",top:44,left:10,w:370,h:164,r:26,tip:"below",title:"Your header",body:"Your name, trips so far and your fare discount. The bell shows ride updates and driver messages."},
+  {screen:"home",top:226,left:10,w:370,h:102,r:24,tip:"below",title:"Book a ride",body:"Tap Request a Tricycle. This is the only way in — it shows the starting fare and how many drivers are nearby."},
+  {screen:"home",top:332,left:8,w:374,h:268,r:20,tip:"below",title:"Saved places",body:"Home, Work and Campus book in one tap. Add or rename them any time from Manage."},
+  {screen:"home",top:778,left:6,w:378,h:66,r:22,tip:"above",title:"Move around the app",body:"History for past rides and receipts, Complaints to report a trip, Profile and Settings for your account."},
+  {screen:"book",top:52,left:10,w:370,h:142,r:24,tip:"below",title:"Set pickup and destination",body:"Pickup fills in from your location — tap the second row to choose where you are going, or pick a suggestion below."},
+  {screen:"confirm",top:599,left:10,w:370,h:238,r:28,tip:"above",title:"Check the fare first",body:"You see the exact fare, your discount and the payment method before anything is booked. Tap Confirm ride when it looks right."},
+  {screen:"trip",top:694,left:10,w:370,h:140,r:28,tip:"above",title:"Your driver, and safety",body:"Follow the tricycle on the map and check the plate before you board. Hold Emergency SOS to alert the operator and your emergency contact."},
+  {screen:"complaint",top:127,left:10,w:370,h:188,r:22,tip:"below",title:"Report a problem",device:"Complaints",body:"Open Complaints, pick the trip it happened on and choose a category — fare dispute, driver conduct, safety or vehicle condition."},
+  {screen:"complaint",top:528,left:10,w:370,h:188,r:22,tip:"above",title:"Add proof, then submit",body:"Attach up to three photos of the receipt or the tricycle. Submit sends it straight to the operator with your trip details already attached."},
+  {screen:"status",top:200,left:10,w:370,h:231,r:24,tip:"below",title:"Follow your case",body:"Every complaint gets a reference number and a status you can track — received, under review, resolved. You are notified at each step."}
+];
+const TOTAL = STEPS.length;
+
+const DSTEPS = [
+  {screen:"dash",top:118,left:12,w:366,h:203,r:24,tip:"below",title:"Go online",body:"This switch is the whole job. Flip it on and requests start reaching you; offline, nothing comes through and your day is paused."},
+  {screen:"dash",top:184,left:24,w:210,h:80,r:14,tip:"below",title:"Earnings today",body:"What you have collected so far today, with trips, rating and acceptance rate under the line. The app never holds the money — fares are paid to you directly."},
+  {screen:"dash",top:359,left:12,w:366,h:242,r:24,tip:"below",title:"Accept or decline",body:"Every request shows the fare, the payment method, how far the pickup is and where it ends before you decide. Accept locks the ride to you; the countdown passes it on if you wait."},
+  {screen:"dash",top:778,left:6,w:378,h:66,r:22,tip:"above",title:"Move around the app",body:"Requests for the full queue, History for finished trips, Earnings for your records, Profile for your documents and account."},
+  {screen:"req",top:118,left:12,w:366,h:48,r:26,tip:"below",title:"Filter the queue",body:"Along route keeps requests pointed the way you are already driving. Nearby widens it to anything close, All shows the whole barangay."},
+  {screen:"trip",top:460,left:16,w:358,h:210,r:22,tip:"above",title:"Run the trip",body:"Tick Confirm cash received when the passenger pays, then Complete. More than one passenger can ride the same trip — each has their own row."},
+  {screen:"trip",top:672,left:20,w:350,h:86,r:18,tip:"above",title:"Emergency SOS",body:"Press and hold if you are in immediate danger. It alerts the operator with your location and opens the call to 911 / PNP."},
+  {screen:"earn",top:117,left:12,w:366,h:94,r:18,tip:"below",title:"Your earnings record",body:"Weekly total, a bar per day and a settlement log you can show the operator. This is record-keeping, not a wallet."}
+];
+const DTOTAL = DSTEPS.length;
+
+class Component extends DCLogic {
+  state = { step: 0, dstep: 0 };
+  set(n) { this.setState({ step: n }); }
+  dset(n) { this.setState({ dstep: n }); }
+  driverVals() {
+    const s = this.state.dstep, st = DSTEPS[s - 1];
+    const dim = `rgba(2,16,32,${this.props.dimOpacity ?? 0.66})`;
+    const screen = st ? st.screen : (s === 0 ? "dash" : DSTEPS[DTOTAL - 1].screen);
+    let spot = "display:none", ring = "display:none", tip = "display:none", arrow = "display:none";
+    if (st) {
+      spot = `position:absolute;top:${st.top}px;left:${st.left}px;width:${st.w}px;height:${st.h}px;border-radius:${st.r}px;box-shadow:0 0 0 9999px ${dim};border:2px solid rgba(255,255,255,.9);box-sizing:border-box;transition:all .28s cubic-bezier(.4,0,.2,1)`;
+      ring = `position:absolute;top:${st.top-6}px;left:${st.left-6}px;width:${st.w+12}px;height:${st.h+12}px;border-radius:${st.r+6}px;border:2px solid rgba(255,255,255,.55);box-sizing:border-box;animation:tsRing 1.8s ease-out infinite;pointer-events:none`;
+      const below = st.tip === "below";
+      tip = `position:absolute;left:16px;right:16px;${below ? `top:${st.top+st.h+16}px` : `bottom:${844-st.top+16}px`};transition:all .28s cubic-bezier(.4,0,.2,1)`;
+      arrow = `position:absolute;left:${Math.min(Math.max(st.left + st.w/2 - 22, 20), 300)}px;${below ? "top:-7px" : "bottom:-7px"};width:16px;height:16px;background:#fff;transform:rotate(45deg);border-radius:3px`;
+    }
+    return {
+      dOnDash: screen === "dash", dOnReq: screen === "req", dOnTrip: screen === "trip", dOnEarn: screen === "earn",
+      dShowWelcome: s === 0, dShowTour: s >= 1 && s <= DTOTAL, dFinished: s > DTOTAL,
+      dSpotStyle: spot, dRingStyle: ring, dTipStyle: tip, dArrowStyle: arrow,
+      dStepLabel: `${Math.max(s, 1)} of ${DTOTAL}`,
+      dTitle: st ? st.title : "", dBody: st ? st.body : "",
+      dBarStyle: `height:100%;width:${Math.round(Math.max(s,1) / DTOTAL * 100)}%;background:#002E60;border-radius:2px;transition:width .28s ease`,
+      dBackStyle: `font:600 13px/18px Poppins;color:#666F75;cursor:pointer;padding:6px 2px;visibility:${s > 1 ? "visible" : "hidden"}`,
+      dNextLabel: s === DTOTAL ? "Done" : "Next",
+      dNext: () => this.dset(Math.min(s + 1, DTOTAL + 1)),
+      dBack: () => this.dset(Math.max(s - 1, 1)),
+      dSkip: () => this.dset(DTOTAL + 1),
+      dRestart: () => this.dset(0),
+      dg1: () => this.dset(1), dg2: () => this.dset(2), dg3: () => this.dset(3), dg4: () => this.dset(4),
+      dg5: () => this.dset(5), dg6: () => this.dset(6), dg7: () => this.dset(7), dg8: () => this.dset(8)
+    };
+  }
+  renderVals() {
+    const s = this.state.step, st = STEPS[s - 1];
+    const dim = `rgba(2,16,32,${this.props.dimOpacity ?? 0.66})`;
+    const screen = st ? st.screen : (s === 0 ? "home" : STEPS[TOTAL - 1].screen);
+    let spotStyle = "display:none", ringStyle = "display:none", tipStyle = "display:none", arrowStyle = "display:none";
+    if (st) {
+      spotStyle = `position:absolute;top:${st.top}px;left:${st.left}px;width:${st.w}px;height:${st.h}px;border-radius:${st.r}px;box-shadow:0 0 0 9999px ${dim};border:2px solid rgba(255,255,255,.9);transition:all .28s cubic-bezier(.4,0,.2,1)`;
+      ringStyle = `position:absolute;top:${st.top-6}px;left:${st.left-6}px;width:${st.w+12}px;height:${st.h+12}px;border-radius:${st.r+6}px;border:2px solid rgba(255,255,255,.55);animation:tsRing 1.8s ease-out infinite;pointer-events:none`;
+      const below = st.tip === "below";
+      tipStyle = `position:absolute;left:16px;right:16px;${below ? `top:${st.top+st.h+16}px` : `bottom:${844-st.top+16}px`};transition:all .28s cubic-bezier(.4,0,.2,1)`;
+      arrowStyle = `position:absolute;left:${Math.min(Math.max(st.left + st.w/2 - 22, 20), 300)}px;${below ? "top:-7px" : "bottom:-7px"};width:16px;height:16px;background:#fff;transform:rotate(45deg);border-radius:3px`;
+    }
+    return {
+      ...this.driverVals(),
+      onHome: screen === "home", onBook: screen === "book", onConfirm: screen === "confirm", onTrip: screen === "trip",
+      onComplaint: screen === "complaint", onStatus: screen === "status",
+      showWelcome: s === 0,
+      showTour: s >= 1 && s <= TOTAL,
+      finished: s > TOTAL,
+      spotStyle, ringStyle, tipStyle, arrowStyle,
+      stepLabel: `${Math.max(s, 1)} of ${TOTAL}`,
+      title: st ? st.title : "",
+      body: st ? st.body : "",
+      barStyle: `height:100%;width:${Math.round(Math.max(s,1) / TOTAL * 100)}%;background:#002E60;border-radius:2px;transition:width .28s ease`,
+      backStyle: `font:600 13px/18px Poppins;color:#666F75;cursor:pointer;padding:6px 2px;visibility:${s > 1 ? "visible" : "hidden"}`,
+      nextLabel: s === TOTAL ? "Done" : "Next",
+      next: () => this.set(Math.min(s + 1, TOTAL + 1)),
+      back: () => this.set(Math.max(s - 1, 1)),
+      skip: () => this.set(TOTAL + 1),
+      restart: () => this.set(0),
+      go1: () => this.set(1), go2: () => this.set(2), go3: () => this.set(3), go4: () => this.set(4),
+      go5: () => this.set(5), go6: () => this.set(6), go7: () => this.set(7),
+      go8: () => this.set(8), go9: () => this.set(9), go10: () => this.set(10)
+    };
+  }
+}
+
+</script>
+</body>
+</html>
