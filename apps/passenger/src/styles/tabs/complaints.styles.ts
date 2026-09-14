@@ -131,6 +131,12 @@ export const styles = StyleSheet.create({
     height: 72,
     borderRadius: radius.sm2,
   },
+  /** Tutorial demo state's fake evidence tile — no real photo bytes to show, so a generic icon tile stands in. */
+  evidenceThumbPlaceholder: {
+    backgroundColor: colors.fill,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   evidenceRemove: {
     position: 'absolute',
     top: -6,

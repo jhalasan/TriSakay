@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, BrandMotif, Button, EmptyState, GradientSurface, Spinner, StatTile, colors } from '@trisakay/ui';
+import { Avatar, BrandMotif, Button, EmptyState, GradientSurface, Spinner, StatTile, colors, useTutorialTarget } from '@trisakay/ui';
 import { OfflineState } from '../../src/components/OfflineState';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { usePassengerStats } from '../../src/hooks/usePassengerStats';
@@ -55,6 +55,9 @@ export default function HomeScreen() {
   const { stats } = usePassengerStats();
   const nearbyCount = useNearbyDriverCount();
   const isOffline = useConnectivityStore((state) => state.isOffline);
+  const greetingHeaderTarget = useTutorialTarget('greeting-header');
+  const requestCtaTarget = useTutorialTarget('request-cta');
+  const savedPlacesTarget = useTutorialTarget('saved-places');
 
   useFocusEffect(
     useCallback(() => {
@@ -109,7 +112,7 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
-        <View style={styles.heroShadowWrap}>
+        <View style={styles.heroShadowWrap} {...greetingHeaderTarget}>
           <GradientSurface token="hero" direction="diagonal" style={styles.heroPanel}>
             <BrandMotif size={230} color={colors.white} opacity={0.12} style={styles.heroMotifTop} />
             <SafeAreaView edges={['top']}>
@@ -160,7 +163,12 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.content}>
-          <Pressable accessibilityRole="button" accessibilityLabel={t.home.ctaTitle} onPress={() => router.push('/booking/request')}>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={t.home.ctaTitle}
+            onPress={() => router.push('/booking/request')}
+            {...requestCtaTarget}
+          >
             <View style={styles.ctaCardShadowWrap}>
               <GradientSurface solid={colors.accentGreen} style={styles.ctaCard}>
                 <BrandMotif size={150} color={colors.white} opacity={0.14} style={styles.ctaMotif} />
@@ -187,7 +195,7 @@ export default function HomeScreen() {
             </View>
           </Pressable>
 
-          <View>
+          <View {...savedPlacesTarget}>
             <View style={styles.sectionRow}>
               <Text style={styles.sectionLabel}>{t.home.savedPlaces}</Text>
               <Pressable accessibilityRole="button" onPress={() => router.push('/saved-places/manage')}>

@@ -5,13 +5,17 @@ import {
   Poppins_700Bold,
   Poppins_800ExtraBold,
 } from '@expo-google-fonts/poppins';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { colors, fontFamily } from '@trisakay/ui';
+import { colors, fontFamily, PASSENGER_FINISHED_MESSAGE, PASSENGER_STEPS, PASSENGER_WELCOME_BODY, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
+import { PASSENGER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
+import { usePassengerTutorialNavigation } from '../src/hooks/usePassengerTutorialNavigation';
+import { usePassengerTutorialTrigger } from '../src/hooks/usePassengerTutorialTrigger';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useConnectivityStore } from '../src/store/useConnectivityStore';
@@ -194,6 +198,30 @@ function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateS
   }, [isAuthenticated, consentStatus, state, dismissedThisForeground, root, router]);
 }
 
+/**
+ * Mounted as a child of TutorialProvider (not RootLayoutNav itself, which
+ * renders the provider) so its hooks can read useTutorial(). Drives
+ * auto-start, screen-follows-tour navigation, and the overlay's own render.
+ */
+function PassengerTutorialMount() {
+  const firstName = useAuthStore((state) => state.user?.firstName);
+  usePassengerTutorialTrigger();
+  usePassengerTutorialNavigation();
+
+  return (
+    <TutorialOverlay
+      firstName={firstName}
+      welcomeBody={PASSENGER_WELCOME_BODY}
+      finishedMessage={PASSENGER_FINISHED_MESSAGE}
+      logoSource={require('../../../assets/brand/trisakay-mark.png')}
+    />
+  );
+}
+
+function writePassengerTutorialSeen() {
+  void AsyncStorage.setItem(PASSENGER_TUTORIAL_SEEN_KEY, new Date().toISOString());
+}
+
 export default function RootLayout() {
   // Keyed by the theme's own constants rather than by the imported binding
   // names, so renaming a family in packages/ui cannot silently desync the
@@ -237,26 +265,29 @@ function RootLayoutNav() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.bg },
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="walkthrough" />
-          <Stack.Screen name="landing" />
-          <Stack.Screen name="consent" />
-          <Stack.Screen name="reset-password" />
-          <Stack.Screen
-            name="location-permission"
-            options={{ presentation: 'transparentModal', animation: 'fade' }}
-          />
-          <Stack.Screen
-            name="logout"
-            options={{ presentation: 'transparentModal', animation: 'fade' }}
-          />
-        </Stack>
+        <TutorialProvider steps={PASSENGER_STEPS} onSkip={writePassengerTutorialSeen} onFinish={writePassengerTutorialSeen}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.bg },
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="walkthrough" />
+            <Stack.Screen name="landing" />
+            <Stack.Screen name="consent" />
+            <Stack.Screen name="reset-password" />
+            <Stack.Screen
+              name="location-permission"
+              options={{ presentation: 'transparentModal', animation: 'fade' }}
+            />
+            <Stack.Screen
+              name="logout"
+              options={{ presentation: 'transparentModal', animation: 'fade' }}
+            />
+          </Stack>
+          <PassengerTutorialMount />
+        </TutorialProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

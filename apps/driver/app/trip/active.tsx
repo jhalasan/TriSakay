@@ -3,9 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, RequestCard, Toggle, colors } from '@trisakay/ui';
+import { Avatar, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, RequestCard, Toggle, colors, useTutorialTarget } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { useActiveTripTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useRequestsStore } from '../../src/store/useRequestsStore';
@@ -19,7 +20,11 @@ export default function ActiveTripScreen() {
   const t = useTranslation();
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
-  const trip = useTripStore((state) => state.current);
+  const tutorialDemo = useActiveTripTutorialDemo();
+  const passengerCardTarget = useTutorialTarget('passenger-card');
+  const sosTarget = useTutorialTarget('sos');
+  const tripReal = useTripStore((state) => state.current);
+  const trip = tutorialDemo.active ? tutorialDemo.data : tripReal;
   const tripError = useTripStore((state) => state.error);
   const confirmCash = useTripStore((state) => state.confirmCash);
   const startPassenger = useTripStore((state) => state.startPassenger);
@@ -149,13 +154,18 @@ export default function ActiveTripScreen() {
           </View>
         )}
 
-        {trip.passengers.map((passenger) => {
+        {trip.passengers.map((passenger, index) => {
           const isCash = passenger.paymentMethod === 'cash';
           const isCompleting = completingIds.has(passenger.id);
           const isStarting = startingIds.has(passenger.id);
-          const canComplete = passenger.status === 'ongoing' && (!isCash || passenger.cashConfirmed) && !isCompleting;
+          const canComplete = tutorialDemo.active
+            ? true
+            : passenger.status === 'ongoing' && (!isCash || passenger.cashConfirmed) && !isCompleting;
 
-          return (
+          // Card doesn't forward refs, so the tutorial target (which needs a
+          // real native-view ref for measureInWindow) wraps it in a plain
+          // View instead of spreading onto Card directly.
+          const passengerCard = (
             <Card key={passenger.id} variant="flat" style={styles.passengerCard}>
               <View style={styles.passengerRow}>
                 <Avatar
@@ -183,7 +193,7 @@ export default function ActiveTripScreen() {
                   <Text style={styles.cashLabel}>{t.driver.tripActive.confirmCashReceived}</Text>
                   <Toggle
                     value={passenger.cashConfirmed}
-                    onValueChange={() => handleConfirmCash(passenger.id)}
+                    onValueChange={() => (tutorialDemo.active ? undefined : handleConfirmCash(passenger.id))}
                     disabled={passenger.cashConfirmed || confirmingCashId === passenger.id}
                   />
                 </View>
@@ -197,7 +207,7 @@ export default function ActiveTripScreen() {
                     tone="danger"
                     fullWidth
                     disabled={isCompleting || isStarting}
-                    onPress={() => setCancellingId(passenger.id)}
+                    onPress={() => (tutorialDemo.active ? undefined : setCancellingId(passenger.id))}
                   />
                 </View>
                 {passenger.status === 'assigned' ? (
@@ -206,7 +216,7 @@ export default function ActiveTripScreen() {
                       label={t.driver.tripActive.start}
                       fullWidth
                       loading={isStarting}
-                      onPress={() => handleStart(passenger.id)}
+                      onPress={() => (tutorialDemo.active ? undefined : handleStart(passenger.id))}
                     />
                   </View>
                 ) : (
@@ -216,12 +226,20 @@ export default function ActiveTripScreen() {
                       fullWidth
                       disabled={!canComplete}
                       loading={isCompleting}
-                      onPress={() => handleComplete(passenger)}
+                      onPress={() => (tutorialDemo.active ? undefined : handleComplete(passenger))}
                     />
                   </View>
                 )}
               </View>
             </Card>
+          );
+
+          return index === 0 ? (
+            <View key={passenger.id} {...passengerCardTarget}>
+              {passengerCard}
+            </View>
+          ) : (
+            passengerCard
           );
         })}
 
@@ -231,8 +249,8 @@ export default function ActiveTripScreen() {
             <RequestCard
               request={incoming}
               accepting={acceptingId === incoming.id}
-              onAccept={() => acceptRideRequest(incoming.id)}
-              onDecline={() => user && decline(incoming.id, user.id)}
+              onAccept={() => (tutorialDemo.active ? undefined : acceptRideRequest(incoming.id))}
+              onDecline={() => (tutorialDemo.active ? undefined : user && decline(incoming.id, user.id))}
               copy={{
                 decline: t.driver.requestCard.decline,
                 accept: t.driver.requestCard.accept,
@@ -252,12 +270,12 @@ export default function ActiveTripScreen() {
 
         {(tripError || requestError) && <Text style={styles.error}>{tripError ?? requestError}</Text>}
 
-        <View style={styles.sosBlock}>
+        <View style={styles.sosBlock} {...sosTarget}>
           <HoldToConfirmButton
             label={t.trip.sosButton}
             icon={<Ionicons name="warning" size={19} color={colors.white} />}
             fullWidth
-            onConfirm={() => router.push('/trip/emergency')}
+            onConfirm={() => (tutorialDemo.active ? undefined : router.push('/trip/emergency'))}
           />
           <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
         </View>
@@ -267,8 +285,8 @@ export default function ActiveTripScreen() {
           variant="outline"
           tone="neutral"
           fullWidth
-          disabled={hasPassengers}
-          onPress={() => setConfirmingEndTrip(true)}
+          disabled={tutorialDemo.active || hasPassengers}
+          onPress={() => (tutorialDemo.active ? undefined : setConfirmingEndTrip(true))}
         />
       </MapOverlaySheet>
 

@@ -15,9 +15,11 @@ import {
   SegmentedControl,
   Stepper,
   colors,
+  useTutorialTarget,
 } from '@trisakay/ui';
 import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { useConfirmTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -29,11 +31,16 @@ import { styles } from '../../src/styles/booking/confirm.styles';
 export default function ConfirmScreen() {
   const router = useRouter();
   const user = useAuthStore((state) => state.user);
+  const tutorialDemo = useConfirmTutorialDemo();
+  const fareSheetTarget = useTutorialTarget('fare-sheet');
   const pickup = useBookingStore((state) => state.pickup);
-  const dropoff = useBookingStore((state) => state.dropoff);
+  const dropoffReal = useBookingStore((state) => state.dropoff);
+  const dropoff = tutorialDemo.active ? tutorialDemo.data.dropoff : dropoffReal;
   const seats = useBookingStore((state) => state.seats);
-  const fare = useBookingStore((state) => state.fare);
-  const paymentMethod = useBookingStore((state) => state.paymentMethod);
+  const fareReal = useBookingStore((state) => state.fare);
+  const fare = tutorialDemo.active ? tutorialDemo.data.fare : fareReal;
+  const paymentMethodReal = useBookingStore((state) => state.paymentMethod);
+  const paymentMethod = tutorialDemo.active ? tutorialDemo.data.paymentMethod : paymentMethodReal;
   const setSeats = useBookingStore((state) => state.setSeats);
   const setFare = useBookingStore((state) => state.setFare);
   const setDistanceKm = useBookingStore((state) => state.setDistanceKm);
@@ -49,8 +56,10 @@ export default function ConfirmScreen() {
   const [requestError, setRequestError] = useState<string | null>(null);
   // null while unresolved — the discount line only ever renders once we
   // actually know the passenger's status, never a guess.
-  const [discountApproved, setDiscountApproved] = useState<boolean | null>(null);
-  const [discountRatePercent, setDiscountRatePercent] = useState<number | null>(null);
+  const [discountApprovedState, setDiscountApproved] = useState<boolean | null>(null);
+  const discountApproved = tutorialDemo.active ? tutorialDemo.data.discountApproved : discountApprovedState;
+  const [discountRatePercentState, setDiscountRatePercent] = useState<number | null>(null);
+  const discountRatePercent = tutorialDemo.active ? tutorialDemo.data.discountRatePercent : discountRatePercentState;
   const [route, setRoute] = useState<RouteEstimate | null>(null);
   // True once we definitively know whether the passenger has an approved
   // discount AND (if so) what rate applies — gates the request button so we
@@ -140,11 +149,14 @@ export default function ConfirmScreen() {
         fullWidth
         icon={<Image source={require('../../../../assets/trike-white.png')} style={styles.requestButtonIcon} resizeMode="contain" />}
         loading={isRequesting}
-        disabled={!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady}
+        // Reads as enabled during the tour regardless of real permission/fare
+        // state, matching the reference screenshot — onPress below is the
+        // actual no-mutation guard.
+        disabled={!tutorialDemo.active && (!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady)}
         // Only while disabled — an enabled button must not announce a reason
         // that no longer applies.
         accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
-        onPress={handleRequestRide}
+        onPress={tutorialDemo.active ? undefined : handleRequestRide}
       />
       {requestError && <Text style={styles.requestError}>{requestError}</Text>}
       <LocationRequiredNotice />
@@ -237,7 +249,7 @@ export default function ConfirmScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`${t.confirm.change} ${t.confirm.pickupLocationLabel}`}
-                onPress={() => router.push('/booking/set-pickup')}
+                onPress={() => (tutorialDemo.active ? undefined : router.push('/booking/set-pickup'))}
               >
                 <Text style={styles.routeChangeLink}>{t.confirm.change}</Text>
               </Pressable>
@@ -256,7 +268,7 @@ export default function ConfirmScreen() {
               <Pressable
                 accessibilityRole="button"
                 accessibilityLabel={`${t.confirm.change} ${t.confirm.destinationLabel}`}
-                onPress={() => router.push('/booking/set-destination')}
+                onPress={() => (tutorialDemo.active ? undefined : router.push('/booking/set-destination'))}
               >
                 <Text style={styles.routeChangeLink}>{t.confirm.change}</Text>
               </Pressable>
@@ -268,6 +280,7 @@ export default function ConfirmScreen() {
             <Stepper value={seats} onChange={setSeats} min={1} max={6} />
           </View>
 
+          <View {...fareSheetTarget}>
           <Card variant="flat" style={styles.fareCard}>
             <BrandMotif size={130} color={colors.white} opacity={0.12} style={styles.fareMotif} />
             <View style={styles.fareLabelRow}>
@@ -338,11 +351,12 @@ export default function ConfirmScreen() {
                 },
               ]}
               value={paymentMethod}
-              onChange={setPaymentMethod}
+              onChange={tutorialDemo.active ? () => undefined : setPaymentMethod}
             />
           </View>
 
           {requestButton}
+          </View>
         </ScrollView>
       </MapOverlaySheet>
     </SafeAreaView>

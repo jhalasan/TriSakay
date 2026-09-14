@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect } from 'expo-router';
+import { useFocusEffect, useRouter } from 'expo-router';
 import {
   listMyComplaints,
   submitComplaint,
@@ -12,11 +12,12 @@ import {
   type ComplaintDbStatus,
   type MyComplaintRow,
 } from '@trisakay/services';
-import { Avatar, Badge, Button, Card, EmptyState, ListRow, Textarea, TextField, colors, type BadgeTone } from '@trisakay/ui';
+import { Avatar, Badge, Button, Card, EmptyState, ListRow, Textarea, TextField, colors, useTutorialTarget, type BadgeTone } from '@trisakay/ui';
 import { OfflineState } from '../../src/components/OfflineState';
 import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { useComplaintFormTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { isNonEmpty } from '../../src/utils/validation';
 import { styles } from '../../src/styles/tabs/complaints.styles';
 
@@ -63,8 +64,12 @@ const STATUS_TONE: Record<ComplaintDbStatus, BadgeTone> = {
 
 export default function ComplaintsScreen() {
   const t = useTranslation();
+  const router = useRouter();
   const rides = useHistoryStore((state) => state.items);
   const loadHistory = useHistoryStore((state) => state.load);
+  const tutorialDemo = useComplaintFormTutorialDemo();
+  const tripAndCategoryTarget = useTutorialTarget('trip-and-category');
+  const evidenceAndSubmitTarget = useTutorialTarget('evidence-and-submit');
 
   const CATEGORY_LABEL: Record<ComplaintCategory, string> = {
     fare: t.complaints.categoryFare,
@@ -103,7 +108,8 @@ export default function ComplaintsScreen() {
 
   const [relatedTripId, setRelatedTripId] = useState<string | null>(null);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [category, setCategory] = useState<ComplaintCategory>('other');
+  const [categoryState, setCategory] = useState<ComplaintCategory>('other');
+  const category = tutorialDemo.active ? tutorialDemo.data.category : categoryState;
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
@@ -207,17 +213,22 @@ export default function ComplaintsScreen() {
             <Text style={styles.tagline}>{t.complaints.tagline}</Text>
           </View>
 
+          <View {...tripAndCategoryTarget}>
           <View>
             <Text style={styles.fieldLabel}>{t.complaints.relatedTrip}</Text>
             <Pressable
               style={styles.pickerField}
-              onPress={() => setPickerOpen((prev) => !prev)}
+              onPress={() => (tutorialDemo.active ? undefined : setPickerOpen((prev) => !prev))}
               accessibilityRole="button"
             >
               <View style={styles.categoryFieldContent}>
                 {selectedRide && <Avatar name={selectedRide.driverName} size="xs" />}
                 <Text style={[styles.pickerFieldText, !selectedRide && styles.pickerFieldPlaceholder]} numberOfLines={1}>
-                  {selectedRide ? `${selectedRide.driverName} · ${selectedRide.dropoff}` : t.complaints.selectAPastRide}
+                  {tutorialDemo.active
+                    ? tutorialDemo.data.relatedTripLabel
+                    : selectedRide
+                      ? `${selectedRide.driverName} · ${selectedRide.dropoff}`
+                      : t.complaints.selectAPastRide}
                 </Text>
               </View>
               <Ionicons name={pickerOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.inkSoft} />
@@ -249,7 +260,7 @@ export default function ComplaintsScreen() {
             <Text style={styles.fieldLabel}>{t.complaints.category}</Text>
             <Pressable
               style={styles.pickerField}
-              onPress={() => setCategoryPickerOpen((prev) => !prev)}
+              onPress={() => (tutorialDemo.active ? undefined : setCategoryPickerOpen((prev) => !prev))}
               accessibilityRole="button"
             >
               <View style={styles.categoryFieldContent}>
@@ -284,6 +295,7 @@ export default function ComplaintsScreen() {
               </Card>
             )}
           </View>
+          </View>
 
           <TextField
             label={t.complaints.subject}
@@ -298,33 +310,42 @@ export default function ComplaintsScreen() {
             onChangeText={setMessage}
           />
 
+          <View {...evidenceAndSubmitTarget}>
           <View>
             <View style={styles.evidenceLabelRow}>
               <Text style={styles.fieldLabel}>{t.complaints.evidenceOptional}</Text>
               <View style={styles.evidenceCounter}>
                 <Text style={styles.evidenceCounterText}>
-                  {evidenceUris.length}/{MAX_EVIDENCE_PHOTOS}
+                  {tutorialDemo.active ? 1 : evidenceUris.length}/{MAX_EVIDENCE_PHOTOS}
                 </Text>
               </View>
             </View>
             <View style={styles.evidenceRow}>
-              {evidenceUris.map((uri, index) => (
-                <View key={uri} style={styles.evidenceThumbWrap}>
-                  <Image source={{ uri }} style={styles.evidenceThumb} resizeMode="cover" />
-                  <Pressable
-                    style={styles.evidenceRemove}
-                    onPress={() => removeEvidence(index)}
-                    accessibilityRole="button"
-                    accessibilityLabel="Remove photo"
-                  >
-                    <Ionicons name="close" size={14} color={colors.white} />
-                  </Pressable>
+              {tutorialDemo.active ? (
+                <View style={styles.evidenceThumbWrap}>
+                  <View style={[styles.evidenceThumb, styles.evidenceThumbPlaceholder]}>
+                    <Ionicons name="image" size={18} color={colors.inkSoft} />
+                  </View>
                 </View>
-              ))}
-              {evidenceUris.length < MAX_EVIDENCE_PHOTOS && (
+              ) : (
+                evidenceUris.map((uri, index) => (
+                  <View key={uri} style={styles.evidenceThumbWrap}>
+                    <Image source={{ uri }} style={styles.evidenceThumb} resizeMode="cover" />
+                    <Pressable
+                      style={styles.evidenceRemove}
+                      onPress={() => removeEvidence(index)}
+                      accessibilityRole="button"
+                      accessibilityLabel="Remove photo"
+                    >
+                      <Ionicons name="close" size={14} color={colors.white} />
+                    </Pressable>
+                  </View>
+                ))
+              )}
+              {(tutorialDemo.active ? 1 : evidenceUris.length) < MAX_EVIDENCE_PHOTOS && (
                 <Pressable
                   style={styles.evidenceAddTile}
-                  onPress={handlePickEvidence}
+                  onPress={() => (tutorialDemo.active ? undefined : handlePickEvidence())}
                   accessibilityRole="button"
                   accessibilityLabel="Add evidence photo"
                 >
@@ -342,10 +363,11 @@ export default function ComplaintsScreen() {
           <Button
             label={t.complaints.submitComplaint}
             fullWidth
-            disabled={!canSubmit}
+            disabled={!tutorialDemo.active && !canSubmit}
             loading={submitting}
-            onPress={handleSubmit}
+            onPress={tutorialDemo.active ? undefined : handleSubmit}
           />
+          </View>
 
           {myComplaints.length > 0 && (
             <View style={styles.priorSection}>
@@ -356,6 +378,7 @@ export default function ComplaintsScreen() {
                     key={complaint.id}
                     title={complaint.subject}
                     trailing={<Badge label={STATUS_LABEL[complaint.status]} tone={STATUS_TONE[complaint.status]} />}
+                    onPress={() => router.push(`/complaints/${complaint.id}`)}
                     divider={index < myComplaints.length - 1}
                   />
                 ))}

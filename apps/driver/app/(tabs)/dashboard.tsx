@@ -4,12 +4,13 @@ import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, BrandMotif, GradientSurface, PulseRing, RequestCard, colors } from '@trisakay/ui';
+import { Avatar, BrandMotif, GradientSurface, PulseRing, RequestCard, colors, useTutorialTarget } from '@trisakay/ui';
 import type { PendingRequest } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useDriverUnit } from '../../src/hooks/useDriverUnit';
 import { useRequestCountdown } from '../../src/hooks/useRequestCountdown';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { useDashboardTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
@@ -53,21 +54,39 @@ export default function DashboardScreen() {
   const user = useAuthStore((state) => state.user);
   const driverUnit = useDriverUnit();
 
+  const tutorialDemo = useDashboardTutorialDemo();
+  const dutyConsoleTarget = useTutorialTarget('duty-console');
+  const earningsTodayTarget = useTutorialTarget('earnings-today');
+  const incomingRequestTarget = useTutorialTarget('incoming-request');
+
   const isAvailableReal = useDriverStore((state) => state.isAvailable);
-  const isAvailable = __DEV__ && globalThis.__TRISAKAY_MOCK_ONLINE__ !== undefined ? globalThis.__TRISAKAY_MOCK_ONLINE__ : isAvailableReal;
+  const isAvailable = tutorialDemo.active
+    ? tutorialDemo.data.isAvailable
+    : __DEV__ && globalThis.__TRISAKAY_MOCK_ONLINE__ !== undefined
+      ? globalThis.__TRISAKAY_MOCK_ONLINE__
+      : isAvailableReal;
   const setAvailable = useDriverStore((state) => state.setAvailable);
   const availabilityError = useDriverStore((state) => state.error);
-  const todayEarnings = useDriverStore((state) => state.todayEarnings);
-  const todayTrips = useDriverStore((state) => state.todayTrips);
-  const rating = useDriverStore((state) => state.rating);
-  const ratingCount = useDriverStore((state) => state.ratingCount);
-  const acceptRate = useDriverStore((state) => state.acceptRate);
+  const todayEarningsReal = useDriverStore((state) => state.todayEarnings);
+  const todayEarnings = tutorialDemo.active ? tutorialDemo.data.todayEarnings : todayEarningsReal;
+  const todayTripsReal = useDriverStore((state) => state.todayTrips);
+  const todayTrips = tutorialDemo.active ? tutorialDemo.data.todayTrips : todayTripsReal;
+  const ratingReal = useDriverStore((state) => state.rating);
+  const rating = tutorialDemo.active ? tutorialDemo.data.rating : ratingReal;
+  const ratingCountReal = useDriverStore((state) => state.ratingCount);
+  const ratingCount = tutorialDemo.active ? tutorialDemo.data.ratingCount : ratingCountReal;
+  const acceptRateReal = useDriverStore((state) => state.acceptRate);
+  const acceptRate = tutorialDemo.active ? tutorialDemo.data.acceptRate : acceptRateReal;
 
   const [togglingAvailability, setTogglingAvailability] = useState(false);
   const unreadCount = useNotificationsStore((state) => state.items.filter((item) => !item.read).length);
 
   const pendingReal = useRequestsStore((state) => state.pending);
-  const pending: PendingRequest[] = __DEV__ && globalThis.__TRISAKAY_MOCK_REQUEST__ ? [MOCK_REQUEST, ...pendingReal] : pendingReal;
+  const pending: PendingRequest[] = tutorialDemo.active
+    ? tutorialDemo.data.pending
+    : __DEV__ && globalThis.__TRISAKAY_MOCK_REQUEST__
+      ? [MOCK_REQUEST, ...pendingReal]
+      : pendingReal;
   const requestError = useRequestsStore((state) => state.error);
   const decline = useRequestsStore((state) => state.decline);
 
@@ -75,7 +94,8 @@ export default function DashboardScreen() {
   const activeTrip = useTripStore((state) => state.current);
 
   const incoming = pending[0];
-  const countdown = useRequestCountdown(incoming?.expiresAt ?? null);
+  const countdownReal = useRequestCountdown(incoming?.expiresAt ?? null);
+  const countdown = tutorialDemo.active ? tutorialDemo.data.countdown : countdownReal;
 
   async function handleToggleAvailable(next: boolean) {
     setTogglingAvailability(true);
@@ -130,50 +150,54 @@ export default function DashboardScreen() {
         </View>
 
         {isAvailable ? (
-          <GradientSurface token="hero" direction="vertical" style={styles.consoleOnline}>
-            <BrandMotif size={210} color={colors.white} opacity={0.12} style={styles.consoleMotif} />
-            <View style={styles.statusRow}>
-              <View style={styles.statusLeft}>
-                <View style={styles.pulseHost}>
-                  <PulseRing size={10} color={colors.accentGreenSoft} durationMs={2000} style={{ position: 'absolute' }} />
-                  <View style={styles.statusDotStatic} />
+          <View {...dutyConsoleTarget}>
+            <GradientSurface token="hero" direction="vertical" style={styles.consoleOnline}>
+              <BrandMotif size={210} color={colors.white} opacity={0.12} style={styles.consoleMotif} />
+              <View style={styles.statusRow}>
+                <View style={styles.statusLeft}>
+                  <View style={styles.pulseHost}>
+                    <PulseRing size={10} color={colors.accentGreenSoft} durationMs={2000} style={{ position: 'absolute' }} />
+                    <View style={styles.statusDotStatic} />
+                  </View>
+                  <Text style={styles.statusLabelOnline}>{t.driver.dashboard.onlineBadge.toUpperCase()}</Text>
                 </View>
-                <Text style={styles.statusLabelOnline}>{t.driver.dashboard.onlineBadge.toUpperCase()}</Text>
+                <Pressable
+                  accessibilityRole="switch"
+                  accessibilityState={{ checked: true, disabled: togglingAvailability || tutorialDemo.active }}
+                  onPress={() => (tutorialDemo.active ? undefined : handleToggleAvailable(false))}
+                  disabled={togglingAvailability || tutorialDemo.active}
+                  style={[styles.toggleTrack, styles.toggleTrackOn]}
+                  hitSlop={8}
+                >
+                  <View style={[styles.toggleKnob, styles.toggleKnobOn]} />
+                </Pressable>
               </View>
-              <Pressable
-                accessibilityRole="switch"
-                accessibilityState={{ checked: true, disabled: togglingAvailability }}
-                onPress={() => handleToggleAvailable(false)}
-                disabled={togglingAvailability}
-                style={[styles.toggleTrack, styles.toggleTrackOn]}
-                hitSlop={8}
-              >
-                <View style={[styles.toggleKnob, styles.toggleKnobOn]} />
-              </Pressable>
-            </View>
 
-            <Text style={styles.earningsEyebrow}>{t.driver.dashboard.earningsTodayEyebrow}</Text>
-            <Text style={styles.earningsAmount}>{formatCurrency(todayEarnings)}</Text>
+              <View {...earningsTodayTarget}>
+                <Text style={styles.earningsEyebrow}>{t.driver.dashboard.earningsTodayEyebrow}</Text>
+                <Text style={styles.earningsAmount}>{formatCurrency(todayEarnings)}</Text>
+              </View>
 
-            <View style={styles.metaRow}>
-              <View style={styles.metaItem}>
-                <Ionicons name="navigate-outline" size={15} color={colors.white} />
-                <Text style={styles.metaTextOnline}>{t.driver.dashboard.statTrips.replace('{count}', String(todayTrips))}</Text>
+              <View style={styles.metaRow}>
+                <View style={styles.metaItem}>
+                  <Ionicons name="navigate-outline" size={15} color={colors.white} />
+                  <Text style={styles.metaTextOnline}>{t.driver.dashboard.statTrips.replace('{count}', String(todayTrips))}</Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Ionicons name="star" size={15} color={colors.accentGreenSoft} />
+                  <Text style={styles.metaTextOnline}>
+                    {ratingCount > 0 && rating !== null ? t.driver.dashboard.statRating.replace('{rating}', rating.toFixed(1)) : t.driver.dashboard.noRatingsYet}
+                  </Text>
+                </View>
+                <View style={styles.metaItem}>
+                  <Ionicons name="checkmark-circle-outline" size={15} color={colors.white} />
+                  <Text style={styles.metaTextOnline}>
+                    {acceptRate !== null ? t.driver.dashboard.statAcceptance.replace('{percent}', String(Math.round(acceptRate * 100))) : '—'}
+                  </Text>
+                </View>
               </View>
-              <View style={styles.metaItem}>
-                <Ionicons name="star" size={15} color={colors.accentGreenSoft} />
-                <Text style={styles.metaTextOnline}>
-                  {ratingCount > 0 && rating !== null ? t.driver.dashboard.statRating.replace('{rating}', rating.toFixed(1)) : t.driver.dashboard.noRatingsYet}
-                </Text>
-              </View>
-              <View style={styles.metaItem}>
-                <Ionicons name="checkmark-circle-outline" size={15} color={colors.white} />
-                <Text style={styles.metaTextOnline}>
-                  {acceptRate !== null ? t.driver.dashboard.statAcceptance.replace('{percent}', String(Math.round(acceptRate * 100))) : '—'}
-                </Text>
-              </View>
-            </View>
-          </GradientSurface>
+            </GradientSurface>
+          </View>
         ) : (
           <View style={styles.consoleOffline}>
             <View style={styles.statusRow}>
@@ -231,7 +255,7 @@ export default function DashboardScreen() {
         )}
 
         {isAvailable && incoming && !requestExpired && (
-          <View>
+          <View {...incomingRequestTarget}>
             <View style={styles.requestSectionHeader}>
               <Text style={styles.sectionLabel}>{t.driver.dashboard.incomingRequestEyebrow}</Text>
               {countdown !== null && (
@@ -244,8 +268,8 @@ export default function DashboardScreen() {
               request={incoming}
               variant="incoming"
               accepting={acceptingId === incoming.id}
-              onAccept={() => acceptRideRequest(incoming.id)}
-              onDecline={() => user && decline(incoming.id, user.id)}
+              onAccept={() => (tutorialDemo.active ? undefined : acceptRideRequest(incoming.id))}
+              onDecline={() => (tutorialDemo.active ? undefined : user && decline(incoming.id, user.id))}
               copy={{
                 decline: t.driver.requestCard.decline,
                 accept: t.driver.requestCard.accept,

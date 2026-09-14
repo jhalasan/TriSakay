@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, Card, MapSearchBar, OsmMap, colors, spacing } from '@trisakay/ui';
+import { Button, Card, MapSearchBar, OsmMap, colors, spacing, useTutorialTarget } from '@trisakay/ui';
 import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -30,6 +30,7 @@ export default function RequestTricycleScreen() {
   // fast remount from tab-switching) — a duplicate fix would race the first
   // and could overwrite a pin the rider has since dragged.
   const hasRequestedFix = useRef(false);
+  const routeCardTarget = useTutorialTarget('route-card');
 
   function useCurrentLocationForPickup(surfaceErrors: boolean) {
     setLocating(true);
@@ -87,7 +88,7 @@ export default function RequestTricycleScreen() {
         />
       </View>
 
-      <View style={styles.topFloating}>
+      <View style={styles.topFloating} {...routeCardTarget}>
         <Card variant="raised" style={styles.headerCard}>
           <View style={styles.headerRow}>
             <Pressable

@@ -3,12 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { FlatList, Pressable, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BrandMotif, Button, colors, EmptyState, GradientSurface, RequestCard } from '@trisakay/ui';
+import { BrandMotif, Button, colors, EmptyState, GradientSurface, RequestCard, useTutorialTarget } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
 import { useRequestsStore } from '../../src/store/useRequestsStore';
+import { useRequestsTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/tabs/requests.styles';
 
@@ -18,8 +19,12 @@ export default function RequestsScreen() {
   const router = useRouter();
   const t = useTranslation();
   const user = useAuthStore((state) => state.user);
-  const isAvailable = useDriverStore((state) => state.isAvailable);
-  const pending = useRequestsStore((state) => state.pending);
+  const tutorialDemo = useRequestsTutorialDemo();
+  const scopeFiltersTarget = useTutorialTarget('scope-filters');
+  const isAvailableReal = useDriverStore((state) => state.isAvailable);
+  const isAvailable = tutorialDemo.active ? true : isAvailableReal;
+  const pendingReal = useRequestsStore((state) => state.pending);
+  const pending = tutorialDemo.active ? tutorialDemo.data.pending : pendingReal;
   const requestError = useRequestsStore((state) => state.error);
   const decline = useRequestsStore((state) => state.decline);
   const { acceptRideRequest, acceptingId } = useAcceptRideRequest();
@@ -46,7 +51,7 @@ export default function RequestsScreen() {
           <Text style={styles.heroTitle}>{t.driver.requests.title}</Text>
 
           {isAvailable ? (
-            <View style={styles.filterRow}>
+            <View style={styles.filterRow} {...scopeFiltersTarget}>
               {matchFilterOptions.map((option) => {
                 const active = option.value === matchFilter;
                 return (
@@ -114,8 +119,8 @@ export default function RequestsScreen() {
             request={item}
             variant="incoming"
             accepting={acceptingId === item.id}
-            onAccept={() => acceptRideRequest(item.id)}
-            onDecline={() => user && decline(item.id, user.id)}
+            onAccept={() => (tutorialDemo.active ? undefined : acceptRideRequest(item.id))}
+            onDecline={() => (tutorialDemo.active ? undefined : user && decline(item.id, user.id))}
             copy={{
               decline: t.driver.requestCard.decline,
               accept: t.driver.requestCard.accept,

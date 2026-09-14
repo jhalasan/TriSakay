@@ -144,3 +144,44 @@ export async function listMyComplaints(): Promise<ListMyComplaintsResult> {
   if (error) return { data: [], error: error.message };
   return { data: data ?? [], error: null };
 }
+
+export interface ComplaintDetailRow extends MyComplaintRow {
+  category: ComplaintCategory;
+  createdAt: string;
+  resolvedAt: string | null;
+  resolutionNotes: string | null;
+}
+
+export interface GetMyComplaintResult {
+  data: ComplaintDetailRow | null;
+  error: string | null;
+}
+
+/** One of the signed-in user's own submitted complaints, by id — for the complaint-status detail screen. */
+export async function getMyComplaint(id: string): Promise<GetMyComplaintResult> {
+  const userId = await getSignedInUserId();
+  if (!userId) return { data: null, error: 'Not signed in' };
+
+  const { data, error } = await getSupabaseClient()
+    .from('complaints')
+    .select('id, subject, status, category, created_at, resolved_at, resolution_notes')
+    .eq('id', id)
+    .eq('submitted_by', userId)
+    .maybeSingle();
+
+  if (error) return { data: null, error: error.message };
+  if (!data) return { data: null, error: null };
+
+  return {
+    data: {
+      id: data.id,
+      subject: data.subject,
+      status: data.status,
+      category: data.category,
+      createdAt: data.created_at,
+      resolvedAt: data.resolved_at,
+      resolutionNotes: data.resolution_notes,
+    },
+    error: null,
+  };
+}

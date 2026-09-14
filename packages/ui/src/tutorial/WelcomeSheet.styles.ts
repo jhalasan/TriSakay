@@ -1,0 +1,100 @@
+import { StyleSheet } from 'react-native';
+import { colors, elevation, fontFamily, spacing } from '../theme';
+
+export const styles = StyleSheet.create({
+  welcomeBackdrop: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(2, 16, 32, 0.62)',
+    justifyContent: 'flex-end',
+    zIndex: 50,
+  },
+  welcomeSheetShadowWrap: {
+    margin: 18,
+    borderRadius: 26,
+    ...elevation.sheet,
+  },
+  welcomeSheet: {
+    borderRadius: 26,
+    padding: spacing.xl,
+    overflow: 'hidden',
+  },
+  welcomeWash: {
+    position: 'absolute',
+    top: -80,
+    left: -60,
+  },
+  welcomeWatermark: {
+    position: 'absolute',
+    top: -20,
+    right: -20,
+  },
+  welcomeLogoTile: {
+    width: 60,
+    height: 60,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255, 255, 255, 0.16)',
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.28)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: spacing.lg,
+  },
+  welcomeLogoMark: {
+    width: 32,
+    height: 32,
+  },
+  welcomeTitle: {
+    fontFamily: fontFamily.extrabold,
+    fontSize: 26,
+    lineHeight: 31,
+    color: colors.white,
+    marginBottom: spacing.sm,
+  },
+  welcomeBody: {
+    fontFamily: fontFamily.regular,
+    fontSize: 14,
+    lineHeight: 21,
+    color: colors.white,
+    opacity: 0.82,
+    marginBottom: spacing.xl,
+  },
+  welcomeActions: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  welcomeSkipButton: {
+    height: 48,
+    paddingHorizontal: spacing.lg,
+    borderRadius: 999,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.34)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  welcomeSkipLabel: {
+    fontFamily: fontFamily.semibold,
+    fontSize: 15,
+    lineHeight: 20,
+    color: colors.white,
+  },
+  welcomeTakeTourButton: {
+    flex: 1,
+    height: 48,
+    borderRadius: 999,
+    backgroundColor: colors.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.xs,
+  },
+  welcomeTakeTourLabel: {
+    fontFamily: fontFamily.bold,
+    fontSize: 16,
+    lineHeight: 21,
+    color: colors.accentBlue,
+  },
+});

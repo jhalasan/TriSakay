@@ -2,18 +2,22 @@ import { useEffect } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BrandMotif, EmptyState, GradientSurface, colors } from '@trisakay/ui';
+import { BrandMotif, EmptyState, GradientSurface, colors, useTutorialTarget } from '@trisakay/ui';
 import { EarningsBarChart } from '../../src/components/EarningsBarChart';
 import { PeakHoursBarChart } from '../../src/components/PeakHoursBarChart/PeakHoursBarChart';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useEarningsStore } from '../../src/store/useEarningsStore';
+import { useEarningsTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { formatCurrency } from '../../src/utils/currency';
 import { interpolate } from '../../src/utils/interpolate';
 import { styles } from '../../src/styles/tabs/earnings.styles';
 
 export default function EarningsScreen() {
   const t = useTranslation();
-  const totalTracked = useEarningsStore((state) => state.totalTracked);
+  const tutorialDemo = useEarningsTutorialDemo();
+  const trackedTotalTarget = useTutorialTarget('tracked-total');
+  const totalTrackedReal = useEarningsStore((state) => state.totalTracked);
+  const totalTracked = tutorialDemo.active ? tutorialDemo.data.totalTracked : totalTrackedReal;
   const dailyBreakdown = useEarningsStore((state) => state.dailyBreakdown);
   const loading = useEarningsStore((state) => state.loading);
   const earningsError = useEarningsStore((state) => state.error);
@@ -37,7 +41,7 @@ export default function EarningsScreen() {
       >
         <Text style={styles.title}>{t.driver.earnings.title}</Text>
 
-        <View style={styles.totalCardShadow}>
+        <View style={styles.totalCardShadow} {...trackedTotalTarget}>
           <GradientSurface token="hero" direction="diagonal" style={styles.totalCard}>
             <BrandMotif size={200} color={colors.white} opacity={0.12} style={styles.totalMotif} />
             <Text style={styles.totalLabel}>{t.driver.earnings.totalTracked}</Text>

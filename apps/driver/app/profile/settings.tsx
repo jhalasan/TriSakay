@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
-import { Button, Toggle, colors } from '@trisakay/ui';
+import { Button, Toggle, colors, useTutorial } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -60,6 +60,7 @@ export default function SettingsScreen() {
   const router = useRouter();
   const t = useTranslation();
   const user = useAuthStore((state) => state.user);
+  const tutorial = useTutorial();
   const {
     pushNotificationsEnabled,
     locationTrackingEnabled,
@@ -143,6 +144,24 @@ export default function SettingsScreen() {
                 <Text style={styles.rowValue}>{languageLabels[language]}</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
               </View>
+            </Pressable>
+          </View>
+        </View>
+
+        <View>
+          <SectionLabel label={t.settings.sectionHelp} />
+          <View style={styles.card}>
+            <Pressable style={styles.row} onPress={tutorial.start} accessibilityRole="button">
+              <View style={styles.rowLeading}>
+                <IconBadge name="help-circle-outline" />
+                <View style={styles.rowTextSlot}>
+                  <Text style={styles.rowLabel}>{t.settings.replayTour}</Text>
+                  <Text style={styles.rowSublabel} numberOfLines={1}>
+                    {t.settings.replayTourSubtitle}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </Pressable>
           </View>
         </View>

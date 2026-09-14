@@ -5,13 +5,17 @@ import {
   Poppins_700Bold,
   Poppins_800ExtraBold,
 } from '@expo-google-fonts/poppins';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { colors, fontFamily } from '@trisakay/ui';
+import { colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
+import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
+import { useDriverTutorialNavigation } from '../src/hooks/useDriverTutorialNavigation';
+import { useDriverTutorialTrigger } from '../src/hooks/useDriverTutorialTrigger';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useComplaintsStore } from '../src/store/useComplaintsStore';
@@ -285,6 +289,30 @@ function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateS
   }, [isAuthenticated, consentStatus, state, dismissedThisForeground, root, router]);
 }
 
+/**
+ * Mounted as a child of TutorialProvider (not RootLayoutNav itself, which
+ * renders the provider) so its hooks can read useTutorial(). Drives
+ * auto-start, screen-follows-tour navigation, and the overlay's own render.
+ */
+function DriverTutorialMount() {
+  const firstName = useAuthStore((state) => state.user?.firstName);
+  useDriverTutorialTrigger();
+  useDriverTutorialNavigation();
+
+  return (
+    <TutorialOverlay
+      firstName={firstName}
+      welcomeBody={DRIVER_WELCOME_BODY}
+      finishedMessage={DRIVER_FINISHED_MESSAGE}
+      logoSource={require('../../../assets/brand/trisakay-mark.png')}
+    />
+  );
+}
+
+function writeDriverTutorialSeen() {
+  void AsyncStorage.setItem(DRIVER_TUTORIAL_SEEN_KEY, new Date().toISOString());
+}
+
 export default function RootLayout() {
   const [fontsLoaded, fontError] = useFonts({
     [fontFamily.regular]: Poppins_400Regular,
@@ -325,20 +353,23 @@ function RootLayoutNav() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <StatusBar style="dark" />
-        <Stack
-          screenOptions={{
-            headerShown: false,
-            contentStyle: { backgroundColor: colors.bg },
-          }}
-        >
-          <Stack.Screen name="index" />
-          <Stack.Screen name="consent" />
-          <Stack.Screen name="verification-pending" />
-          <Stack.Screen name="account-suspended" />
-          <Stack.Screen name="reset-password" />
-          <Stack.Screen name="location-permission" options={{ presentation: 'transparentModal', animation: 'fade' }} />
-          <Stack.Screen name="logout" options={{ presentation: 'transparentModal', animation: 'fade' }} />
-        </Stack>
+        <TutorialProvider steps={DRIVER_STEPS} onSkip={writeDriverTutorialSeen} onFinish={writeDriverTutorialSeen}>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+              contentStyle: { backgroundColor: colors.bg },
+            }}
+          >
+            <Stack.Screen name="index" />
+            <Stack.Screen name="consent" />
+            <Stack.Screen name="verification-pending" />
+            <Stack.Screen name="account-suspended" />
+            <Stack.Screen name="reset-password" />
+            <Stack.Screen name="location-permission" options={{ presentation: 'transparentModal', animation: 'fade' }} />
+            <Stack.Screen name="logout" options={{ presentation: 'transparentModal', animation: 'fade' }} />
+          </Stack>
+          <DriverTutorialMount />
+        </TutorialProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

@@ -4,9 +4,10 @@ import { Animated, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { subscribeToDriverLocation, subscribeToRideRequestStatus, type DriverLocation } from '@trisakay/services';
 import { ASSUMED_TRICYCLE_SPEED_KMH, estimateEtaMinutes, haversineKm } from '@trisakay/shared';
-import { Badge, Button, EmptyState, GradientSurface, HoldToConfirmButton, OsmMap, colors, motion, spacing } from '@trisakay/ui';
+import { Badge, Button, EmptyState, GradientSurface, HoldToConfirmButton, OsmMap, colors, motion, spacing, useTutorialTarget } from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { useTripTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { fetchRouteEstimate, type RouteEstimate } from '../../src/utils/route';
 import { styles } from '../../src/styles/booking/trip.styles';
@@ -22,11 +23,16 @@ export default function TripScreen() {
   // arrival from finding-driver.tsx, where a freshly matched ride is always
   // 'assigned'.
   const { status: initialStatus } = useLocalSearchParams<{ status?: 'assigned' | 'ongoing' }>();
-  const driver = useBookingStore((state) => state.driver);
+  const tutorialDemo = useTripTutorialDemo();
+  const driverCardTarget = useTutorialTarget('driver-card');
+  const driverReal = useBookingStore((state) => state.driver);
+  const driver = tutorialDemo.active ? tutorialDemo.data.driver : driverReal;
   const pickup = useBookingStore((state) => state.pickup);
   const dropoff = useBookingStore((state) => state.dropoff);
-  const seats = useBookingStore((state) => state.seats);
-  const fare = useBookingStore((state) => state.fare);
+  const seatsReal = useBookingStore((state) => state.seats);
+  const seats = tutorialDemo.active ? tutorialDemo.data.seats : seatsReal;
+  const fareReal = useBookingStore((state) => state.fare);
+  const fare = tutorialDemo.active ? tutorialDemo.data.fare : fareReal;
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const reset = useBookingStore((state) => state.reset);
@@ -57,7 +63,7 @@ export default function TripScreen() {
   }, [settle]);
 
   useEffect(() => {
-    if (hasExitedRef.current) return;
+    if (hasExitedRef.current || tutorialDemo.active) return;
 
     if (!rideRequestId) {
       hasExitedRef.current = true;
@@ -197,17 +203,19 @@ export default function TripScreen() {
           style={[styles.sheet, { paddingBottom: spacing.xl + insets.bottom }]}
         >
           <View style={styles.sheetHandle} />
-          <DriverInfoCard driver={driverForCard} seats={seats} fare={fare} />
-          {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
-          <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
+          <View {...driverCardTarget}>
+            <DriverInfoCard driver={driverForCard} seats={seats} fare={fare} />
+            {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
+            <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
 
-          <View style={styles.sosBlock}>
-            <HoldToConfirmButton
-              label={t.trip.sosButton}
-              fullWidth
-              onConfirm={() => router.push('/booking/emergency')}
-            />
-            <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
+            <View style={styles.sosBlock}>
+              <HoldToConfirmButton
+                label={t.trip.sosButton}
+                fullWidth
+                onConfirm={() => (tutorialDemo.active ? undefined : router.push('/booking/emergency'))}
+              />
+              <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
+            </View>
           </View>
         </GradientSurface>
       </Animated.View>
