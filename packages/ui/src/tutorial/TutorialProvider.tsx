@@ -50,6 +50,12 @@ export function TutorialProvider({ steps, onSkip, onFinish, children }: Tutorial
   const [active, setActive] = useState(false);
   const [step, setStep] = useState(0);
   const rectsRef = useRef<Map<string, TutorialRect>>(new Map());
+  // registerTarget writes into the ref above, which by itself never triggers
+  // a re-render — a coach mark that already painted (using the design-frame
+  // fallback, or a stale rect) would then never pick up a measurement that
+  // lands after that paint. Bumping this on every registration forces
+  // TutorialOverlay to re-render and re-read the ref.
+  const [rectVersion, setRectVersion] = useState(0);
 
   const start = useCallback(() => {
     setStep(0);
@@ -91,7 +97,10 @@ export function TutorialProvider({ steps, onSkip, onFinish, children }: Tutorial
   }, [active, step, total, finish]);
 
   const registerTarget = useCallback((id: string, rect: TutorialRect) => {
+    const prev = rectsRef.current.get(id);
+    if (prev && prev.x === rect.x && prev.y === rect.y && prev.width === rect.width && prev.height === rect.height) return;
     rectsRef.current.set(id, rect);
+    setRectVersion((v) => v + 1);
   }, []);
 
   const getTargetRect = useCallback((id: string) => rectsRef.current.get(id) ?? null, []);
@@ -113,7 +122,10 @@ export function TutorialProvider({ steps, onSkip, onFinish, children }: Tutorial
       registerTarget,
       getTargetRect,
     }),
-    [active, step, total, currentStep, start, next, back, skip, goTo, finish, registerTarget, getTargetRect]
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- rectVersion is intentionally unused inside
+    // the object itself; it's here purely to force a fresh `value` (and thus a TutorialOverlay re-render)
+    // whenever a target's measured rect changes, since getTargetRect reads a ref that isn't reactive on its own.
+    [active, step, total, currentStep, start, next, back, skip, goTo, finish, registerTarget, getTargetRect, rectVersion]
   );
 
   return <TutorialContext.Provider value={value}>{children}</TutorialContext.Provider>;

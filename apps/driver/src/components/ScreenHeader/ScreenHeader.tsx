@@ -23,7 +23,11 @@ export function ScreenHeader({ title, onBack, showBack = true, right }: ScreenHe
           accessibilityRole="button"
           accessibilityLabel="Go back"
           hitSlop={8}
-          onPress={onBack ?? (() => router.back())}
+          // A screen reached via router.replace() (e.g. the guided tour jumping
+          // straight to a step's screen) has no history to pop — router.back()
+          // then throws "GO_BACK was not handled by any navigator". Dashboard is
+          // always a safe landing spot in that case.
+          onPress={onBack ?? (() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/dashboard')))}
           style={styles.backButton}
         >
           <Ionicons name="chevron-back" size={24} color={colors.ink} />

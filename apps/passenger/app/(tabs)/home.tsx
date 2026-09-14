@@ -163,37 +163,41 @@ export default function HomeScreen() {
         </View>
 
         <View style={styles.content}>
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={t.home.ctaTitle}
-            onPress={() => router.push('/booking/request')}
-            {...requestCtaTarget}
-          >
-            <View style={styles.ctaCardShadowWrap}>
-              <GradientSurface solid={colors.accentGreen} style={styles.ctaCard}>
-                <BrandMotif size={150} color={colors.white} opacity={0.14} style={styles.ctaMotif} />
-                <View style={styles.ctaCardInner}>
-                  <View style={styles.ctaIconBadge}>
-                    <Image source={require('../../../../assets/trike-white.png')} style={styles.trikeMark} resizeMode="contain" />
-                  </View>
-                  <View style={styles.ctaTextSlot}>
-                    <Text style={styles.ctaTitle}>{t.home.ctaTitle}</Text>
-                    {nearbyCount != null ? (
-                      <View style={styles.ctaChipRow}>
-                        <View style={styles.ctaChip}>
-                          <Text style={styles.ctaChipText}>{t.home.ctaFareChipPrefix}</Text>
+          {/* Pressable measures unreliably as a tutorial target (its internal ref/layout
+              handling doesn't play well with measureInWindow) — wrap it in a plain View
+              instead, same pattern as every other tutorial target in this app. */}
+          <View {...requestCtaTarget}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel={t.home.ctaTitle}
+              onPress={() => router.push('/booking/request')}
+            >
+              <View style={styles.ctaCardShadowWrap}>
+                <GradientSurface solid={colors.accentGreen} style={styles.ctaCard}>
+                  <BrandMotif size={150} color={colors.white} opacity={0.14} style={styles.ctaMotif} />
+                  <View style={styles.ctaCardInner}>
+                    <View style={styles.ctaIconBadge}>
+                      <Image source={require('../../../../assets/trike-white.png')} style={styles.trikeMark} resizeMode="contain" />
+                    </View>
+                    <View style={styles.ctaTextSlot}>
+                      <Text style={styles.ctaTitle}>{t.home.ctaTitle}</Text>
+                      {nearbyCount != null ? (
+                        <View style={styles.ctaChipRow}>
+                          <View style={styles.ctaChip}>
+                            <Text style={styles.ctaChipText}>{t.home.ctaFareChipPrefix}</Text>
+                          </View>
+                          <Text style={styles.ctaNearbyText}>· {t.home.ctaNearbySuffix.replace('{count}', String(nearbyCount))}</Text>
                         </View>
-                        <Text style={styles.ctaNearbyText}>· {t.home.ctaNearbySuffix.replace('{count}', String(nearbyCount))}</Text>
-                      </View>
-                    ) : (
-                      <Text style={styles.ctaSubtitle}>{t.home.ctaSubtitle}</Text>
-                    )}
+                      ) : (
+                        <Text style={styles.ctaSubtitle}>{t.home.ctaSubtitle}</Text>
+                      )}
+                    </View>
+                    <Ionicons name="chevron-forward" size={22} color={colors.white} />
                   </View>
-                  <Ionicons name="chevron-forward" size={22} color={colors.white} />
-                </View>
-              </GradientSurface>
-            </View>
-          </Pressable>
+                </GradientSurface>
+              </View>
+            </Pressable>
+          </View>
 
           <View {...savedPlacesTarget}>
             <View style={styles.sectionRow}>

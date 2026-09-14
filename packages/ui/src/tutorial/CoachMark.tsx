@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import Animated, {
   Easing,
@@ -81,10 +81,26 @@ export function CoachMark({ step, total, tutorialStep, rect, onSkip, onBack, onN
     opacity: pulseOpacity.value,
   }));
 
-  const tooltipVerticalStyle =
-    tutorialStep.tip === 'below' ? { top: rect.y + rect.height + 16 } : { bottom: screenHeight - rect.y + 16 };
+  // Measured once the tooltip has actually rendered — before that, 0, which
+  // skips clamping below (an unmeasured tooltip renders at its natural
+  // top/bottom position, no different from before this existed).
+  const [tooltipHeight, setTooltipHeight] = useState(0);
+
+  // A target's real (now-correctly-measured) position can sit low enough on
+  // screen that "16px below the spotlight" pushes the tooltip's Skip/Back/
+  // Next row past the bottom edge — entirely off-screen and untappable.
+  // Clamp the tooltip's top to always leave both it and a safety margin on
+  // screen, rather than trusting the step's declared 'above'/'below'
+  // preference unconditionally.
+  const TOOLTIP_MARGIN = 16;
+  const SAFE_EDGE_MARGIN = 20;
+  const idealTop = tutorialStep.tip === 'below' ? rect.y + rect.height + TOOLTIP_MARGIN : rect.y - TOOLTIP_MARGIN - tooltipHeight;
+  const maxTop = screenHeight - tooltipHeight - SAFE_EDGE_MARGIN;
+  const clampedTop = tooltipHeight > 0 ? Math.min(Math.max(idealTop, SAFE_EDGE_MARGIN), Math.max(maxTop, SAFE_EDGE_MARGIN)) : idealTop;
+  const tooltipVerticalStyle = { top: clampedTop };
   // The arrow sits on the tooltip's near edge to the spotlight: its top edge
-  // when the tooltip is below the rect, its bottom edge when above.
+  // when the tooltip is below the rect, its bottom edge when above. Purely
+  // decorative (which way it points) — independent of any clamping above.
   const arrowAnchorStyle = tutorialStep.tip === 'below' ? { top: -7 } : { bottom: -7 };
   const arrowLeft = clampArrowLeft(rect.x + rect.width / 2, 16, screenWidth);
 
@@ -100,7 +116,10 @@ export function CoachMark({ step, total, tutorialStep, rect, onSkip, onBack, onN
       <Animated.View style={[styles.pulseRing, pulseStyle]} pointerEvents="none" />
       <Animated.View style={[styles.spotlightRect, spotlightStyle]} pointerEvents="none" />
 
-      <View style={[styles.tooltip, tooltipVerticalStyle]}>
+      <View
+        style={[styles.tooltip, tooltipVerticalStyle]}
+        onLayout={(e) => setTooltipHeight(e.nativeEvent.layout.height)}
+      >
         <View style={[styles.tooltipArrow, arrowAnchorStyle, { left: arrowLeft }]} />
         <View style={styles.tooltipHeaderRow}>
           <View style={styles.tooltipChip}>

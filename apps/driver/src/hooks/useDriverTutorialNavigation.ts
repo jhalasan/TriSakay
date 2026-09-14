@@ -22,6 +22,12 @@ export function useDriverTutorialNavigation() {
 
   useEffect(() => {
     if (!active || !currentStep) {
+      // The tour drove us onto a demo screen (e.g. the active-trip step) that
+      // the driver never really navigated to — leaving them stranded there
+      // once the tour ends (finished toast or Skip tour) would be confusing.
+      // Only fires once the tour has actually moved a screen (lastScreen set);
+      // a fresh, never-started tour leaves ordinary navigation untouched.
+      if (lastScreen.current !== null) router.replace('/(tabs)/dashboard');
       lastScreen.current = null;
       return;
     }
