@@ -7,6 +7,7 @@ import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useComplaintStatusTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { styles } from '../../src/styles/complaints/detail.styles';
+import { getComplaintStageStates } from '../../src/utils/complaintStages';
 
 interface ComplaintStatusData {
   id: string;
@@ -16,8 +17,6 @@ interface ComplaintStatusData {
   filedLabel: string;
   receivedAtLabel: string;
 }
-
-type StageState = 'done' | 'current' | 'pending';
 
 function formatShortDate(iso: string) {
   return new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
@@ -123,15 +122,12 @@ export default function ComplaintStatusScreen() {
     );
   }
 
-  const underReviewDone = complaint.status !== 'open';
-  const resolutionDone = complaint.status === 'resolved' || complaint.status === 'dismissed';
-  const underReviewState: StageState = resolutionDone ? 'done' : underReviewDone ? 'current' : 'pending';
-  const resolutionState: StageState = resolutionDone ? 'done' : 'pending';
+  const stageStates = getComplaintStageStates(complaint.status);
 
-  const stages: Array<{ title: string; body: string; state: StageState }> = [
-    { title: t.complaints.stageReceivedTitle, body: `${complaint.receivedAtLabel} · ${t.complaints.stageReceivedBody}`, state: 'done' },
-    { title: t.complaints.stageUnderReviewTitle, body: t.complaints.stageUnderReviewBody, state: underReviewState },
-    { title: t.complaints.stageResolutionTitle, body: t.complaints.stageResolutionBody, state: resolutionState },
+  const stages = [
+    { title: t.complaints.stageReceivedTitle, body: `${complaint.receivedAtLabel} · ${t.complaints.stageReceivedBody}`, state: 'done' as const },
+    { title: t.complaints.stageUnderReviewTitle, body: t.complaints.stageUnderReviewBody, state: stageStates.underReview },
+    { title: t.complaints.stageResolutionTitle, body: t.complaints.stageResolutionBody, state: stageStates.resolution },
   ];
 
   const reference = complaint.id.replace(/[^0-9A-Za-z]/g, '').slice(-4).toUpperCase();
