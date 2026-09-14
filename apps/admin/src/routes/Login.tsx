@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/Button';
 import { useSessionStore } from '../store/useSessionStore';
@@ -140,6 +140,10 @@ export function Login() {
                 </button>
               }
             />
+
+            <Link to="/forgot-password" className={styles.forgotLink}>
+              Forgot password?
+            </Link>
 
             {error && (
               <div className={styles.error} role="alert">

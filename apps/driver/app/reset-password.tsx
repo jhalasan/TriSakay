@@ -6,7 +6,7 @@ import { Button, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { interpolate } from '../src/utils/interpolate';
-import { isValidPassword } from '../src/utils/validation';
+import { isPasswordPolicyMet } from '@trisakay/utils';
 import { styles } from '../src/styles/auth/reset-password.styles';
 
 interface FormErrors {
@@ -52,7 +52,7 @@ export default function ResetPasswordScreen() {
   async function handleSubmit() {
     const nextErrors: FormErrors = {};
     if (code.trim().length === 0) nextErrors.code = t.driver.resetPassword.enterCode;
-    if (!isValidPassword(password)) nextErrors.password = t.driver.resetPassword.passwordMinLength;
+    if (!isPasswordPolicyMet(password)) nextErrors.password = t.driver.resetPassword.passwordMinLength;
     if (confirmPassword !== password) nextErrors.confirmPassword = t.driver.resetPassword.passwordsDontMatch;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;

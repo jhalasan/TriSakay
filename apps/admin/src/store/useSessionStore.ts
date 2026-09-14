@@ -42,6 +42,8 @@ interface SessionState {
   signOut: () => Promise<void>;
   /** Sets the new password on the current session, then clears must_change_password so RequireForcedPasswordChange lets the user through. */
   completePasswordChange: (newPassword: string) => Promise<string | null>;
+  /** Forgot-password completion: exchanges the emailed 6-digit code for a session, sets the new password, then signs the user straight in. */
+  confirmPasswordReset: (email: string, token: string, newPassword: string) => Promise<string | null>;
   /** Renames the signed-in user's own account, from the ProfileMenu. */
   updateName: (firstName: string, lastName: string) => Promise<string | null>;
 }
@@ -140,6 +142,39 @@ export const useSessionStore = create<SessionState>()((set, get) => {
       const current = get().user;
       if (current) set({ user: { ...current, mustChangePassword: false } });
       return null;
+    },
+
+    confirmPasswordReset: async (email, token, newPassword) => {
+      set({ error: null });
+      signingIn = true;
+
+      try {
+        const { error: verifyError } = await authService.verifyPasswordReset({ email, token });
+        if (verifyError) {
+          set({ error: verifyError });
+          return verifyError;
+        }
+
+        const { error: updateError } = await authService.updatePassword(newPassword);
+        if (updateError) {
+          set({ error: updateError });
+          return updateError;
+        }
+
+        const profile = await authService.getCurrentUserProfile().catch(() => null);
+        const user = profile ? toSessionUser(profile) : null;
+        if (!user) {
+          await authService.signOut();
+          const message = 'This account is not authorized for the admin portal.';
+          set({ user: null, isAuthenticated: false, error: message });
+          return message;
+        }
+
+        set({ user, isAuthenticated: true, error: null });
+        return null;
+      } finally {
+        signingIn = false;
+      }
     },
 
     updateName: async (firstName, lastName) => {

@@ -246,7 +246,6 @@ export function PsoUsers() {
           loading={loading}
           emptyMessage="No PSO accounts yet."
           emptyHint="Accounts you add above appear here."
-          maxWidth={1080}
         />
       </div>
       <p className={styles.policyNote}>

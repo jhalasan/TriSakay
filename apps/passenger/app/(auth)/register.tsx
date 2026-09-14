@@ -10,7 +10,8 @@ import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConsentStore } from '../../src/store/useConsentStore';
 import { DISCLOSURES, POLICY_BODY } from '../../src/content/legalCopy';
-import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/validation';
+import { isPasswordPolicyMet } from '@trisakay/utils';
+import { isNonEmpty, isValidEmail } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/register.styles';
 
 interface FormState {
@@ -82,7 +83,8 @@ export default function RegisterScreen() {
     if (!isNonEmpty(form.lastName)) nextErrors.lastName = 'Enter your last name.';
     if (!isValidEmail(form.email)) nextErrors.email = 'Enter a valid email address.';
     if (!isNonEmpty(form.phone)) nextErrors.phone = 'Enter a contact number.';
-    if (!isValidPassword(form.password)) nextErrors.password = 'Password must be at least 6 characters.';
+    if (!isPasswordPolicyMet(form.password))
+      nextErrors.password = 'Password must be at least 10 characters and include upper and lower case letters plus a number or symbol.';
     if (form.confirmPassword !== form.password) nextErrors.confirmPassword = 'Passwords do not match.';
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;

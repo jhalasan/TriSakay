@@ -147,6 +147,17 @@
   height: 48px;
 }
 
+.forgotLink {
+  align-self: flex-end;
+  margin-top: -8px;
+  font-size: 12px;
+  color: var(--primary);
+}
+
+.forgotLink:hover {
+  text-decoration: underline;
+}
+
 .eyeToggle {
   display: inline-flex;
   align-items: center;

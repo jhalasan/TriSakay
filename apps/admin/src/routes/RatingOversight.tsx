@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { DataTable, type DataTableColumn } from '../components/DataTable';
 import { RatingSquares } from '../components/RatingSquares';
@@ -51,6 +51,7 @@ export function RatingOversight() {
   const { drivers, fleetAverage, loading, error, fetch } = useRatingOversightStore();
   const systemSettings = useSettingsStore((state) => state.systemSettings);
   const fetchSettings = useSettingsStore((state) => state.fetch);
+  const [showInfo, setShowInfo] = useState(false);
 
   useEffect(() => {
     fetch();
@@ -98,11 +99,33 @@ export function RatingOversight() {
         </div>
 
         <div className="panel detail-panel">
-          <h2 className="panel-title">How this list is built</h2>
-          <p className={styles.explainer}>
-            A driver appears here once they have at least {MIN_RATINGS} ratings and their average rating falls under the threshold set in
-            System Settings. This list is read-only by design — the action lives in Driver Management, with a reason and an audit trail.
-          </p>
+          <div className={styles.infoHeader}>
+            <div className="pane-header">
+              <h2 className="panel-title" style={{ marginBottom: 0 }}>
+                Rating threshold
+              </h2>
+              <button
+                type="button"
+                className={styles.infoButton}
+                aria-expanded={showInfo}
+                aria-label="How this list is built"
+                onClick={() => setShowInfo((v) => !v)}
+              >
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 11v5.5" />
+                  <circle cx="12" cy="7.75" r="0.15" fill="currentColor" />
+                </svg>
+              </button>
+            </div>
+            {showInfo && (
+              <p className={styles.infoPopover}>
+                A driver appears here once they have at least {MIN_RATINGS} ratings and their average rating falls under the threshold
+                set in System Settings. This list is read-only by design — the action lives in Driver Management, with a reason and an
+                audit trail.
+              </p>
+            )}
+          </div>
 
           <div className="field">
             <span className="field-label">Threshold</span>

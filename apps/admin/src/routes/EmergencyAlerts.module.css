@@ -22,40 +22,9 @@
   color: var(--ink-soft);
 }
 
-.split {
-  display: grid;
-  grid-template-columns: 3fr 2fr;
-  gap: var(--sp-md);
-  align-items: start;
-}
-
-@media (max-width: 1000px) {
-  .split {
-    grid-template-columns: 1fr;
-  }
-}
-
-.detail {
-  display: flex;
-  flex-direction: column;
-  gap: var(--sp-md);
-}
-
-.detailHeader {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--sp-sm);
-}
-
 .coords {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--ink-soft);
   margin-top: 6px;
-}
-
-.mapsLink {
-  font-size: 12px;
-  margin-top: 4px;
 }

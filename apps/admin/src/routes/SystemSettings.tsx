@@ -67,7 +67,7 @@ export function SystemSettings() {
           <div className="panel">
             <div className="pane-header">
               <h2 className="panel-title" style={{ marginBottom: 0 }}>
-                Matching Heuristic (FR-2.5)
+                Matching Heuristic
               </h2>
               <Badge label="Read-only" tone="neutral" />
             </div>

@@ -14,7 +14,8 @@ import { useDocumentsStore } from '../../src/store/useDocumentsStore';
 import { DISCLOSURES, POLICY_BODY } from '../../src/content/legalCopy';
 import { DOCUMENT_TYPES } from '../../src/types/document';
 import { interpolate } from '../../src/utils/interpolate';
-import { isNonEmpty, isValidEmail, isValidPassword } from '../../src/utils/validation';
+import { isPasswordPolicyMet } from '@trisakay/utils';
+import { isNonEmpty, isValidEmail } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/register.styles';
 
 interface FormState {
@@ -68,7 +69,7 @@ export default function RegisterScreen() {
     if (!isNonEmpty(form.lastName)) nextErrors.lastName = t.driver.register.enterLastName;
     if (!isValidEmail(form.email)) nextErrors.email = t.driver.register.enterValidEmail;
     if (!isNonEmpty(form.phone)) nextErrors.phone = t.driver.register.enterContactNumber;
-    if (!isValidPassword(form.password)) nextErrors.password = t.driver.register.passwordMinLength;
+    if (!isPasswordPolicyMet(form.password)) nextErrors.password = t.driver.register.passwordMinLength;
     if (form.confirmPassword !== form.password) nextErrors.confirmPassword = t.driver.register.passwordsDoNotMatch;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;

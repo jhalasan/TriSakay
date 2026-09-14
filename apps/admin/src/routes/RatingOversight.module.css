@@ -11,7 +11,36 @@
   }
 }
 
-.explainer {
+.infoHeader {
+  margin-bottom: var(--sp-sm);
+}
+
+.infoButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-pill);
+  background: none;
+  color: var(--ink-faint);
+  cursor: pointer;
+}
+
+.infoButton:hover,
+.infoButton[aria-expanded='true'] {
+  color: var(--primary);
+  border-color: var(--primary);
+}
+
+.infoPopover {
+  margin: var(--sp-xs) 0 0;
+  padding: var(--sp-sm);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--bg);
   font-size: 12px;
   color: var(--ink-soft);
   line-height: 1.5;

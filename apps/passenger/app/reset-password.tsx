@@ -4,7 +4,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-na
 import { requestPasswordReset, signOut, updatePassword, verifyPasswordReset } from '@trisakay/services';
 import { Button, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
-import { isValidPassword } from '../src/utils/validation';
+import { isPasswordPolicyMet } from '@trisakay/utils';
 import { styles } from '../src/styles/auth/reset-password.styles';
 
 interface FormErrors {
@@ -51,7 +51,8 @@ export default function ResetPasswordScreen() {
   async function handleSubmit() {
     const nextErrors: FormErrors = {};
     if (code.trim().length === 0) nextErrors.code = 'Enter the code we emailed you.';
-    if (!isValidPassword(password)) nextErrors.password = 'Password must be at least 6 characters.';
+    if (!isPasswordPolicyMet(password))
+      nextErrors.password = 'Password must be at least 10 characters and include upper and lower case letters plus a number or symbol.';
     if (confirmPassword !== password) nextErrors.confirmPassword = "Passwords don't match.";
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
