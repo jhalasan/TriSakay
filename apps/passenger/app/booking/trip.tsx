@@ -1,10 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Animated, Text, View } from 'react-native';
+import { Animated, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { subscribeToDriverLocation, subscribeToRideRequestStatus, type DriverLocation } from '@trisakay/services';
+import {
+  cancelRideRequest,
+  subscribeToDriverLocation,
+  subscribeToRideRequestStatus,
+  type DriverLocation,
+} from '@trisakay/services';
 import { ASSUMED_TRICYCLE_SPEED_KMH, estimateEtaMinutes, haversineKm } from '@trisakay/shared';
-import { Badge, Button, EmptyState, GradientSurface, HoldToConfirmButton, OsmMap, colors, motion, spacing, useTutorialTarget } from '@trisakay/ui';
+import {
+  Badge,
+  Button,
+  ConfirmModal,
+  EmptyState,
+  GradientSurface,
+  HoldToConfirmButton,
+  OsmMap,
+  colors,
+  motion,
+  spacing,
+  useTutorialTarget,
+} from '@trisakay/ui';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useTripTutorialDemo } from '../../src/hooks/useTutorialDemoState';
@@ -37,6 +54,9 @@ export default function TripScreen() {
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const reset = useBookingStore((state) => state.reset);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const [rideStatus, setRideStatus] = useState<'assigned' | 'ongoing'>(
     initialStatus === 'ongoing' ? 'ongoing' : 'assigned'
   );
@@ -138,6 +158,50 @@ export default function TripScreen() {
         )
       : null;
 
+  /**
+   * P2 (2026-09-15 launch audit): the only exit from this screen used to be
+   * SOS — no way to back out of a ride once a driver was assigned. Only
+   * offered before pickup (`rideStatus === 'assigned'`); once the trip is
+   * `ongoing` the driver has already picked the passenger up, so "cancel"
+   * no longer makes sense there (see FR-9's cash-only, no-refund design —
+   * ending an in-progress ride is a driver/PSO matter, not a passenger
+   * self-cancel).
+   *
+   * Uses the same `cancelRideRequest` call and "Cancelled by passenger"
+   * reason as no-drivers-nearby.tsx's own change-pickup cancel, and
+   * navigates straight to Home on success rather than through
+   * ride-cancelled.tsx — that screen's copy ("This ride was cancelled…") is
+   * written for a cancellation that happened *to* the passenger (by the
+   * driver or the system), not one they just chose themselves.
+   *
+   * Known limitation: the driver app has no realtime subscription on an
+   * active trip's passenger list (it only refreshes on driver-initiated
+   * actions), so a driver already en route won't be notified instantly —
+   * their next attempt to act on this leg will fail with a clear error
+   * rather than silently succeeding against a cancelled row. A live push
+   * notification to the driver here would need the same delivery
+   * infrastructure as P1-12's ride-request alerts; out of scope for this fix.
+   */
+  async function handleCancelRide() {
+    if (!rideRequestId) return;
+    setCancelling(true);
+    setCancelError(null);
+
+    const { error } = await cancelRideRequest(rideRequestId, 'Cancelled by passenger');
+
+    setCancelling(false);
+    setCancelConfirmVisible(false);
+
+    if (error) {
+      setCancelError(error);
+      return;
+    }
+
+    hasExitedRef.current = true;
+    reset();
+    router.replace('/(tabs)/home');
+  }
+
   if (!driver) {
     return (
       <View style={styles.container}>
@@ -216,9 +280,30 @@ export default function TripScreen() {
               />
               <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
             </View>
+
+            {rideStatus === 'assigned' && !tutorialDemo.active && (
+              <View style={styles.cancelLinkWrap}>
+                <Pressable onPress={() => setCancelConfirmVisible(true)} accessibilityRole="button">
+                  <Text style={styles.cancelLinkText}>{t.trip.cancelRide}</Text>
+                </Pressable>
+                {cancelError && <Text style={styles.error}>{cancelError}</Text>}
+              </View>
+            )}
           </View>
         </GradientSurface>
       </Animated.View>
+
+      <ConfirmModal
+        visible={cancelConfirmVisible}
+        title={t.trip.cancelRideTitle}
+        message={t.trip.cancelRideMessage}
+        cancelLabel={t.trip.cancelRideKeepIt}
+        confirmLabel={t.trip.cancelRideConfirm}
+        destructive
+        confirmLoading={cancelling}
+        onCancel={() => setCancelConfirmVisible(false)}
+        onConfirm={handleCancelRide}
+      />
     </View>
   );
 }

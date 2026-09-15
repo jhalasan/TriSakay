@@ -3,12 +3,14 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { BrandMotif, Button, GradientSurface, TextField, colors } from '@trisakay/ui';
+import { BrandMotif, Button, GradientSurface, SegmentedControl, TextField, colors } from '@trisakay/ui';
 import { HAS_SIGNED_IN_KEY } from '../../src/constants/walkthrough';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { isValidEmail, isValidPassword } from '../../src/utils/validation';
+import { isValidEmail, isValidMobile, isValidPassword } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/login.styles';
+
+type LoginMethod = 'mobile' | 'email';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -32,9 +34,11 @@ export default function LoginScreen() {
   // either one puts this button back at the mercy of a hung request.
   const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
 
+  const [method, setMethod] = useState<LoginMethod>('email');
   const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; mobile?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
   // null while unresolved (the one frame before AsyncStorage answers) — the
@@ -84,6 +88,12 @@ export default function LoginScreen() {
     setSubmitting(false);
   }
 
+  function handleMobileBlur() {
+    if (mobile && !isValidMobile(mobile)) {
+      setErrors((prev) => ({ ...prev, mobile: t.auth.login.enterValidMobile }));
+    }
+  }
+
   const title = hasSignedIn === null ? ' ' : hasSignedIn ? t.auth.login.welcomeBack : t.auth.login.welcomeNew;
   const subtitle =
     hasSignedIn === null
@@ -120,11 +130,6 @@ export default function LoginScreen() {
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
 
-          {/* P1-20 (2026-09-15 launch audit): the "N tries left before a
-              5-minute lock" copy that used to render here was removed — the
-              comment above its state ("there is no backend lockout rule
-              yet") confirms it, and it does not disable anything, so it
-              only misled users into thinking there was a lockout timer. */}
           {authError && (
             <View style={styles.errorBanner}>
               <Ionicons name="alert-circle" size={18} color={colors.danger} style={styles.errorBannerIcon} />
@@ -132,23 +137,51 @@ export default function LoginScreen() {
             </View>
           )}
 
-          {/* P1-20 (2026-09-15 launch audit): the Mobile/Email sign-in
-              segmented control was removed — mobile-number sign-in has no
-              backend path (signIn only accepts email/password; there's no
-              phone→email lookup), so it always fell back to a disabled
-              button and a "coming soon" notice. Email-only sign-in until
-              that backend support exists. */}
-          <View style={styles.fields}>
-            <TextField
-              label={t.auth.login.email}
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={setEmail}
-              error={errors.email}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
+          {/* Mobile-number sign-in has no backend path (signIn only accepts
+              email/password; there's no phone→email lookup) — kept as a
+              prototype control per request (2026-09-15): submission stays
+              disabled on this tab with a "coming soon" notice rather than
+              pretending it works. */}
+          <View style={styles.methodTrack}>
+            <SegmentedControl
+              options={[
+                { label: t.auth.login.mobileNumber, value: 'mobile' },
+                { label: t.auth.login.email, value: 'email' },
+              ]}
+              value={method}
+              onChange={setMethod}
             />
+          </View>
+
+          <View style={styles.fields}>
+            {method === 'mobile' ? (
+              <TextField
+                label={t.auth.login.mobileNumber}
+                placeholder="917 842 5510"
+                value={mobile}
+                onChangeText={setMobile}
+                onBlur={handleMobileBlur}
+                error={errors.mobile}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                leftIcon={
+                  <View style={styles.mobilePrefix}>
+                    <Text style={styles.mobilePrefixText}>+63</Text>
+                  </View>
+                }
+              />
+            ) : (
+              <TextField
+                label={t.auth.login.email}
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={setEmail}
+                error={errors.email}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            )}
             <TextField
               label={t.auth.login.password}
               placeholder="••••••••"
@@ -160,6 +193,8 @@ export default function LoginScreen() {
             />
           </View>
 
+          {method === 'mobile' && <Text style={styles.mobileNotice}>{t.auth.login.mobileComingSoon}</Text>}
+
           {/* P0-3 (2026-09-15 launch audit): the reset flow itself
               (app/(auth)/forgot-password.tsx) is still non-functional — Supabase's
               free tier can't have the recovery email template edited without custom
@@ -170,7 +205,13 @@ export default function LoginScreen() {
             <Text style={styles.forgotLinkText}>{t.auth.login.forgotPassword}</Text>
           </Pressable>
 
-          <Button label={t.auth.login.logIn} onPress={handleLogin} loading={submitting || awaitingGate} fullWidth />
+          <Button
+            label={t.auth.login.logIn}
+            onPress={handleLogin}
+            loading={submitting || awaitingGate}
+            disabled={method === 'mobile'}
+            fullWidth
+          />
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />

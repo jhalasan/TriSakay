@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
-import { BrandMotif, Button, colors, GradientSurface, TextField } from '@trisakay/ui';
+import { BrandMotif, Button, colors, GradientSurface, SegmentedControl, TextField } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { isValidEmail, isValidPassword } from '../../src/utils/validation';
+import { isValidEmail, isValidMobile, isValidPassword } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/login.styles';
+
+type LoginMethod = 'mobile' | 'email';
 
 export default function LoginScreen() {
   const router = useRouter();
@@ -16,9 +18,11 @@ export default function LoginScreen() {
   const clearError = useAuthStore((state) => state.clearError);
   const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
 
+  const [method, setMethod] = useState<LoginMethod>('email');
   const [email, setEmail] = useState('');
+  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; mobile?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
   async function handleLogin() {
@@ -32,6 +36,12 @@ export default function LoginScreen() {
     setSubmitting(true);
     await login(email, password);
     setSubmitting(false);
+  }
+
+  function handleMobileBlur() {
+    if (mobile && !isValidMobile(mobile)) {
+      setErrors((prev) => ({ ...prev, mobile: t.driver.login.enterValidMobile }));
+    }
   }
 
   return (
@@ -59,17 +69,51 @@ export default function LoginScreen() {
           <Text style={styles.title}>{t.driver.login.welcomeBack}</Text>
           <Text style={styles.subtitle}>{t.driver.login.subtitle}</Text>
 
-          <View style={styles.fields}>
-            <TextField
-              label={t.driver.login.email}
-              placeholder="you@example.com"
-              value={email}
-              onChangeText={setEmail}
-              error={errors.email}
-              autoCapitalize="none"
-              keyboardType="email-address"
-              autoComplete="email"
+          {/* Mobile-number sign-in has no backend path (signIn only accepts
+              email/password; there's no phone→email lookup) — added as a
+              prototype control per request (2026-09-15): submission stays
+              disabled on this tab with a "coming soon" notice rather than
+              pretending it works. */}
+          <View style={styles.methodTrack}>
+            <SegmentedControl
+              options={[
+                { label: t.driver.login.mobileNumber, value: 'mobile' },
+                { label: t.driver.login.email, value: 'email' },
+              ]}
+              value={method}
+              onChange={setMethod}
             />
+          </View>
+
+          <View style={styles.fields}>
+            {method === 'mobile' ? (
+              <TextField
+                label={t.driver.login.mobileNumber}
+                placeholder="917 842 5510"
+                value={mobile}
+                onChangeText={setMobile}
+                onBlur={handleMobileBlur}
+                error={errors.mobile}
+                keyboardType="phone-pad"
+                autoComplete="tel"
+                leftIcon={
+                  <View style={styles.mobilePrefix}>
+                    <Text style={styles.mobilePrefixText}>+63</Text>
+                  </View>
+                }
+              />
+            ) : (
+              <TextField
+                label={t.driver.login.email}
+                placeholder="you@example.com"
+                value={email}
+                onChangeText={setEmail}
+                error={errors.email}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                autoComplete="email"
+              />
+            )}
             <TextField
               label={t.driver.login.password}
               placeholder="••••••••"
@@ -80,6 +124,8 @@ export default function LoginScreen() {
               autoComplete="password"
             />
           </View>
+
+          {method === 'mobile' && <Text style={styles.mobileNotice}>{t.driver.login.mobileComingSoon}</Text>}
 
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
@@ -93,7 +139,13 @@ export default function LoginScreen() {
             <Text style={styles.forgotLinkText}>{t.driver.login.forgotPassword}</Text>
           </Pressable>
 
-          <Button label={t.driver.login.logIn} onPress={handleLogin} loading={submitting || awaitingGate} fullWidth />
+          <Button
+            label={t.driver.login.logIn}
+            onPress={handleLogin}
+            loading={submitting || awaitingGate}
+            disabled={method === 'mobile'}
+            fullWidth
+          />
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />

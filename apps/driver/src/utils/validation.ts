@@ -9,3 +9,8 @@ export function isValidPassword(value: string): boolean {
 export function isNonEmpty(value: string): boolean {
   return value.trim().length > 0;
 }
+
+/** PH mobile number after the +63 prefix: 10 digits, starting with 9. */
+export function isValidMobile(value: string): boolean {
+  return /^9\d{9}$/.test(value.trim());
+}

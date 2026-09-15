@@ -107,6 +107,16 @@ export default function ComplaintsScreen() {
   );
 
   const [relatedTripId, setRelatedTripId] = useState<string | null>(null);
+  // P2 (2026-09-15 launch audit): "Complaints require a completed trip — a
+  // passenger who was never picked up cannot file one." The backend never
+  // actually required this (complaints.ride_request_id is nullable, and
+  // complaints_submit's RLS check is just `submitted_by = auth.uid()`) —
+  // canSubmit's `!!relatedTripId` was the only thing enforcing it. This flag
+  // lets a passenger explicitly say "not about a specific ride" (e.g. their
+  // driver never showed and the request never resolved to completed/
+  // cancelled, so it never appears in the ride picker below) instead of
+  // being unable to submit anything at all.
+  const [generalComplaint, setGeneralComplaint] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
   const [categoryState, setCategory] = useState<ComplaintCategory>('other');
   const category = tutorialDemo.active ? tutorialDemo.data.category : categoryState;
@@ -120,10 +130,11 @@ export default function ComplaintsScreen() {
   const [submittedWarning, setSubmittedWarning] = useState<string | null>(null);
 
   const selectedRide = rides.find((ride) => ride.id === relatedTripId) ?? null;
-  const canSubmit = !!relatedTripId && isNonEmpty(subject) && isNonEmpty(message);
+  const canSubmit = (!!relatedTripId || generalComplaint) && isNonEmpty(subject) && isNonEmpty(message);
 
   function resetForm() {
     setRelatedTripId(null);
+    setGeneralComplaint(false);
     setCategory('other');
     setSubject('');
     setMessage('');
@@ -223,12 +234,17 @@ export default function ComplaintsScreen() {
             >
               <View style={styles.categoryFieldContent}>
                 {selectedRide && <Avatar name={selectedRide.driverName} size="xs" />}
-                <Text style={[styles.pickerFieldText, !selectedRide && styles.pickerFieldPlaceholder]} numberOfLines={1}>
+                <Text
+                  style={[styles.pickerFieldText, !selectedRide && !generalComplaint && styles.pickerFieldPlaceholder]}
+                  numberOfLines={1}
+                >
                   {tutorialDemo.active
                     ? tutorialDemo.data.relatedTripLabel
                     : selectedRide
                       ? `${selectedRide.driverName} · ${selectedRide.dropoff}`
-                      : t.complaints.selectAPastRide}
+                      : generalComplaint
+                        ? t.complaints.notRelatedToARide
+                        : t.complaints.selectAPastRide}
                 </Text>
               </View>
               <Ionicons name={pickerOpen ? 'chevron-up' : 'chevron-down'} size={18} color={colors.inkSoft} />
@@ -236,22 +252,29 @@ export default function ComplaintsScreen() {
 
             {pickerOpen && (
               <Card style={styles.pickerList}>
-                {rides.length === 0 ? (
-                  <Text style={styles.pickerEmpty}>{t.complaints.noPastRides}</Text>
-                ) : (
-                  rides.map((ride, index) => (
-                    <ListRow
-                      key={ride.id}
-                      title={ride.driverName || 'Driver'}
-                      subtitle={ride.pickup && ride.dropoff ? `${ride.pickup} → ${ride.dropoff}` : undefined}
-                      onPress={() => {
-                        setRelatedTripId(ride.id);
-                        setPickerOpen(false);
-                      }}
-                      divider={index < rides.length - 1}
-                    />
-                  ))
-                )}
+                <ListRow
+                  title={t.complaints.notRelatedToARide}
+                  subtitle={t.complaints.notRelatedToARideSubtitle}
+                  onPress={() => {
+                    setRelatedTripId(null);
+                    setGeneralComplaint(true);
+                    setPickerOpen(false);
+                  }}
+                  divider={rides.length > 0}
+                />
+                {rides.map((ride, index) => (
+                  <ListRow
+                    key={ride.id}
+                    title={ride.driverName || 'Driver'}
+                    subtitle={ride.pickup && ride.dropoff ? `${ride.pickup} → ${ride.dropoff}` : undefined}
+                    onPress={() => {
+                      setRelatedTripId(ride.id);
+                      setGeneralComplaint(false);
+                      setPickerOpen(false);
+                    }}
+                    divider={index < rides.length - 1}
+                  />
+                ))}
               </Card>
             )}
           </View>

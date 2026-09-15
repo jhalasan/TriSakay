@@ -15,6 +15,16 @@ import type { AdminRole } from '../types/role';
 import { formatDateTime } from '../lib/format';
 import styles from './PsoUsers.module.css';
 
+/** P2 (2026-09-15 launch audit): the invite form accepted any non-empty
+ * string as an email — since `admin-create-pso-user` sets `email_confirm:
+ * true` with no verification email ever sent, a typo silently created a
+ * permanently unreachable account whose one-time temp password had already
+ * been shown. This is a plain format check only (matches the driver/
+ * passenger apps' isValidEmail), not real deliverability verification. */
+function isValidEmail(value: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value.trim());
+}
+
 const ROLE_TONE: Record<AdminRole, 'info' | 'warn' | 'neutral'> = {
   admin: 'info',
   pso_supervisor: 'warn',
@@ -60,6 +70,7 @@ export function PsoUsers() {
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
+  const [emailError, setEmailError] = useState<string | undefined>();
   const [role, setRole] = useState<AdminRole>('pso_staff');
   const [creating, setCreating] = useState(false);
   const [createdEmail, setCreatedEmail] = useState('');
@@ -81,6 +92,11 @@ export function PsoUsers() {
 
   async function handleAdd() {
     if (!firstName.trim() || !lastName.trim() || !email.trim()) return;
+    if (!isValidEmail(email)) {
+      setEmailError('Enter a valid email address.');
+      return;
+    }
+    setEmailError(undefined);
     setCreating(true);
     const ok = await addUser({ firstName, lastName, email, role });
     setCreating(false);
@@ -211,7 +227,17 @@ export function PsoUsers() {
       <div className={`panel ${styles.inviteForm}`}>
         <TextField label="First Name" placeholder="e.g. Jonalyn" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
         <TextField label="Last Name" placeholder="e.g. Carreon" value={lastName} onChange={(e) => setLastName(e.target.value)} />
-        <TextField label="Work Email" type="email" placeholder="name@gensantos.gov.ph" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <TextField
+          label="Work Email"
+          type="email"
+          placeholder="name@gensantos.gov.ph"
+          value={email}
+          onChange={(e) => {
+            setEmail(e.target.value);
+            if (emailError) setEmailError(undefined);
+          }}
+          error={emailError}
+        />
         <Select
           label="Role"
           value={role}

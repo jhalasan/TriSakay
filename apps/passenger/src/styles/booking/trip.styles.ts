@@ -77,4 +77,13 @@ export const styles = StyleSheet.create({
     opacity: 0.75,
     textAlign: 'center',
   },
+  cancelLinkWrap: {
+    alignItems: 'center',
+    paddingVertical: spacing.xs,
+  },
+  cancelLinkText: {
+    ...typography.caption,
+    color: colors.white,
+    textDecorationLine: 'underline',
+  },
 });

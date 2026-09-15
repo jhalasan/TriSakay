@@ -4,7 +4,9 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, Toggle, colors, useTutorial } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { useAuthStore } from '../../src/store/useAuthStore';
 import { useSettingsStore, type SettingsLanguage } from '../../src/store/useSettingsStore';
+import { interpolate } from '../../src/utils/interpolate';
 import { styles } from '../../src/styles/profile/settings.styles';
 
 const LANGUAGE_CODES: SettingsLanguage[] = ['en', 'fil'];
@@ -57,9 +59,20 @@ function ToggleRow({
 export default function SettingsScreen() {
   const router = useRouter();
   const t = useTranslation();
+  const user = useAuthStore((state) => state.user);
   const tutorial = useTutorial();
-  const { pushNotificationsEnabled, locationTrackingEnabled, language, togglePushNotifications, toggleLocationTracking, setLanguage } =
-    useSettingsStore();
+  const {
+    pushNotificationsEnabled,
+    locationTrackingEnabled,
+    language,
+    smsReceipts,
+    emailReceipts,
+    togglePushNotifications,
+    toggleLocationTracking,
+    setLanguage,
+    toggleSmsReceipts,
+    toggleEmailReceipts,
+  } = useSettingsStore();
 
   const languageLabels: Record<SettingsLanguage, string> = {
     en: t.settings.languageEnglish,
@@ -80,8 +93,9 @@ export default function SettingsScreen() {
         <View>
           <SectionLabel label={t.settings.sectionNotifications} />
           <View style={styles.card}>
-            {/* P1-20 (2026-09-15 launch audit): SMS/email receipt toggles
-                removed — read by nothing, no SMS or email receipt is ever
+            {/* Re-added on request (2026-09-15) as prototype controls: SMS/
+                email receipts aren't wired to anything real yet (P1-20,
+                2026-09-15 launch audit) — no SMS or email receipt is ever
                 sent anywhere in the app. */}
             <ToggleRow
               icon="notifications-outline"
@@ -89,6 +103,20 @@ export default function SettingsScreen() {
               sublabel={t.driver.settings.pushNotificationsSubtitle}
               value={pushNotificationsEnabled}
               onValueChange={togglePushNotifications}
+            />
+            <ToggleRow
+              icon="chatbubble-outline"
+              label={t.settings.smsReceipts}
+              sublabel={user?.phone ? interpolate(t.driver.settings.smsReceiptsSubtitle, { phone: user.phone }) : undefined}
+              value={smsReceipts}
+              onValueChange={toggleSmsReceipts}
+            />
+            <ToggleRow
+              icon="mail-outline"
+              label={t.settings.emailReceipts}
+              sublabel={user?.email ? interpolate(t.driver.settings.emailReceiptsSubtitle, { email: user.email }) : undefined}
+              value={emailReceipts}
+              onValueChange={toggleEmailReceipts}
               divider={false}
             />
           </View>
