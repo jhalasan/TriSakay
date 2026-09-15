@@ -151,6 +151,11 @@ export const en = {
     sectionNotifications: 'Notifications',
     sectionPrivacy: 'Privacy',
     sectionPreferences: 'Preferences',
+    sectionLegal: 'Legal',
+    legalTermsPrivacy: 'Terms & Privacy',
+    legalTermsPrivacySubtitle: 'Review what you agreed to at sign-up',
+    legalSafetyCenter: 'Safety Center',
+    legalSafetyCenterSubtitle: 'Emergency numbers and safety tips',
     sectionHelp: 'Help',
     replayTour: 'Replay app tour',
     replayTourSubtitle: 'Take the welcome walkthrough again',
@@ -255,6 +260,23 @@ export const en = {
     sentAtLabel: 'Sent at {time}',
     sharedWithPso: 'Shared with the PSO',
     nearLabel: 'Near',
+  },
+  legal: {
+    title: 'Terms & Privacy',
+    whatWeCollect: 'What we collect & share',
+  },
+  safety: {
+    title: 'Safety Center',
+    subtitle: 'Know what to do, and what TriSakay does, if something feels wrong.',
+    callButton: 'Call 911 / PNP',
+    howSosWorksTitle: 'How in-app SOS works',
+    howSosWorksBody:
+      "Hold the Emergency SOS button on your trip screen if you're in immediate danger. It alerts PSO with your live location and your driver's details, and stays available only during an active trip.",
+    tipsTitle: 'Safety tips',
+    tip1: 'Check that the plate number and driver photo shown in the app match the tricycle before boarding.',
+    tip2: 'Keep your phone charged and location on during the trip so SOS can share where you are.',
+    tip3: 'Let someone you trust know your pickup and drop-off before you ride.',
+    reportIssueLink: 'Report a non-emergency issue',
   },
   noDriversNearby: {
     title: 'No drivers nearby',
@@ -787,6 +809,13 @@ export const en = {
       emailReceiptsSubtitle: '{email}',
       locationTrackingSubtitle: 'Only while online or on a trip',
       versionLine: 'TriSakay Driver v1.0 · Barangay Poblacion PSO',
+    },
+    safety: {
+      howSosWorksBody:
+        "Hold the Emergency SOS button on your trip screen if a passenger situation turns dangerous. It alerts PSO with your live location — and your passenger's details when exactly one is aboard — and stays available only during an active trip.",
+      tip1: 'Confirm the passenger matches the name and pickup shown in the app before starting the trip.',
+      tip2: 'Keep your phone charged and location on while online or on a trip so SOS can share where you are.',
+      tip3: 'PSO reviews every verified misconduct or safety complaint and can suspend an account over it.',
     },
     tripActive: {
       passengerFallback: 'Passenger',

@@ -152,6 +152,11 @@ export const fil: Translations = {
     sectionNotifications: 'Mga Abiso',
     sectionPrivacy: 'Pagkapribado',
     sectionPreferences: 'Mga Kagustuhan',
+    sectionLegal: 'Legal',
+    legalTermsPrivacy: 'Mga Tuntunin at Privacy',
+    legalTermsPrivacySubtitle: 'Balikan ang iyong sinang-ayunan noong nag-sign up',
+    legalSafetyCenter: 'Sentro ng Kaligtasan',
+    legalSafetyCenterSubtitle: 'Mga emergency hotline at tip sa kaligtasan',
     sectionHelp: 'Tulong',
     replayTour: 'Ulitin ang Tour ng App',
     replayTourSubtitle: 'Panoorin muli ang pambungad na walkthrough',
@@ -256,6 +261,23 @@ export const fil: Translations = {
     sentAtLabel: 'Ipinadala noong {time}',
     sharedWithPso: 'Ibinahagi sa PSO',
     nearLabel: 'Malapit sa',
+  },
+  legal: {
+    title: 'Mga Tuntunin at Privacy',
+    whatWeCollect: 'Ano ang kinokolekta at ibinabahagi namin',
+  },
+  safety: {
+    title: 'Sentro ng Kaligtasan',
+    subtitle: 'Alamin kung ano ang gagawin, at ang gagawin ng TriSakay, kapag may pakiramdam na hindi tama.',
+    callButton: 'Tumawag sa 911 / PNP',
+    howSosWorksTitle: 'Paano gumagana ang SOS sa app',
+    howSosWorksBody:
+      'Pindutin at hawakan ang Emergency SOS button sa iyong biyahe kung ikaw ay nasa agarang panganib. Ina-abisuhan nito ang PSO ng iyong live na lokasyon at detalye ng iyong driver, at magagamit lamang ito habang may aktibong biyahe.',
+    tipsTitle: 'Mga Tip sa Kaligtasan',
+    tip1: 'Tiyaking tugma ang plate number at larawan ng driver na ipinapakita sa app sa tricycle bago sumakay.',
+    tip2: 'Panatilihing may baterya at bukas ang lokasyon ng iyong telepono habang naglalakbay para magamit ang SOS.',
+    tip3: 'Ipaalam sa taong mapagkakatiwalaan mo ang iyong pickup at drop-off bago sumakay.',
+    reportIssueLink: 'Mag-report ng hindi emergency na isyu',
   },
   noDriversNearby: {
     title: 'Walang driver na malapit',
@@ -782,6 +804,13 @@ export const fil: Translations = {
       emailReceiptsSubtitle: '{email}',
       locationTrackingSubtitle: 'Habang online lang o may biyahe',
       versionLine: 'TriSakay Driver v1.0 · Barangay Poblacion PSO',
+    },
+    safety: {
+      howSosWorksBody:
+        'Pindutin at hawakan ang Emergency SOS button sa iyong biyahe kung nanganganib ang sitwasyon ng pasahero. Ina-abisuhan nito ang PSO ng iyong live na lokasyon — at detalye ng iyong pasahero kung iisa lang ang nakasakay — at magagamit lamang ito habang may aktibong biyahe.',
+      tip1: 'Tiyaking tugma ang pasahero sa pangalan at pickup na ipinapakita sa app bago simulan ang biyahe.',
+      tip2: 'Panatilihing may baterya at bukas ang lokasyon ng iyong telepono habang online o may biyahe para magamit ang SOS.',
+      tip3: 'Sinusuri ng PSO ang bawat napatunayang maling asal o reklamo sa kaligtasan at maaaring suspindihin ang account dahil dito.',
     },
     tripActive: {
       passengerFallback: 'Pasahero',

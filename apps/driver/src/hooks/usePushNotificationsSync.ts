@@ -1,7 +1,6 @@
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
-import Constants from 'expo-constants';
+import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { registerPushToken } from '@trisakay/services';
 import { useSettingsStore } from '../store/useSettingsStore';
 
@@ -15,6 +14,13 @@ import { useSettingsStore } from '../store/useSettingsStore';
  * Deliberately silent on every failure path — a permission denial or a
  * missing EAS projectId must never crash the app, same fail-open
  * discipline as useLocationPermission and the passenger equivalent.
+ *
+ * `expo-notifications` is imported dynamically, not statically: SDK 53+
+ * dropped remote push support from Expo Go, and merely evaluating the
+ * package (any export) eagerly resolves its native module
+ * (`ExpoPushTokenManager`), which throws at import time in Expo Go —
+ * before any try/catch here would ever run. The executionEnvironment
+ * check below skips the import entirely in that case.
  */
 export function usePushNotificationsSync(sessionUserId: string | null) {
   const pushNotificationsEnabled = useSettingsStore((state) => state.pushNotificationsEnabled);
@@ -22,6 +28,7 @@ export function usePushNotificationsSync(sessionUserId: string | null) {
   useEffect(() => {
     if (Platform.OS === 'web') return;
     if (sessionUserId === null) return;
+    if (Constants.executionEnvironment === ExecutionEnvironment.StoreClient) return;
 
     if (!pushNotificationsEnabled) {
       void registerPushToken(null);
@@ -32,6 +39,7 @@ export function usePushNotificationsSync(sessionUserId: string | null) {
 
     (async () => {
       try {
+        const Notifications = await import('expo-notifications');
         const existing = await Notifications.getPermissionsAsync();
         let granted = existing.granted;
         if (!granted) {

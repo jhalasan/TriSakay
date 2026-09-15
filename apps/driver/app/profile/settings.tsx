@@ -153,6 +153,40 @@ export default function SettingsScreen() {
         </View>
 
         <View>
+          <SectionLabel label={t.settings.sectionLegal} />
+          <View style={styles.card}>
+            <Pressable
+              style={[styles.row, styles.rowDivider]}
+              onPress={() => router.push('/profile/legal')}
+              accessibilityRole="button"
+            >
+              <View style={styles.rowLeading}>
+                <IconBadge name="document-text-outline" />
+                <View style={styles.rowTextSlot}>
+                  <Text style={styles.rowLabel}>{t.settings.legalTermsPrivacy}</Text>
+                  <Text style={styles.rowSublabel} numberOfLines={1}>
+                    {t.settings.legalTermsPrivacySubtitle}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+            </Pressable>
+            <Pressable style={styles.row} onPress={() => router.push('/profile/safety')} accessibilityRole="button">
+              <View style={styles.rowLeading}>
+                <IconBadge name="shield-checkmark-outline" />
+                <View style={styles.rowTextSlot}>
+                  <Text style={styles.rowLabel}>{t.settings.legalSafetyCenter}</Text>
+                  <Text style={styles.rowSublabel} numberOfLines={1}>
+                    {t.settings.legalSafetyCenterSubtitle}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View>
           <SectionLabel label={t.settings.sectionHelp} />
           <View style={styles.card}>
             <Pressable style={styles.row} onPress={tutorial.start} accessibilityRole="button">
