@@ -64,12 +64,10 @@ export default function SettingsScreen() {
   const tutorial = useTutorial();
   const {
     pushNotificationsEnabled,
-    locationTrackingEnabled,
     language,
     smsReceipts,
     emailReceipts,
     togglePushNotifications,
-    toggleLocationTracking,
     setLanguage,
     toggleSmsReceipts,
     toggleEmailReceipts,
@@ -133,16 +131,20 @@ export default function SettingsScreen() {
           />
         </Card>
 
-        <SectionLabel label={t.settings.sectionPrivacy} />
+        <SectionLabel label={t.settings.sectionPrivacySafety} />
         <Card variant="raised" style={styles.card}>
-          <ToggleRow
-            icon="location-outline"
-            label={t.settings.locationTracking}
-            subtitle={t.settings.locationTrackingSubtitle}
-            value={locationTrackingEnabled}
-            onValueChange={toggleLocationTracking}
-            divider={false}
-          />
+          <Pressable style={styles.row} onPress={() => router.push('/profile/privacy-safety')} accessibilityRole="button">
+            <View style={styles.rowLeading}>
+              <IconBadge name="shield-checkmark-outline" />
+              <View style={styles.rowTextSlot}>
+                <Text style={styles.rowLabel}>{t.settings.privacySafetyCenterRow}</Text>
+                <Text style={styles.rowSubtitle} numberOfLines={1}>
+                  {t.settings.privacySafetyCenterRowSubtitle}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+          </Pressable>
         </Card>
 
         <SectionLabel label={t.settings.sectionPreferences} />
@@ -156,38 +158,6 @@ export default function SettingsScreen() {
               <Text style={styles.rowValue}>{languageLabels[language]}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </View>
-          </Pressable>
-        </Card>
-
-        <SectionLabel label={t.settings.sectionLegal} />
-        <Card variant="raised" style={styles.card}>
-          <Pressable
-            style={[styles.row, styles.rowDivider]}
-            onPress={() => router.push('/profile/legal')}
-            accessibilityRole="button"
-          >
-            <View style={styles.rowLeading}>
-              <IconBadge name="document-text-outline" />
-              <View style={styles.rowTextSlot}>
-                <Text style={styles.rowLabel}>{t.settings.legalTermsPrivacy}</Text>
-                <Text style={styles.rowSubtitle} numberOfLines={1}>
-                  {t.settings.legalTermsPrivacySubtitle}
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
-          </Pressable>
-          <Pressable style={styles.row} onPress={() => router.push('/profile/safety')} accessibilityRole="button">
-            <View style={styles.rowLeading}>
-              <IconBadge name="shield-checkmark-outline" />
-              <View style={styles.rowTextSlot}>
-                <Text style={styles.rowLabel}>{t.settings.legalSafetyCenter}</Text>
-                <Text style={styles.rowSubtitle} numberOfLines={1}>
-                  {t.settings.legalSafetyCenterSubtitle}
-                </Text>
-              </View>
-            </View>
-            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </Pressable>
         </Card>
 

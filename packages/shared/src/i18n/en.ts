@@ -151,6 +151,12 @@ export const en = {
     tagline: 'Notifications, privacy, and language for this device.',
     sectionNotifications: 'Notifications',
     sectionPrivacy: 'Privacy',
+    // Passenger-only consolidated entry point (Privacy & Safety Center); the
+    // driver app's own Settings screen still uses sectionPrivacy/sectionLegal
+    // and its own separate profile/safety.tsx below, untouched.
+    sectionPrivacySafety: 'Privacy & Safety',
+    privacySafetyCenterRow: 'Privacy & Safety Center',
+    privacySafetyCenterRowSubtitle: 'Emergency SOS, location, and legal info',
     sectionPreferences: 'Preferences',
     sectionLegal: 'Legal',
     legalTermsPrivacy: 'Terms & Privacy',
@@ -272,12 +278,45 @@ export const en = {
     callButton: 'Call 911 / PNP',
     howSosWorksTitle: 'How in-app SOS works',
     howSosWorksBody:
-      "Hold the Emergency SOS button on your trip screen if you're in immediate danger. It alerts PSO with your live location and your driver's details, and stays available only during an active trip.",
+      "Hold the Emergency SOS button on your trip screen if you're in immediate danger during a ride — it alerts PSO with your live location and your driver's details. You can also send an SOS to PSO anytime from the Privacy & Safety Center, even without an active ride.",
     tipsTitle: 'Safety tips',
     tip1: 'Check that the plate number and driver photo shown in the app match the tricycle before boarding.',
     tip2: 'Keep your phone charged and location on during the trip so SOS can share where you are.',
     tip3: 'Let someone you trust know your pickup and drop-off before you ride.',
     reportIssueLink: 'Report a non-emergency issue',
+  },
+  privacySafety: {
+    eyebrow: 'Privacy & Safety',
+    title: 'Privacy & Safety Center',
+    subtitle: 'Everything about staying safe and in control of your data, in one place.',
+    sosButton: 'Send SOS to PSO',
+    sosConfirmTitle: 'Send an SOS alert?',
+    sosConfirmMessage:
+      'This shares your live location with PSO right now, even without an active ride. Only use this if you feel unsafe.',
+    sosConfirmButton: 'Send SOS',
+    sosSending: 'Sending your location to PSO…',
+    sosSent: 'PSO has been notified of your location.',
+    sosFailed: 'Could not reach PSO. Try again, or call 911 directly.',
+    sosLocationRequired: 'Location access is needed to share where you are. Enable it in system settings and try again.',
+    retry: 'Retry',
+    sectionAccountSecurity: 'Account security',
+    changePasswordRow: 'Change password',
+    changePasswordRowSubtitle: 'Update the password for this account',
+    sectionLegal: 'Legal',
+    termsPrivacyRow: 'Terms of Service & Privacy Policy',
+    termsPrivacyRowSubtitle: 'Review what you agreed to at sign-up',
+    yourDataTitle: 'Your data',
+    yourDataBody:
+      'You may ask PSO to give you a copy of, correct, or delete your personal data at any time. Reach PSO through the contact channel on your ride receipts or at the barangay office.',
+  },
+  changePassword: {
+    title: 'Change password',
+    currentPassword: 'Current password',
+    newPassword: 'New password',
+    confirmNewPassword: 'Confirm new password',
+    saveButton: 'Update password',
+    notAvailableNotice:
+      "Changing your password from the app isn't available yet in this prototype. Contact PSO if you need help accessing your account.",
   },
   noDriversNearby: {
     title: 'No drivers nearby',
