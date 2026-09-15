@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useMemo, useRef, useState, type ReactNode } from 'react';
 import styles from './Toast.module.css';
 
-export type ToastTone = 'success' | 'info';
+export type ToastTone = 'success' | 'info' | 'error';
 
 export interface ToastAction {
   label: string;

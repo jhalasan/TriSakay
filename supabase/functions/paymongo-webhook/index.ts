@@ -44,6 +44,15 @@ function isUuid(value: string): boolean {
   return UUID_RE.test(value);
 }
 
+// P1-9 (2026-09-15 launch audit): the structured-header branch signed the
+// timestamp into the payload but never checked it was recent, so a captured
+// valid delivery could be replayed indefinitely. Impact was already
+// contained by `.eq('status', 'pending')` at the call site — replaying a
+// 'paid' event against an already-paid row is a no-op — but a 10-minute
+// window closes the narrower case of replaying onto a row a 'failed'->
+// 'pending' reset later reused (create-gcash-checkout permits that reset).
+const SIGNATURE_MAX_AGE_SECONDS = 10 * 60;
+
 async function verifySignature(rawBody: string, header: string, secret: string): Promise<boolean> {
   if (header.includes('=') && header.includes(',')) {
     const parts = Object.fromEntries(
@@ -60,6 +69,15 @@ async function verifySignature(rawBody: string, header: string, secret: string):
     // falling through to the populated one, failing verification closed.
     const candidate = parts.te || parts.li;
     if (!timestamp || !candidate) return false;
+
+    const timestampSeconds = Number(timestamp);
+    if (!Number.isFinite(timestampSeconds)) return false;
+    const ageSeconds = Math.abs(Date.now() / 1000 - timestampSeconds);
+    if (ageSeconds > SIGNATURE_MAX_AGE_SECONDS) {
+      console.warn('paymongo-webhook: signature timestamp too old, possible replay', { ageSeconds });
+      return false;
+    }
+
     const expected = await hmacSha256Hex(secret, `${timestamp}.${rawBody}`);
     return timingSafeEqual(expected, candidate);
   }
@@ -78,7 +96,17 @@ Deno.serve(async (req: Request) => {
       return new Response('Missing signature', { status: 401 });
     }
 
-    const secret = Deno.env.get('PAYMONGO_WEBHOOK_SECRET')!;
+    // P1-9 (2026-09-15 launch audit): this used to read the secret with a
+    // non-null assertion (`!`) — if it were ever unset in the deployment
+    // environment, Deno.env.get returns undefined, TextEncoder.encode
+    // silently stringifies that to the literal "undefined", and every
+    // request would validate against a publicly guessable key. Fail closed
+    // instead.
+    const secret = Deno.env.get('PAYMONGO_WEBHOOK_SECRET');
+    if (!secret) {
+      console.error('paymongo-webhook: PAYMONGO_WEBHOOK_SECRET is not configured');
+      return new Response('Server misconfigured', { status: 500 });
+    }
     const valid = await verifySignature(rawBody, signatureHeader, secret);
 
     if (!valid) {
@@ -98,6 +126,47 @@ Deno.serve(async (req: Request) => {
       if (!referenceNumber || !isUuid(referenceNumber)) {
         console.warn('paymongo-webhook: no resolvable reference_number in payload', { eventType, referenceNumber });
         return new Response('ok', { status: 200 });
+      }
+
+      // P1-8 (2026-09-15 launch audit): this used to mark a transaction
+      // 'paid' on a valid signature alone, with no check that the amount
+      // PayMongo actually confirms matches what we billed — a forged event
+      // signed with a leaked webhook secret could name any amount. The
+      // exact shape of `payments[].amount` here has never been confirmed
+      // against a real PayMongo delivery (see the file header note), so
+      // this fails OPEN when the field can't be found at all (payload-shape
+      // uncertainty shouldn't block every real payment), but fails CLOSED
+      // the moment an amount IS present and doesn't match — that's the
+      // scenario a forged/tampered event actually needs to get past.
+      const { data: existingTxn, error: fetchError } = await supabase
+        .from('transactions')
+        .select('amount')
+        .eq('id', referenceNumber)
+        .eq('status', 'pending')
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('paymongo-webhook: failed to read transaction before confirming', fetchError.message);
+        return new Response('Internal error', { status: 500 });
+      }
+      if (!existingTxn) {
+        console.log('paymongo-webhook: no pending transaction matched (already paid or unknown)', { referenceNumber });
+        return new Response('ok', { status: 200 });
+      }
+
+      const paidCentavos: unknown =
+        sessionAttributes?.payments?.[0]?.attributes?.amount ??
+        sessionAttributes?.payment_intent?.attributes?.amount ??
+        sessionAttributes?.amount;
+      const expectedCentavos = Math.round(existingTxn.amount * 100);
+
+      if (typeof paidCentavos === 'number' && paidCentavos !== expectedCentavos) {
+        console.error('paymongo-webhook: paid amount does not match transaction amount, refusing to confirm', {
+          referenceNumber,
+          expectedCentavos,
+          paidCentavos,
+        });
+        return new Response('Amount mismatch', { status: 409 });
       }
 
       const { data, error } = await supabase

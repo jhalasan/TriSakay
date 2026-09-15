@@ -1,7 +1,13 @@
 import { getSupabaseClient } from '../supabase/client.ts';
 import type { Database } from '../supabase/database.types.ts';
 
-export type RideRequestRow = Database['public']['Tables']['ride_requests']['Row'];
+// distance_meters isn't a ride_requests column — match-ride-request adds it
+// ad-hoc to each row only in its heuristic-applied branch (see
+// supabase/functions/match-ride-request/index.ts), so it's optional here
+// rather than part of the generated table type.
+export type RideRequestRow = Database['public']['Tables']['ride_requests']['Row'] & {
+  distance_meters?: number;
+};
 
 export interface CreateRideRequestInput {
   passengerId: string;
@@ -484,6 +490,11 @@ export interface ActiveTripPassenger {
   passengerAvatarUrl: string | null;
   cashConfirmed: boolean;
   status: Database['public']['Enums']['ride_status'];
+  /** P1-14 (2026-09-15 launch audit): lets the active-trip map rehydrate its marker/route on app restart, same as a freshly-accepted request. */
+  pickupLat: number | null;
+  pickupLng: number | null;
+  destLat: number | null;
+  destLng: number | null;
 }
 
 export interface ActiveTripForDriver {
@@ -538,6 +549,10 @@ export async function getActiveTripForDriver(): Promise<GetActiveTripForDriverRe
         passengerAvatarUrl: row.avatar_url,
         cashConfirmed: row.cash_confirmed,
         status: row.status,
+        pickupLat: row.pickup_lat,
+        pickupLng: row.pickup_lng,
+        destLat: row.dest_lat,
+        destLng: row.dest_lng,
       })),
     },
     error: null,

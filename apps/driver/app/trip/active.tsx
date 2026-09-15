@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
-import { ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Linking, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, RequestCard, Toggle, colors, useTutorialTarget } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
@@ -26,6 +26,8 @@ export default function ActiveTripScreen() {
   const tripReal = useTripStore((state) => state.current);
   const trip = tutorialDemo.active ? tutorialDemo.data : tripReal;
   const tripError = useTripStore((state) => state.error);
+  const driverLat = useDriverStore((state) => state.currentLat);
+  const driverLng = useDriverStore((state) => state.currentLng);
   const confirmCash = useTripStore((state) => state.confirmCash);
   const startPassenger = useTripStore((state) => state.startPassenger);
   const completePassenger = useTripStore((state) => state.completePassenger);
@@ -70,6 +72,46 @@ export default function ActiveTripScreen() {
 
   const incoming = pending[0];
   const hasPassengers = trip.passengers.length > 0;
+
+  // P1-14 (2026-09-15 launch audit): the map's routing target — the first
+  // 'assigned' passenger's pickup point (not yet picked up), or else the
+  // first 'ongoing' passenger's destination. With several passengers
+  // aboard simultaneously (FR-2.5c) this points at only one of them; a
+  // real multi-stop router is out of scope, same trigonometry-only
+  // principle the matching heuristic itself uses.
+  const routingPassenger =
+    trip.passengers.find((p) => p.status === 'assigned') ?? trip.passengers.find((p) => p.status === 'ongoing');
+  const targetLat = routingPassenger
+    ? routingPassenger.status === 'assigned'
+      ? routingPassenger.pickupLat
+      : routingPassenger.destLat
+    : null;
+  const targetLng = routingPassenger
+    ? routingPassenger.status === 'assigned'
+      ? routingPassenger.pickupLng
+      : routingPassenger.destLng
+    : null;
+  const hasTarget = targetLat !== null && targetLng !== null;
+  const hasDriverPosition = driverLat !== null && driverLng !== null;
+
+  function handleNavigate() {
+    if (!hasTarget) return;
+    const label = encodeURIComponent(
+      routingPassenger?.status === 'assigned' ? t.driver.requestCard.pickupLabel : t.driver.requestCard.dropoffLabel,
+    );
+    // Hands off to the OS maps app rather than building an in-app router —
+    // consistent with FR-2's "lightweight trigonometry, not a routing
+    // engine call" scope for this prototype.
+    const url = Platform.select({
+      ios: `maps://?daddr=${targetLat},${targetLng}&q=${label}`,
+      android: `geo:${targetLat},${targetLng}?q=${targetLat},${targetLng}(${label})`,
+      default: `https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}`,
+    });
+    Linking.openURL(url).catch(() => {
+      // No maps app registered for the scheme — fall back to the web URL.
+      Linking.openURL(`https://www.google.com/maps/dir/?api=1&destination=${targetLat},${targetLng}`).catch(() => {});
+    });
+  }
 
   async function handleConfirmCash(passengerId: string) {
     if (!user) return;
@@ -123,7 +165,19 @@ export default function ActiveTripScreen() {
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.mapFill}>
-        <OsmMap variant="route" caption={t.trip.mapCaption} height="100%" interactive={false} edgeToEdge bottomInset={260} />
+        <OsmMap
+          variant="route"
+          caption={hasTarget ? undefined : t.trip.mapCaption}
+          height="100%"
+          latitude={hasDriverPosition ? driverLat! : hasTarget ? targetLat! : undefined}
+          longitude={hasDriverPosition ? driverLng! : hasTarget ? targetLng! : undefined}
+          marker={hasTarget ? { latitude: targetLat!, longitude: targetLng! } : null}
+          markerColor={routingPassenger?.status === 'ongoing' ? colors.accentGreen : undefined}
+          route={hasTarget && hasDriverPosition ? [{ latitude: driverLat!, longitude: driverLng! }, { latitude: targetLat!, longitude: targetLng! }] : null}
+          interactive
+          edgeToEdge
+          bottomInset={260}
+        />
       </View>
       <View style={styles.statusBadgeWrap}>
         <View style={styles.statusPill}>
@@ -134,10 +188,16 @@ export default function ActiveTripScreen() {
         </View>
       </View>
 
-      {/* Visual only — real turn-by-turn needs route/destination coordinates not yet plumbed to the driver client. */}
-      <View style={styles.navigateButton}>
-        <Ionicons name="navigate" size={20} color={colors.ink} />
-      </View>
+      {hasTarget && (
+        <Pressable
+          style={styles.navigateButton}
+          accessibilityRole="button"
+          accessibilityLabel={t.driver.tripActive.navigate}
+          onPress={handleNavigate}
+        >
+          <Ionicons name="navigate" size={20} color={colors.ink} />
+        </Pressable>
+      )}
 
       <MapOverlaySheet bottomInset={insets.bottom} maxHeight={sheetMaxHeight} style={styles.content}>
         <ScrollView style={styles.passengerScroll} contentContainerStyle={styles.passengerScrollContent} showsVerticalScrollIndicator>

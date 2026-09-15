@@ -50,7 +50,8 @@
           "photosPermission": "TriSakay needs access to your photos so you can upload verification documents.",
           "cameraPermission": "TriSakay needs access to your camera so you can upload verification documents."
         }
-      ]
+      ],
+      "expo-notifications"
     ],
     "owner": "jirou404s-team",
     "extra": {

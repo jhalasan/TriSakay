@@ -2,6 +2,25 @@ import { formatCurrency } from '@trisakay/utils';
 
 export { formatCurrency };
 
+/**
+ * P1-17 (2026-09-15 launch audit): converts a stored UTC timestamptz ISO
+ * string to the "YYYY-MM-DDTHH:mm" value an `<input type="datetime-local">`
+ * expects, using the browser's LOCAL time getters — not a plain
+ * `.slice(0, 16)` off the ISO string, which took the raw UTC digits and let
+ * the input silently reinterpret them as local time. Complaints.tsx's
+ * mediation-meeting editor was doing exactly that, showing (and then, on
+ * save, persisting) a time 8 hours off from the real UTC instant every time
+ * an existing appointment was reopened and re-saved. `new Date(value)` on
+ * an input's own "YYYY-MM-DDTHH:mm" value is always parsed as local time by
+ * JS, so this is the correct inverse of that — the save path
+ * (`new Date(meetingAtDraft).toISOString()`) was already right.
+ */
+export function toDatetimeLocalValue(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export function formatDate(iso: string): string {
   return new Date(iso).toLocaleDateString('en-PH', {
     year: 'numeric',

@@ -16,22 +16,44 @@ export interface AccountActionRow {
 export interface ListAccountActionsResult {
   data: AccountActionRow[];
   error: string | null;
+  /**
+   * P1-22 (2026-09-15 launch audit): true when the row cap below was hit,
+   * meaning older rows within the requested window exist but weren't
+   * returned. account_actions is append-only and has no natural bound
+   * (unlike the users/driver_profiles/tricycles lists elsewhere in this
+   * app, which scale with headcount, not activity), so an explicit,
+   * visible cap replaces what used to be PostgREST's silent default
+   * max-rows truncation.
+   */
+  truncated: boolean;
 }
+
+const ACCOUNT_ACTIONS_ROW_CAP = 2000;
 
 /**
  * Reads account_actions (docs/SCHEMA.MD §3.2) — the insert-only audit log
  * every Flag/Suspend/Reactivate/Deactivate/Unflag already writes to, across
- * Driver/Passenger/PSO User management, but that nothing in the admin UI
- * reads back until now. RLS (`actions_read_pso`) already lets any signed-in
- * PSO read every row, so no migration is needed for this. Two ids per row
- * (target_user_id, performed_by) — same one-follow-up-query name resolution
- * as listOverdueComplaints() in dashboard.ts, not a multi-hop PostgREST embed.
+ * Driver/Passenger/PSO User management. RLS (`actions_read_pso`) already
+ * lets any signed-in PSO read every row, so no migration is needed for that.
+ * Two ids per row (target_user_id, performed_by) — same one-follow-up-query
+ * name resolution as listOverdueComplaints() in dashboard.ts, not a
+ * multi-hop PostgREST embed.
+ *
+ * `sinceIso` scopes the query server-side to the caller's date-range filter
+ * (AuditLog.tsx's default is "last 7 days") — previously this fetched the
+ * ENTIRE table on every load and filtered client-side, which is exactly the
+ * "grows forever, no natural cap" case P1-22 flagged. Pass `null` for "all
+ * time"; the explicit `.limit()` below still applies in that case, so a
+ * genuinely huge history degrades to "most recent N, visibly flagged" rather
+ * than a silent, unexplained gap.
  */
-export async function listAccountActions(): Promise<ListAccountActionsResult> {
+export async function listAccountActions(sinceIso: string | null = null): Promise<ListAccountActionsResult> {
   const client = getSupabaseClient();
-  const { data, error } = await client.from('account_actions').select('*').order('created_at', { ascending: false });
+  let query = client.from('account_actions').select('*').order('created_at', { ascending: false }).limit(ACCOUNT_ACTIONS_ROW_CAP);
+  if (sinceIso) query = query.gte('created_at', sinceIso);
+  const { data, error } = await query;
 
-  if (error) return { data: [], error: error.message };
+  if (error) return { data: [], error: error.message, truncated: false };
 
   const ids = [...new Set((data ?? []).flatMap((row) => [row.target_user_id, row.performed_by]))];
   const names = new Map<string, string>();
@@ -52,7 +74,7 @@ export async function listAccountActions(): Promise<ListAccountActionsResult> {
     createdAt: row.created_at,
   }));
 
-  return { data: rows, error: null };
+  return { data: rows, error: null, truncated: (data ?? []).length >= ACCOUNT_ACTIONS_ROW_CAP };
 }
 
 export type ReviewDecisionType = 'driver_verification' | 'discount';
@@ -90,16 +112,25 @@ export interface ListReviewDecisionsResult {
 export async function listReviewDecisions(): Promise<ListReviewDecisionsResult> {
   const client = getSupabaseClient();
 
+  // P1-22 (2026-09-15 launch audit): explicit caps, replacing PostgREST's
+  // silent default max-rows truncation with a known, documented one. These
+  // two are naturally bounded by headcount (one verification decision per
+  // driver) or close to it (a passenger can resubmit a discount
+  // application, but rarely more than a couple of times), unlike
+  // account_actions above — so a generous cap here is a safety net, not the
+  // primary fix.
   const [{ data: driverRows, error: driverError }, { data: discountRows, error: discountError }] = await Promise.all([
     client
       .from('driver_profiles')
       .select('user_id, verification_status, verified_by, verified_at')
       .not('verified_by', 'is', null)
-      .order('verified_at', { ascending: false }),
+      .order('verified_at', { ascending: false })
+      .limit(2000),
     client
       .from('passenger_discounts')
       .select('id, passenger_id, category, status, reviewed_by, reviewed_at')
       .not('reviewed_by', 'is', null)
+      .limit(2000)
       .order('reviewed_at', { ascending: false }),
   ]);
 

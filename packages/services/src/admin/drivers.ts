@@ -30,11 +30,15 @@ export interface ListDriversForAdminResult {
  * possibly no driver_profiles values worth trusting until then, so both
  * joins tolerate a miss rather than dropping the driver from the list.
  *
- * tripCount pulls one (id-only) row per trip rather than a per-driver
- * count query — this app already fetches full lists and filters/paginates
- * client-side everywhere (Drivers.tsx's own search box, TopBar's global
- * search), so a single flat trips.select('driver_id') tallied client-side
- * matches that existing convention instead of adding a new query shape.
+ * tripCount was originally one (id-only) row per trip tallied client-side —
+ * a real correctness bug at scale (P1-22, 2026-09-15 launch audit):
+ * PostgREST's default max-rows silently truncates that fetch once total
+ * historical trips city-wide exceed it, making every driver's count quietly
+ * wrong rather than just slow. Replaced with a real server-side aggregate
+ * (get_driver_trip_counts, GROUP BY on the trips table). The users/
+ * driver_profiles/tricycles fetches stay full-list-client-side, same as
+ * this app's other screens — those scale with headcount, not ride volume,
+ * and a barangay pilot's driver roster is realistically bounded.
  */
 export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> {
   const client = getSupabaseClient();
@@ -50,10 +54,14 @@ export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> 
 
   const ids = users.map((u) => u.id);
 
-  const [{ data: profiles, error: profilesError }, { data: tricycles, error: tricyclesError }, { data: trips, error: tripsError }] = await Promise.all([
+  const [
+    { data: profiles, error: profilesError },
+    { data: tricycles, error: tricyclesError },
+    { data: tripCounts, error: tripsError },
+  ] = await Promise.all([
     client.from('driver_profiles').select('user_id, verification_status, rating_avg, rating_count').in('user_id', ids),
     client.from('tricycles').select('driver_id, plate_no, cluster').in('driver_id', ids),
-    client.from('trips').select('driver_id').in('driver_id', ids),
+    client.rpc('get_driver_trip_counts', { p_driver_ids: ids }),
   ]);
 
   if (profilesError) return { data: [], error: profilesError.message };
@@ -62,8 +70,7 @@ export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> 
 
   const profileByUserId = new Map((profiles ?? []).map((p) => [p.user_id, p]));
   const tricycleByDriverId = new Map((tricycles ?? []).map((t) => [t.driver_id, t]));
-  const tripCountByDriverId = new Map<string, number>();
-  for (const t of trips ?? []) tripCountByDriverId.set(t.driver_id, (tripCountByDriverId.get(t.driver_id) ?? 0) + 1);
+  const tripCountByDriverId = new Map((tripCounts ?? []).map((r) => [r.driver_id, Number(r.trip_count)]));
 
   const rows = users.map((u) => {
     const profile = profileByUserId.get(u.id);

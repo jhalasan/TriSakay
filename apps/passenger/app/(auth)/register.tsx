@@ -7,10 +7,12 @@ import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Te
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION, getSession, updateAvatarUrl, uploadAvatar } from '@trisakay/services';
 import { BrandMotif, Button, Card, Checkbox, GradientSurface, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConsentStore } from '../../src/store/useConsentStore';
 import { DISCLOSURES, POLICY_BODY } from '../../src/content/legalCopy';
 import { isPasswordPolicyMet } from '@trisakay/utils';
+import { interpolate } from '../../src/utils/interpolate';
 import { isNonEmpty, isValidEmail } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/register.styles';
 
@@ -23,13 +25,13 @@ interface FormState {
   confirmPassword: string;
 }
 
-const STEP_TITLE: Record<1 | 2, string> = {
-  1: 'Create account',
-  2: 'Terms & Privacy',
-};
-
 export default function RegisterScreen() {
   const router = useRouter();
+  const t = useTranslation();
+  const STEP_TITLE: Record<1 | 2, string> = {
+    1: t.auth.register.stepTitleAccount,
+    2: t.auth.register.stepTitleLegal,
+  };
   const register = useAuthStore((state) => state.register);
   const refreshProfile = useAuthStore((state) => state.refreshProfile);
   const authError = useAuthStore((state) => state.error);
@@ -61,7 +63,7 @@ export default function RegisterScreen() {
   async function handlePickAvatar() {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      Alert.alert('Permission needed', 'Allow photo library access to set a profile picture.');
+      Alert.alert(t.auth.register.permissionNeededTitle, t.auth.register.permissionNeededMessage);
       return;
     }
 
@@ -79,13 +81,12 @@ export default function RegisterScreen() {
 
   function handleNext() {
     const nextErrors: Partial<FormState> = {};
-    if (!isNonEmpty(form.firstName)) nextErrors.firstName = 'Enter your first name.';
-    if (!isNonEmpty(form.lastName)) nextErrors.lastName = 'Enter your last name.';
-    if (!isValidEmail(form.email)) nextErrors.email = 'Enter a valid email address.';
-    if (!isNonEmpty(form.phone)) nextErrors.phone = 'Enter a contact number.';
-    if (!isPasswordPolicyMet(form.password))
-      nextErrors.password = 'Password must be at least 10 characters and include upper and lower case letters plus a number or symbol.';
-    if (form.confirmPassword !== form.password) nextErrors.confirmPassword = 'Passwords do not match.';
+    if (!isNonEmpty(form.firstName)) nextErrors.firstName = t.auth.register.enterFirstName;
+    if (!isNonEmpty(form.lastName)) nextErrors.lastName = t.auth.register.enterLastName;
+    if (!isValidEmail(form.email)) nextErrors.email = t.auth.register.enterValidEmail;
+    if (!isNonEmpty(form.phone)) nextErrors.phone = t.auth.register.enterContactNumber;
+    if (!isPasswordPolicyMet(form.password)) nextErrors.password = t.auth.register.passwordMinLength;
+    if (form.confirmPassword !== form.password) nextErrors.confirmPassword = t.auth.register.passwordsDoNotMatch;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     setStep(2);
@@ -121,7 +122,7 @@ export default function RegisterScreen() {
             avatarError = error;
           }
         } catch (err) {
-          avatarError = err instanceof Error ? err.message : 'Could not read the selected photo.';
+          avatarError = err instanceof Error ? err.message : t.auth.register.couldNotReadPhoto;
         }
       }
     }
@@ -139,14 +140,17 @@ export default function RegisterScreen() {
     setSubmitting(false);
 
     if (avatarError) {
-      Alert.alert('Account created', `Your account is ready, but the profile photo didn't upload: ${avatarError}. You can add it later from Profile.`);
+      Alert.alert(
+        t.auth.register.accountCreatedTitle,
+        interpolate(t.auth.register.accountCreatedPhotoFailedMessage, { error: avatarError })
+      );
     }
 
     if (outcome === 'check_email') {
       Alert.alert(
-        'Check your email',
-        `We sent a confirmation link to ${form.email}. Confirm it, then log in.`,
-        [{ text: 'OK', onPress: () => router.replace('/(auth)/login') }]
+        t.auth.register.checkEmailTitle,
+        interpolate(t.auth.register.checkEmailMessage, { email: form.email }),
+        [{ text: t.common.ok, onPress: () => router.replace('/(auth)/login') }]
       );
     }
   }
@@ -156,7 +160,7 @@ export default function RegisterScreen() {
       <ScreenHeader title={STEP_TITLE[step]} onBack={step === 2 ? () => setStep(1) : undefined} />
 
       <View style={styles.stepWrap}>
-        <Text style={styles.stepLabel}>Step {step} of 2</Text>
+        <Text style={styles.stepLabel}>{interpolate(t.auth.register.stepLabel, { step })}</Text>
         <View style={styles.stepTrack}>
           <View style={[styles.stepSegment, styles.stepSegmentActive]} />
           <View style={[styles.stepSegment, step === 2 && styles.stepSegmentActive]} />
@@ -172,7 +176,9 @@ export default function RegisterScreen() {
             <View>
               <Pressable
                 accessibilityRole="button"
-                accessibilityLabel={avatarUri ? 'Change profile photo' : 'Add a profile photo'}
+                accessibilityLabel={
+                  avatarUri ? t.auth.register.changePhotoAccessibilityLabel : t.auth.register.addPhotoAccessibilityLabel
+                }
                 style={styles.avatarWrap}
                 onPress={handlePickAvatar}
               >
@@ -188,13 +194,13 @@ export default function RegisterScreen() {
                 </View>
               </Pressable>
               <Text style={styles.avatarUploadLabel}>
-                {avatarUri ? 'Tap to change photo' : 'Add a profile photo (optional)'}
+                {avatarUri ? t.auth.register.tapToChangePhoto : t.auth.register.addPhotoOptional}
               </Text>
             </View>
 
             <View style={styles.fields}>
               <TextField
-                label="First name"
+                label={t.auth.register.firstName}
                 placeholder="Juan"
                 value={form.firstName}
                 onChangeText={(v) => update('firstName', v)}
@@ -202,7 +208,7 @@ export default function RegisterScreen() {
                 autoCapitalize="words"
               />
               <TextField
-                label="Last name"
+                label={t.auth.register.lastName}
                 placeholder="Dela Cruz"
                 value={form.lastName}
                 onChangeText={(v) => update('lastName', v)}
@@ -210,7 +216,7 @@ export default function RegisterScreen() {
                 autoCapitalize="words"
               />
               <TextField
-                label="Email"
+                label={t.auth.register.email}
                 placeholder="you@example.com"
                 value={form.email}
                 onChangeText={(v) => update('email', v)}
@@ -219,7 +225,7 @@ export default function RegisterScreen() {
                 keyboardType="email-address"
               />
               <TextField
-                label="Phone number"
+                label={t.auth.register.phone}
                 placeholder="09XX XXX XXXX"
                 value={form.phone}
                 onChangeText={(v) => update('phone', v)}
@@ -227,7 +233,7 @@ export default function RegisterScreen() {
                 keyboardType="phone-pad"
               />
               <TextField
-                label="Password"
+                label={t.auth.register.password}
                 placeholder="••••••••"
                 value={form.password}
                 onChangeText={(v) => update('password', v)}
@@ -235,7 +241,7 @@ export default function RegisterScreen() {
                 secureTextEntry
               />
               <TextField
-                label="Confirm password"
+                label={t.auth.register.confirmPassword}
                 placeholder="••••••••"
                 value={form.confirmPassword}
                 onChangeText={(v) => update('confirmPassword', v)}
@@ -244,16 +250,14 @@ export default function RegisterScreen() {
               />
             </View>
 
-            <Button label="Next" onPress={handleNext} fullWidth />
+            <Button label={t.auth.register.next} onPress={handleNext} fullWidth />
           </ScrollView>
         </>
       ) : (
         <ScrollView contentContainerStyle={[styles.scrollContent, styles.legalScrollContent]} keyboardShouldPersistTaps="handled">
-          <Text style={styles.stepIntro}>
-            Please read and accept these before your account is created.
-          </Text>
+          <Text style={styles.stepIntro}>{t.auth.register.acceptTermsIntro}</Text>
           <Text style={styles.version}>
-            Terms {CURRENT_TOS_VERSION} · Privacy {CURRENT_PRIVACY_VERSION}
+            {interpolate(t.auth.register.versionLabel, { tos: CURRENT_TOS_VERSION, privacy: CURRENT_PRIVACY_VERSION })}
           </Text>
 
           {POLICY_BODY.map((paragraph) => (
@@ -262,7 +266,7 @@ export default function RegisterScreen() {
             </Text>
           ))}
 
-          <Text style={styles.sectionLabel}>What we collect &amp; share</Text>
+          <Text style={styles.sectionLabel}>{t.auth.register.whatWeCollect}</Text>
           <Card style={styles.disclosureCard}>
             {DISCLOSURES.map((item, index) => (
               <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
@@ -272,16 +276,12 @@ export default function RegisterScreen() {
             ))}
           </Card>
 
-          <Checkbox
-            checked={termsChecked}
-            onChange={setTermsChecked}
-            label="I have read and accept the Terms of Service and Privacy Policy"
-          />
+          <Checkbox checked={termsChecked} onChange={setTermsChecked} label={t.auth.register.acceptTerms} />
 
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
           <Button
-            label="Create account"
+            label={t.auth.register.createAccountButton}
             onPress={handleCreateAccount}
             loading={submitting || awaitingGate}
             disabled={!termsChecked}

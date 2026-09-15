@@ -101,7 +101,9 @@ export function Dashboard() {
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [statsError, setStatsError] = useState<string | null>(null);
   const [overdue, setOverdue] = useState<OverdueComplaintRow[]>([]);
+  const [overdueError, setOverdueError] = useState<string | null>(null);
   const [expiring, setExpiring] = useState<ExpiringFranchiseRow[]>([]);
+  const [expiringError, setExpiringError] = useState<string | null>(null);
   const [alerts, setAlerts] = useState<EmergencyAlertRow[]>([]);
   const [alertsError, setAlertsError] = useState<string | null>(null);
   const [activity, setActivity] = useState<RecentTripActivityRow[]>([]);
@@ -130,7 +132,9 @@ export function Dashboard() {
       setStats(statsResult.data);
       setStatsError(statsResult.error);
       setOverdue(overdueResult.data);
+      setOverdueError(overdueResult.error);
       setExpiring(expiringResult.data);
+      setExpiringError(expiringResult.error);
       setActivity(activityResult.data);
       setActivityError(activityResult.error);
       setRidesPerDay(ridesResult.data);
@@ -196,8 +200,16 @@ export function Dashboard() {
           <AttentionCard
             accent="danger"
             eyebrow="Overdue complaints"
-            count={loading ? <CountSkeleton /> : overdue.length}
-            context={loading ? '' : overdue.length > 0 ? `oldest is ${oldestOverdueDays} business days old` : 'No complaints past target.'}
+            count={loading ? <CountSkeleton /> : overdueError ? '—' : overdue.length}
+            context={
+              loading
+                ? ''
+                : overdueError
+                  ? `Couldn't check — ${overdueError}`
+                  : overdue.length > 0
+                    ? `oldest is ${oldestOverdueDays} business days old`
+                    : 'No complaints past target.'
+            }
             linkLabel="Open complaints queue"
             onLinkClick={() => navigate('/complaints')}
             badgeLabel="ARTA 3d"
@@ -206,8 +218,16 @@ export function Dashboard() {
           <AttentionCard
             accent="warn"
             eyebrow="Expiring franchises"
-            count={loading ? <CountSkeleton /> : expiring.length}
-            context={loading ? '' : expiring.length > 0 ? `${lapsedCount} already lapsed, MTOP renewal due within 30 days` : 'No franchises expiring soon.'}
+            count={loading ? <CountSkeleton /> : expiringError ? '—' : expiring.length}
+            context={
+              loading
+                ? ''
+                : expiringError
+                  ? `Couldn't check — ${expiringError}`
+                  : expiring.length > 0
+                    ? `${lapsedCount} already lapsed, MTOP renewal due within 30 days`
+                    : 'No franchises expiring soon.'
+            }
             linkLabel="Review verification cases"
             onLinkClick={() => navigate('/verification')}
             badgeLabel="≤ 30 days"

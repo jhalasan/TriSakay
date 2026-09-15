@@ -4,6 +4,8 @@ import { __setSupabaseClientForTests } from '@trisakay/services';
 
 interface FakeConfig {
   signInError?: string;
+  /** P1-10: verifyCurrentPassword() re-calls signInWithPassword after the initial signIn() already succeeded — this governs only that later call. */
+  reauthSignInError?: string;
   session?: { user: { id: string } } | null;
   userRow?: Record<string, unknown> | null;
   /** Captures the callback useSessionStore registers, so a test can fire a simulated auth event directly. */
@@ -26,12 +28,17 @@ function fakeClient(config: FakeConfig) {
     },
   };
 
+  let signInCalls = 0;
+
   return {
     auth: {
-      signInWithPassword: async () =>
-        config.signInError
-          ? { data: { session: null }, error: { message: config.signInError } }
-          : { data: { session: config.session ?? null }, error: null },
+      signInWithPassword: async () => {
+        signInCalls += 1;
+        const errorForThisCall = signInCalls === 1 ? config.signInError : (config.reauthSignInError ?? config.signInError);
+        return errorForThisCall
+          ? { data: { session: null }, error: { message: errorForThisCall } }
+          : { data: { session: config.session ?? null }, error: null };
+      },
       getSession: async () => ({ data: { session: config.session ?? null } }),
       signOut: async () => {
         config.onSignOut?.();
@@ -184,6 +191,41 @@ test('completePasswordChange() surfaces an auth error without clearing the flag'
 
   assert.equal(failure, 'Password should be at least 6 characters.');
   assert.equal(useSessionStore.getState().user?.mustChangePassword, true);
+});
+
+test('changeOwnPassword() re-verifies the current password before updating', async () => {
+  const updateUserCalls: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: PSO_ROW,
+      onUpdateUser: (attrs) => updateUserCalls.push(attrs),
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'old-pw');
+
+  const failure = await useSessionStore.getState().changeOwnPassword('old-pw', 'a-new-strong-password');
+
+  assert.equal(failure, null);
+  assert.deepEqual(updateUserCalls, [{ password: 'a-new-strong-password' }]);
+});
+
+test('changeOwnPassword() rejects a wrong current password without ever calling updateUser', async () => {
+  const updateUserCalls: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: PSO_ROW,
+      reauthSignInError: 'Invalid login credentials',
+      onUpdateUser: (attrs) => updateUserCalls.push(attrs),
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'old-pw');
+
+  const failure = await useSessionStore.getState().changeOwnPassword('wrong-pw', 'a-new-strong-password');
+
+  assert.equal(failure, 'Current password is incorrect.');
+  assert.deepEqual(updateUserCalls, []);
 });
 
 test('updateName() renames the account and updates local state', async () => {

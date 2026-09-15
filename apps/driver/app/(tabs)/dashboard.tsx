@@ -301,9 +301,11 @@ export default function DashboardScreen() {
                   </View>
                 </View>
                 <Text style={styles.listeningTitle}>{t.driver.dashboard.listeningTitle}</Text>
-                <Text style={styles.listeningMessage}>
-                  {t.driver.dashboard.listeningMessage.replace('{area}', 'Poblacion')}
-                </Text>
+                {/* P2 (2026-09-15 launch audit): no per-driver barangay/area is
+                    ever resolved anywhere in the app (see P0-2, docs/CONTEXT.MD
+                    §4 FR-2.5) — this used to hardcode "Poblacion" for every
+                    driver regardless of where they actually are. */}
+                <Text style={styles.listeningMessage}>{t.driver.dashboard.listeningMessage}</Text>
               </View>
             </View>
           </View>

@@ -42,7 +42,7 @@ test('toggling a setting persists the whole state (minus actions) to the injecte
   __setSettingsStorageForTests(storage);
   const { useSettingsStore } = await import('../src/store/useSettingsStore.ts');
 
-  useSettingsStore.getState().toggleSmsReceipts();
+  useSettingsStore.getState().toggleLocationTracking();
   // persist() writes asynchronously — flush microtasks.
   await Promise.resolve();
   await Promise.resolve();
@@ -50,7 +50,7 @@ test('toggling a setting persists the whole state (minus actions) to the injecte
   const raw = storage.__mem.get('trisakay-driver-settings');
   assert.ok(raw, 'expected the store to have written to storage');
   const parsed = JSON.parse(raw);
-  assert.equal(typeof parsed.state.smsReceipts, 'boolean');
+  assert.equal(typeof parsed.state.locationTrackingEnabled, 'boolean');
   assert.equal(parsed.state.togglePushNotifications, undefined, 'actions must not be persisted');
 });
 

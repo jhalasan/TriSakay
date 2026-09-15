@@ -42,18 +42,20 @@ function fakeAccountsClient() {
           }),
         };
       }
-      if (table === 'driver_profiles' || table === 'tricycles' || table === 'trips') {
+      if (table === 'driver_profiles' || table === 'tricycles') {
         return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
-      }
-      if (table === 'ride_requests') {
-        return { select: () => ({ eq: () => ({ in: async () => ({ data: [], error: null }) }) }) };
       }
       if (table === 'passenger_discounts') {
         return { select: () => ({ in: () => ({ order: async () => ({ data: [], error: null }) }) }) };
       }
       throw new Error(`unexpected table ${table}`);
     },
-    rpc: async (fn: string, args: { p_target_user_id: string; p_action_type: string }) => {
+    rpc: async (fn: string, args: any) => {
+      // P1-22 (2026-09-15 launch audit): trip/ride tallies are now real
+      // server-side aggregates rather than row-per-trip/ride fetches.
+      if (fn === 'get_driver_trip_counts' || fn === 'get_passenger_completed_ride_counts') {
+        return { data: [], error: null };
+      }
       if (fn !== 'perform_account_action') throw new Error(`unexpected rpc ${fn}`);
       const user = users.find((u) => u.id === args.p_target_user_id);
       if (!user) return { error: { message: 'not found' } };

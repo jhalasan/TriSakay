@@ -34,7 +34,9 @@ yarn-error.*
 *.pem
 
 # local env files
-.env*.local
+.env
+.env.*
+!.env.example
 
 # typescript
 *.tsbuildinfo
@@ -51,3 +53,6 @@ apps/*/android
 # Claude Code isolated worktrees (EnterWorktree tool scratch state)
 /.claude/worktrees/
 .worktrees/
+
+# Playwright MCP scratch snapshots/screenshots (local verification artifacts, not app code)
+/.playwright-mcp/

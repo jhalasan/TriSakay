@@ -21,18 +21,6 @@ test('listPassengersForAdmin merges users + completed ride counts + approved dis
           }),
         };
       }
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            eq: () => ({
-              in: async () => ({
-                data: [{ passenger_id: 'p1' }, { passenger_id: 'p1' }, { passenger_id: 'p1' }],
-                error: null,
-              }),
-            }),
-          }),
-        };
-      }
       if (table === 'passenger_discounts') {
         return {
           select: () => ({
@@ -43,6 +31,17 @@ test('listPassengersForAdmin merges users + completed ride counts + approved dis
         };
       }
       throw new Error(`unexpected table ${table}`);
+    },
+    // P1-22 (2026-09-15 launch audit): ride counts are now a real
+    // server-side aggregate (get_passenger_completed_ride_counts), not a
+    // fetched-and-tallied row-per-ride query — p1 has 3 completed rides,
+    // p2 has none (GROUP BY naturally omits a zero-count passenger).
+    rpc: async (fn: string, args: any) => {
+      if (fn === 'get_passenger_completed_ride_counts') {
+        assert.deepEqual(args, { p_passenger_ids: ['p1', 'p2'] });
+        return { data: [{ passenger_id: 'p1', ride_count: 3 }], error: null };
+      }
+      throw new Error(`unexpected rpc ${fn}`);
     },
   } as any);
 
@@ -83,7 +82,6 @@ test('listPassengersForAdmin keeps only the most recently submitted discount per
       if (table === 'users') {
         return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
       }
-      if (table === 'ride_requests') return { select: () => ({ eq: () => ({ in: async () => ({ data: [], error: null }) }) }) };
       if (table === 'passenger_discounts') {
         // Query is ordered submitted_at desc, so the rejected row (resubmission) comes first.
         return {
@@ -102,6 +100,7 @@ test('listPassengersForAdmin keeps only the most recently submitted discount per
       }
       throw new Error(`unexpected table ${table}`);
     },
+    rpc: async () => ({ data: [], error: null }),
   } as any);
 
   const { data, error } = await listPassengersForAdmin();
@@ -109,16 +108,16 @@ test('listPassengersForAdmin keeps only the most recently submitted discount per
   assert.deepEqual(data[0].discount, { category: 'pwd', status: 'pending' });
 });
 
-test('listPassengersForAdmin returns { data: [], error } when the ride-count query fails', async () => {
+test('listPassengersForAdmin returns { data: [], error } when the ride-count RPC fails', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
       if (table === 'users') {
         return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
       }
-      if (table === 'ride_requests') return { select: () => ({ eq: () => ({ in: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) };
       if (table === 'passenger_discounts') return { select: () => ({ in: () => ({ order: async () => ({ data: [], error: null }) }) }) };
       throw new Error(`unexpected table ${table}`);
     },
+    rpc: async () => ({ data: null, error: { message: 'connection refused' } }),
   } as any);
 
   const { data, error } = await listPassengersForAdmin();
@@ -132,10 +131,10 @@ test('listPassengersForAdmin returns { data: [], error } when the passenger_disc
       if (table === 'users') {
         return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
       }
-      if (table === 'ride_requests') return { select: () => ({ eq: () => ({ in: async () => ({ data: [], error: null }) }) }) };
       if (table === 'passenger_discounts') return { select: () => ({ in: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) };
       throw new Error(`unexpected table ${table}`);
     },
+    rpc: async () => ({ data: [], error: null }),
   } as any);
 
   const { data, error } = await listPassengersForAdmin();

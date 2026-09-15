@@ -18,6 +18,7 @@ import { usePassengerTutorialNavigation } from '../src/hooks/usePassengerTutoria
 import { usePassengerTutorialTrigger } from '../src/hooks/usePassengerTutorialTrigger';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useAuthStore } from '../src/store/useAuthStore';
+import { useBookingStore } from '../src/store/useBookingStore';
 import { useConnectivityStore } from '../src/store/useConnectivityStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
@@ -70,7 +71,12 @@ const LOCATION_PROMPT_ROUTES: readonly string[] = ['(tabs)', 'booking', 'profile
  * deep links, back-navigation, and logout/login transitions. It gates on
  * two things in order — authentication first, then consent (FR-11.1).
  */
-function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateStatus) {
+function useProtectedRoute(
+  isAuthenticated: boolean,
+  consentStatus: ConsentGateStatus,
+  accountBlocked: boolean,
+  hasActiveTrip: boolean,
+) {
   const root = useRootSegment();
   const router = useRouter();
 
@@ -98,6 +104,7 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
 
     const inAuthGroup = root === '(auth)';
     const onConsent = root === 'consent';
+    const onAccountSuspended = root === 'account-suspended';
 
     if (!isAuthenticated) {
       if (!inAuthGroup) router.replace('/(auth)/login');
@@ -111,10 +118,24 @@ function useProtectedRoute(isAuthenticated: boolean, consentStatus: ConsentGateS
 
     if (consentStatus === 'required') {
       if (!onConsent) router.replace('/consent');
-    } else if (inAuthGroup || onConsent) {
+      return;
+    }
+
+    // P1-25 (2026-09-15 launch audit): mirrors apps/driver's own gate. A
+    // suspended/deactivated account is blocked from new activity (RLS
+    // enforces this server-side regardless of what the UI does), but an
+    // already-active trip stays reachable here too — the rider can still
+    // finish it rather than being stranded mid-ride over a PSO action that
+    // landed while the trip was underway.
+    if (accountBlocked && !hasActiveTrip) {
+      if (!onAccountSuspended) router.replace('/account-suspended');
+      return;
+    }
+
+    if (inAuthGroup || onConsent || (onAccountSuspended && (!accountBlocked || hasActiveTrip))) {
       router.replace('/(tabs)/home');
     }
-  }, [isAuthenticated, consentStatus, root, router]);
+  }, [isAuthenticated, consentStatus, accountBlocked, hasActiveTrip, root, router]);
 }
 
 /**
@@ -254,11 +275,15 @@ function RootLayoutNav() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
   const consentStatus = useConsentStore((state) => state.status);
+  const accountStatus = useAuthStore((state) => state.user?.accountStatus);
+  const accountBlocked = accountStatus === 'suspended' || accountStatus === 'deactivated';
+  const tripStatus = useBookingStore((state) => state.tripStatus);
+  const hasActiveTrip = tripStatus !== 'idle' && tripStatus !== 'rated';
   useConsentSync(sessionUserId);
   useNotificationsSync(sessionUserId);
   useConnectivitySync();
   usePushNotificationsSync(sessionUserId);
-  useProtectedRoute(isAuthenticated, consentStatus);
+  useProtectedRoute(isAuthenticated, consentStatus, accountBlocked, hasActiveTrip);
   useLocationPrompt(isAuthenticated, consentStatus);
 
   return (
@@ -276,6 +301,7 @@ function RootLayoutNav() {
             <Stack.Screen name="walkthrough" />
             <Stack.Screen name="landing" />
             <Stack.Screen name="consent" />
+            <Stack.Screen name="account-suspended" />
             <Stack.Screen name="reset-password" />
             <Stack.Screen
               name="location-permission"

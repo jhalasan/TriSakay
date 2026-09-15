@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { BrandMotif, Button, GradientSurface, SegmentedControl, TextField, colors } from '@trisakay/ui';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
+import { BrandMotif, Button, GradientSurface, TextField, colors } from '@trisakay/ui';
 import { HAS_SIGNED_IN_KEY } from '../../src/constants/walkthrough';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
-import { isValidEmail, isValidMobile, isValidPassword } from '../../src/utils/validation';
+import { isValidEmail, isValidPassword } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/login.styles';
-
-type LoginMethod = 'mobile' | 'email';
 
 export default function LoginScreen() {
   const router = useRouter();
+  const t = useTranslation();
   const login = useAuthStore((state) => state.login);
   const authError = useAuthStore((state) => state.error);
   const clearError = useAuthStore((state) => state.clearError);
@@ -32,11 +32,9 @@ export default function LoginScreen() {
   // either one puts this button back at the mercy of a hung request.
   const awaitingGate = useAuthStore((state) => state.sessionUserId !== null);
 
-  const [method, setMethod] = useState<LoginMethod>('email');
   const [email, setEmail] = useState('');
-  const [mobile, setMobile] = useState('');
   const [password, setPassword] = useState('');
-  const [errors, setErrors] = useState<{ email?: string; mobile?: string; password?: string }>({});
+  const [errors, setErrors] = useState<{ email?: string; password?: string }>({});
   const [submitting, setSubmitting] = useState(false);
 
   // null while unresolved (the one frame before AsyncStorage answers) — the
@@ -54,10 +52,6 @@ export default function LoginScreen() {
   const [scrollEnabled, setScrollEnabled] = useState(false);
   const [viewportHeight, setViewportHeight] = useState(0);
   const [contentHeight, setContentHeight] = useState(0);
-  // Session-only counter for the "N tries left" copy — there is no backend
-  // lockout rule yet (see the README's open items), so this drives display
-  // copy only and resets on success; it does not disable anything.
-  const [failedAttempts, setFailedAttempts] = useState(0);
 
   useEffect(() => {
     if (viewportHeight > 0 && contentHeight > 0) {
@@ -79,8 +73,8 @@ export default function LoginScreen() {
 
   async function handleLogin() {
     const nextErrors: typeof errors = {};
-    if (!isValidEmail(email)) nextErrors.email = 'Enter a valid email address.';
-    if (!isValidPassword(password)) nextErrors.password = 'Password must be at least 6 characters.';
+    if (!isValidEmail(email)) nextErrors.email = t.auth.login.enterValidEmail;
+    if (!isValidPassword(password)) nextErrors.password = t.auth.login.passwordMinLength;
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
 
@@ -88,22 +82,15 @@ export default function LoginScreen() {
     setSubmitting(true);
     await login(email, password);
     setSubmitting(false);
-    setFailedAttempts((prev) => (useAuthStore.getState().error ? prev + 1 : 0));
   }
 
-  function handleMobileBlur() {
-    if (mobile && !isValidMobile(mobile)) {
-      setErrors((prev) => ({ ...prev, mobile: 'Enter a valid 10-digit mobile number.' }));
-    }
-  }
-
-  const title = hasSignedIn === null ? ' ' : hasSignedIn ? 'Welcome back' : 'Welcome to TriSakay';
+  const title = hasSignedIn === null ? ' ' : hasSignedIn ? t.auth.login.welcomeBack : t.auth.login.welcomeNew;
   const subtitle =
     hasSignedIn === null
       ? ' '
       : hasSignedIn
-        ? 'Log in to book your next ride.'
-        : 'Log in to book your first ride.';
+        ? t.auth.login.subtitleReturning
+        : t.auth.login.subtitleFirstTime;
 
   return (
     <View style={styles.screen}>
@@ -133,63 +120,37 @@ export default function LoginScreen() {
           <Text style={styles.title}>{title}</Text>
           <Text style={styles.subtitle}>{subtitle}</Text>
 
+          {/* P1-20 (2026-09-15 launch audit): the "N tries left before a
+              5-minute lock" copy that used to render here was removed — the
+              comment above its state ("there is no backend lockout rule
+              yet") confirms it, and it does not disable anything, so it
+              only misled users into thinking there was a lockout timer. */}
           {authError && (
             <View style={styles.errorBanner}>
               <Ionicons name="alert-circle" size={18} color={colors.danger} style={styles.errorBannerIcon} />
-              <Text style={styles.errorBannerText}>
-                {authError}
-                {failedAttempts > 0 && failedAttempts < 3 && (
-                  <Text>
-                    {' '}
-                    {3 - failedAttempts} {3 - failedAttempts === 1 ? 'try' : 'tries'} left before a 5-minute lock.
-                  </Text>
-                )}
-              </Text>
+              <Text style={styles.errorBannerText}>{authError}</Text>
             </View>
           )}
 
-          <View style={styles.methodTrack}>
-            <SegmentedControl
-              options={[
-                { label: 'Mobile number', value: 'mobile' },
-                { label: 'Email', value: 'email' },
-              ]}
-              value={method}
-              onChange={setMethod}
-            />
-          </View>
-
+          {/* P1-20 (2026-09-15 launch audit): the Mobile/Email sign-in
+              segmented control was removed — mobile-number sign-in has no
+              backend path (signIn only accepts email/password; there's no
+              phone→email lookup), so it always fell back to a disabled
+              button and a "coming soon" notice. Email-only sign-in until
+              that backend support exists. */}
           <View style={styles.fields}>
-            {method === 'mobile' ? (
-              <TextField
-                label="Mobile number"
-                placeholder="917 842 5510"
-                value={mobile}
-                onChangeText={setMobile}
-                onBlur={handleMobileBlur}
-                error={errors.mobile}
-                keyboardType="phone-pad"
-                autoComplete="tel"
-                leftIcon={
-                  <View style={styles.mobilePrefix}>
-                    <Text style={styles.mobilePrefixText}>+63</Text>
-                  </View>
-                }
-              />
-            ) : (
-              <TextField
-                label="Email"
-                placeholder="you@example.com"
-                value={email}
-                onChangeText={setEmail}
-                error={errors.email}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                autoComplete="email"
-              />
-            )}
             <TextField
-              label="Password"
+              label={t.auth.login.email}
+              placeholder="you@example.com"
+              value={email}
+              onChangeText={setEmail}
+              error={errors.email}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+            />
+            <TextField
+              label={t.auth.login.password}
               placeholder="••••••••"
               value={password}
               onChangeText={setPassword}
@@ -199,37 +160,26 @@ export default function LoginScreen() {
             />
           </View>
 
-          {method === 'mobile' && (
-            // Mobile-number sign-in has no backend path yet — signIn only
-            // accepts email/password (packages/services/src/auth/index.ts)
-            // and there's no phone→email lookup available to this app. The
-            // control above is built to spec; submission stays on Email
-            // until that backend support exists.
-            <Text style={styles.mobileNotice}>Signing in with a mobile number is coming soon — use Email for now.</Text>
-          )}
+          {/* P0-3 (2026-09-15 launch audit): the reset flow itself
+              (app/(auth)/forgot-password.tsx) is still non-functional — Supabase's
+              free tier can't have the recovery email template edited without custom
+              SMTP, which is unfinished. Re-added on request (2026-09-15) as a real
+              link regardless; submitting it won't currently send anything until
+              SMTP is configured. */}
+          <Pressable style={styles.forgotLink} onPress={() => router.push('/(auth)/forgot-password')}>
+            <Text style={styles.forgotLinkText}>{t.auth.login.forgotPassword}</Text>
+          </Pressable>
 
-          <View style={styles.forgotLink}>
-            <Text style={styles.forgotLinkText} onPress={() => router.push('/(auth)/forgot-password')}>
-              Forgot password?
-            </Text>
-          </View>
-
-          <Button
-            label="Log in"
-            onPress={handleLogin}
-            loading={submitting || awaitingGate}
-            disabled={method === 'mobile'}
-            fullWidth
-          />
+          <Button label={t.auth.login.logIn} onPress={handleLogin} loading={submitting || awaitingGate} fullWidth />
 
           <View style={styles.dividerRow}>
             <View style={styles.dividerLine} />
-            <Text style={styles.dividerText}>OR</Text>
+            <Text style={styles.dividerText}>{t.auth.login.or}</Text>
             <View style={styles.dividerLine} />
           </View>
 
           <Button
-            label="Create account"
+            label={t.auth.login.createAccount}
             variant="outline"
             tone="neutral"
             fullWidth

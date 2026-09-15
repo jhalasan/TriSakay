@@ -41,18 +41,18 @@ test('listDriversForAdmin merges users + driver_profiles + tricycles by id', asy
           }),
         };
       }
-      if (table === 'trips') {
-        return {
-          select: () => ({
-            in: async () => ({
-              // d1 has three trips, d2 has none — the count is tallied client-side, not a per-driver count query.
-              data: [{ driver_id: 'd1' }, { driver_id: 'd1' }, { driver_id: 'd1' }],
-              error: null,
-            }),
-          }),
-        };
-      }
       throw new Error(`unexpected table ${table}`);
+    },
+    // P1-22 (2026-09-15 launch audit): trip counts are now a real
+    // server-side aggregate (get_driver_trip_counts), not a fetched-and-
+    // tallied row-per-trip query — d1 has 3 trips, d2 has none (GROUP BY
+    // naturally omits a zero-count driver, matching live behavior).
+    rpc: async (fn: string, args: any) => {
+      if (fn === 'get_driver_trip_counts') {
+        assert.deepEqual(args, { p_driver_ids: ['d1', 'd2'] });
+        return { data: [{ driver_id: 'd1', trip_count: 3 }], error: null };
+      }
+      throw new Error(`unexpected rpc ${fn}`);
     },
   } as any);
 
@@ -129,9 +129,9 @@ test('listDriversForAdmin returns { data: [], error } when the tricycles query f
       }
       if (table === 'driver_profiles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       if (table === 'tricycles') return { select: () => ({ in: async () => ({ data: null, error: { message: 'connection refused' } }) }) };
-      if (table === 'trips') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       throw new Error(`unexpected table ${table}`);
     },
+    rpc: async () => ({ data: [], error: null }),
   } as any);
 
   const { data, error } = await listDriversForAdmin();
@@ -139,7 +139,7 @@ test('listDriversForAdmin returns { data: [], error } when the tricycles query f
   assert.equal(error, 'connection refused');
 });
 
-test('listDriversForAdmin returns { data: [], error } when the trips query fails', async () => {
+test('listDriversForAdmin returns { data: [], error } when the trip-count RPC fails', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
       if (table === 'users') {
@@ -147,9 +147,9 @@ test('listDriversForAdmin returns { data: [], error } when the trips query fails
       }
       if (table === 'driver_profiles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       if (table === 'tricycles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
-      if (table === 'trips') return { select: () => ({ in: async () => ({ data: null, error: { message: 'connection refused' } }) }) };
       throw new Error(`unexpected table ${table}`);
     },
+    rpc: async () => ({ data: null, error: { message: 'connection refused' } }),
   } as any);
 
   const { data, error } = await listDriversForAdmin();

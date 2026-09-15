@@ -16,7 +16,7 @@ import { DocumentImage } from '../components/DocumentImage';
 import { useToast } from '../components/Toast';
 import { useComplaintsStore } from '../store/useComplaintsStore';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
-import { formatDate, titleCaseLabel } from '../lib/format';
+import { formatDate, titleCaseLabel, toDatetimeLocalValue } from '../lib/format';
 import { formatBulkTargets } from '../lib/bulkActions';
 import styles from './Complaints.module.css';
 
@@ -222,7 +222,7 @@ export function Complaints() {
   function openReview(c: ComplaintRow) {
     setSelectedId(c.id);
     setDirectiveDraft(c.dhDirective ?? '');
-    setMeetingAtDraft(c.mediationMeetingAt ? c.mediationMeetingAt.slice(0, 16) : '');
+    setMeetingAtDraft(c.mediationMeetingAt ? toDatetimeLocalValue(c.mediationMeetingAt) : '');
     setMeetingLocationDraft(c.mediationLocation ?? '');
     setResolutionStatusDraft('resolved');
     setResolutionNotesDraft(c.resolutionNotes ?? '');

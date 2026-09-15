@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as Location from 'expo-location';
 import { pushDriverLocation } from '@trisakay/services/src/location/index.ts';
+import { useDriverStore } from '../store/useDriverStore';
 
 const DISTANCE_INTERVAL_METERS = 30;
 const TIME_INTERVAL_MS = 8000;
@@ -40,6 +41,9 @@ export function useDriverLocationSync(
         { accuracy: Location.Accuracy.Balanced, distanceInterval: DISTANCE_INTERVAL_METERS, timeInterval: TIME_INTERVAL_MS },
         (position) => {
           void pushDriverLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+          // P1-14 (2026-09-15 launch audit): plain-data mirror for the
+          // active-trip map's marker/route/recenter — see useDriverStore.
+          useDriverStore.getState().setCurrentPosition(position.coords.latitude, position.coords.longitude);
         }
       );
 

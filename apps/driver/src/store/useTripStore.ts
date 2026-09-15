@@ -23,6 +23,10 @@ function passengerFromRequest(request: PendingRequest): ActivePassenger {
     fare: request.fare,
     cashConfirmed: false,
     status: 'assigned',
+    pickupLat: request.pickupLat ?? null,
+    pickupLng: request.pickupLng ?? null,
+    destLat: request.destLat ?? null,
+    destLng: request.destLng ?? null,
   };
 }
 
@@ -267,6 +271,10 @@ export const useTripStore = create<TripState>()((set, get) => {
               // safe narrowing even though ActiveTripPassenger['status'] is
               // typed as the full ride_status enum.
               status: p.status as 'assigned' | 'ongoing',
+              pickupLat: p.pickupLat,
+              pickupLng: p.pickupLng,
+              destLat: p.destLat,
+              destLng: p.destLng,
             })),
           },
           error: null,

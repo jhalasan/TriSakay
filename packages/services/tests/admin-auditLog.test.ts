@@ -3,8 +3,9 @@ import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { listAccountActions, listReviewDecisions } from '../src/admin/auditLog.ts';
 
-test('listAccountActions orders by created_at desc and resolves target/performer names', async () => {
+test('listAccountActions orders by created_at desc, caps rows, and resolves target/performer names', async () => {
   let capturedOrder: { column: string; opts: unknown } | null = null;
+  let capturedLimit: number | null = null;
   let capturedInIds: string[] | null = null;
 
   __setSupabaseClientForTests({
@@ -12,30 +13,35 @@ test('listAccountActions orders by created_at desc and resolves target/performer
       if (table === 'account_actions') {
         return {
           select: () => ({
-            order: async (column: string, opts: unknown) => {
+            order: (column: string, opts: unknown) => {
               capturedOrder = { column, opts };
               return {
-                data: [
-                  {
-                    id: 'a1',
-                    target_user_id: 'u1',
-                    action_type: 'suspend',
-                    performed_by: 'u2',
-                    reason: 'Repeated no-shows',
-                    complaint_id: null,
-                    created_at: '2026-09-09T10:00:00Z',
-                  },
-                  {
-                    id: 'a2',
-                    target_user_id: 'u3',
-                    action_type: 'flag',
-                    performed_by: 'u2',
-                    reason: 'Passenger complaint filed',
-                    complaint_id: 'c1',
-                    created_at: '2026-09-08T09:00:00Z',
-                  },
-                ],
-                error: null,
+                limit: async (n: number) => {
+                  capturedLimit = n;
+                  return {
+                    data: [
+                      {
+                        id: 'a1',
+                        target_user_id: 'u1',
+                        action_type: 'suspend',
+                        performed_by: 'u2',
+                        reason: 'Repeated no-shows',
+                        complaint_id: null,
+                        created_at: '2026-09-09T10:00:00Z',
+                      },
+                      {
+                        id: 'a2',
+                        target_user_id: 'u3',
+                        action_type: 'flag',
+                        performed_by: 'u2',
+                        reason: 'Passenger complaint filed',
+                        complaint_id: 'c1',
+                        created_at: '2026-09-08T09:00:00Z',
+                      },
+                    ],
+                    error: null,
+                  };
+                },
               };
             },
           }),
@@ -62,10 +68,12 @@ test('listAccountActions orders by created_at desc and resolves target/performer
     },
   } as any);
 
-  const { data, error } = await listAccountActions();
+  const { data, error, truncated } = await listAccountActions();
 
   assert.equal(error, null);
+  assert.equal(truncated, false);
   assert.deepEqual(capturedOrder, { column: 'created_at', opts: { ascending: false } });
+  assert.equal(capturedLimit, 2000);
   assert.deepEqual(new Set(capturedInIds ?? []), new Set(['u1', 'u2', 'u3']));
   assert.deepEqual(data, [
     {
@@ -93,25 +101,89 @@ test('listAccountActions orders by created_at desc and resolves target/performer
   ]);
 });
 
+test('listAccountActions applies a since-filter when a date-range cutoff is given', async () => {
+  let capturedSince: string | null = null;
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'account_actions') {
+        return {
+          select: () => ({
+            order: () => ({
+              limit: () => ({
+                gte: async (_column: string, value: string) => {
+                  capturedSince = value;
+                  return { data: [], error: null };
+                },
+              }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const cutoff = '2026-09-08T00:00:00.000Z';
+  const { data, error } = await listAccountActions(cutoff);
+
+  assert.equal(error, null);
+  assert.deepEqual(data, []);
+  assert.equal(capturedSince, cutoff);
+});
+
+test('listAccountActions reports truncated: true when the row cap is hit', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'account_actions') {
+        return {
+          select: () => ({
+            order: () => ({
+              limit: async () => ({
+                data: Array.from({ length: 2000 }, (_, i) => ({
+                  id: `a${i}`,
+                  target_user_id: 'u1',
+                  action_type: 'flag',
+                  performed_by: 'u2',
+                  reason: 'x',
+                  complaint_id: null,
+                  created_at: '2026-09-09T10:00:00Z',
+                })),
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'users') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { truncated } = await listAccountActions();
+  assert.equal(truncated, true);
+});
+
 test('listAccountActions degrades a missing name to null instead of failing the row', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
       if (table === 'account_actions') {
         return {
           select: () => ({
-            order: async () => ({
-              data: [
-                {
-                  id: 'a1',
-                  target_user_id: 'u1',
-                  action_type: 'deactivate',
-                  performed_by: 'u2',
-                  reason: 'Franchise revoked',
-                  complaint_id: null,
-                  created_at: '2026-09-09T10:00:00Z',
-                },
-              ],
-              error: null,
+            order: () => ({
+              limit: async () => ({
+                data: [
+                  {
+                    id: 'a1',
+                    target_user_id: 'u1',
+                    action_type: 'deactivate',
+                    performed_by: 'u2',
+                    reason: 'Franchise revoked',
+                    complaint_id: null,
+                    created_at: '2026-09-09T10:00:00Z',
+                  },
+                ],
+                error: null,
+              }),
             }),
           }),
         };
@@ -132,7 +204,7 @@ test('listAccountActions degrades a missing name to null instead of failing the 
 
 test('listAccountActions returns { data: [], error } when the query fails', async () => {
   __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }),
+    from: () => ({ select: () => ({ order: () => ({ limit: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
   } as any);
 
   const { data, error } = await listAccountActions();
@@ -144,7 +216,7 @@ test('listAccountActions skips the users lookup entirely when there are no rows'
   let usersQueried = false;
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'account_actions') return { select: () => ({ order: async () => ({ data: [], error: null }) }) };
+      if (table === 'account_actions') return { select: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) };
       if (table === 'users') {
         usersQueried = true;
         return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
@@ -166,16 +238,18 @@ function fakeReviewDecisionsClient(opts?: { driverError?: string; discountError?
         return {
           select: () => ({
             not: () => ({
-              order: async () =>
-                opts?.driverError
-                  ? { data: null, error: { message: opts.driverError } }
-                  : {
-                      data: [
-                        { user_id: 'd1', verification_status: 'approved', verified_by: 'sup1', verified_at: '2026-09-05T00:00:00Z' },
-                        { user_id: 'd2', verification_status: 'rejected', verified_by: 'sup1', verified_at: '2026-09-01T00:00:00Z' },
-                      ],
-                      error: null,
-                    },
+              order: () => ({
+                limit: async () =>
+                  opts?.driverError
+                    ? { data: null, error: { message: opts.driverError } }
+                    : {
+                        data: [
+                          { user_id: 'd1', verification_status: 'approved', verified_by: 'sup1', verified_at: '2026-09-05T00:00:00Z' },
+                          { user_id: 'd2', verification_status: 'rejected', verified_by: 'sup1', verified_at: '2026-09-01T00:00:00Z' },
+                        ],
+                        error: null,
+                      },
+              }),
             }),
           }),
         };
@@ -184,15 +258,17 @@ function fakeReviewDecisionsClient(opts?: { driverError?: string; discountError?
         return {
           select: () => ({
             not: () => ({
-              order: async () =>
-                opts?.discountError
-                  ? { data: null, error: { message: opts.discountError } }
-                  : {
-                      data: [
-                        { id: 'disc1', passenger_id: 'p1', category: 'senior_citizen', status: 'approved', reviewed_by: 'sup1', reviewed_at: '2026-09-08T00:00:00Z' },
-                      ],
-                      error: null,
-                    },
+              limit: () => ({
+                order: async () =>
+                  opts?.discountError
+                    ? { data: null, error: { message: opts.discountError } }
+                    : {
+                        data: [
+                          { id: 'disc1', passenger_id: 'p1', category: 'senior_citizen', status: 'approved', reviewed_by: 'sup1', reviewed_at: '2026-09-08T00:00:00Z' },
+                        ],
+                        error: null,
+                      },
+              }),
             }),
           }),
         };

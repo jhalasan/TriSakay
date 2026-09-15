@@ -15,6 +15,10 @@ export const styles = StyleSheet.create({
     ...typography.label,
     color: colors.inkSoft,
   },
+  hint: {
+    ...typography.caption,
+    color: colors.inkSoft,
+  },
   uploadBox: {
     height: 96,
     borderWidth: 1,

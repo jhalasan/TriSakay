@@ -42,6 +42,15 @@ interface SessionState {
   signOut: () => Promise<void>;
   /** Sets the new password on the current session, then clears must_change_password so RequireForcedPasswordChange lets the user through. */
   completePasswordChange: (newPassword: string) => Promise<string | null>;
+  /**
+   * Voluntary password change from the ProfileMenu — unlike
+   * completePasswordChange (used only right after a fresh sign-in, on the
+   * forced first-login screen), this can be invoked from an
+   * already-long-open session, so it re-verifies the CURRENT password
+   * first (P1-10, 2026-09-15 launch audit) before calling through to the
+   * same update.
+   */
+  changeOwnPassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
   /** Forgot-password completion: exchanges the emailed 6-digit code for a session, sets the new password, then signs the user straight in. */
   confirmPasswordReset: (email: string, token: string, newPassword: string) => Promise<string | null>;
   /** Renames the signed-in user's own account, from the ProfileMenu. */
@@ -141,6 +150,19 @@ export const useSessionStore = create<SessionState>()((set, get) => {
 
       const current = get().user;
       if (current) set({ user: { ...current, mustChangePassword: false } });
+      return null;
+    },
+
+    changeOwnPassword: async (currentPassword, newPassword) => {
+      const current = get().user;
+      if (!current) return 'Not signed in.';
+
+      const { error: verifyError } = await authService.verifyCurrentPassword(current.email, currentPassword);
+      if (verifyError) return verifyError;
+
+      const { error: updateError } = await authService.updatePassword(newPassword);
+      if (updateError) return updateError;
+
       return null;
     },
 

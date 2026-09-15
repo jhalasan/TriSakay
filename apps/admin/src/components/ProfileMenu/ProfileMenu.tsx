@@ -16,7 +16,7 @@ export interface ProfileMenuProps {
 export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   const user = useSessionStore((state) => state.user);
   const updateName = useSessionStore((state) => state.updateName);
-  const completePasswordChange = useSessionStore((state) => state.completePasswordChange);
+  const changeOwnPassword = useSessionStore((state) => state.changeOwnPassword);
 
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -28,9 +28,16 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   const [savingName, setSavingName] = useState(false);
 
   const [changingPassword, setChangingPassword] = useState(false);
+  const [currentPassword, setCurrentPassword] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  // P1-10 (2026-09-15 launch audit): tagged by which field the error belongs
+  // to, rather than string-matching the message against a recomputed
+  // policy check — the field's current value can drift from what produced
+  // the error, which made the old string-comparison approach fragile.
+  const [passwordError, setPasswordError] = useState<{ field: 'current' | 'new' | 'confirm'; message: string } | null>(
+    null,
+  );
   const [savingPassword, setSavingPassword] = useState(false);
   const { showToast } = useToast();
 
@@ -50,6 +57,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
     setChangingPassword(false);
     setNameError(null);
     setPasswordError(null);
+    setCurrentPassword('');
     setPassword('');
     setConfirmPassword('');
   }
@@ -76,6 +84,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   }
 
   function startChangingPassword() {
+    setCurrentPassword('');
     setPassword('');
     setConfirmPassword('');
     setPasswordError(null);
@@ -83,26 +92,35 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   }
 
   async function handleSavePassword() {
+    if (!currentPassword) {
+      setPasswordError({ field: 'current', message: 'Enter your current password.' });
+      return;
+    }
     const policyError = passwordPolicyError(password);
     if (policyError) {
-      setPasswordError(policyError);
+      setPasswordError({ field: 'new', message: policyError });
       return;
     }
     if (password !== confirmPassword) {
-      setPasswordError('Passwords do not match.');
+      setPasswordError({ field: 'confirm', message: 'Passwords do not match.' });
       return;
     }
 
     setSavingPassword(true);
-    const failure = await completePasswordChange(password);
+    const failure = await changeOwnPassword(currentPassword, password);
     setSavingPassword(false);
 
     if (failure) {
-      setPasswordError(failure);
+      // changeOwnPassword only fails this early on the current-password
+      // check (verifyCurrentPassword's message) or a server-side rejection
+      // of the new password — attribute anything else to the new-password
+      // field rather than silently dropping it.
+      setPasswordError({ field: failure === 'Current password is incorrect.' ? 'current' : 'new', message: failure });
       return;
     }
     setPasswordError(null);
     setChangingPassword(false);
+    setCurrentPassword('');
     setPassword('');
     setConfirmPassword('');
     showToast({ message: 'Password updated.' });
@@ -182,14 +200,26 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
             </div>
             {changingPassword ? (
               <div className={styles.form}>
+                {/* P1-10 (2026-09-15 launch audit): current-password
+                    re-verification, so an already-open, unattended session
+                    can't change the account password with no proof of
+                    knowing the existing one. */}
+                <TextField
+                  type="password"
+                  placeholder="Current password"
+                  autoComplete="current-password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  error={passwordError?.field === 'current' ? passwordError.message : undefined}
+                  autoFocus
+                />
                 <TextField
                   type="password"
                   placeholder="At least 10 characters"
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  error={passwordError && passwordError !== 'Passwords do not match.' ? passwordError : undefined}
-                  autoFocus
+                  error={passwordError?.field === 'new' ? passwordError.message : undefined}
                 />
                 <TextField
                   type="password"
@@ -197,7 +227,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                   autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  error={passwordError === 'Passwords do not match.' ? passwordError : undefined}
+                  error={passwordError?.field === 'confirm' ? passwordError.message : undefined}
                 />
                 <div className={styles.formActions}>
                   <Button variant="outline" tone="neutral" size="sm" onClick={() => setChangingPassword(false)}>

@@ -1,9 +1,12 @@
 import type { TutorialStep } from './types';
 
 /**
- * Driver tour — 8 steps, 4 screens. Copy and frames are verbatim from
+ * Driver tour — 7 steps, 4 screens. Copy and frames are verbatim from
  * docs/design_handoff_trisakay_tutorials/{README.md,CLAUDE_CODE_PROMPT.md}
  * (locked 2026-09-14) — do not paraphrase, re-punctuate, or "improve" it.
+ * The 8th step ("Filter the queue", requests/scope-filters) was removed
+ * 2026-09-15 (launch audit, P1-20): it taught a filter UI that never
+ * actually filtered anything — see apps/driver/app/(tabs)/requests.tsx.
  * `screen` keys are consumed by apps/driver/src/hooks/useDriverTutorialNavigation.ts
  * to route before painting each coach mark.
  */
@@ -39,14 +42,6 @@ export const DRIVER_STEPS: TutorialStep[] = [
     frame: { top: 778, left: 6, width: 378, height: 66, radius: 22 },
     title: 'Move around the app',
     body: 'Requests for the full queue, History for finished trips, Earnings for your records, Profile for your documents and account.',
-  },
-  {
-    screen: 'requests',
-    targetId: 'scope-filters',
-    tip: 'below',
-    frame: { top: 118, left: 12, width: 366, height: 48, radius: 26 },
-    title: 'Filter the queue',
-    body: 'Along route keeps requests pointed the way you are already driving. Nearby widens it to anything close, All shows the whole barangay.',
   },
   {
     screen: 'activeTrip',

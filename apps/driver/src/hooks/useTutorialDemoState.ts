@@ -48,6 +48,12 @@ const DEMO_TRIP: ActiveTrip = {
       fare: 45,
       cashConfirmed: false,
       status: 'ongoing',
+      // Demo-only coordinates near the app's default map center (Barangay
+      // Dadiangas West) — this passenger never touches the backend.
+      pickupLat: 6.1128,
+      pickupLng: 125.1717,
+      destLat: 6.1188,
+      destLng: 125.1655,
     },
   ],
 };

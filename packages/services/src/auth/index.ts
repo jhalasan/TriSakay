@@ -92,6 +92,22 @@ export async function updatePassword(newPassword: string): Promise<UpdatePasswor
   return { error: error?.message ?? null };
 }
 
+/**
+ * P1-10 (2026-09-15 launch audit): re-proves the signed-in user still knows
+ * their CURRENT password before a voluntary (not forced-first-login, not
+ * forgot-password) password change is allowed to proceed. Without this, an
+ * already-open session — an unattended, unlocked device — could change the
+ * account's password with no re-authentication at all, which is a full
+ * account takeover if the device is left unattended. Re-running
+ * signInWithPassword against the same account is the standard way to check
+ * this without a separate "verify password" endpoint; on success it simply
+ * refreshes the existing session rather than creating a new one.
+ */
+export async function verifyCurrentPassword(email: string, currentPassword: string): Promise<UpdatePasswordResult> {
+  const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password: currentPassword });
+  return { error: error ? 'Current password is incorrect.' : null };
+}
+
 export async function getSession(): Promise<Session | null> {
   const { data } = await getSupabaseClient().auth.getSession();
   return data.session;

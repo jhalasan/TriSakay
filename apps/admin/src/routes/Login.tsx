@@ -141,6 +141,12 @@ export function Login() {
               }
             />
 
+            {/* P0-3 (2026-09-15 launch audit): the reset flow itself
+                (routes/ForgotPassword.tsx) is still non-functional — Supabase's free
+                tier can't have the recovery email template edited without custom SMTP,
+                which is unfinished (docs/CHECKLIST.MD). Re-added on request
+                (2026-09-15) as a real link regardless; submitting it won't currently
+                send anything until SMTP is configured. */}
             <Link to="/forgot-password" className={styles.forgotLink}>
               Forgot password?
             </Link>

@@ -16,3 +16,11 @@
   overflow-y: auto;
   padding: var(--sp-xl);
 }
+
+/* P1-23 (2026-09-15 launch audit): tighter side gutters once the sidebar
+   is no longer permanently reserving 236px of a narrow viewport. */
+@media (max-width: 900px) {
+  .content {
+    padding: var(--sp-md);
+  }
+}

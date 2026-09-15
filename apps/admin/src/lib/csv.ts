@@ -1,7 +1,22 @@
+/**
+ * P2 (2026-09-15 launch audit): a field beginning with =, +, -, or @ is
+ * interpreted as a formula by Excel/Sheets/LibreOffice when the CSV is
+ * opened — a free-text field this app exports verbatim (AuditLog.tsx's
+ * "Reason", entered by any PSO Staff account) could otherwise carry a
+ * formula that executes on the reviewer's machine when they open the
+ * export. Standard mitigation (OWASP CSV Injection): prefix with a single
+ * quote, which Excel/Sheets treat as "force text" and hide from the
+ * rendered cell.
+ */
+function neutralizeFormula(value: string): string {
+  return /^[=+\-@]/.test(value) ? `'${value}` : value;
+}
+
 /** Escapes a CSV field per RFC 4180: wrap in quotes and double any embedded quote whenever the value contains a comma, quote, or newline. */
 function escapeCsvField(value: string): string {
-  if (/[",\n]/.test(value)) return `"${value.replace(/"/g, '""')}"`;
-  return value;
+  const safe = neutralizeFormula(value);
+  if (/[",\n]/.test(safe)) return `"${safe.replace(/"/g, '""')}"`;
+  return safe;
 }
 
 export interface CsvColumn<T> {

@@ -1,9 +1,9 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { FlatList, Pressable, Text, View } from 'react-native';
+import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BrandMotif, Button, colors, EmptyState, GradientSurface, RequestCard, useTutorialTarget } from '@trisakay/ui';
+import { BrandMotif, Button, colors, EmptyState, GradientSurface, RequestCard } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -13,14 +13,11 @@ import { useRequestsTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/tabs/requests.styles';
 
-type MatchFilter = 'alongRoute' | 'nearby' | 'all';
-
 export default function RequestsScreen() {
   const router = useRouter();
   const t = useTranslation();
   const user = useAuthStore((state) => state.user);
   const tutorialDemo = useRequestsTutorialDemo();
-  const scopeFiltersTarget = useTutorialTarget('scope-filters');
   const isAvailableReal = useDriverStore((state) => state.isAvailable);
   const isAvailable = tutorialDemo.active ? true : isAvailableReal;
   const pendingReal = useRequestsStore((state) => state.pending);
@@ -28,13 +25,6 @@ export default function RequestsScreen() {
   const requestError = useRequestsStore((state) => state.error);
   const decline = useRequestsStore((state) => state.decline);
   const { acceptRideRequest, acceptingId } = useAcceptRideRequest();
-  const [matchFilter, setMatchFilter] = useState<MatchFilter>('alongRoute');
-
-  const matchFilterOptions = [
-    { value: 'alongRoute' as const, label: t.driver.requests.alongRoute },
-    { value: 'nearby' as const, label: t.driver.requests.nearby },
-    { value: 'all' as const, label: t.driver.requests.all },
-  ];
 
   const availableNowSummary = useMemo(() => {
     const total = pending.reduce((sum, item) => sum + (item.fare ?? 0), 0);
@@ -50,24 +40,15 @@ export default function RequestsScreen() {
           <Text style={styles.heroEyebrow}>{t.driver.requests.eyebrow}</Text>
           <Text style={styles.heroTitle}>{t.driver.requests.title}</Text>
 
-          {isAvailable ? (
-            <View style={styles.filterRow} {...scopeFiltersTarget}>
-              {matchFilterOptions.map((option) => {
-                const active = option.value === matchFilter;
-                return (
-                  <Pressable
-                    key={option.value}
-                    accessibilityRole="button"
-                    accessibilityState={{ selected: active }}
-                    onPress={() => setMatchFilter(option.value)}
-                    style={[styles.filterPill, active && styles.filterPillActive]}
-                  >
-                    <Text style={[styles.filterPillLabel, active && styles.filterPillLabelActive]}>{option.label}</Text>
-                  </Pressable>
-                );
-              })}
-            </View>
-          ) : (
+          {/* P1-20 (2026-09-15 launch audit): the along-route/nearby/all filter
+              pills that used to sit here were decorative — matchFilter was set
+              by them and read by nothing else; the list was always the full
+              unfiltered `pending` set. Removed rather than shipped fake, per
+              docs/RIDE_REQUEST_FLOW_AUDIT.MD's own note that per-request
+              distance is the only signal currently available (no per-request
+              "along route" classification exists to filter by). The offline
+              indicator below is a real state, not a filter, and stays. */}
+          {!isAvailable && (
             <View style={styles.filterRow}>
               <View style={[styles.filterPill, styles.filterPillActive, styles.offlinePill]}>
                 <View style={styles.offlineDot} />

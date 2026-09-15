@@ -14,6 +14,17 @@ export interface ActivePassenger {
   cashConfirmed: boolean;
   /** 'assigned' (needs Start) or 'ongoing' (picked up, needs Complete). */
   status: 'assigned' | 'ongoing';
+  /**
+   * P1-14 (2026-09-15 launch audit): the active-trip map's routing target —
+   * this passenger's pickup point while 'assigned', or their destination
+   * once 'ongoing'. Nullable because the request board's response can omit
+   * them in edge cases (see PendingRequest); the map degrades to no
+   * marker/route rather than crashing when null.
+   */
+  pickupLat: number | null;
+  pickupLng: number | null;
+  destLat: number | null;
+  destLng: number | null;
 }
 
 /**

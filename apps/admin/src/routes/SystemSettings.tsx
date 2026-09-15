@@ -3,6 +3,8 @@ import { Toggle } from '../components/Toggle';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
+import { ErrorBanner } from '../components/ErrorBanner';
+import { EmptyState } from '../components/EmptyState';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { formatCurrency, formatDate } from '../lib/format';
 import styles from './SystemSettings.module.css';
@@ -11,8 +13,18 @@ const WORKED_EXAMPLE_KM = 4.2;
 
 /** Wireframe screen 10 "System settings" (FR-8.1). Admin-only screen; route access is gated in App.tsx. */
 export function SystemSettings() {
-  const { fareConfig, featureToggles, systemSettings, loading, saving, savedAt, fetch, saveFareConfig, toggleFeature } =
-    useSettingsStore();
+  const {
+    fareConfig,
+    featureToggles,
+    systemSettings,
+    loading,
+    saving,
+    savedAt,
+    error,
+    fetch,
+    saveFareConfig,
+    toggleFeature,
+  } = useSettingsStore();
   const [baseFare, setBaseFare] = useState('');
   const [baseKm, setBaseKm] = useState('');
   const [ratePerKm, setRatePerKm] = useState('');
@@ -29,7 +41,31 @@ export function SystemSettings() {
     }
   }, [fareConfig]);
 
-  if (loading || !fareConfig || !featureToggles || !systemSettings) {
+  if (loading) {
+    return <div className="page">Loading…</div>;
+  }
+
+  // P1-16 (2026-09-15 launch audit): a fetch failure used to hold this
+  // screen on "Loading…" forever (fareConfig/etc. stay null, loading goes
+  // false, and the guard above never falls through) — no message, no Retry.
+  if (error && (!fareConfig || !featureToggles || !systemSettings)) {
+    return (
+      <div className="page">
+        <EmptyState
+          message="Couldn't load system settings."
+          hint={error}
+          tone="danger"
+          action={
+            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+              Retry
+            </Button>
+          }
+        />
+      </div>
+    );
+  }
+
+  if (!fareConfig || !featureToggles || !systemSettings) {
     return <div className="page">Loading…</div>;
   }
 
@@ -40,6 +76,20 @@ export function SystemSettings() {
   const workedExampleExcessCost = workedExampleExcessKm * parsedRatePerKm;
   const workedExampleTotal = parsedBaseFare + workedExampleExcessCost;
   const workedExampleValid = [parsedBaseFare, parsedBaseKm, parsedRatePerKm].every((n) => Number.isFinite(n));
+  // P1-15 (2026-09-15 launch audit): Number('') === 0 and Number.isFinite(0)
+  // is true, so an emptied field previously saved as a live ₱0 fare with no
+  // guard. Base fare may legitimately be 0 in theory (the DB CHECK allows
+  // it) but base_km and rate_per_km must be strictly positive for the
+  // ordinance formula to mean anything, and none of the three fields may be
+  // blank/non-numeric.
+  const fareFormValid =
+    workedExampleValid &&
+    baseFare.trim() !== '' &&
+    baseKm.trim() !== '' &&
+    ratePerKm.trim() !== '' &&
+    parsedBaseFare >= 0 &&
+    parsedBaseKm > 0 &&
+    parsedRatePerKm >= 0;
 
   return (
     <div className="page">
@@ -117,8 +167,11 @@ export function SystemSettings() {
               </div>
             )}
 
+            <ErrorBanner message={error} />
+
             <Button
               loading={saving}
+              disabled={!fareFormValid}
               onClick={() =>
                 saveFareConfig({ baseFare: parsedBaseFare, baseKm: parsedBaseKm, ratePerKm: parsedRatePerKm })
               }

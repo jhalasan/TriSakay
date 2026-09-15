@@ -12,6 +12,33 @@
   box-shadow: var(--shadow-card);
 }
 
+/* P1-23 (2026-09-15 launch audit): opens the sidebar drawer — hidden above
+   900px, where the sidebar is permanently visible and has nothing to open. */
+.menuButton {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border: none;
+  border-radius: var(--r-sm);
+  background: transparent;
+  color: var(--ink-soft);
+  cursor: pointer;
+}
+
+.menuButton:hover {
+  background: var(--fill);
+  color: var(--ink);
+}
+
+@media (max-width: 900px) {
+  .menuButton {
+    display: inline-flex;
+  }
+}
+
 .title {
   font-family: var(--font-brand);
   font-size: var(--fs-page);
@@ -19,12 +46,34 @@
   font-weight: 700;
   color: var(--ink);
   white-space: nowrap;
+  /* Lets the title actually shrink/truncate in this flex row instead of
+     forcing the row wider than the viewport — a bare flex item's default
+     min-width is `auto` (its own content size), which defeats overflow:
+     hidden until this is set. */
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .searchWrap {
   position: relative;
   flex: 1;
   max-width: 340px;
+}
+
+/* P1-23: on a narrow phone, title + full-width search + bell + avatar
+   don't all fit — give the search box a much smaller share so the rest
+   stays reachable rather than clipped. It's still fully usable, just not
+   the primary use of the remaining width. */
+@media (max-width: 640px) {
+  .searchWrap {
+    max-width: 120px;
+    flex: 0 1 120px;
+  }
+
+  .shortcutHint {
+    display: none;
+  }
 }
 
 .search {
@@ -77,7 +126,10 @@
   left: 0;
   min-width: 100%;
   width: max-content;
-  max-width: 420px;
+  /* P1-23: the plain 420px cap could still run off a narrow phone's right
+     edge, since this dropdown is deliberately wider than its (now much
+     narrower on mobile) search box. */
+  max-width: min(420px, calc(100vw - 32px));
   margin: 0;
   padding: var(--sp-xs) 0;
   list-style: none;

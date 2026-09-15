@@ -802,6 +802,7 @@ export type Database = {
           discount_percent: number | null
           distance_km: number | null
           estimated_fare: number | null
+          expires_at: string
           final_fare: number | null
           id: string
           passenger_id: string
@@ -828,6 +829,7 @@ export type Database = {
           discount_percent?: number | null
           distance_km?: number | null
           estimated_fare?: number | null
+          expires_at?: string
           final_fare?: number | null
           id?: string
           passenger_id: string
@@ -854,6 +856,7 @@ export type Database = {
           discount_percent?: number | null
           distance_km?: number | null
           estimated_fare?: number | null
+          expires_at?: string
           final_fare?: number | null
           id?: string
           passenger_id?: string
@@ -1502,9 +1505,13 @@ export type Database = {
         Returns: {
           avatar_url: string
           cash_confirmed: boolean
+          dest_lat: number
+          dest_lng: number
           estimated_fare: number
           passenger_id: string
           passenger_name: string
+          pickup_lat: number
+          pickup_lng: number
           preferred_method: Database["public"]["Enums"]["payment_method"]
           ride_request_id: string
           seats_requested: number
@@ -1518,6 +1525,13 @@ export type Database = {
           declined_count: number
         }[]
       }
+      get_driver_trip_counts: {
+        Args: { p_driver_ids: string[] }
+        Returns: {
+          driver_id: string
+          trip_count: number
+        }[]
+      }
       get_driver_trip_history: {
         Args: { p_limit?: number }
         Returns: {
@@ -1528,6 +1542,13 @@ export type Database = {
           requested_at: string
           ride_request_id: string
           status: Database["public"]["Enums"]["ride_status"]
+        }[]
+      }
+      get_passenger_completed_ride_counts: {
+        Args: { p_passenger_ids: string[] }
+        Returns: {
+          passenger_id: string
+          ride_count: number
         }[]
       }
       get_passenger_trip_history: {
@@ -1580,6 +1601,10 @@ export type Database = {
           passenger_id: string
           passenger_name: string
         }[]
+      }
+      haversine_km: {
+        Args: { lat1: number; lat2: number; lng1: number; lng2: number }
+        Returns: number
       }
       is_account_active: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }

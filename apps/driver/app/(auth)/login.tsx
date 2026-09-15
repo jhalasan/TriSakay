@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { BrandMotif, Button, colors, GradientSurface, TextField } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -83,11 +83,15 @@ export default function LoginScreen() {
 
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
-          <View style={styles.forgotLink}>
-            <Text style={styles.forgotLinkText} onPress={() => router.push('/(auth)/forgot-password')}>
-              {t.driver.login.forgotPassword}
-            </Text>
-          </View>
+          {/* P0-3 (2026-09-15 launch audit): the reset flow itself
+              (app/(auth)/forgot-password.tsx) is still non-functional — Supabase's
+              free tier can't have the recovery email template edited without custom
+              SMTP, which is unfinished. Re-added on request (2026-09-15) as a real
+              link regardless; submitting it won't currently send anything until
+              SMTP is configured. */}
+          <Pressable style={styles.forgotLink} onPress={() => router.push('/(auth)/forgot-password')}>
+            <Text style={styles.forgotLinkText}>{t.driver.login.forgotPassword}</Text>
+          </Pressable>
 
           <Button label={t.driver.login.logIn} onPress={handleLogin} loading={submitting || awaitingGate} fullWidth />
 

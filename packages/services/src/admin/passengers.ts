@@ -27,11 +27,16 @@ export interface ListPassengersForAdminResult {
  * users (role='passenger') + a completed-ride count from ride_requests +
  * each passenger's own discount application (category + review status,
  * not just an approved/not flag) from passenger_discounts, merged
- * client-side. PostgREST has no GROUP BY, so the ride count is a row fetch
- * reduced in JS rather than an aggregate query — fine at this app's
- * pilot-barangay scale (same tradeoff admin/dashboard.ts makes for its
- * follow-up lookups). A passenger applies for at most one discount in
- * practice; ordering by submitted_at desc and keeping the first row seen
+ * client-side. The ride count was originally a row-per-ride fetch reduced
+ * in JS — a real correctness bug at scale (P1-22, 2026-09-15 launch audit):
+ * PostgREST's default max-rows silently truncates that fetch once total
+ * completed rides city-wide exceed it, making every passenger's count
+ * quietly wrong rather than just slow. Replaced with a real server-side
+ * aggregate (get_passenger_completed_ride_counts, GROUP BY on
+ * ride_requests). The users/passenger_discounts fetches stay full-list-
+ * client-side, same as this app's other screens — those scale with
+ * headcount, not ride volume. A passenger applies for at most one discount
+ * in practice; ordering by submitted_at desc and keeping the first row seen
  * per passenger picks their latest application if more than one exists.
  */
 export async function listPassengersForAdmin(): Promise<ListPassengersForAdminResult> {
@@ -48,18 +53,15 @@ export async function listPassengersForAdmin(): Promise<ListPassengersForAdminRe
 
   const ids = users.map((u) => u.id);
 
-  const [{ data: completedRides, error: ridesError }, { data: discounts, error: discountsError }] = await Promise.all([
-    client.from('ride_requests').select('passenger_id').eq('status', 'completed').in('passenger_id', ids),
+  const [{ data: rideCounts, error: ridesError }, { data: discounts, error: discountsError }] = await Promise.all([
+    client.rpc('get_passenger_completed_ride_counts', { p_passenger_ids: ids }),
     client.from('passenger_discounts').select('passenger_id, category, status').in('passenger_id', ids).order('submitted_at', { ascending: false }),
   ]);
 
   if (ridesError) return { data: [], error: ridesError.message };
   if (discountsError) return { data: [], error: discountsError.message };
 
-  const rideCountByPassengerId = new Map<string, number>();
-  for (const row of completedRides ?? []) {
-    rideCountByPassengerId.set(row.passenger_id, (rideCountByPassengerId.get(row.passenger_id) ?? 0) + 1);
-  }
+  const rideCountByPassengerId = new Map((rideCounts ?? []).map((r) => [r.passenger_id, Number(r.ride_count)]));
   const discountByPassengerId = new Map<string, AdminPassengerDiscount>();
   for (const row of discounts ?? []) {
     if (!discountByPassengerId.has(row.passenger_id)) {

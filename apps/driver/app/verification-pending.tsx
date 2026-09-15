@@ -114,6 +114,7 @@ function UnsubmittedUpload() {
         <DocumentUploadRow
           key={type}
           label={DOCUMENT_LABEL[type]}
+          hint={type === 'drivers_license' ? t.driver.documents.driversLicenseHint : undefined}
           status={documents[type].status}
           uri={documents[type].uri}
           onUpload={(uri) => submitDocument(type, uri)}

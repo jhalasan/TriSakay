@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Button, Card, Toggle, colors, useTutorial } from '@trisakay/ui';
 import { OfflineState } from '../../src/components/OfflineState';
 import { useTranslation } from '../../src/hooks/useTranslation';
-import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 import { useSettingsStore, type SettingsLanguage } from '../../src/store/useSettingsStore';
 import { styles } from '../../src/styles/tabs/settings.styles';
@@ -60,20 +59,8 @@ function ToggleRow({
 export default function SettingsScreen() {
   const router = useRouter();
   const t = useTranslation();
-  const user = useAuthStore((state) => state.user);
   const tutorial = useTutorial();
-  const {
-    pushNotificationsEnabled,
-    locationTrackingEnabled,
-    language,
-    smsReceipts,
-    emailReceipts,
-    togglePushNotifications,
-    toggleLocationTracking,
-    setLanguage,
-    toggleSmsReceipts,
-    toggleEmailReceipts,
-  } = useSettingsStore();
+  const { pushNotificationsEnabled, language, togglePushNotifications, setLanguage } = useSettingsStore();
   const isOffline = useConnectivityStore((state) => state.isOffline);
 
   const languageLabels: Record<SettingsLanguage, string> = {
@@ -102,6 +89,11 @@ export default function SettingsScreen() {
           <Text style={styles.tagline}>{t.settings.tagline}</Text>
         </View>
 
+        {/* P1-20 (2026-09-15 launch audit): SMS/email receipt toggles and the
+            Privacy section's Location tracking toggle were removed here —
+            each was read by nothing (no SMS/email is ever sent; location
+            tracking is not gated by any flag anywhere in the app). See
+            useSettingsStore.ts. */}
         <SectionLabel label={t.settings.sectionNotifications} />
         <Card variant="raised" style={styles.card}>
           <ToggleRow
@@ -110,32 +102,6 @@ export default function SettingsScreen() {
             subtitle={t.settings.pushNotificationsSubtitle}
             value={pushNotificationsEnabled}
             onValueChange={togglePushNotifications}
-          />
-          <ToggleRow
-            icon="chatbubble-ellipses-outline"
-            label={t.settings.smsReceipts}
-            subtitle={user?.phone ? `${t.settings.smsReceiptsSubtitlePrefix} ${user.phone}` : undefined}
-            value={smsReceipts}
-            onValueChange={toggleSmsReceipts}
-          />
-          <ToggleRow
-            icon="mail-outline"
-            label={t.settings.emailReceipts}
-            subtitle={user?.email}
-            value={emailReceipts}
-            onValueChange={toggleEmailReceipts}
-            divider={false}
-          />
-        </Card>
-
-        <SectionLabel label={t.settings.sectionPrivacy} />
-        <Card variant="raised" style={styles.card}>
-          <ToggleRow
-            icon="location-outline"
-            label={t.settings.locationTracking}
-            subtitle={t.settings.locationTrackingSubtitle}
-            value={locationTrackingEnabled}
-            onValueChange={toggleLocationTracking}
             divider={false}
           />
         </Card>

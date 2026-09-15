@@ -14,11 +14,13 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
+import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useDriverTutorialNavigation } from '../src/hooks/useDriverTutorialNavigation';
 import { useDriverTutorialTrigger } from '../src/hooks/useDriverTutorialTrigger';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useComplaintsStore } from '../src/store/useComplaintsStore';
+import { useConnectivityStore } from '../src/store/useConnectivityStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { useDocumentsStore } from '../src/store/useDocumentsStore';
 import { useDriverStore } from '../src/store/useDriverStore';
@@ -105,6 +107,20 @@ function useProtectedRoute(
       router.replace('/(tabs)/dashboard');
     }
   }, [isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip, root, router]);
+}
+
+/**
+ * P1-24 (2026-09-15 launch audit): mirrors apps/passenger's global
+ * connectivity listener — kept subscribed for the whole session (not scoped
+ * to a single screen) since the offline strip and tab-bar dimming must
+ * persist across every tab.
+ */
+function useConnectivitySync() {
+  const subscribe = useConnectivityStore((state) => state.subscribe);
+
+  useEffect(() => {
+    return subscribe();
+  }, [subscribe]);
 }
 
 function useConsentSync(sessionUserId: string | null) {
@@ -336,6 +352,7 @@ function RootLayoutNav() {
   const locationTrackingEnabled = useSettingsStore((state) => state.locationTrackingEnabled);
   const consentStatus = useConsentStore((state) => state.status);
   const verificationStatus = useVerificationStore((state) => state.status);
+  useConnectivitySync();
   useConsentSync(sessionUserId);
   useVerificationSync(sessionUserId);
   useDocumentsSync(sessionUserId);
@@ -346,6 +363,7 @@ function RootLayoutNav() {
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);
   useNotificationsSync(sessionUserId);
+  usePushNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip);
   useLocationPrompt(isAuthenticated, consentStatus);
 

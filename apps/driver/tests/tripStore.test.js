@@ -20,6 +20,10 @@ function passenger(id, overrides = {}) {
     fare: 45,
     cashConfirmed: false,
     status: 'assigned',
+    pickupLat: null,
+    pickupLng: null,
+    destLat: null,
+    destLng: null,
     ...overrides,
   };
 }
@@ -414,7 +418,7 @@ test('hydrate() populates current with every passenger leg the backend returns',
       if (fn === 'get_active_trip_passengers') {
         return {
           data: [
-            { ride_request_id: 'req-9', seats_requested: 2, preferred_method: 'cash', estimated_fare: 45, passenger_id: 'p1', passenger_name: 'Juan Dela Cruz', avatar_url: 'https://example.com/a.jpg', cash_confirmed: false, status: 'assigned' },
+            { ride_request_id: 'req-9', seats_requested: 2, preferred_method: 'cash', estimated_fare: 45, passenger_id: 'p1', passenger_name: 'Juan Dela Cruz', avatar_url: 'https://example.com/a.jpg', cash_confirmed: false, status: 'assigned', pickup_lat: 6.11, pickup_lng: 125.17, dest_lat: 6.12, dest_lng: 125.18 },
           ],
           error: null,
         };
@@ -429,7 +433,17 @@ test('hydrate() populates current with every passenger leg the backend returns',
   assert.deepEqual(useTripStore.getState().current, {
     tripId: 'trip-9',
     startedAt: '2026-08-11T00:00:00.000Z',
-    passengers: [passenger('req-9', { passengerId: 'p1', passengerName: 'Juan Dela Cruz', passengerAvatarUrl: 'https://example.com/a.jpg' })],
+    passengers: [
+      passenger('req-9', {
+        passengerId: 'p1',
+        passengerName: 'Juan Dela Cruz',
+        passengerAvatarUrl: 'https://example.com/a.jpg',
+        pickupLat: 6.11,
+        pickupLng: 125.17,
+        destLat: 6.12,
+        destLng: 125.18,
+      }),
+    ],
   });
 });
 

@@ -12,6 +12,16 @@ interface DriverState {
   acceptRate: number | null;
   error: string | null;
   /**
+   * P1-14 (2026-09-15 launch audit): the driver's own last-known position,
+   * for the active-trip map's marker/route/recenter — set by
+   * useDriverLocationSync as plain data on each GPS fix, same division of
+   * labor as setAvailable's `coords` param (expo-location itself stays out
+   * of this store).
+   */
+  currentLat: number | null;
+  currentLng: number | null;
+  setCurrentPosition: (lat: number, lng: number) => void;
+  /**
    * Resolves true only once the write actually succeeded. Callers going
    * online must resolve `coords` themselves first (expo-location has no
    * place in a store — see useLocationPermission for why platform calls
@@ -43,6 +53,9 @@ export const useDriverStore = create<DriverState>()((set) => {
     todayEarnings: 0,
     todayTrips: 0,
     rating: null,
+    currentLat: null,
+    currentLng: null,
+    setCurrentPosition: (lat, lng) => set({ currentLat: lat, currentLng: lng }),
     ratingCount: 0,
     acceptRate: null,
     error: null,

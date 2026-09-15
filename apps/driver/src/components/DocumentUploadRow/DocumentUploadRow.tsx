@@ -9,6 +9,7 @@ import { styles } from './DocumentUploadRow.styles';
 
 export interface DocumentUploadRowProps {
   label: string;
+  hint?: string;
   status: DocumentStatus;
   uri: string | null;
   onUpload: (uri: string) => void;
@@ -23,7 +24,7 @@ const STATUS_TONE: Record<DocumentStatus, BadgeTone> = {
   rejected: 'danger',
 };
 
-export function DocumentUploadRow({ label, status, uri, onUpload, onRemove }: DocumentUploadRowProps) {
+export function DocumentUploadRow({ label, hint, status, uri, onUpload, onRemove }: DocumentUploadRowProps) {
   const t = useTranslation();
   const STATUS_LABEL: Record<DocumentStatus, string> = {
     unsubmitted: t.driver.documents.statusUnsubmitted,
@@ -57,6 +58,7 @@ export function DocumentUploadRow({ label, status, uri, onUpload, onRemove }: Do
         <Text style={styles.label}>{label}</Text>
         <Badge label={STATUS_LABEL[status]} tone={STATUS_TONE[status]} />
       </View>
+      {hint ? <Text style={styles.hint}>{hint}</Text> : null}
       {uri ? (
         <View style={styles.preview}>
           <Image source={{ uri }} style={styles.previewImage} resizeMode="cover" />

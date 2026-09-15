@@ -5,11 +5,13 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-na
 import { requestPasswordReset } from '@trisakay/services';
 import { Button, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { useTranslation } from '../../src/hooks/useTranslation';
 import { isValidEmail } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/forgot-password.styles';
 
 export default function ForgotPasswordScreen() {
   const router = useRouter();
+  const t = useTranslation();
 
   const [email, setEmail] = useState('');
   const [emailError, setEmailError] = useState<string | undefined>();
@@ -18,7 +20,7 @@ export default function ForgotPasswordScreen() {
 
   async function handleSendCode() {
     if (!isValidEmail(email)) {
-      setEmailError('Enter a valid email address.');
+      setEmailError(t.auth.forgotPassword.enterValidEmail);
       return;
     }
     setEmailError(undefined);
@@ -39,18 +41,16 @@ export default function ForgotPasswordScreen() {
 
   return (
     <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-      <ScreenHeader title="Reset password" />
+      <ScreenHeader title={t.auth.forgotPassword.title} />
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <View style={styles.iconTile}>
           <Ionicons name="mail" size={24} color={colors.accentBluePressed} />
         </View>
-        <Text style={styles.intro}>
-          Enter the email on your account and we'll send you a code to reset your password.
-        </Text>
+        <Text style={styles.intro}>{t.auth.forgotPassword.intro}</Text>
 
         <View style={styles.fields}>
           <TextField
-            label="Email"
+            label={t.auth.forgotPassword.email}
             placeholder="you@example.com"
             value={email}
             onChangeText={setEmail}
@@ -63,7 +63,7 @@ export default function ForgotPasswordScreen() {
 
         {requestError && <Text style={styles.authError}>{requestError}</Text>}
 
-        <Button label="Send code" fullWidth loading={submitting} onPress={handleSendCode} />
+        <Button label={t.auth.forgotPassword.sendCode} fullWidth loading={submitting} onPress={handleSendCode} />
       </ScrollView>
     </KeyboardAvoidingView>
   );

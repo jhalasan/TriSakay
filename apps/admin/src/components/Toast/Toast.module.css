@@ -37,6 +37,11 @@
   border: 1px solid var(--primary-border);
 }
 
+.statusCircle.error {
+  background: var(--danger-soft);
+  border: 1px solid var(--danger-border);
+}
+
 .message {
   flex: 1;
   min-width: 0;

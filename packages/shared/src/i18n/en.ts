@@ -4,6 +4,7 @@ export const en = {
     cash: 'Cash',
     cancel: 'Cancel',
     delete: 'Delete',
+    ok: 'OK',
   },
   offline: {
     stripMessage: 'No connection — showing your last update',
@@ -11,6 +12,19 @@ export const en = {
     cause: 'TriSakay needs data or Wi-Fi to find drivers near you. Nothing was lost — your last trip is still saved.',
     tryAgain: 'Try again',
     viewLastReceipt: 'View last ride receipt',
+  },
+  /** P1-25 (2026-09-15 launch audit): passenger counterpart to driver.accountSuspended, adapted for "request rides" instead of "accept rides". */
+  accountSuspended: {
+    suspendedTitle: 'Your account has been suspended',
+    suspendedBody:
+      'A PSO staff member has suspended your account. Visit the PSO office for details and next steps before you can request rides again.',
+    deactivatedTitle: 'Your account has been deactivated',
+    deactivatedBody: 'A PSO staff member has deactivated your account. Visit the PSO office for details and next steps.',
+    psoOfficeLabel: 'PSO office',
+    psoOfficeAddress: 'City Hall Annex, Barangay Dadiangas West',
+    psoOfficeHours: 'Monday to Friday · 8:00 AM – 5:00 PM',
+    refreshStatus: 'Refresh status',
+    logOut: 'Log out',
   },
   home: {
     profileAccessibilityLabel: 'Profile',
@@ -147,9 +161,6 @@ export const en = {
     language: 'Language',
     languageEnglish: 'English',
     languageFilipino: 'Filipino',
-    smsReceipts: 'SMS receipts',
-    smsReceiptsSubtitlePrefix: 'Sent to',
-    emailReceipts: 'Email receipts',
     logOut: 'Log out',
     versionFooter: 'TriSakay v1.0 · Barangay Poblacion PSO',
   },
@@ -241,7 +252,6 @@ export const en = {
     title: 'No drivers nearby',
     cause:
       "We asked every driver nearby, but nobody's free yet — this is common around peak hours.",
-    notifyToggleLabel: 'Notify me when one is free',
     searchAgain: 'Search again',
     changePickupPoint: 'Change pickup point',
   },
@@ -408,6 +418,79 @@ export const en = {
     locatingCurrentLocation: 'Locating…',
     confirmPickup: 'Confirm pickup',
   },
+  /** P2 (2026-09-15 launch audit): passenger login/register/forgot-password/
+   * logout were hardcoded English while the driver equivalents already use
+   * t.driver.* — this closes that gap. Root-level (not nested under a role
+   * key) since the passenger app, unlike the driver app, has no such
+   * namespace elsewhere in this dictionary. */
+  auth: {
+    login: {
+      welcomeBack: 'Welcome back',
+      welcomeNew: 'Welcome to TriSakay',
+      subtitleReturning: 'Log in to book your next ride.',
+      subtitleFirstTime: 'Log in to book your first ride.',
+      email: 'Email',
+      password: 'Password',
+      forgotPassword: 'Forgot password?',
+      logIn: 'Log in',
+      or: 'OR',
+      createAccount: 'Create account',
+      enterValidEmail: 'Enter a valid email address.',
+      passwordMinLength: 'Password must be at least 6 characters.',
+    },
+    register: {
+      stepTitleAccount: 'Create account',
+      stepTitleLegal: 'Terms & Privacy',
+      stepLabel: 'Step {step} of 2',
+      changePhotoAccessibilityLabel: 'Change profile photo',
+      addPhotoAccessibilityLabel: 'Add a profile photo',
+      tapToChangePhoto: 'Tap to change photo',
+      addPhotoOptional: 'Add a profile photo (optional)',
+      permissionNeededTitle: 'Permission needed',
+      permissionNeededMessage: 'Allow photo library access to set a profile picture.',
+      firstName: 'First name',
+      firstNamePlaceholder: 'Juan',
+      lastName: 'Last name',
+      lastNamePlaceholder: 'Dela Cruz',
+      email: 'Email',
+      emailPlaceholder: 'you@example.com',
+      phone: 'Phone number',
+      phonePlaceholder: '09XX XXX XXXX',
+      password: 'Password',
+      confirmPassword: 'Confirm password',
+      next: 'Next',
+      enterFirstName: 'Enter your first name.',
+      enterLastName: 'Enter your last name.',
+      enterValidEmail: 'Enter a valid email address.',
+      enterContactNumber: 'Enter a contact number.',
+      passwordMinLength:
+        'Password must be at least 10 characters and include upper and lower case letters plus a number or symbol.',
+      passwordsDoNotMatch: 'Passwords do not match.',
+      acceptTermsIntro: 'Please read and accept these before your account is created.',
+      versionLabel: 'Terms {tos} · Privacy {privacy}',
+      whatWeCollect: 'What we collect & share',
+      acceptTerms: 'I have read and accept the Terms of Service and Privacy Policy',
+      createAccountButton: 'Create account',
+      couldNotReadPhoto: 'Could not read the selected photo.',
+      accountCreatedTitle: 'Account created',
+      accountCreatedPhotoFailedMessage:
+        "Your account is ready, but the profile photo didn't upload: {error}. You can add it later from Profile.",
+      checkEmailTitle: 'Check your email',
+      checkEmailMessage: 'We sent a confirmation link to {email}. Confirm it, then log in.',
+    },
+    forgotPassword: {
+      title: 'Reset password',
+      intro: "Enter the email on your account and we'll send you a code to reset your password.",
+      email: 'Email',
+      sendCode: 'Send code',
+      enterValidEmail: 'Enter a valid email address.',
+    },
+    logout: {
+      title: 'Log out?',
+      message: "You'll need to log in again to book a ride.",
+      confirm: 'Log out',
+    },
+  },
   driver: {
     login: {
       welcomeBack: 'Welcome back',
@@ -555,7 +638,7 @@ export const en = {
       pendingVerification: 'Verification pending',
       bodyNoPrefix: 'Body no.',
       listeningTitle: 'Listening for requests',
-      listeningMessage: "You're online near {area}. The next ride will appear right here.",
+      listeningMessage: "You're online. The next ride will appear right here.",
       listeningEyebrow: 'LISTENING',
       incomingRequestEyebrow: 'INCOMING REQUEST',
       requestExpired: 'expired',
@@ -563,9 +646,6 @@ export const en = {
     requests: {
       title: 'Ride requests',
       eyebrow: 'Incoming',
-      alongRoute: 'Along route',
-      nearby: 'Nearby',
-      all: 'All',
       availableNow: 'Available now',
       requestSuffix: 'request',
       requestsSuffix: 'requests',
@@ -686,14 +766,13 @@ export const en = {
     settings: {
       subtitle: 'Notifications, privacy, and language for this device.',
       pushNotificationsSubtitle: 'New ride requests and trip updates',
-      smsReceiptsSubtitle: 'Sent to {phone}',
-      emailReceiptsSubtitle: '{email}',
       locationTrackingSubtitle: 'Only while online or on a trip',
       versionLine: 'TriSakay Driver v1.0 · Barangay Poblacion PSO',
     },
     tripActive: {
       passengerFallback: 'Passenger',
       inProgress: 'In progress',
+      navigate: 'Navigate',
       onlineNoPassengers: 'Online — no passengers',
       noPassengersNote: 'No passengers right now — stay online to keep getting requests, or end your trip below.',
       compatibleRequest: 'Compatible request',
@@ -757,6 +836,7 @@ export const en = {
     },
     documents: {
       driversLicense: "Driver's license",
+      driversLicenseHint: 'Must be a Professional license (Code A or A1)',
       orCr: 'OR / CR',
       franchisePermit: 'Franchise / permit',
       tricyclePhoto: 'Tricycle photo',

@@ -20,6 +20,8 @@ interface CombinedResult {
 export interface TopBarProps {
   title: string;
   onLogoutClick: () => void;
+  /** P1-23 (2026-09-15 launch audit): opens the sidebar drawer below 900px, via the hamburger button this renders in that range. */
+  onMenuClick: () => void;
 }
 
 /**
@@ -37,7 +39,7 @@ export interface TopBarProps {
  * signed-in user rename themselves and change their own password on demand
  * (not just the forced first-login flow).
  */
-export function TopBar({ title, onLogoutClick }: TopBarProps) {
+export function TopBar({ title, onLogoutClick, onMenuClick }: TopBarProps) {
   const user = useSessionStore((state) => state.user);
   const navigate = useNavigate();
   const [query, setQuery] = useState('');
@@ -116,6 +118,11 @@ export function TopBar({ title, onLogoutClick }: TopBarProps) {
 
   return (
     <header className={styles.bar}>
+      <button type="button" className={styles.menuButton} onClick={onMenuClick} aria-label="Open navigation">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+          <path d="M4 7h16M4 12h16M4 17h16" />
+        </svg>
+      </button>
       <h1 className={styles.title}>{title}</h1>
       <div className={styles.searchWrap}>
         <input

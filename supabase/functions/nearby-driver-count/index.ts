@@ -29,9 +29,36 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
+    // P1-7 (2026-09-15 launch audit): this function used to skip
+    // authentication entirely and go straight to a service-role client,
+    // bypassing RLS with no caller identity check at all — every sibling
+    // Edge Function (match-ride-request, create-gcash-checkout,
+    // admin-create-pso-user) requires the Authorization header first. This
+    // function only returns an aggregate count (never raw driver
+    // coordinates), so the service-role read below is still needed — a
+    // plain passenger has no RLS access to other drivers' driver_profiles
+    // rows — but a caller must now be a real signed-in user first.
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader) return json({ error: 'Missing Authorization header' }, 401);
+
+    const callerClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_ANON_KEY')!, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: userData, error: userError } = await callerClient.auth.getUser();
+    if (userError || !userData.user) return json({ error: 'Not authenticated' }, 401);
+
     const { lat, lng } = await req.json();
-    if (typeof lat !== 'number' || typeof lng !== 'number') {
-      return json({ error: 'lat/lng required' }, 400);
+    if (
+      typeof lat !== 'number' ||
+      typeof lng !== 'number' ||
+      !Number.isFinite(lat) ||
+      !Number.isFinite(lng) ||
+      lat < -90 ||
+      lat > 90 ||
+      lng < -180 ||
+      lng > 180
+    ) {
+      return json({ error: 'lat/lng required, in valid range' }, 400);
     }
 
     const supabase = createClient(

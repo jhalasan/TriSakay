@@ -8,7 +8,7 @@ import {
   subscribeToRideRequestStatus,
   type TripDriverInfo,
 } from '@trisakay/services';
-import { Button, MapOverlaySheet, OsmMap, Toggle, colors } from '@trisakay/ui';
+import { Button, MapOverlaySheet, OsmMap, colors } from '@trisakay/ui';
 import { useEffect, useRef, useState } from 'react';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -23,8 +23,6 @@ export default function NoDriversNearbyScreen() {
   const setRideRequestId = useBookingStore((state) => state.setRideRequestId);
   const setDriver = useBookingStore((state) => state.setDriver);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
-  // Local only — there is no backend field to persist this preference against.
-  const [notifyWhenFree, setNotifyWhenFree] = useState(false);
   const [isChangingPickup, setIsChangingPickup] = useState(false);
   const [changePickupError, setChangePickupError] = useState<string | null>(null);
   // Guards against a second, redundant exit once a status transition has
@@ -155,11 +153,9 @@ export default function NoDriversNearbyScreen() {
         <Text style={styles.title}>{t.noDriversNearby.title}</Text>
         <Text style={styles.cause}>{t.noDriversNearby.cause}</Text>
 
-        <View style={styles.toggleRow}>
-          <Ionicons name="notifications-outline" size={19} color={colors.accentBlue} />
-          <Text style={styles.toggleLabel}>{t.noDriversNearby.notifyToggleLabel}</Text>
-          <Toggle value={notifyWhenFree} onValueChange={setNotifyWhenFree} />
-        </View>
+        {/* P1-20 (2026-09-15 launch audit): the "Notify me" toggle here was
+            removed — there is no backend field to persist the preference
+            against and nothing ever sent that notification. */}
 
         <View style={styles.primaryButton}>
           <Button label={t.noDriversNearby.searchAgain} fullWidth onPress={handleSearchAgain} />

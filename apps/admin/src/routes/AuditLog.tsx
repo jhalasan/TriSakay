@@ -75,12 +75,6 @@ const DATE_RANGE_OPTIONS = [
   { label: 'All time', value: 'all' },
 ];
 
-function withinDays(iso: string, days: string): boolean {
-  if (days === 'all') return true;
-  const cutoff = Date.now() - Number(days) * 24 * 60 * 60 * 1000;
-  return new Date(iso).getTime() >= cutoff;
-}
-
 /**
  * Reads account_actions (docs/SCHEMA.MD §3.2) — the audit trail every
  * Flag/Suspend/Reactivate/Deactivate/Unflag on Driver/Passenger/PSO User
@@ -99,15 +93,18 @@ function withinDays(iso: string, days: string): boolean {
  * out as a known gap when the account_actions table above was added.
  */
 export function AuditLog() {
-  const { actions, loading, error, decisions, decisionsLoading, fetch } = useAuditLogStore();
+  const { actions, loading, error, truncated, decisions, decisionsLoading, fetch } = useAuditLogStore();
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
   const [dateRange, setDateRange] = useState('7');
   const [performedBy, setPerformedBy] = useState('all');
   const { showToast } = useToast();
 
+  // P1-22 (2026-09-15 launch audit): the date range is now applied
+  // server-side (see useAuditLogStore) — re-fetch whenever it changes,
+  // rather than re-filtering an already-fetched full table client-side.
   useEffect(() => {
-    fetch();
-  }, [fetch]);
+    fetch(dateRange);
+  }, [fetch, dateRange]);
 
   const performerOptions = useMemo(() => {
     const names = [...new Set(actions.map((a) => a.performedByName).filter((n): n is string => !!n))].sort();
@@ -115,14 +112,8 @@ export function AuditLog() {
   }, [actions]);
 
   const filteredActions = useMemo(
-    () =>
-      actions.filter(
-        (a) =>
-          matchesActionFilter(a, actionFilter) &&
-          withinDays(a.createdAt, dateRange) &&
-          (performedBy === 'all' || a.performedByName === performedBy)
-      ),
-    [actions, actionFilter, dateRange, performedBy]
+    () => actions.filter((a) => matchesActionFilter(a, actionFilter) && (performedBy === 'all' || a.performedByName === performedBy)),
+    [actions, actionFilter, performedBy]
   );
 
   function exportCsv() {
@@ -147,7 +138,7 @@ export function AuditLog() {
           hint="The audit service didn't respond. Nothing has changed — try again."
           tone="danger"
           action={
-            <Button variant="outline" tone="neutral" size="sm" onClick={fetch}>
+            <Button variant="outline" tone="neutral" size="sm" onClick={() => fetch(dateRange)}>
               Retry
             </Button>
           }
@@ -182,6 +173,13 @@ export function AuditLog() {
           </h2>
           <div className={styles.tableHeaderRight}>
             <span className={styles.recordCount}>{filteredActions.length} recorded · newest first</span>
+            {/* P1-22 (2026-09-15 launch audit): account_actions has no natural
+                bound — this replaces a silent, invisible truncation (PostgREST's
+                default max-rows) with a visible one the operator can act on
+                (narrow the date range for a complete view). */}
+            {truncated && (
+              <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />
+            )}
             <Badge label="Read-only · all PSO roles" tone="neutral" />
             <Button variant="outline" tone="neutral" size="sm" disabled={filteredActions.length === 0} onClick={exportCsv}>
               Export CSV
