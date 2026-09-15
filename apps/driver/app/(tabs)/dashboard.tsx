@@ -289,7 +289,7 @@ export default function DashboardScreen() {
         {requestError && <Text style={styles.error}>{requestError}</Text>}
 
         {showListening && (
-          <View>
+          <View style={styles.listeningSectionWrap}>
             <Text style={styles.sectionLabel}>{t.driver.dashboard.listeningEyebrow}</Text>
             <View style={styles.listeningPanelShadowWrap}>
               <View style={styles.listeningPanel}>

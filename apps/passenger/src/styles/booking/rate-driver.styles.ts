@@ -45,6 +45,7 @@ export const styles = StyleSheet.create({
   driverCard: {
     alignItems: 'center',
     paddingHorizontal: spacing.xxl,
+    paddingVertical: spacing.xl,
     borderRadius: radius.lg,
   },
   name: {
