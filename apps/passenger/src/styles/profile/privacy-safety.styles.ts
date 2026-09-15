@@ -151,8 +151,12 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
     marginBottom: spacing.xs,
   },
+  // ListRow (unlike Card's own base padding) supplies no horizontal inset of
+  // its own, only paddingVertical — matching profile.styles.ts's navGroup so
+  // the icon/text/chevron don't sit flush against the card's rounded edges.
   navGroup: {
-    padding: 0,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: 2,
   },
   navIconTile: {
     width: 34,
