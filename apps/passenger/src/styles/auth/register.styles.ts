@@ -41,6 +41,9 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
     marginTop: spacing.md,
   },
+  policySection: {
+    gap: spacing.xs,
+  },
   disclosureCard: {
     padding: 0,
   },

@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { File } from 'expo-file-system';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION, submitDriverDocuments, type DriverDocumentInput } from '@trisakay/services';
-import { BrandMotif, Button, Card, Checkbox, colors, GradientSurface, TextField } from '@trisakay/ui';
+import { BrandMotif, Button, Card, Checkbox, colors, GradientSurface, SegmentedControl, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { DocumentUploadRow } from '../../src/components/DocumentUploadRow';
 import { ScrollFade } from '../../src/components/ScrollFade';
@@ -11,7 +11,7 @@ import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConsentStore } from '../../src/store/useConsentStore';
 import { useDocumentsStore } from '../../src/store/useDocumentsStore';
-import { DISCLOSURES, POLICY_BODY } from '../../src/content/legalCopy';
+import { DISCLOSURES, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../../src/content/legalCopy';
 import { DOCUMENT_TYPES } from '../../src/types/document';
 import { interpolate } from '../../src/utils/interpolate';
 import { isPasswordPolicyMet } from '@trisakay/utils';
@@ -56,6 +56,7 @@ export default function RegisterScreen() {
   const [plateNoError, setPlateNoError] = useState<string | undefined>();
   const [submitting, setSubmitting] = useState(false);
   const [termsChecked, setTermsChecked] = useState(false);
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy'>('terms');
 
   const allDocumentsUploaded = DOCUMENT_TYPES.every((type) => documents[type].status !== 'unsubmitted');
 
@@ -266,21 +267,42 @@ export default function RegisterScreen() {
                 Terms {CURRENT_TOS_VERSION} · Privacy {CURRENT_PRIVACY_VERSION}
               </Text>
 
-              {POLICY_BODY.map((paragraph) => (
-                <Text key={paragraph.slice(0, 24)} style={styles.paragraph}>
-                  {paragraph}
-                </Text>
-              ))}
+              <SegmentedControl
+                options={[
+                  { label: 'Terms of Service', value: 'terms' },
+                  { label: 'Privacy Policy', value: 'privacy' },
+                ]}
+                value={legalTab}
+                onChange={setLegalTab}
+              />
 
-              <Text style={styles.sectionLabel}>{t.driver.register.whatWeCollect}</Text>
-              <Card style={styles.disclosureCard}>
-                {DISCLOSURES.map((item, index) => (
-                  <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
-                    <Text style={styles.disclosureTitle}>{item.title}</Text>
-                    <Text style={styles.disclosureBody}>{item.body}</Text>
-                  </View>
-                ))}
-              </Card>
+              {legalTab === 'terms'
+                ? TERMS_OF_SERVICE.map((section) => (
+                    <View key={section.heading} style={styles.policySection}>
+                      <Text style={styles.disclosureTitle}>{section.heading}</Text>
+                      <Text style={styles.paragraph}>{section.body}</Text>
+                    </View>
+                  ))
+                : (
+                    <>
+                      <Text style={styles.sectionLabel}>{t.driver.register.whatWeCollect}</Text>
+                      <Card style={styles.disclosureCard}>
+                        {DISCLOSURES.map((item, index) => (
+                          <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
+                            <Text style={styles.disclosureTitle}>{item.title}</Text>
+                            <Text style={styles.disclosureBody}>{item.body}</Text>
+                          </View>
+                        ))}
+                      </Card>
+
+                      {PRIVACY_POLICY.map((section) => (
+                        <View key={section.heading} style={styles.policySection}>
+                          <Text style={styles.disclosureTitle}>{section.heading}</Text>
+                          <Text style={styles.paragraph}>{section.body}</Text>
+                        </View>
+                      ))}
+                    </>
+                  )}
             </ScrollView>
             <ScrollFade />
           </View>

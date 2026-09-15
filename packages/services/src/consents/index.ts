@@ -6,8 +6,8 @@ import type { Database } from '../supabase/database.types.ts';
  * below compares these against the versions already recorded in
  * `public.user_consents`, so forcing re-consent is a one-line change here.
  */
-export const CURRENT_TOS_VERSION = 'v1.0';
-export const CURRENT_PRIVACY_VERSION = 'v1.0';
+export const CURRENT_TOS_VERSION = 'v2.0';
+export const CURRENT_PRIVACY_VERSION = 'v2.0';
 
 export type PolicyType = 'terms_of_service' | 'privacy_policy';
 

@@ -46,6 +46,7 @@ export const styles = StyleSheet.create({
   version: { ...typography.caption, color: colors.inkSoft },
   paragraph: { ...typography.body, color: colors.inkSoft },
   sectionLabel: { ...typography.label, color: colors.inkSoft, marginTop: spacing.md },
+  policySection: { gap: spacing.xs },
   disclosureCard: { padding: 0 },
   disclosureRow: { paddingHorizontal: spacing.lg, paddingVertical: spacing.md, gap: spacing.xs },
   disclosureRowDivided: { borderTopWidth: 1, borderTopColor: colors.lineSoft },

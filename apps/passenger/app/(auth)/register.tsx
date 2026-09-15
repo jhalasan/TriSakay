@@ -5,12 +5,12 @@ import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION, getSession, updateAvatarUrl, uploadAvatar } from '@trisakay/services';
-import { BrandMotif, Button, Card, Checkbox, GradientSurface, TextField, colors } from '@trisakay/ui';
+import { BrandMotif, Button, Card, Checkbox, GradientSurface, SegmentedControl, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConsentStore } from '../../src/store/useConsentStore';
-import { DISCLOSURES, POLICY_BODY } from '../../src/content/legalCopy';
+import { DISCLOSURES, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../../src/content/legalCopy';
 import { isPasswordPolicyMet } from '@trisakay/utils';
 import { interpolate } from '../../src/utils/interpolate';
 import { isNonEmpty, isValidEmail } from '../../src/utils/validation';
@@ -55,6 +55,7 @@ export default function RegisterScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
   const [termsChecked, setTermsChecked] = useState(false);
+  const [legalTab, setLegalTab] = useState<'terms' | 'privacy'>('terms');
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -260,21 +261,42 @@ export default function RegisterScreen() {
             {interpolate(t.auth.register.versionLabel, { tos: CURRENT_TOS_VERSION, privacy: CURRENT_PRIVACY_VERSION })}
           </Text>
 
-          {POLICY_BODY.map((paragraph) => (
-            <Text key={paragraph.slice(0, 24)} style={styles.paragraph}>
-              {paragraph}
-            </Text>
-          ))}
+          <SegmentedControl
+            options={[
+              { label: 'Terms of Service', value: 'terms' },
+              { label: 'Privacy Policy', value: 'privacy' },
+            ]}
+            value={legalTab}
+            onChange={setLegalTab}
+          />
 
-          <Text style={styles.sectionLabel}>{t.auth.register.whatWeCollect}</Text>
-          <Card style={styles.disclosureCard}>
-            {DISCLOSURES.map((item, index) => (
-              <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
-                <Text style={styles.disclosureTitle}>{item.title}</Text>
-                <Text style={styles.disclosureBody}>{item.body}</Text>
-              </View>
-            ))}
-          </Card>
+          {legalTab === 'terms'
+            ? TERMS_OF_SERVICE.map((section) => (
+                <View key={section.heading} style={styles.policySection}>
+                  <Text style={styles.disclosureTitle}>{section.heading}</Text>
+                  <Text style={styles.paragraph}>{section.body}</Text>
+                </View>
+              ))
+            : (
+                <>
+                  <Text style={styles.sectionLabel}>{t.auth.register.whatWeCollect}</Text>
+                  <Card style={styles.disclosureCard}>
+                    {DISCLOSURES.map((item, index) => (
+                      <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
+                        <Text style={styles.disclosureTitle}>{item.title}</Text>
+                        <Text style={styles.disclosureBody}>{item.body}</Text>
+                      </View>
+                    ))}
+                  </Card>
+
+                  {PRIVACY_POLICY.map((section) => (
+                    <View key={section.heading} style={styles.policySection}>
+                      <Text style={styles.disclosureTitle}>{section.heading}</Text>
+                      <Text style={styles.paragraph}>{section.body}</Text>
+                    </View>
+                  ))}
+                </>
+              )}
 
           <Checkbox checked={termsChecked} onChange={setTermsChecked} label={t.auth.register.acceptTerms} />
 

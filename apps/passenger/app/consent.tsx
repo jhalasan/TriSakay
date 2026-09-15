@@ -3,11 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Button, Card, Checkbox, colors } from '@trisakay/ui';
+import { Button, Card, Checkbox, SegmentedControl, colors } from '@trisakay/ui';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION } from '@trisakay/services';
 import { useConsentStore } from '../src/store/useConsentStore';
-import { DISCLOSURES, POLICY_BODY } from '../src/content/legalCopy';
+import { DISCLOSURES, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../src/content/legalCopy';
 import { styles } from '../src/styles/consent.styles';
+
+type Tab = 'terms' | 'privacy';
 
 export default function ConsentScreen() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function ConsentScreen() {
 
   const [checked, setChecked] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [tab, setTab] = useState<Tab>('terms');
 
   async function handleAccept() {
     setSubmitting(true);
@@ -43,22 +46,45 @@ export default function ConsentScreen() {
         </Text>
       </View>
 
-      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
-        {POLICY_BODY.map((paragraph) => (
-          <Text key={paragraph.slice(0, 24)} style={styles.paragraph}>
-            {paragraph}
-          </Text>
-        ))}
+      <View style={styles.tabsWrap}>
+        <SegmentedControl
+          options={[
+            { label: 'Terms of Service', value: 'terms' },
+            { label: 'Privacy Policy', value: 'privacy' },
+          ]}
+          value={tab}
+          onChange={setTab}
+        />
+      </View>
 
-        <Text style={styles.sectionLabel}>What we collect &amp; share</Text>
-        <Card style={styles.disclosureCard}>
-          {DISCLOSURES.map((item, index) => (
-            <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
-              <Text style={styles.disclosureTitle}>{item.title}</Text>
-              <Text style={styles.disclosureBody}>{item.body}</Text>
-            </View>
-          ))}
-        </Card>
+      <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent}>
+        {tab === 'terms'
+          ? TERMS_OF_SERVICE.map((section) => (
+              <View key={section.heading} style={styles.policySection}>
+                <Text style={styles.disclosureTitle}>{section.heading}</Text>
+                <Text style={styles.paragraph}>{section.body}</Text>
+              </View>
+            ))
+          : (
+              <>
+                <Text style={styles.sectionLabel}>What we collect &amp; share</Text>
+                <Card style={styles.disclosureCard}>
+                  {DISCLOSURES.map((item, index) => (
+                    <View key={item.title} style={[styles.disclosureRow, index > 0 && styles.disclosureRowDivided]}>
+                      <Text style={styles.disclosureTitle}>{item.title}</Text>
+                      <Text style={styles.disclosureBody}>{item.body}</Text>
+                    </View>
+                  ))}
+                </Card>
+
+                {PRIVACY_POLICY.map((section) => (
+                  <View key={section.heading} style={styles.policySection}>
+                    <Text style={styles.disclosureTitle}>{section.heading}</Text>
+                    <Text style={styles.paragraph}>{section.body}</Text>
+                  </View>
+                ))}
+              </>
+            )}
       </ScrollView>
 
       <View style={styles.footer}>

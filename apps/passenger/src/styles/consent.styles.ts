@@ -19,6 +19,10 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.inkSoft,
   },
+  tabsWrap: {
+    paddingHorizontal: 20, // legal screen gutter
+    paddingBottom: spacing.sm,
+  },
   /** Explicit flex: a ScrollView between fixed siblings otherwise sizes to content. */
   scrollArea: {
     flex: 1,
@@ -36,6 +40,9 @@ export const styles = StyleSheet.create({
     ...typography.eyebrow,
     color: colors.inkSoft,
     marginTop: spacing.md,
+  },
+  policySection: {
+    gap: spacing.xs,
   },
   disclosureCard: {
     padding: 0,

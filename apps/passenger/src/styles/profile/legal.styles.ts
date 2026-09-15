@@ -6,6 +6,10 @@ export const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: colors.bg,
   },
+  tabsWrap: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.sm,
+  },
   content: {
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
@@ -25,6 +29,9 @@ export const styles = StyleSheet.create({
     ...typography.eyebrow,
     color: colors.inkSoft,
     marginTop: spacing.md,
+  },
+  policySection: {
+    gap: spacing.xs,
   },
   disclosureCard: {
     padding: 0,
