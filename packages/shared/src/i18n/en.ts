@@ -303,8 +303,8 @@ export const en = {
     changePasswordRow: 'Change password',
     changePasswordRowSubtitle: 'Update the password for this account',
     sectionLegal: 'Legal',
-    termsPrivacyRow: 'Terms of Service & Privacy Policy',
-    termsPrivacyRowSubtitle: 'Review what you agreed to at sign-up',
+    termsPrivacyRow: 'Legal Policy',
+    termsPrivacyRowSubtitle: 'Terms of Service & Privacy Policy',
     yourDataTitle: 'Your data',
     yourDataBody:
       'You may ask PSO to give you a copy of, correct, or delete your personal data at any time. Reach PSO through the contact channel on your ride receipts or at the barangay office.',

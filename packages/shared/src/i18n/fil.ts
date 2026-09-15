@@ -301,8 +301,8 @@ export const fil: Translations = {
     changePasswordRow: 'Palitan ang password',
     changePasswordRowSubtitle: 'I-update ang password ng account na ito',
     sectionLegal: 'Legal',
-    termsPrivacyRow: 'Mga Tuntunin ng Serbisyo at Patakaran sa Privacy',
-    termsPrivacyRowSubtitle: 'Balikan ang iyong sinang-ayunan noong nag-sign up',
+    termsPrivacyRow: 'Patakarang Legal',
+    termsPrivacyRowSubtitle: 'Mga Tuntunin ng Serbisyo at Patakaran sa Privacy',
     yourDataTitle: 'Ang Iyong Data',
     yourDataBody:
       'Maaari mong hilingin sa PSO na bigyan ka ng kopya, itama, o burahin ang iyong personal na data anumang oras. Abutin ang PSO sa contact channel na nasa iyong resibo ng biyahe o sa opisina ng barangay.',

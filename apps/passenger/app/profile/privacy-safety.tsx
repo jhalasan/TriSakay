@@ -126,29 +126,11 @@ export default function PrivacySafetyScreen() {
           )}
         </View>
 
-        <View style={styles.card}>
-          <View style={styles.cardTitleRow}>
-            <View style={styles.cardIconTile}>
-              <Ionicons name="hand-left-outline" size={16} color={colors.accentBluePressed} />
-            </View>
-            <Text style={styles.cardTitle}>{t.safety.howSosWorksTitle}</Text>
-          </View>
-          <Text style={styles.cardBody}>{t.safety.howSosWorksBody}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t.safety.tipsTitle}</Text>
-          {tips.map((tip) => (
-            <View key={tip} style={styles.tipRow}>
-              <View style={styles.tipBullet} />
-              <Text style={styles.tipText}>{tip}</Text>
-            </View>
-          ))}
-          <Pressable accessibilityRole="button" style={styles.linkRow} onPress={() => router.push('/(tabs)/complaints')}>
-            <Text style={styles.link}>{t.safety.reportIssueLink}</Text>
-          </Pressable>
-        </View>
-
+        {/* Moved up, right under the primary SOS action and ahead of the
+            longer "How SOS works"/tips reading material (2026-09-16, on
+            request): these three are settings a user comes here to flip or
+            tap, not to read, so they shouldn't need a scroll past
+            informational copy to reach. */}
         <View>
           <Text style={styles.sectionLabel}>{t.settings.sectionPrivacySafety}</Text>
           <Card variant="raised" style={styles.navGroup}>
@@ -200,6 +182,29 @@ export default function PrivacySafetyScreen() {
               divider={false}
             />
           </Card>
+        </View>
+
+        <View style={styles.card}>
+          <View style={styles.cardTitleRow}>
+            <View style={styles.cardIconTile}>
+              <Ionicons name="hand-left-outline" size={16} color={colors.accentBluePressed} />
+            </View>
+            <Text style={styles.cardTitle}>{t.safety.howSosWorksTitle}</Text>
+          </View>
+          <Text style={styles.cardBody}>{t.safety.howSosWorksBody}</Text>
+        </View>
+
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>{t.safety.tipsTitle}</Text>
+          {tips.map((tip) => (
+            <View key={tip} style={styles.tipRow}>
+              <View style={styles.tipBullet} />
+              <Text style={styles.tipText}>{tip}</Text>
+            </View>
+          ))}
+          <Pressable accessibilityRole="button" style={styles.linkRow} onPress={() => router.push('/(tabs)/complaints')}>
+            <Text style={styles.link}>{t.safety.reportIssueLink}</Text>
+          </Pressable>
         </View>
 
         <View style={styles.noticeBox}>

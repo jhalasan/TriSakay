@@ -10,7 +10,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.lg,
     paddingTop: spacing.md,
     paddingBottom: spacing.xxxl,
-    gap: spacing.lg,
+    gap: spacing.xl,
   },
 
   // Shadow lives on this outer wrapper, never on the same view as
