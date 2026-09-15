@@ -228,7 +228,7 @@ export const styles = StyleSheet.create({
   },
 
   emptyWrap: {
-    padding: spacing.xxl,
+    paddingTop: spacing.md,
   },
   emptyPanel: {
     position: 'relative',
@@ -237,8 +237,7 @@ export const styles = StyleSheet.create({
     borderStyle: 'dashed',
     borderColor: colors.line,
     borderRadius: radius.lg,
-    paddingVertical: spacing.xxl,
-    paddingHorizontal: spacing.xl,
+    padding: spacing.xl,
     alignItems: 'center',
     gap: spacing.sm,
   },

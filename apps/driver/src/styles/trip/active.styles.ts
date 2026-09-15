@@ -59,5 +59,5 @@ export const styles = StyleSheet.create({
   error: { ...typography.caption, color: colors.danger },
   sosBlock: { gap: spacing.xs, alignItems: 'center' },
   sosCaption: { ...typography.caption, color: colors.inkSoft },
-  sectionLabel: { ...typography.label, color: colors.inkSoft, marginTop: spacing.sm },
+  sectionLabel: { ...typography.label, color: colors.inkSoft, marginTop: spacing.sm, marginBottom: spacing.sm },
 });

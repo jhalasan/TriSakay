@@ -137,7 +137,7 @@ export const styles = StyleSheet.create({
   franchiseTextSlot: { flex: 1, minWidth: 0 },
   franchiseTitle: { ...typography.bodyStrong, color: colors.white },
   franchiseSubtitle: { ...typography.caption, fontSize: 12, color: colors.white, opacity: 0.82, marginTop: 1 },
-  sectionLabel: { ...typography.label, color: colors.inkSoft },
+  sectionLabel: { ...typography.label, color: colors.inkSoft, marginBottom: spacing.sm },
   navGroup: {
     backgroundColor: colors.panel,
     borderRadius: radius.md3,

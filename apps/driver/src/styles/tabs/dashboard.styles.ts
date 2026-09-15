@@ -96,6 +96,7 @@ export const styles = StyleSheet.create({
   // --- request slot ---
   sectionLabel: { ...typography.eyebrow, color: colors.inkSoft },
   requestSectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginBottom: spacing.md },
+  listeningSectionWrap: { gap: spacing.md },
   countdownChip: { backgroundColor: colors.dangerSoft, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   countdownChipText: { ...typography.bodySm, fontSize: 11, lineHeight: 16, color: colors.danger },
 
@@ -115,14 +116,15 @@ export const styles = StyleSheet.create({
   listeningPanel: {
     borderRadius: radius.xl2,
     backgroundColor: colors.white,
-    paddingVertical: spacing.tight44,
+    paddingTop: spacing.xxl,
+    paddingBottom: spacing.xl,
     paddingHorizontal: spacing.xl,
     alignItems: 'center',
     position: 'relative',
     overflow: 'hidden',
   },
   listeningMotif: { position: 'absolute', top: -30, right: -30 },
-  listeningIconHost: { width: 74, height: 74, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.lg },
+  listeningIconHost: { width: 74, height: 74, alignItems: 'center', justifyContent: 'center', marginBottom: spacing.md },
   listeningIconCircle: {
     position: 'absolute',
     width: 74,
