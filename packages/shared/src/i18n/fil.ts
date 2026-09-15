@@ -73,6 +73,7 @@ export const fil: Translations = {
     savedAccessibilityLabel: 'Na-save na',
   },
   savedPlacesManagement: {
+    eyebrow: 'Mabilisang access',
     title: 'Mga naka-save na lugar',
     intro: 'Lumalabas ang mga naka-save na lugar sa iyong home screen para sa mabilisang pag-book.',
     addFromMap: 'Mag-save ng lugar mula sa mapa',

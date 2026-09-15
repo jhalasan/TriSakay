@@ -72,6 +72,7 @@ export const en = {
     savedAccessibilityLabel: 'Saved',
   },
   savedPlacesManagement: {
+    eyebrow: 'Quick access',
     title: 'Saved places',
     intro: 'Saved places appear on your home screen for one-tap booking.',
     addFromMap: 'Save a place from the map',

@@ -3,8 +3,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { useCallback } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { EmptyState, Spinner, colors } from '@trisakay/ui';
-import { ScreenHeader } from '../../src/components/ScreenHeader';
+import { BrandMotif, EmptyState, GradientSurface, Spinner, colors } from '@trisakay/ui';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useSavedPlacesStore } from '../../src/store/useSavedPlacesStore';
 import { SHORTCUT_ICON_TONE, DEFAULT_SHORTCUT_TONE } from '../../src/utils/savedPlaceIconTone';
@@ -40,8 +39,27 @@ export default function ManageSavedPlacesScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <ScreenHeader title={t.savedPlacesManagement.title} onBack={() => router.back()} />
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
+      <View style={styles.heroShadowWrap}>
+        <GradientSurface token="hero" direction="diagonal" style={styles.heroPanel}>
+          <BrandMotif size={200} color={colors.white} opacity={0.12} style={styles.heroMotif} />
+          <SafeAreaView edges={['top']}>
+            <View style={styles.backButtonRow}>
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={t.savedPlacesManagement.backAccessibilityLabel}
+                hitSlop={8}
+                style={styles.backButton}
+                onPress={() => (router.canGoBack() ? router.back() : router.replace('/(tabs)/home'))}
+              >
+                <Ionicons name="chevron-back" size={18} color={colors.white} />
+              </Pressable>
+            </View>
+            <Text style={styles.heroEyebrow}>{t.savedPlacesManagement.eyebrow}</Text>
+            <Text style={styles.heroTitle}>{t.savedPlacesManagement.title}</Text>
+          </SafeAreaView>
+        </GradientSurface>
+      </View>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <Text style={styles.intro}>{t.savedPlacesManagement.intro}</Text>
         {loading && items.length === 0 ? (
