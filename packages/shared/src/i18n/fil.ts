@@ -171,7 +171,7 @@ export const fil: Translations = {
     languageEnglish: 'Ingles',
     languageFilipino: 'Filipino',
     logOut: 'Mag-log Out',
-    versionFooter: 'TriSakay v1.0 · Barangay Poblacion PSO',
+    versionFooter: 'TriSakay v1.0 · General Santos City PSO',
   },
   profile: {
     eyebrow: 'Account',
@@ -803,7 +803,7 @@ export const fil: Translations = {
       smsReceiptsSubtitle: 'Ipapadala sa {phone}',
       emailReceiptsSubtitle: '{email}',
       locationTrackingSubtitle: 'Habang online lang o may biyahe',
-      versionLine: 'TriSakay Driver v1.0 · Barangay Poblacion PSO',
+      versionLine: 'TriSakay Driver v1.0 · General Santos City PSO',
     },
     safety: {
       howSosWorksBody:

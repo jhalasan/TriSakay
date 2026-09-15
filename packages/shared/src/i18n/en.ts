@@ -170,7 +170,7 @@ export const en = {
     languageEnglish: 'English',
     languageFilipino: 'Filipino',
     logOut: 'Log out',
-    versionFooter: 'TriSakay v1.0 · Barangay Poblacion PSO',
+    versionFooter: 'TriSakay v1.0 · General Santos City PSO',
   },
   profile: {
     eyebrow: 'Account',
@@ -808,7 +808,7 @@ export const en = {
       smsReceiptsSubtitle: 'Sent to {phone}',
       emailReceiptsSubtitle: '{email}',
       locationTrackingSubtitle: 'Only while online or on a trip',
-      versionLine: 'TriSakay Driver v1.0 · Barangay Poblacion PSO',
+      versionLine: 'TriSakay Driver v1.0 · General Santos City PSO',
     },
     safety: {
       howSosWorksBody:
