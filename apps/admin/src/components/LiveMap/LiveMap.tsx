@@ -20,9 +20,26 @@ const DEFAULT_ZOOM = 13;
 const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+/** Same tricycle glyph as the Sidebar nav icon and DetailSection's VehicleIcon — one icon vocabulary across the app, not a marker-specific one. */
+function TricycleGlyph() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4.5 16v-4.2c0-.4.15-.8.43-1.08l1.7-1.72A2 2 0 0 1 8.06 8.3h7.88c.53 0 1.04.21 1.42.6l1.7 1.72c.29.28.44.67.44 1.08V16" />
+      <path d="M4.5 16h15v2a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1h-9v1a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-2Z" />
+      <circle cx="8" cy="16" r="1.4" />
+      <circle cx="16" cy="16" r="1.4" />
+    </svg>
+  );
+}
+
 function cellIcon(count: number): DivIcon {
   return new DivIcon({
-    html: renderToStaticMarkup(<div className={styles.markerBadge}>{count}</div>),
+    html: renderToStaticMarkup(
+      <div className={styles.markerBadge}>
+        <TricycleGlyph />
+        {count > 1 && <span className={styles.markerCount}>{count}</span>}
+      </div>
+    ),
     className: '', // suppress Leaflet's default marker box/shadow classes
     iconSize: [28, 28],
     iconAnchor: [14, 14],
@@ -51,7 +68,7 @@ export function LiveMap({ cells, loading = false }: LiveMapProps) {
             <Popup>
               <div className={styles.popup}>
                 <div className={styles.popupTitle}>{cell.count === 1 ? '1 tricycle' : `${cell.count} tricycles`}</div>
-                {cell.driverNames.join(', ')}
+                <span className="mono">{cell.plateNos.join(', ')}</span>
               </div>
             </Popup>
           </Marker>

@@ -125,16 +125,18 @@ test('getActiveTricycleLocations rounds coordinates to 2 decimals and groups dri
           }),
         };
       }
-      if (table === 'users') {
+      if (table === 'tricycles') {
         return {
           select: () => ({
-            in: async () => ({
-              data: [
-                { id: 'drv1', full_name: 'Ronnie Bautista' },
-                { id: 'drv2', full_name: 'Ariel Cabahug' },
-                { id: 'drv3', full_name: 'Juan Dela Cruz' },
-              ],
-              error: null,
+            in: () => ({
+              eq: async () => ({
+                data: [
+                  { driver_id: 'drv1', plate_no: 'GSC-1187' },
+                  { driver_id: 'drv2', plate_no: 'GSC-2214' },
+                  { driver_id: 'drv3', plate_no: 'GSC-3305' },
+                ],
+                error: null,
+              }),
             }),
           }),
         };
@@ -150,12 +152,12 @@ test('getActiveTricycleLocations rounds coordinates to 2 decimals and groups dri
   const shared = data.find((c) => c.count === 2)!;
   assert.equal(shared.lat, 6.12);
   assert.equal(shared.lng, 125.17);
-  assert.deepEqual([...shared.driverNames].sort(), ['Ariel Cabahug', 'Ronnie Bautista']);
+  assert.deepEqual([...shared.plateNos].sort(), ['GSC-1187', 'GSC-2214']);
 
   const solo = data.find((c) => c.count === 1)!;
   assert.equal(solo.lat, 6.2);
   assert.equal(solo.lng, 125.09);
-  assert.deepEqual(solo.driverNames, ['Juan Dela Cruz']);
+  assert.deepEqual(solo.plateNos, ['GSC-3305']);
 });
 
 test('getActiveTricycleLocations returns an empty list without further queries when no one is on duty', async () => {

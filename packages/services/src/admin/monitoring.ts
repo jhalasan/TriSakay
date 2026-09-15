@@ -97,7 +97,7 @@ export interface ActiveTricycleLocationCell {
   lat: number;
   lng: number;
   count: number;
-  driverNames: string[];
+  plateNos: string[];
 }
 
 export interface GetActiveTricycleLocationsResult {
@@ -117,7 +117,9 @@ function roundToGrid(n: number): number {
  * Only `is_available` drivers with a live fix are included; the same
  * `clear_location_when_offline` trigger that nulls current_lat/current_lng
  * on sign-off (docs/SCHEMA.MD §4.7) means an offline driver is naturally
- * excluded here without an extra filter.
+ * excluded here without an extra filter. Identifies each tricycle in the
+ * popup by plate number rather than driver name — the map is about vehicles
+ * on the ground, and the plate is what PSO would radio/cross-reference.
  */
 export async function getActiveTricycleLocations(): Promise<GetActiveTricycleLocationsResult> {
   const client = getSupabaseClient();
@@ -135,23 +137,27 @@ export async function getActiveTricycleLocations(): Promise<GetActiveTricycleLoc
   if (located.length === 0) return { data: [], error: null };
 
   const driverIds = located.map((p) => p.user_id);
-  const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', driverIds);
-  if (usersError) return { data: [], error: usersError.message };
+  const { data: tricycles, error: tricyclesError } = await client
+    .from('tricycles')
+    .select('driver_id, plate_no')
+    .in('driver_id', driverIds)
+    .eq('is_active', true);
+  if (tricyclesError) return { data: [], error: tricyclesError.message };
 
-  const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name]));
+  const plateByDriverId = new Map((tricycles ?? []).map((t) => [t.driver_id, t.plate_no]));
 
   const cellByKey = new Map<string, ActiveTricycleLocationCell>();
   for (const p of located) {
     const lat = roundToGrid(p.current_lat);
     const lng = roundToGrid(p.current_lng);
     const key = `${lat},${lng}`;
-    const name = nameById.get(p.user_id) ?? '—';
+    const plateNo = plateByDriverId.get(p.user_id) ?? '—';
     const existing = cellByKey.get(key);
     if (existing) {
       existing.count += 1;
-      existing.driverNames.push(name);
+      existing.plateNos.push(plateNo);
     } else {
-      cellByKey.set(key, { lat, lng, count: 1, driverNames: [name] });
+      cellByKey.set(key, { lat, lng, count: 1, plateNos: [plateNo] });
     }
   }
 
