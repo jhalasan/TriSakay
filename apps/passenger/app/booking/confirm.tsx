@@ -234,7 +234,11 @@ export default function ConfirmScreen() {
       </View>
 
       <MapOverlaySheet bottomInset={insets.bottom}>
-        <ScrollView style={styles.sheetScroll} contentContainerStyle={styles.sheetScrollContent}>
+        <ScrollView
+          style={styles.sheetScroll}
+          contentContainerStyle={styles.sheetScrollContent}
+          showsVerticalScrollIndicator={false}
+        >
           <Card variant="flat" style={styles.routeCard}>
             <View style={styles.routeRow}>
               <View style={[styles.routeIconBadge, { backgroundColor: colors.accentGreenSoft }]}>

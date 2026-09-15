@@ -45,6 +45,7 @@ export const styles = StyleSheet.create({
   },
   sheetScrollContent: {
     gap: spacing.xl,
+    paddingTop: spacing.xs,
     paddingBottom: spacing.md,
   },
   routeCard: {

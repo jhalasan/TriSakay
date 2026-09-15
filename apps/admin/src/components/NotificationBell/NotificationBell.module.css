@@ -90,6 +90,13 @@
 
 .list {
   overflow-y: auto;
+  /* Scrolls when notifications overflow the panel, but stays chrome-free —
+     matches Sidebar's list. */
+  scrollbar-width: none;
+}
+
+.list::-webkit-scrollbar {
+  display: none;
 }
 
 .empty {
