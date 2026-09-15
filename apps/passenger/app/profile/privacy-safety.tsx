@@ -3,33 +3,33 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
 import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
-import { BrandMotif, Button, Card, GradientSurface, ListRow, Spinner, Toggle, colors } from '@trisakay/ui';
+import { BrandMotif, Button, Card, GradientSurface, ListRow, Spinner, colors } from '@trisakay/ui';
 import { triggerEmergencyAlert } from '@trisakay/services';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useTranslation } from '../../src/hooks/useTranslation';
-import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { styles } from '../../src/styles/profile/privacy-safety.styles';
 
 type SosState = 'idle' | 'sending' | 'sent' | 'failed';
 
 /**
- * One home for everything about staying safe and controlling your data —
- * consolidates what used to be two unrelated Settings rows (Terms & Privacy,
- * Safety Center) plus the Privacy section's Location toggle, and adds the
- * one thing none of those covered: an SOS you can send to PSO any time, not
- * only while `booking/emergency.tsx`'s in-trip hold-button is reachable.
+ * The safety half of what used to be a single combined screen: an SOS you
+ * can send to PSO any time, not only while `booking/emergency.tsx`'s
+ * in-trip hold-button is reachable, plus account security. Location
+ * tracking and the Legal Policy link moved back out to Settings on request
+ * (2026-09-16) — they're settings/documents, not safety actions, and having
+ * them here meant scrolling past this screen's own reading material to
+ * reach a toggle that lives just as naturally in Settings.
  * `emergency_alerts.ride_request_id` has always been nullable and
- * `emergency_insert_own`'s RLS never required a ride, so this needed no
- * backend change beyond correcting the PSO-facing notification wording
- * (see the 2026-09-16 migration) to stop assuming a ride is attached.
+ * `emergency_insert_own`'s RLS never required a ride, so the anytime SOS
+ * needed no backend change beyond correcting the PSO-facing notification
+ * wording (see the 2026-09-16 migration) to stop assuming a ride is
+ * attached.
  */
 export default function PrivacySafetyScreen() {
   const router = useRouter();
   const t = useTranslation();
   const { isGranted, request } = useLocationPermission();
-  const locationTrackingEnabled = useSettingsStore((state) => state.locationTrackingEnabled);
-  const toggleLocationTracking = useSettingsStore((state) => state.toggleLocationTracking);
 
   const [sosState, setSosState] = useState<SosState>('idle');
   const [sosError, setSosError] = useState<string | null>(null);
@@ -127,27 +127,9 @@ export default function PrivacySafetyScreen() {
         </View>
 
         {/* Moved up, right under the primary SOS action and ahead of the
-            longer "How SOS works"/tips reading material (2026-09-16, on
-            request): these three are settings a user comes here to flip or
-            tap, not to read, so they shouldn't need a scroll past
-            informational copy to reach. */}
-        <View>
-          <Text style={styles.sectionLabel}>{t.settings.sectionPrivacySafety}</Text>
-          <Card variant="raised" style={styles.navGroup}>
-            <ListRow
-              title={t.settings.locationTracking}
-              subtitle={t.settings.locationTrackingSubtitle}
-              leading={
-                <View style={styles.navIconTile}>
-                  <Ionicons name="location-outline" size={18} color={colors.accentBluePressed} />
-                </View>
-              }
-              trailing={<Toggle value={locationTrackingEnabled} onValueChange={toggleLocationTracking} />}
-              divider={false}
-            />
-          </Card>
-        </View>
-
+            longer "How SOS works"/tips reading material: account security
+            is a setting a user comes here to tap, not to read, so it
+            shouldn't need a scroll past informational copy to reach. */}
         <View>
           <Text style={styles.sectionLabel}>{t.privacySafety.sectionAccountSecurity}</Text>
           <Card variant="raised" style={styles.navGroup}>
@@ -160,24 +142,6 @@ export default function PrivacySafetyScreen() {
                 </View>
               }
               onPress={() => router.push('/profile/change-password')}
-              chevron
-              divider={false}
-            />
-          </Card>
-        </View>
-
-        <View>
-          <Text style={styles.sectionLabel}>{t.privacySafety.sectionLegal}</Text>
-          <Card variant="raised" style={styles.navGroup}>
-            <ListRow
-              title={t.privacySafety.termsPrivacyRow}
-              subtitle={t.privacySafety.termsPrivacyRowSubtitle}
-              leading={
-                <View style={styles.navIconTile}>
-                  <Ionicons name="document-text-outline" size={18} color={colors.accentBluePressed} />
-                </View>
-              }
-              onPress={() => router.push('/profile/legal')}
               chevron
               divider={false}
             />

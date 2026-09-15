@@ -64,10 +64,12 @@ export default function SettingsScreen() {
   const tutorial = useTutorial();
   const {
     pushNotificationsEnabled,
+    locationTrackingEnabled,
     language,
     smsReceipts,
     emailReceipts,
     togglePushNotifications,
+    toggleLocationTracking,
     setLanguage,
     toggleSmsReceipts,
     toggleEmailReceipts,
@@ -133,6 +135,13 @@ export default function SettingsScreen() {
 
         <SectionLabel label={t.settings.sectionPrivacySafety} />
         <Card variant="raised" style={styles.card}>
+          <ToggleRow
+            icon="location-outline"
+            label={t.settings.locationTracking}
+            subtitle={t.settings.locationTrackingSubtitle}
+            value={locationTrackingEnabled}
+            onValueChange={toggleLocationTracking}
+          />
           <Pressable style={styles.row} onPress={() => router.push('/profile/privacy-safety')} accessibilityRole="button">
             <View style={styles.rowLeading}>
               <IconBadge name="shield-checkmark-outline" />
@@ -158,6 +167,22 @@ export default function SettingsScreen() {
               <Text style={styles.rowValue}>{languageLabels[language]}</Text>
               <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </View>
+          </Pressable>
+        </Card>
+
+        <SectionLabel label={t.privacySafety.sectionLegal} />
+        <Card variant="raised" style={styles.card}>
+          <Pressable style={styles.row} onPress={() => router.push('/profile/legal')} accessibilityRole="button">
+            <View style={styles.rowLeading}>
+              <IconBadge name="document-text-outline" />
+              <View style={styles.rowTextSlot}>
+                <Text style={styles.rowLabel}>{t.privacySafety.termsPrivacyRow}</Text>
+                <Text style={styles.rowSubtitle} numberOfLines={1}>
+                  {t.privacySafety.termsPrivacyRowSubtitle}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
           </Pressable>
         </Card>
 
