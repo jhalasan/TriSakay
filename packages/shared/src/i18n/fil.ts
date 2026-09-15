@@ -844,7 +844,7 @@ export const fil: Translations = {
     },
     safety: {
       howSosWorksBody:
-        'Pindutin at hawakan ang Emergency SOS button sa iyong biyahe kung nanganganib ang sitwasyon ng pasahero. Ina-abisuhan nito ang PSO ng iyong live na lokasyon — at detalye ng iyong pasahero kung iisa lang ang nakasakay — at magagamit lamang ito habang may aktibong biyahe.',
+        'Pindutin at hawakan ang Emergency SOS button sa iyong biyahe kung nanganganib ang sitwasyon ng pasahero habang may biyahe — ina-abisuhan nito ang PSO ng iyong live na lokasyon, at detalye ng iyong pasahero kung iisa lang ang nakasakay. Puwede ka ring magpadala ng SOS sa PSO anumang oras mula sa Sentro ng Pagkapribado at Kaligtasan, kahit walang aktibong biyahe.',
       tip1: 'Tiyaking tugma ang pasahero sa pangalan at pickup na ipinapakita sa app bago simulan ang biyahe.',
       tip2: 'Panatilihing may baterya at bukas ang lokasyon ng iyong telepono habang online o may biyahe para magamit ang SOS.',
       tip3: 'Sinusuri ng PSO ang bawat napatunayang maling asal o reklamo sa kaligtasan at maaaring suspindihin ang account dahil dito.',

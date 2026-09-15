@@ -852,7 +852,7 @@ export const en = {
     },
     safety: {
       howSosWorksBody:
-        "Hold the Emergency SOS button on your trip screen if a passenger situation turns dangerous. It alerts PSO with your live location — and your passenger's details when exactly one is aboard — and stays available only during an active trip.",
+        "Hold the Emergency SOS button on your trip screen if a passenger situation turns dangerous during a trip — it alerts PSO with your live location, and your passenger's details when exactly one is aboard. You can also send an SOS to PSO anytime from the Privacy & Safety Center, even without an active trip.",
       tip1: 'Confirm the passenger matches the name and pickup shown in the app before starting the trip.',
       tip2: 'Keep your phone charged and location on while online or on a trip so SOS can share where you are.',
       tip3: 'PSO reviews every verified misconduct or safety complaint and can suspend an account over it.',
