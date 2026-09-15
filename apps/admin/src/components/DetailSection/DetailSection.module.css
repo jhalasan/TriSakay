@@ -1,0 +1,52 @@
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-md);
+}
+
+.section + .section {
+  padding-top: var(--sp-lg);
+  border-top: 1px solid var(--line-soft);
+}
+
+.heading {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+}
+
+.icon {
+  flex-shrink: 0;
+  color: var(--ink-faint);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: var(--sp-md) var(--sp-lg);
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.fieldLabel {
+  font-family: var(--mono);
+  font-size: 10px;
+  letter-spacing: 0.03em;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+}
+
+.fieldValue {
+  font-size: var(--fs-body);
+  color: var(--ink);
+  overflow-wrap: break-word;
+}

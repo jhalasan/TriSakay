@@ -228,8 +228,8 @@ export function Dashboard() {
                     ? `${lapsedCount} already lapsed, MTOP renewal due within 30 days`
                     : 'No franchises expiring soon.'
             }
-            linkLabel="Review verification cases"
-            onLinkClick={() => navigate('/verification')}
+            linkLabel="View expiring tricycles"
+            onLinkClick={() => navigate('/tricycles?expiry=dueSoon')}
             badgeLabel="≤ 30 days"
             badgeTone="warn"
           />

@@ -13,6 +13,7 @@ const Login = lazy(() => import('./routes/Login').then((m) => ({ default: m.Logi
 const ForgotPassword = lazy(() => import('./routes/ForgotPassword').then((m) => ({ default: m.ForgotPassword })));
 const Dashboard = lazy(() => import('./routes/Dashboard').then((m) => ({ default: m.Dashboard })));
 const Drivers = lazy(() => import('./routes/Drivers').then((m) => ({ default: m.Drivers })));
+const Tricycles = lazy(() => import('./routes/Tricycles').then((m) => ({ default: m.Tricycles })));
 const DriverVerification = lazy(() => import('./routes/DriverVerification').then((m) => ({ default: m.DriverVerification })));
 const Passengers = lazy(() => import('./routes/Passengers').then((m) => ({ default: m.Passengers })));
 const RideMonitoring = lazy(() => import('./routes/RideMonitoring').then((m) => ({ default: m.RideMonitoring })));
@@ -115,6 +116,7 @@ export default function App() {
             >
               <Route index element={<Dashboard />} />
               <Route path="drivers" element={<Drivers />} />
+              <Route path="tricycles" element={<Tricycles />} />
               <Route path="verification" element={<DriverVerification />} />
               <Route path="passengers" element={<Passengers />} />
               <Route path="monitoring" element={<RideMonitoring />} />

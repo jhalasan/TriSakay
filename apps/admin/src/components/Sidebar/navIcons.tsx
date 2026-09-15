@@ -58,6 +58,14 @@ export const NAV_ICONS: Record<string, (props: SVGProps<SVGSVGElement>) => React
       <path d="M4.7 20.3c1-3.6 4-5.8 7.3-5.8s6.3 2.2 7.3 5.8" />
     </Svg>
   ),
+  '/tricycles': (props) => (
+    <Svg {...props}>
+      <path d="M4.5 16v-4.2c0-.4.15-.8.43-1.08l1.7-1.72A2 2 0 0 1 8.06 8.3h7.88c.53 0 1.04.21 1.42.6l1.7 1.72c.29.28.44.67.44 1.08V16" />
+      <path d="M4.5 16h15v2a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-1h-9v1a1 1 0 0 1-1 1h-1a1 1 0 0 1-1-1v-2Z" />
+      <circle cx="8" cy="16" r="1.4" />
+      <circle cx="16" cy="16" r="1.4" />
+    </Svg>
+  ),
   '/verification': (props) => (
     <Svg {...props}>
       <path d="M12 3.3 19 6v5.3c0 4.6-3 8.1-7 9.4-4-1.3-7-4.8-7-9.4V6l7-2.7Z" />

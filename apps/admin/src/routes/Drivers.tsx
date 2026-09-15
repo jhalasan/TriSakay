@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { TableToolbar } from '../components/TableToolbar';
 import { Select } from '../components/Select';
@@ -11,6 +11,7 @@ import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal, SevereIcon } from '../components/ConfirmModal';
 import { Modal } from '../components/Modal';
+import { DetailSection, AccountIcon, ContactIcon, PerformanceIcon, VehicleIcon } from '../components/DetailSection';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { useDriversStore } from '../store/useDriversStore';
@@ -243,34 +244,22 @@ export function Drivers() {
 
   const selected = drivers.find((d) => d.id === selectedId) ?? null;
 
-  const detailFields: { label: string; value: ReactNode }[] = selected
-    ? [
-        { label: 'Contact No', value: selected.contactNo },
-        { label: 'Email', value: selected.email },
-        { label: 'Plate No', value: selected.plateNo },
-        { label: 'Cluster', value: selected.cluster ? titleCaseLabel(selected.cluster) : '—' },
-        {
-          label: 'Verification',
-          value: <Badge label={titleCaseLabel(selected.verificationStatus)} tone={selected.verificationStatus === 'approved' ? 'success' : selected.verificationStatus === 'rejected' ? 'danger' : 'warn'} />,
-        },
-        {
-          label: 'Rating',
-          value:
-            selected.ratingCount > 0 ? (
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <RatingSquares value={selected.ratingAvg} />
-                <span style={{ color: 'var(--ink-faint)', fontSize: 11 }}>
-                  {selected.ratingAvg.toFixed(1)} ({selected.ratingCount})
-                </span>
-              </span>
-            ) : (
-              '—'
-            ),
-        },
-        { label: 'Registered', value: formatDate(selected.createdAt) },
-        { label: 'Driver ID', value: <span className="mono">{selected.id}</span> },
-      ]
-    : [];
+  // 2026-09-16 follow-up to the launch audit ("this part lacks information
+  // and the UI is so bland"): the flat, ungrouped field list — one plain
+  // column of labels with no hierarchy — is replaced by DetailSection
+  // groups below, and tripCount (already loaded for the Trips table column,
+  // just never surfaced in this modal) is now shown too.
+  const ratingValue =
+    selected && selected.ratingCount > 0 ? (
+      <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <RatingSquares value={selected.ratingAvg} />
+        <span style={{ color: 'var(--ink-faint)', fontSize: 11 }}>
+          {selected.ratingAvg.toFixed(1)} ({selected.ratingCount})
+        </span>
+      </span>
+    ) : (
+      '—'
+    );
 
   const columns: DataTableColumn<DriverRow>[] = [
     {
@@ -455,18 +444,82 @@ export function Drivers() {
           subtitle={<Badge label={titleCaseLabel(selected.accountStatus)} tone={STATUS_TONE[selected.accountStatus]} />}
           onClose={() => setSelectedId(null)}
         >
-          {detailFields.map((f) => (
-            <div className="field" key={f.label}>
-              <span className="field-label">{f.label}</span>
-              <span>{f.value}</span>
-            </div>
-          ))}
+          <DetailSection
+            title="Contact"
+            icon={ContactIcon}
+            fields={[
+              { label: 'Contact No', value: selected.contactNo },
+              { label: 'Email', value: selected.email },
+            ]}
+          />
+          <DetailSection
+            title="Vehicle"
+            icon={VehicleIcon}
+            fields={[
+              { label: 'Plate No', value: selected.plateNo },
+              { label: 'Cluster', value: selected.cluster ? titleCaseLabel(selected.cluster) : '—' },
+              {
+                label: 'Verification',
+                value: (
+                  <Badge
+                    label={titleCaseLabel(selected.verificationStatus)}
+                    tone={selected.verificationStatus === 'approved' ? 'success' : selected.verificationStatus === 'rejected' ? 'danger' : 'warn'}
+                  />
+                ),
+              },
+            ]}
+          />
+          <DetailSection
+            title="Performance"
+            icon={PerformanceIcon}
+            fields={[
+              { label: 'Rating', value: ratingValue },
+              { label: 'Trips', value: selected.tripCount.toLocaleString() },
+            ]}
+          />
+          <DetailSection
+            title="Account"
+            icon={AccountIcon}
+            fields={[
+              { label: 'Registered', value: formatDate(selected.createdAt) },
+              { label: 'Driver ID', value: <span className="mono">{selected.id}</span> },
+            ]}
+          />
 
           {selected.verificationStatus === 'pending' && (
             <Link to="/verification" style={{ fontSize: 12 }}>
               Open in Verification queue →
             </Link>
           )}
+
+          <div className="row-actions">
+            <Button variant="outline" tone="neutral" size="sm" onClick={() => setPendingAction({ driver: selected, kind: 'flag' })}>
+              Flag
+            </Button>
+            <RoleGate min="supervisor">
+              {selected.accountStatus === 'suspended' ? (
+                <Button
+                  variant="outline"
+                  tone="primary"
+                  size="sm"
+                  superscript="S+"
+                  onClick={() => setPendingAction({ driver: selected, kind: 'reactivate' })}
+                >
+                  Reactivate
+                </Button>
+              ) : (
+                <Button
+                  variant="solid"
+                  tone="danger"
+                  size="sm"
+                  superscript="S+"
+                  onClick={() => setPendingAction({ driver: selected, kind: 'suspend' })}
+                >
+                  Suspend
+                </Button>
+              )}
+            </RoleGate>
+          </div>
 
           <div className="read-only-note">Showing the record loaded with this list. Full ride history isn't available in the admin portal yet.</div>
         </Modal>

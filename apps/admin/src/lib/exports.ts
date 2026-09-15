@@ -1,6 +1,8 @@
 import type { CsvColumn } from './csv.ts';
 import type { DriverRow } from '../types/driver.ts';
 import type { PassengerRow } from '../types/passenger.ts';
+import type { TricycleRow } from '../types/tricycle.ts';
+import { daysUntilExpiry } from '../types/tricycle.ts';
 import { formatDate, titleCaseLabel } from './format.ts';
 
 export const driverCsvColumns: CsvColumn<DriverRow>[] = [
@@ -27,6 +29,18 @@ export const passengerCsvColumns: CsvColumn<PassengerRow>[] = [
   { header: 'Total Rides', value: (p) => p.totalRides },
   { header: 'Fare Discount', value: (p) => (p.discount ? `${titleCaseLabel(p.discount.category)} - ${titleCaseLabel(p.discount.status)}` : '') },
   { header: 'Registered', value: (p) => formatDate(p.createdAt) },
+];
+
+export const tricycleCsvColumns: CsvColumn<TricycleRow>[] = [
+  { header: 'Plate No', value: (t) => t.plateNo },
+  { header: 'Body No', value: (t) => t.bodyNo },
+  { header: 'Cluster', value: (t) => (t.cluster ? titleCaseLabel(t.cluster) : '') },
+  { header: 'Verification Status', value: (t) => titleCaseLabel(t.verificationStatus) },
+  { header: 'MTOP No', value: (t) => t.mtopNo },
+  { header: 'MTOP Expiry Date', value: (t) => (t.mtopExpiryDate ? formatDate(t.mtopExpiryDate) : '') },
+  { header: 'Days Until Expiry', value: (t) => daysUntilExpiry(t.mtopExpiryDate) ?? '' },
+  { header: 'Driver', value: (t) => t.driverName },
+  { header: 'Driver Contact No', value: (t) => t.driverContactNo },
 ];
 
 /** Mirrors Reports.tsx's `transactions-${range}-${date}.csv` naming. */

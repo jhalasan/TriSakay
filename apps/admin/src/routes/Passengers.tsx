@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type ReactNode } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { TableToolbar } from '../components/TableToolbar';
 import { Select } from '../components/Select';
@@ -10,6 +10,7 @@ import { Button } from '../components/Button';
 import { RoleGate } from '../components/RoleGate';
 import { ConfirmModal, SevereIcon } from '../components/ConfirmModal';
 import { Modal } from '../components/Modal';
+import { DetailSection, AccountIcon, ContactIcon, RidesIcon } from '../components/DetailSection';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { usePassengersStore, type PassengerStatusFilter } from '../store/usePassengersStore';
@@ -218,26 +219,17 @@ export function Passengers() {
 
   const selected = passengers.find((p) => p.id === selectedId) ?? null;
 
-  const detailFields: { label: string; value: ReactNode }[] = selected
-    ? [
-        { label: 'Contact No', value: selected.contactNo },
-        { label: 'Email', value: selected.email },
-        { label: 'Total Rides', value: selected.totalRides },
-        {
-          label: 'Fare Discount',
-          value: selected.discount ? (
-            <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {titleCaseLabel(selected.discount.category)}
-              <Badge label={titleCaseLabel(selected.discount.status)} tone={DISCOUNT_STATUS_TONE[selected.discount.status]} />
-            </span>
-          ) : (
-            '—'
-          ),
-        },
-        { label: 'Registered', value: formatDate(selected.createdAt) },
-        { label: 'Passenger ID', value: <span className="mono">{selected.id}</span> },
-      ]
-    : [];
+  // 2026-09-16 follow-up to the launch audit ("this part lacks information
+  // and the UI is so bland") — same DetailSection grouping applied to
+  // Drivers.tsx, for consistency across both "View" modals.
+  const discountValue = selected?.discount ? (
+    <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+      {titleCaseLabel(selected.discount.category)}
+      <Badge label={titleCaseLabel(selected.discount.status)} tone={DISCOUNT_STATUS_TONE[selected.discount.status]} />
+    </span>
+  ) : (
+    '—'
+  );
 
   const columns: DataTableColumn<PassengerRow>[] = [
     {
@@ -403,12 +395,56 @@ export function Passengers() {
           subtitle={<Badge label={passengerStatusLabel(selected.accountStatus)} tone={STATUS_TONE[selected.accountStatus]} />}
           onClose={() => setSelectedId(null)}
         >
-          {detailFields.map((f) => (
-            <div className="field" key={f.label}>
-              <span className="field-label">{f.label}</span>
-              <span>{f.value}</span>
+          <DetailSection
+            title="Contact"
+            icon={ContactIcon}
+            fields={[
+              { label: 'Contact No', value: selected.contactNo },
+              { label: 'Email', value: selected.email },
+            ]}
+          />
+          <DetailSection
+            title="Rides & Discount"
+            icon={RidesIcon}
+            fields={[
+              { label: 'Total Rides', value: selected.totalRides },
+              { label: 'Fare Discount', value: discountValue },
+            ]}
+          />
+          <DetailSection
+            title="Account"
+            icon={AccountIcon}
+            fields={[
+              { label: 'Registered', value: formatDate(selected.createdAt) },
+              { label: 'Passenger ID', value: <span className="mono">{selected.id}</span> },
+            ]}
+          />
+
+          <RoleGate min="supervisor">
+            <div className="row-actions">
+              {selected.accountStatus === 'suspended' ? (
+                <Button
+                  variant="outline"
+                  tone="primary"
+                  size="sm"
+                  superscript="S+"
+                  onClick={() => setPendingAction({ passenger: selected, kind: 'unblock' })}
+                >
+                  Unblock
+                </Button>
+              ) : (
+                <Button
+                  variant="solid"
+                  tone="danger"
+                  size="sm"
+                  superscript="S+"
+                  onClick={() => setPendingAction({ passenger: selected, kind: 'block' })}
+                >
+                  Block
+                </Button>
+              )}
             </div>
-          ))}
+          </RoleGate>
 
           <div className="read-only-note">Showing the record loaded with this list. Full ride history isn't available in the admin portal yet.</div>
         </Modal>

@@ -38,6 +38,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/drivers', label: 'Drivers', title: 'Driver Management', min: 'staff' },
       { to: '/passengers', label: 'Passengers', title: 'Passenger Management', min: 'staff' },
+      { to: '/tricycles', label: 'Tricycles', title: 'Tricycle Monitoring', min: 'staff' },
       { to: '/verification', label: 'Verification', title: 'Driver & Tricycle Verification', min: 'staff' },
       { to: '/discounts', label: 'Fare Discounts', title: 'Fare Discount Review', min: 'staff' },
     ],
