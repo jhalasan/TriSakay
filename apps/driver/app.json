@@ -48,7 +48,8 @@
         "expo-image-picker",
         {
           "photosPermission": "TriSakay needs access to your photos so you can upload verification documents.",
-          "cameraPermission": "TriSakay needs access to your camera so you can upload verification documents."
+          "cameraPermission": "TriSakay needs access to your camera so you can upload verification documents.",
+          "microphonePermission": false
         }
       ],
       "expo-notifications"
@@ -59,6 +60,12 @@
       "eas": {
         "projectId": "d688c6e6-3757-412d-9ed1-dad921da79a2"
       }
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
+    "updates": {
+      "url": "https://u.expo.dev/d688c6e6-3757-412d-9ed1-dad921da79a2"
     }
   }
 }
