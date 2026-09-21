@@ -9,6 +9,9 @@ export const styles = StyleSheet.create({
     ...typography.label,
     color: colors.inkSoft,
   },
+  requiredAsterisk: {
+    color: colors.danger,
+  },
   // Border width is fixed across every state (resting/focused/error) — only
   // borderColor changes. An RN TextInput on Android can lose focus the
   // instant its wrapping View's box dimensions change out from under it

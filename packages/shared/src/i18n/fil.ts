@@ -359,6 +359,7 @@ export const fil: Translations = {
     fareLabel: 'Pamasahe',
     paidViaLabel: 'Binayaran gamit ang',
     distanceLabel: 'Distansya',
+    referenceLabel: 'Ref. ng biyahe',
     continueButton: 'Magpatuloy',
   },
   rateDriver: {
@@ -406,6 +407,7 @@ export const fil: Translations = {
     discountLabel: 'Diskwento',
     total: 'Kabuuan',
     cancellationReason: 'Dahilan ng Pagkansela',
+    tripReference: 'Ref. ng biyahe',
   },
   complaints: {
     title: 'Mga Reklamo',
@@ -531,6 +533,7 @@ export const fil: Translations = {
       enterLastName: 'Ilagay ang iyong apelyido.',
       enterValidEmail: 'Maglagay ng wastong email address.',
       enterContactNumber: 'Maglagay ng numero ng telepono.',
+      enterValidContactNumber: 'Maglagay ng wastong numero ng telepono sa PH (hal. 09XX XXX XXXX).',
       passwordMinLength: 'Dapat hindi bababa sa 10 na karakter ang password at may malaki at maliit na letra, at isang numero o simbolo.',
       passwordsDoNotMatch: 'Hindi magkatugma ang mga password.',
       acceptTermsIntro: 'Pakibasa at tanggapin ang mga ito bago malikha ang iyong account.',
@@ -594,6 +597,7 @@ export const fil: Translations = {
       enterLastName: 'Ilagay ang iyong apelyido.',
       enterValidEmail: 'Maglagay ng wastong email address.',
       enterContactNumber: 'Maglagay ng numero ng telepono.',
+      enterValidContactNumber: 'Maglagay ng wastong numero ng telepono sa PH (hal. 09XX XXX XXXX).',
       passwordMinLength: 'Dapat hindi bababa sa 10 na karakter ang password at may malaki at maliit na letra, at isang numero o simbolo.',
       passwordsDoNotMatch: 'Hindi magkatugma ang mga password.',
       documentsIntro: 'I-upload ang mga ito para masuri ng PSO reviewer ang iyong franchise bago ka makapag-online.',

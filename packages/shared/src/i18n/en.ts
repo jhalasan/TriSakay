@@ -362,6 +362,7 @@ export const en = {
     fareLabel: 'Fare',
     paidViaLabel: 'Paid via',
     distanceLabel: 'Distance',
+    referenceLabel: 'Trip ref.',
     continueButton: 'Continue',
   },
   rateDriver: {
@@ -409,6 +410,7 @@ export const en = {
     discountLabel: 'Discount',
     total: 'Total',
     cancellationReason: 'Cancellation reason',
+    tripReference: 'Trip ref.',
   },
   complaints: {
     title: 'Complaints',
@@ -539,6 +541,7 @@ export const en = {
       enterLastName: 'Enter your last name.',
       enterValidEmail: 'Enter a valid email address.',
       enterContactNumber: 'Enter a contact number.',
+      enterValidContactNumber: 'Enter a valid PH mobile number (e.g. 09XX XXX XXXX).',
       passwordMinLength:
         'Password must be at least 10 characters and include upper and lower case letters plus a number or symbol.',
       passwordsDoNotMatch: 'Passwords do not match.',
@@ -603,6 +606,7 @@ export const en = {
       enterLastName: 'Enter your last name.',
       enterValidEmail: 'Enter a valid email address.',
       enterContactNumber: 'Enter a contact number.',
+      enterValidContactNumber: 'Enter a valid PH mobile number (e.g. 09XX XXX XXXX).',
       passwordMinLength: 'Password must be at least 10 characters and include upper and lower case letters plus a number or symbol.',
       passwordsDoNotMatch: 'Passwords do not match.',
       documentsIntro: 'Upload these so a PSO reviewer can verify your franchise before you go online.',

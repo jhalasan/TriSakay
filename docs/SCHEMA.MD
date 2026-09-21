@@ -189,7 +189,11 @@ create table public.users (
 
   constraint users_contact_format check (
     contact_no is null or contact_no ~ '^[0-9+()\-\s]{7,20}$'
-  )
+  ),
+  -- 20260921000001: prevents duplicate mobile numbers across signups (UAT
+  -- D2/P4). NULLs are exempt (each is distinct to Postgres), which is
+  -- required for PSO-created accounts with no phone on file.
+  constraint users_contact_no_unique unique (contact_no)
 );
 
 comment on table  public.users is 'All system users across the three apps; role drives RBAC.';

@@ -5,6 +5,7 @@ import { Avatar, BrandMotif, Button, Card, GradientSurface, colors } from '@tris
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { formatCurrency } from '../../src/utils/currency';
+import { getReferenceCode } from '../../src/utils/reference';
 import { styles } from '../../src/styles/booking/trip-complete.styles';
 
 export default function TripCompleteScreen() {
@@ -16,8 +17,10 @@ export default function TripCompleteScreen() {
   const distanceKm = useBookingStore((state) => state.distanceKm);
   const paymentMethod = useBookingStore((state) => state.paymentMethod);
   const driver = useBookingStore((state) => state.driver);
+  const rideRequestId = useBookingStore((state) => state.rideRequestId);
 
   const paymentLabel = paymentMethod === 'gcash' ? t.common.gcash : t.common.cash;
+  const reference = getReferenceCode(rideRequestId);
 
   return (
     <View style={styles.screen}>
@@ -60,6 +63,12 @@ export default function TripCompleteScreen() {
             <View style={styles.summaryRow}>
               <Text style={styles.summaryLabel}>{t.tripComplete.distanceLabel}</Text>
               <Text style={styles.summaryValue}>{distanceKm.toFixed(1)} km</Text>
+            </View>
+          )}
+          {reference && (
+            <View style={styles.summaryRow}>
+              <Text style={styles.summaryLabel}>{t.tripComplete.referenceLabel}</Text>
+              <Text style={styles.summaryValue}>#{reference}</Text>
             </View>
           )}
         </Card>

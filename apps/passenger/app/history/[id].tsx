@@ -6,6 +6,7 @@ import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { formatCurrency } from '../../src/utils/currency';
+import { getReferenceCode } from '../../src/utils/reference';
 import { styles } from '../../src/styles/history/detail.styles';
 
 function formatDateTime(iso: string) {
@@ -37,6 +38,7 @@ export default function RideDetailScreen() {
   const showFareBreakdown = item.discountApplied && item.discountPercent != null && item.discountPercent > 0;
   const baseFare = showFareBreakdown ? item.fare / (1 - item.discountPercent! / 100) : null;
   const discountAmount = baseFare != null ? baseFare - item.fare : null;
+  const reference = getReferenceCode(item.id);
 
   return (
     <View style={styles.container}>
@@ -161,6 +163,12 @@ export default function RideDetailScreen() {
               />
             )}
           </View>
+          {reference && (
+            <View style={styles.paymentRow}>
+              <Text style={styles.paymentBreakdownLabel}>{t.history.tripReference}</Text>
+              <Text style={styles.paymentBreakdownValue}>#{reference}</Text>
+            </View>
+          )}
           <View style={styles.paymentDivider} />
           {showFareBreakdown && baseFare != null && discountAmount != null && (
             <>

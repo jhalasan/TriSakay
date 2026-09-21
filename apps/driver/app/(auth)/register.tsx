@@ -15,7 +15,7 @@ import { DISCLOSURES, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../../src/content
 import { DOCUMENT_TYPES } from '../../src/types/document';
 import { interpolate } from '../../src/utils/interpolate';
 import { isPasswordPolicyMet } from '@trisakay/utils';
-import { isNonEmpty, isValidEmail } from '../../src/utils/validation';
+import { isNonEmpty, isValidEmail, isValidLocalMobile } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/register.styles';
 
 interface FormState {
@@ -70,6 +70,7 @@ export default function RegisterScreen() {
     if (!isNonEmpty(form.lastName)) nextErrors.lastName = t.driver.register.enterLastName;
     if (!isValidEmail(form.email)) nextErrors.email = t.driver.register.enterValidEmail;
     if (!isNonEmpty(form.phone)) nextErrors.phone = t.driver.register.enterContactNumber;
+    else if (!isValidLocalMobile(form.phone)) nextErrors.phone = t.driver.register.enterValidContactNumber;
     if (!isPasswordPolicyMet(form.password)) nextErrors.password = t.driver.register.passwordMinLength;
     if (form.confirmPassword !== form.password) nextErrors.confirmPassword = t.driver.register.passwordsDoNotMatch;
     setErrors(nextErrors);
@@ -182,6 +183,7 @@ export default function RegisterScreen() {
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <TextField
               label={t.driver.register.firstName}
+              required
               placeholder={t.driver.register.firstNamePlaceholder}
               value={form.firstName}
               onChangeText={(v) => update('firstName', v)}
@@ -190,6 +192,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.lastName}
+              required
               placeholder={t.driver.register.lastNamePlaceholder}
               value={form.lastName}
               onChangeText={(v) => update('lastName', v)}
@@ -198,6 +201,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.email}
+              required
               placeholder={t.driver.register.emailPlaceholder}
               value={form.email}
               onChangeText={(v) => update('email', v)}
@@ -207,6 +211,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.phone}
+              required
               placeholder={t.driver.register.phonePlaceholder}
               value={form.phone}
               onChangeText={(v) => update('phone', v)}
@@ -215,6 +220,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.password}
+              required
               placeholder="••••••••"
               value={form.password}
               onChangeText={(v) => update('password', v)}
@@ -223,6 +229,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.confirmPassword}
+              required
               placeholder="••••••••"
               value={form.confirmPassword}
               onChangeText={(v) => update('confirmPassword', v)}
@@ -241,6 +248,7 @@ export default function RegisterScreen() {
 
               <TextField
                 label={t.driver.register.plateNumber}
+                required
                 placeholder={t.driver.register.plateNumberPlaceholder}
                 value={plateNo}
                 onChangeText={(v) => {

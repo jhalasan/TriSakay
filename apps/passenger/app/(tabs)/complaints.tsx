@@ -19,6 +19,7 @@ import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useComplaintFormTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { isNonEmpty } from '../../src/utils/validation';
+import { getReferenceCode } from '../../src/utils/reference';
 import { styles } from '../../src/styles/tabs/complaints.styles';
 
 const MAX_EVIDENCE_PHOTOS = 3;
@@ -241,7 +242,7 @@ export default function ComplaintsScreen() {
                   {tutorialDemo.active
                     ? tutorialDemo.data.relatedTripLabel
                     : selectedRide
-                      ? `${selectedRide.driverName} · ${selectedRide.dropoff}`
+                      ? `${selectedRide.driverName} · ${selectedRide.dropoff} · #${getReferenceCode(selectedRide.id)}`
                       : generalComplaint
                         ? t.complaints.notRelatedToARide
                         : t.complaints.selectAPastRide}
@@ -265,7 +266,7 @@ export default function ComplaintsScreen() {
                 {rides.map((ride, index) => (
                   <ListRow
                     key={ride.id}
-                    title={ride.driverName || 'Driver'}
+                    title={`${ride.driverName || 'Driver'} · #${getReferenceCode(ride.id)}`}
                     subtitle={ride.pickup && ride.dropoff ? `${ride.pickup} → ${ride.dropoff}` : undefined}
                     onPress={() => {
                       setRelatedTripId(ride.id);

@@ -23,6 +23,24 @@ export interface AuthResult {
   error: string | null;
 }
 
+/**
+ * The public.users row is created by handle_new_auth_user(), an AFTER INSERT
+ * trigger on auth.users that runs in the same transaction as this signup —
+ * so a users_contact_no_unique violation there surfaces here as a generic,
+ * technical-looking Postgres/GoTrue error rather than a clean one (unlike an
+ * email collision, which GoTrue rejects natively before the trigger ever
+ * runs). This matches on the constraint name rather than exact wording,
+ * since the precise error text GoTrue forwards for a trigger-raised
+ * exception hasn't been observed live — tighten the match if it doesn't fire
+ * against a real duplicate-signup attempt.
+ */
+function translateSignUpError(message: string): string {
+  if (/users_contact_no_unique/i.test(message)) {
+    return 'This mobile number is already registered.';
+  }
+  return message;
+}
+
 export async function signUp({ firstName, lastName, email, phone, password, role = 'passenger' }: SignUpInput): Promise<AuthResult> {
   const { data, error } = await getSupabaseClient().auth.signUp({
     email,
@@ -31,12 +49,15 @@ export async function signUp({ firstName, lastName, email, phone, password, role
       data: {
         first_name: firstName,
         last_name: lastName,
-        phone,
+        // Stripped so two people typing the same number with different
+        // spacing (e.g. "0922 444 4955" vs "09224444955") don't slip past
+        // users_contact_no_unique as distinct strings.
+        phone: phone.replace(/\s+/g, ''),
         role,
       },
     },
   });
-  return { session: data.session, error: error?.message ?? null };
+  return { session: data.session, error: error ? translateSignUpError(error.message) : null };
 }
 
 export async function signIn({ email, password }: SignInInput): Promise<AuthResult> {

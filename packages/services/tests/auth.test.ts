@@ -87,6 +87,36 @@ test('signUp returns the error message when Supabase rejects the signup', async 
   assert.equal(result.session, null);
 });
 
+test('signUp strips whitespace from phone before sending it as signup metadata', async () => {
+  let capturedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signUp: async (args) => {
+        capturedArgs = args;
+        return { data: { session: null }, error: null };
+      },
+    })
+  );
+
+  await signUp({ firstName: 'Juan', lastName: 'Cruz', email: 'juan@example.com', phone: '0922 444 4955', password: 'secret1' });
+
+  assert.equal(capturedArgs.options.data.phone, '09224444955');
+});
+
+test('signUp translates a users_contact_no_unique violation into a friendly message', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signUp: async () => ({
+        data: { session: null },
+        error: { message: 'duplicate key value violates unique constraint "users_contact_no_unique"' },
+      }),
+    })
+  );
+
+  const result = await signUp({ firstName: 'A', lastName: 'B', email: 'dup2@example.com', phone: '09224444955', password: 'secret1' });
+  assert.equal(result.error, 'This mobile number is already registered.');
+});
+
 test('signIn returns a session on success', async () => {
   const fakeSession = { access_token: 'abc', user: { id: 'u1' } };
   __setSupabaseClientForTests(

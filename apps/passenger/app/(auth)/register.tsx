@@ -13,7 +13,7 @@ import { useConsentStore } from '../../src/store/useConsentStore';
 import { DISCLOSURES, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../../src/content/legalCopy';
 import { isPasswordPolicyMet } from '@trisakay/utils';
 import { interpolate } from '../../src/utils/interpolate';
-import { isNonEmpty, isValidEmail } from '../../src/utils/validation';
+import { isNonEmpty, isValidEmail, isValidLocalMobile } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/register.styles';
 
 interface FormState {
@@ -86,6 +86,7 @@ export default function RegisterScreen() {
     if (!isNonEmpty(form.lastName)) nextErrors.lastName = t.auth.register.enterLastName;
     if (!isValidEmail(form.email)) nextErrors.email = t.auth.register.enterValidEmail;
     if (!isNonEmpty(form.phone)) nextErrors.phone = t.auth.register.enterContactNumber;
+    else if (!isValidLocalMobile(form.phone)) nextErrors.phone = t.auth.register.enterValidContactNumber;
     if (!isPasswordPolicyMet(form.password)) nextErrors.password = t.auth.register.passwordMinLength;
     if (form.confirmPassword !== form.password) nextErrors.confirmPassword = t.auth.register.passwordsDoNotMatch;
     setErrors(nextErrors);
@@ -202,6 +203,7 @@ export default function RegisterScreen() {
             <View style={styles.fields}>
               <TextField
                 label={t.auth.register.firstName}
+                required
                 placeholder="Juan"
                 value={form.firstName}
                 onChangeText={(v) => update('firstName', v)}
@@ -210,6 +212,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.lastName}
+                required
                 placeholder="Dela Cruz"
                 value={form.lastName}
                 onChangeText={(v) => update('lastName', v)}
@@ -218,6 +221,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.email}
+                required
                 placeholder="you@example.com"
                 value={form.email}
                 onChangeText={(v) => update('email', v)}
@@ -227,6 +231,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.phone}
+                required
                 placeholder="09XX XXX XXXX"
                 value={form.phone}
                 onChangeText={(v) => update('phone', v)}
@@ -235,6 +240,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.password}
+                required
                 placeholder="••••••••"
                 value={form.password}
                 onChangeText={(v) => update('password', v)}
@@ -243,6 +249,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.confirmPassword}
+                required
                 placeholder="••••••••"
                 value={form.confirmPassword}
                 onChangeText={(v) => update('confirmPassword', v)}

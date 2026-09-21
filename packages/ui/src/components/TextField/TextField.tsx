@@ -9,6 +9,7 @@ export interface TextFieldProps extends Omit<TextInputProps, 'style'> {
   error?: string;
   helperText?: string;
   leftIcon?: React.ReactNode;
+  required?: boolean;
 }
 
 export function TextField({
@@ -16,6 +17,7 @@ export function TextField({
   error,
   helperText,
   leftIcon,
+  required,
   secureTextEntry,
   onFocus,
   onBlur,
@@ -26,7 +28,12 @@ export function TextField({
 
   return (
     <View style={styles.container}>
-      {label && <Text style={styles.label}>{label}</Text>}
+      {label && (
+        <Text style={styles.label}>
+          {label}
+          {required && <Text style={styles.requiredAsterisk}> *</Text>}
+        </Text>
+      )}
       <View
         style={[
           styles.fieldRow,
