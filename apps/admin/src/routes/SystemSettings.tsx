@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
+import { ConfirmModal } from '../components/ConfirmModal';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { formatCurrency, formatDate } from '../lib/format';
 import styles from './SystemSettings.module.css';
@@ -28,6 +29,7 @@ export function SystemSettings() {
   const [baseFare, setBaseFare] = useState('');
   const [baseKm, setBaseKm] = useState('');
   const [ratePerKm, setRatePerKm] = useState('');
+  const [confirmingFareSave, setConfirmingFareSave] = useState(false);
 
   useEffect(() => {
     fetch();
@@ -169,13 +171,7 @@ export function SystemSettings() {
 
             <ErrorBanner message={error} />
 
-            <Button
-              loading={saving}
-              disabled={!fareFormValid}
-              onClick={() =>
-                saveFareConfig({ baseFare: parsedBaseFare, baseKm: parsedBaseKm, ratePerKm: parsedRatePerKm })
-              }
-            >
+            <Button disabled={!fareFormValid} onClick={() => setConfirmingFareSave(true)}>
               Save changes
             </Button>
             <span className={styles.auditLine}>
@@ -186,6 +182,22 @@ export function SystemSettings() {
           </div>
         </div>
       </div>
+
+      {confirmingFareSave && (
+        <ConfirmModal
+          title="Save fare changes?"
+          message={`Base fare ${formatCurrency(fareConfig.baseFare)} → ${formatCurrency(parsedBaseFare)}, base distance ${fareConfig.baseKm} km → ${parsedBaseKm} km, rate per km ${formatCurrency(fareConfig.ratePerKm)} → ${formatCurrency(parsedRatePerKm)}. This applies to every new booking immediately.`}
+          confirmLabel="Save changes"
+          tone="danger"
+          confirmLoading={saving}
+          error={error}
+          onConfirm={async () => {
+            await saveFareConfig({ baseFare: parsedBaseFare, baseKm: parsedBaseKm, ratePerKm: parsedRatePerKm });
+            if (!useSettingsStore.getState().error) setConfirmingFareSave(false);
+          }}
+          onCancel={() => setConfirmingFareSave(false)}
+        />
+      )}
     </div>
   );
 }
