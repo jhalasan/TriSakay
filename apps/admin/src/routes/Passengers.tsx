@@ -14,6 +14,8 @@ import { DetailSection, AccountIcon, ContactIcon, RidesIcon } from '../component
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { usePassengersStore, type PassengerStatusFilter } from '../store/usePassengersStore';
+import { useSessionStore } from '../store/useSessionStore';
+import { meetsRoleGate } from '../lib/rbac';
 import type { PassengerRow } from '../types/passenger';
 import { formatDate, passengerStatusLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
@@ -125,6 +127,13 @@ export function Passengers() {
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
   const { showToast } = useToast();
 
+  // FR-4.3 scopes PSO Staff to complaint triage, which doesn't need a
+  // passenger's raw contact info — write actions (Block/Unblock) were
+  // already Supervisor+-gated via RoleGate; this extends the same tier
+  // boundary to reading contact_no/email specifically (UAT A7).
+  const role = useSessionStore((state) => state.user?.role);
+  const canSeeContact = role ? meetsRoleGate(role, 'supervisor') : false;
+
   useEffect(() => {
     fetch();
   }, [fetch]);
@@ -211,7 +220,12 @@ export function Passengers() {
 
   function exportCsv() {
     // DataTable's column sort is internal state, not lifted here, so this exports in store order (not the on-screen sort order).
-    const csv = toCsv(filtered, passengerCsvColumns);
+    // Same canSeeContact boundary as the table/modal — export is a read path
+    // too and shouldn't bypass the restriction those enforce.
+    const columns = canSeeContact
+      ? passengerCsvColumns
+      : passengerCsvColumns.filter((c) => c.header !== 'Contact No' && c.header !== 'Email');
+    const csv = toCsv(filtered, columns);
     const filename = exportFilename('passengers', statusFilter);
     const url = downloadCsv(filename, csv);
     showToast({ message: `Export ready — ${filename}`, action: { label: 'Open', onClick: () => window.open(url, '_blank') } });
@@ -243,7 +257,9 @@ export function Passengers() {
         </div>
       ),
     },
-    { key: 'contact', header: 'Contact', sortValue: (p) => p.contactNo, render: (p) => p.contactNo },
+    ...(canSeeContact
+      ? [{ key: 'contact', header: 'Contact', sortValue: (p: PassengerRow) => p.contactNo, render: (p: PassengerRow) => p.contactNo } as DataTableColumn<PassengerRow>]
+      : []),
     { key: 'rides', header: 'Total Rides', sortValue: (p) => p.totalRides, render: (p) => p.totalRides, align: 'right' },
     {
       key: 'discount',
@@ -398,10 +414,14 @@ export function Passengers() {
           <DetailSection
             title="Contact"
             icon={ContactIcon}
-            fields={[
-              { label: 'Contact No', value: selected.contactNo },
-              { label: 'Email', value: selected.email },
-            ]}
+            fields={
+              canSeeContact
+                ? [
+                    { label: 'Contact No', value: selected.contactNo },
+                    { label: 'Email', value: selected.email },
+                  ]
+                : [{ label: 'Access', value: 'Limited to PSO Supervisor and Administrator' }]
+            }
           />
           <DetailSection
             title="Rides & Discount"
