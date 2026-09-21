@@ -290,6 +290,7 @@ export type Database = {
           created_at: string
           doc_type: Database["public"]["Enums"]["document_type"]
           driver_id: string
+          expiry_date: string | null
           id: string
           remarks: string | null
           reviewed_at: string | null
@@ -302,6 +303,7 @@ export type Database = {
           created_at?: string
           doc_type: Database["public"]["Enums"]["document_type"]
           driver_id: string
+          expiry_date?: string | null
           id?: string
           remarks?: string | null
           reviewed_at?: string | null
@@ -314,6 +316,7 @@ export type Database = {
           created_at?: string
           doc_type?: Database["public"]["Enums"]["document_type"]
           driver_id?: string
+          expiry_date?: string | null
           id?: string
           remarks?: string | null
           reviewed_at?: string | null
@@ -660,6 +663,7 @@ export type Database = {
         Row: {
           category: Database["public"]["Enums"]["discount_category"]
           date_of_birth: string | null
+          expires_at: string | null
           id: string
           id_number: string | null
           id_photo_back_path: string
@@ -675,6 +679,7 @@ export type Database = {
         Insert: {
           category: Database["public"]["Enums"]["discount_category"]
           date_of_birth?: string | null
+          expires_at?: string | null
           id?: string
           id_number?: string | null
           id_photo_back_path: string
@@ -690,6 +695,7 @@ export type Database = {
         Update: {
           category?: Database["public"]["Enums"]["discount_category"]
           date_of_birth?: string | null
+          expires_at?: string | null
           id?: string
           id_number?: string | null
           id_photo_back_path?: string

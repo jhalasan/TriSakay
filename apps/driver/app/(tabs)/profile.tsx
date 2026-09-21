@@ -308,6 +308,13 @@ export default function ProfileScreen() {
                 <Text style={[styles.detailValue, { flex: 1, marginTop: 0 }]}>{t.driver.profile.complaints}</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
               </Pressable>
+              <Pressable style={styles.detailRow} onPress={() => router.push('/profile/documents')} accessibilityRole="button">
+                <View style={styles.navIconTile}>
+                  <Ionicons name="document-text-outline" size={18} color={colors.accentBluePressed} />
+                </View>
+                <Text style={[styles.detailValue, { flex: 1, marginTop: 0 }]}>{t.driver.documents.myDocumentsTitle}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
               <Pressable
                 style={[styles.detailRow, styles.detailRowLast]}
                 onPress={() => router.push('/profile/settings')}

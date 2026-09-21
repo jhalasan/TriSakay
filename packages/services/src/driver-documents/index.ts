@@ -97,3 +97,70 @@ export async function submitDriverDocuments(
     return { error: err instanceof Error ? err.message : 'Document submission failed' };
   }
 }
+
+export interface OwnDriverDocumentRow {
+  id: string;
+  docType: DriverDocumentType;
+  status: Database['public']['Enums']['verification_status'];
+  expiryDate: string | null;
+}
+
+export interface ListOwnDriverDocumentsResult {
+  data: OwnDriverDocumentRow[];
+  error: string | null;
+}
+
+/**
+ * UAT D13 — reads the signed-in driver's own driver_documents rows so they
+ * can review/set each document's expiry date. `documents_owner_rw` RLS
+ * already grants `driver_id = auth.uid()` full read access, same as it does
+ * for the write path below.
+ */
+export async function listOwnDriverDocuments(): Promise<ListOwnDriverDocumentsResult> {
+  const client = getSupabaseClient();
+  const { data: session } = await client.auth.getSession();
+  const userId = session.session?.user.id;
+  if (!userId) return { data: [], error: 'Not signed in' };
+
+  const { data, error } = await client
+    .from('driver_documents')
+    .select('id, doc_type, status, expiry_date')
+    .eq('driver_id', userId);
+
+  if (error) return { data: [], error: error.message };
+
+  return {
+    data: (data ?? []).map((row) => ({
+      id: row.id,
+      docType: row.doc_type,
+      status: row.status,
+      expiryDate: row.expiry_date,
+    })),
+    error: null,
+  };
+}
+
+export interface UpdateDriverDocumentExpiryResult {
+  error: string | null;
+}
+
+/**
+ * UAT D13 — self-reported expiry date, written directly (not through
+ * submit_driver_documents, an untracked dashboard-only RPC not safe to
+ * extend blind). `documents_owner_rw`'s WITH CHECK already permits
+ * `driver_id = auth.uid()`, so a plain update needs no new RLS.
+ */
+export async function updateDriverDocumentExpiry(documentId: string, expiryDate: string | null): Promise<UpdateDriverDocumentExpiryResult> {
+  const client = getSupabaseClient();
+  const { data: session } = await client.auth.getSession();
+  const userId = session.session?.user.id;
+  if (!userId) return { error: 'Not signed in' };
+
+  const { error } = await client
+    .from('driver_documents')
+    .update({ expiry_date: expiryDate })
+    .eq('id', documentId)
+    .eq('driver_id', userId);
+
+  return { error: error?.message ?? null };
+}

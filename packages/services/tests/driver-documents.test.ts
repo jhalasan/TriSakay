@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../src/supabase/database.types.ts';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { submitDriverDocuments } from '../src/driver-documents/index.ts';
+import { listOwnDriverDocuments, submitDriverDocuments, updateDriverDocumentExpiry } from '../src/driver-documents/index.ts';
 
 test('submitDriverDocuments uploads every document then submits them via one RPC call', async () => {
   const uploadedPaths: string[] = [];
@@ -130,4 +130,85 @@ test('submitDriverDocuments translates a duplicate plate number into a friendly 
 
   assert.equal(error, 'That plate number is already registered to another driver. Please double-check it and try again.');
   assert.equal(removedCalls.length, 1);
+});
+
+test('listOwnDriverDocuments scopes the read to the signed-in driver (D13)', async () => {
+  let capturedFilter: { column: string; value: unknown } | null = null;
+
+  __setSupabaseClientForTests({
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'driver1' } } } }) },
+    from: (table: string) => {
+      assert.equal(table, 'driver_documents');
+      return {
+        select: () => ({
+          eq: (column: string, value: unknown) => {
+            capturedFilter = { column, value };
+            return Promise.resolve({
+              data: [
+                { id: 'd1', doc_type: 'drivers_license', status: 'approved', expiry_date: '2027-01-01' },
+                { id: 'd2', doc_type: 'or_cr', status: 'pending', expiry_date: null },
+              ],
+              error: null,
+            });
+          },
+        }),
+      };
+    },
+  } as unknown as SupabaseClient<Database>);
+
+  const { data, error } = await listOwnDriverDocuments();
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedFilter, { column: 'driver_id', value: 'driver1' });
+  assert.deepEqual(data, [
+    { id: 'd1', docType: 'drivers_license', status: 'approved', expiryDate: '2027-01-01' },
+    { id: 'd2', docType: 'or_cr', status: 'pending', expiryDate: null },
+  ]);
+});
+
+test('listOwnDriverDocuments returns an error when there is no active session', async () => {
+  __setSupabaseClientForTests({
+    auth: { getSession: async () => ({ data: { session: null } }) },
+  } as unknown as SupabaseClient<Database>);
+
+  const { data, error } = await listOwnDriverDocuments();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'Not signed in');
+});
+
+test('updateDriverDocumentExpiry scopes the update to the signed-in driver (D13)', async () => {
+  let capturedUpdate: unknown = null;
+  const capturedFilters: { column: string; value: unknown }[] = [];
+
+  __setSupabaseClientForTests({
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'driver1' } } } }) },
+    from: (table: string) => {
+      assert.equal(table, 'driver_documents');
+      return {
+        update: (row: unknown) => {
+          capturedUpdate = row;
+          return {
+            eq: (column: string, value: unknown) => {
+              capturedFilters.push({ column, value });
+              return {
+                eq: (column2: string, value2: unknown) => {
+                  capturedFilters.push({ column: column2, value: value2 });
+                  return Promise.resolve({ error: null });
+                },
+              };
+            },
+          };
+        },
+      };
+    },
+  } as unknown as SupabaseClient<Database>);
+
+  const { error } = await updateDriverDocumentExpiry('d1', '2027-06-15');
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedUpdate, { expiry_date: '2027-06-15' });
+  assert.deepEqual(capturedFilters, [
+    { column: 'id', value: 'd1' },
+    { column: 'driver_id', value: 'driver1' },
+  ]);
 });
