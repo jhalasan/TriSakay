@@ -503,6 +503,7 @@ export function Complaints() {
                       tone="primary"
                       size="sm"
                       loading={savingOutcome}
+                      disabled={!resolutionNotesDraft.trim()}
                       onClick={handleSaveOutcome}
                       style={{ alignSelf: 'flex-start' }}
                     >

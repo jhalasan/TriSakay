@@ -172,7 +172,7 @@ export default function ActiveTripScreen() {
           latitude={hasDriverPosition ? driverLat! : hasTarget ? targetLat! : undefined}
           longitude={hasDriverPosition ? driverLng! : hasTarget ? targetLng! : undefined}
           marker={hasTarget ? { latitude: targetLat!, longitude: targetLng! } : null}
-          markerColor={routingPassenger?.status === 'ongoing' ? colors.accentGreen : undefined}
+          markerColor={routingPassenger?.status === 'ongoing' ? colors.accentBlue : colors.accentGreen}
           route={hasTarget && hasDriverPosition ? [{ latitude: driverLat!, longitude: driverLng! }, { latitude: targetLat!, longitude: targetLng! }] : null}
           interactive
           edgeToEdge

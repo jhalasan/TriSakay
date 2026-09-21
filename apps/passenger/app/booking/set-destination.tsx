@@ -94,7 +94,7 @@ export default function SetDestinationScreen() {
           interactive
           edgeToEdge
           tapToPlace
-          markerColor={colors.accentGreen}
+          markerColor={colors.accentBlue}
           marker={selected ? { latitude: selected.latitude, longitude: selected.longitude, draggable: true } : null}
           onMarkerMove={handleMapPoint}
         />

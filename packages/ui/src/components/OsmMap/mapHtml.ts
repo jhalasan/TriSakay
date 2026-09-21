@@ -107,7 +107,11 @@ export function buildMapHtml({
   interactive = false,
   bottomInset = 0,
   marker = null,
-  markerColor = colors.accentBlue,
+  // Green is this app's pickup color (matches the home screen's pickup row
+  // icon and the ride-history route dots) — this default backs every
+  // single-marker screen that represents a pickup point (the home request
+  // map, set-pickup) without needing an explicit override.
+  markerColor = colors.accentGreen,
   tapToPlace = false,
   route = null,
 }: MapHtmlOptions): string {
@@ -135,8 +139,8 @@ export function buildMapHtml({
     if (ROUTE.length >= 2) {
       var routeLine = L.polyline(ROUTE, { color: '${colors.accentBlue}', weight: 5, opacity: 0.9 });
       routeLine.addTo(map);
-      L.circleMarker(ROUTE[0], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentBlue}', fillOpacity: 1 }).addTo(map);
-      L.circleMarker(ROUTE[ROUTE.length - 1], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentGreen}', fillOpacity: 1 }).addTo(map);
+      L.circleMarker(ROUTE[0], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentGreen}', fillOpacity: 1 }).addTo(map);
+      L.circleMarker(ROUTE[ROUTE.length - 1], { radius: 7, weight: 2, color: '#fff', fillColor: '${colors.accentBlue}', fillOpacity: 1 }).addTo(map);
       map.fitBounds(routeLine.getBounds(), { paddingTopLeft: [24, 24], paddingBottomRight: [24, 24 + ${attributionBottom}] });
     }
 `

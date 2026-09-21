@@ -61,7 +61,7 @@ export const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.accentBlue,
+    backgroundColor: colors.accentGreen,
   },
   routeLine: {
     width: 1,
@@ -74,7 +74,7 @@ export const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: colors.accentGreen,
+    backgroundColor: colors.accentBlue,
   },
   routeLabels: {
     flex: 1,

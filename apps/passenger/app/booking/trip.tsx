@@ -236,7 +236,7 @@ export default function TripScreen() {
                 ? { latitude: pickup.latitude, longitude: pickup.longitude }
                 : null
           }
-          markerColor={rideStatus === 'ongoing' ? colors.accentGreen : undefined}
+          markerColor={rideStatus === 'ongoing' ? colors.accentBlue : colors.accentGreen}
           route={rideStatus === 'ongoing' ? tripRoute?.geometry : null}
           liveDriverMarker={
             rideStatus === 'assigned' && driverLocation
