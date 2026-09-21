@@ -1,6 +1,27 @@
-# Claude Code tooling — .claude/skills/* are Windows symlinks pointing
-# into .agents/skills/*, and EAS's archiver fails trying to recreate
-# them (EPERM without Windows Developer Mode / admin). Neither is app
-# source, safe to exclude from builds.
+# Native build output for apps with a checked-in native project (currently
+# only apps/passenger/android — a bare-workflow Android build). This is
+# regenerated fresh on every EAS build, so uploading a stale local copy is
+# pure waste. Without this, a leftover debug APK from a previous local
+# `expo run:android` sits alongside the freshly-built release APK after the
+# remote build runs (assembleRelease doesn't clean first), leaving EAS
+# unable to identify a single installable artifact — it falls back to
+# tarring both together instead of serving a clean .apk. That tar.gz isn't
+# directly installable on Android and is nearly double the size, which made
+# it more exposed to CDN download interruptions too.
+#
+# EAS builds this monorepo from its workspace root (apps/passenger/.easignore
+# alone had no effect — the "633 MB" upload size on every build confirmed the
+# whole repo root is what gets archived, not the per-app directory), so paths
+# here are relative to this root, not to the app being built.
+apps/passenger/android/app/build/
+apps/passenger/android/build/
+apps/passenger/android/.gradle/
+apps/passenger/android/.cxx/
+
+# Claude Code's own tooling config — never read by Expo/Gradle/Metro, so it
+# has no business in a build upload. .claude/skills/* are real symlinks into
+# .agents/skills/*; EAS's local archive step tries to faithfully recreate
+# them in its shallow clone and fails with EPERM, since Windows requires
+# elevated privileges to create symlinks that this step doesn't have here.
 .claude/
 .agents/
