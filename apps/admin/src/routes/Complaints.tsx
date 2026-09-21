@@ -118,6 +118,9 @@ export function Complaints() {
     attachments,
     attachmentsLoading,
     fetchAttachments,
+    statusHistory,
+    statusHistoryLoading,
+    fetchStatusHistory,
   } = useComplaintsStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [directiveDraft, setDirectiveDraft] = useState('');
@@ -227,6 +230,7 @@ export function Complaints() {
     setResolutionStatusDraft('resolved');
     setResolutionNotesDraft(c.resolutionNotes ?? '');
     fetchAttachments(c.id);
+    fetchStatusHistory(c.id);
   }
 
   const columns: DataTableColumn<ComplaintRow>[] = [
@@ -409,6 +413,25 @@ export function Complaints() {
                   <div className={styles.evidenceGrid}>
                     {attachments.map((a) => (
                       <DocumentImage key={a.id} bucket="complaint-evidence" path={a.storagePath} alt="Complaint evidence" height={120} />
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              <div className={styles.subsection}>
+                <div className={styles.subsectionTitle}>Status History</div>
+                {statusHistoryLoading && <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Loading…</span>}
+                {!statusHistoryLoading && statusHistory.length === 0 && (
+                  <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No status changes recorded yet.</span>
+                )}
+                {!statusHistoryLoading && statusHistory.length > 0 && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    {statusHistory.map((h) => (
+                      <div key={h.id} style={{ fontSize: 12, color: 'var(--ink-faint)' }}>
+                        <Badge label={titleCaseLabel(h.oldStatus)} tone="neutral" /> {'→'} <Badge label={titleCaseLabel(h.newStatus)} tone={STATUS_TONE[h.newStatus]} />
+                        {' · '}
+                        {h.changedByName ?? 'Unknown'} · {formatDate(h.changedAt)}
+                      </div>
                     ))}
                   </div>
                 )}

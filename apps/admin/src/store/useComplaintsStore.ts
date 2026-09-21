@@ -2,12 +2,13 @@ import { create } from 'zustand';
 import {
   listComplaintAttachments,
   listComplaints,
+  listComplaintStatusHistory,
   recordComplaintResolution,
   recordDhDirective,
   scheduleComplaintMediation,
   setComplaintStatus,
 } from '../services/complaints';
-import type { ComplaintAttachmentRow } from '../services/complaints';
+import type { ComplaintAttachmentRow, ComplaintStatusHistoryRow } from '../services/complaints';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { runBulkAction, type BulkActionSummary } from '../lib/bulkActions';
 
@@ -20,6 +21,8 @@ interface ComplaintsState {
   page: number;
   attachments: ComplaintAttachmentRow[];
   attachmentsLoading: boolean;
+  statusHistory: ComplaintStatusHistoryRow[];
+  statusHistoryLoading: boolean;
   fetch: () => Promise<void>;
   setSearch: (value: string) => void;
   setStatusFilter: (value: ComplaintsState['statusFilter']) => void;
@@ -34,6 +37,8 @@ interface ComplaintsState {
   recordResolution: (id: string, status: 'resolved' | 'dismissed', notes: string) => Promise<boolean>;
   /** Lazy — only fetched once a complaint is opened for review, not for every row in the list. */
   fetchAttachments: (complaintId: string) => Promise<void>;
+  /** Lazy, same as fetchAttachments. */
+  fetchStatusHistory: (complaintId: string) => Promise<void>;
 }
 
 export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
@@ -45,6 +50,8 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
   page: 1,
   attachments: [],
   attachmentsLoading: false,
+  statusHistory: [],
+  statusHistoryLoading: false,
 
   fetch: async () => {
     set({ loading: true, error: null });
@@ -108,5 +115,12 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     const { data, error } = await listComplaintAttachments(complaintId);
     if (error) return set({ attachmentsLoading: false, error });
     set({ attachments: data, attachmentsLoading: false });
+  },
+
+  fetchStatusHistory: async (complaintId) => {
+    set({ statusHistory: [], statusHistoryLoading: true });
+    const { data, error } = await listComplaintStatusHistory(complaintId);
+    if (error) return set({ statusHistoryLoading: false, error });
+    set({ statusHistory: data, statusHistoryLoading: false });
   },
 }));

@@ -1,17 +1,18 @@
 import {
   listComplaintAttachmentsForAdmin,
   listComplaintsForAdmin,
+  listComplaintStatusHistoryForAdmin,
   recordComplaintResolutionForAdmin,
   recordDhDirectiveForAdmin,
   scheduleComplaintMediationForAdmin,
   setComplaintStatusForAdmin,
 } from '@trisakay/services';
-import type { ComplaintAttachmentRow } from '@trisakay/services';
+import type { ComplaintAttachmentRow, ComplaintStatusHistoryRow } from '@trisakay/services';
 import { businessDaysSince } from '../lib/format.ts';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import type { ServiceResult } from './drivers';
 
-export type { ComplaintAttachmentRow };
+export type { ComplaintAttachmentRow, ComplaintStatusHistoryRow };
 
 export async function listComplaints(): Promise<ServiceResult<ComplaintRow[]>> {
   const { data, error } = await listComplaintsForAdmin();
@@ -40,6 +41,12 @@ export async function listComplaints(): Promise<ServiceResult<ComplaintRow[]>> {
 /** FR-4.7 evidence — visible to any PSO the same way the complaint itself is. */
 export async function listComplaintAttachments(complaintId: string): Promise<ServiceResult<ComplaintAttachmentRow[]>> {
   const { data, error } = await listComplaintAttachmentsForAdmin(complaintId);
+  return { data, error };
+}
+
+/** UAT A16 — read-only status-change timeline, written only by a DB trigger (trg_log_complaint_status_change). */
+export async function listComplaintStatusHistory(complaintId: string): Promise<ServiceResult<ComplaintStatusHistoryRow[]>> {
+  const { data, error } = await listComplaintStatusHistoryForAdmin(complaintId);
   return { data, error };
 }
 

@@ -12,7 +12,7 @@ export async function listPassengers(): Promise<ServiceResult<PassengerRow[]>> {
     lastName: p.lastName,
     fullName: p.fullName,
     contactNo: p.contactNo ?? '',
-    email: p.email,
+    email: p.email ?? '',
     accountStatus: p.accountStatus,
     totalRides: p.totalRides,
     discount: p.discount,

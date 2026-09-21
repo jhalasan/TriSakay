@@ -6,17 +6,15 @@ import { listPassengersForAdmin } from '../src/admin/passengers.ts';
 test('listPassengersForAdmin merges users + completed ride counts + approved discounts', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'users') {
+      if (table === 'admin_passenger_directory') {
         return {
           select: () => ({
-            eq: () => ({
-              order: async () => ({
-                data: [
-                  { id: 'p1', first_name: 'Maria', last_name: 'Fe Santos', full_name: 'Maria Fe Santos', contact_no: '0917-000-0002', email: 'maria@example.com', status: 'active', created_at: '2026-01-01T00:00:00.000Z' },
-                  { id: 'p2', first_name: 'Juan', last_name: 'Dela Cruz', full_name: 'Juan Dela Cruz', contact_no: null, email: 'juan@example.com', status: 'active', created_at: '2026-02-01T00:00:00.000Z' },
-                ],
-                error: null,
-              }),
+            order: async () => ({
+              data: [
+                { id: 'p1', first_name: 'Maria', last_name: 'Fe Santos', full_name: 'Maria Fe Santos', contact_no: '0917-000-0002', email: 'maria@example.com', status: 'active', created_at: '2026-01-01T00:00:00.000Z' },
+                { id: 'p2', first_name: 'Juan', last_name: 'Dela Cruz', full_name: 'Juan Dela Cruz', contact_no: null, email: 'juan@example.com', status: 'active', created_at: '2026-02-01T00:00:00.000Z' },
+              ],
+              error: null,
             }),
           }),
         };
@@ -79,8 +77,8 @@ test('listPassengersForAdmin merges users + completed ride counts + approved dis
 test('listPassengersForAdmin keeps only the most recently submitted discount per passenger', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'users') {
-        return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
+      if (table === 'admin_passenger_directory') {
+        return { select: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) };
       }
       if (table === 'passenger_discounts') {
         // Query is ordered submitted_at desc, so the rejected row (resubmission) comes first.
@@ -111,8 +109,8 @@ test('listPassengersForAdmin keeps only the most recently submitted discount per
 test('listPassengersForAdmin returns { data: [], error } when the ride-count RPC fails', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'users') {
-        return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
+      if (table === 'admin_passenger_directory') {
+        return { select: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) };
       }
       if (table === 'passenger_discounts') return { select: () => ({ in: () => ({ order: async () => ({ data: [], error: null }) }) }) };
       throw new Error(`unexpected table ${table}`);
@@ -128,8 +126,8 @@ test('listPassengersForAdmin returns { data: [], error } when the ride-count RPC
 test('listPassengersForAdmin returns { data: [], error } when the passenger_discounts query fails', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'users') {
-        return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
+      if (table === 'admin_passenger_directory') {
+        return { select: () => ({ order: async () => ({ data: [{ id: 'p1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) };
       }
       if (table === 'passenger_discounts') return { select: () => ({ in: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) };
       throw new Error(`unexpected table ${table}`);
@@ -142,9 +140,9 @@ test('listPassengersForAdmin returns { data: [], error } when the passenger_disc
   assert.equal(error, 'connection refused');
 });
 
-test('listPassengersForAdmin returns { data: [], error } when the users query fails', async () => {
+test('listPassengersForAdmin returns { data: [], error } when the admin_passenger_directory query fails', async () => {
   __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ eq: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+    from: () => ({ select: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }),
   } as any);
 
   const { data, error } = await listPassengersForAdmin();

@@ -71,6 +71,9 @@ async function currentUserId(client: ReturnType<typeof getSupabaseClient>): Prom
   return data.session?.user.id ?? null;
 }
 
+/** UAT A19 — barangays.name has a DB-level unique constraint; surface a friendly message for it instead of the raw Postgres error, same pattern as submitDriverDocuments' duplicate-plate-number handling. */
+const DUPLICATE_NAME_ERROR = 'A barangay with that name already exists.';
+
 export async function createBarangayForAdmin(input: BarangayInput): Promise<BarangayWriteResult> {
   const client = getSupabaseClient();
   const userId = await currentUserId(client);
@@ -83,7 +86,7 @@ export async function createBarangayForAdmin(input: BarangayInput): Promise<Bara
     updated_by: userId,
   });
 
-  return { error: error?.message ?? null };
+  return { error: error ? (error.code === '23505' ? DUPLICATE_NAME_ERROR : error.message) : null };
 }
 
 export async function updateBarangayForAdmin(id: string, input: BarangayInput): Promise<BarangayWriteResult> {
@@ -101,7 +104,7 @@ export async function updateBarangayForAdmin(id: string, input: BarangayInput): 
     })
     .eq('id', id);
 
-  return { error: error?.message ?? null };
+  return { error: error ? (error.code === '23505' ? DUPLICATE_NAME_ERROR : error.message) : null };
 }
 
 /** pickup_barangay_id (ride_requests) is `on delete set null` — safe to delete, no orphaned FK. */

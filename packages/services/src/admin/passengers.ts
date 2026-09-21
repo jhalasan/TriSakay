@@ -11,7 +11,7 @@ export interface AdminPassengerRow {
   lastName: string;
   fullName: string;
   contactNo: string | null;
-  email: string;
+  email: string | null;
   accountStatus: 'active' | 'flagged' | 'suspended' | 'deactivated';
   totalRides: number;
   discount: AdminPassengerDiscount | null;
@@ -43,15 +43,14 @@ export async function listPassengersForAdmin(): Promise<ListPassengersForAdminRe
   const client = getSupabaseClient();
 
   const { data: users, error: usersError } = await client
-    .from('users')
+    .from('admin_passenger_directory')
     .select('id, first_name, last_name, full_name, contact_no, email, status, created_at')
-    .eq('role', 'passenger')
     .order('created_at', { ascending: false });
 
   if (usersError) return { data: [], error: usersError.message };
   if (!users || users.length === 0) return { data: [], error: null };
 
-  const ids = users.map((u) => u.id);
+  const ids = users.map((u) => u.id!);
 
   const [{ data: rideCounts, error: ridesError }, { data: discounts, error: discountsError }] = await Promise.all([
     client.rpc('get_passenger_completed_ride_counts', { p_passenger_ids: ids }),
@@ -70,16 +69,16 @@ export async function listPassengersForAdmin(): Promise<ListPassengersForAdminRe
   }
 
   const rows = users.map((u) => ({
-    id: u.id,
-    firstName: u.first_name,
-    lastName: u.last_name,
+    id: u.id!,
+    firstName: u.first_name!,
+    lastName: u.last_name!,
     fullName: u.full_name!,
     contactNo: u.contact_no,
     email: u.email,
-    accountStatus: u.status,
-    totalRides: rideCountByPassengerId.get(u.id) ?? 0,
-    discount: discountByPassengerId.get(u.id) ?? null,
-    createdAt: u.created_at,
+    accountStatus: u.status!,
+    totalRides: rideCountByPassengerId.get(u.id!) ?? 0,
+    discount: discountByPassengerId.get(u.id!) ?? null,
+    createdAt: u.created_at!,
   }));
 
   return { data: rows, error: null };

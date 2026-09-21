@@ -217,6 +217,9 @@ export function Barangays() {
             Tricycle Cluster Assignments
           </h2>
           <p className={styles.ordinance}>Ordinance No. 37, s.2018, Sec. 119 — amend only when the MTFRB revises cluster boundaries.</p>
+          <p className={styles.ordinance}>
+            TriSakay currently operates within <strong>General Santos City only</strong> — the list below covers all of the city&apos;s barangays; there is no coverage outside city limits.
+          </p>
         </div>
         <div className={styles.headerRight}>
           <Badge label="Administrator only" tone="info" />

@@ -149,6 +149,11 @@ export interface UpdateDriverDocumentExpiryResult {
  * submit_driver_documents, an untracked dashboard-only RPC not safe to
  * extend blind). `documents_owner_rw`'s WITH CHECK already permits
  * `driver_id = auth.uid()`, so a plain update needs no new RLS.
+ *
+ * `expiry_notified_at` is reset to null on every change — it marks whether
+ * the notify-expiring-documents Edge Function has already sent a push for
+ * the CURRENT expiry_date, so a driver who updates the date (e.g. renews
+ * the document) needs to become eligible for a fresh notification again.
  */
 export async function updateDriverDocumentExpiry(documentId: string, expiryDate: string | null): Promise<UpdateDriverDocumentExpiryResult> {
   const client = getSupabaseClient();
@@ -158,7 +163,7 @@ export async function updateDriverDocumentExpiry(documentId: string, expiryDate:
 
   const { error } = await client
     .from('driver_documents')
-    .update({ expiry_date: expiryDate })
+    .update({ expiry_date: expiryDate, expiry_notified_at: null })
     .eq('id', documentId)
     .eq('driver_id', userId);
 

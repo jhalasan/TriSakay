@@ -98,6 +98,50 @@ export async function listComplaintAttachmentsForAdmin(complaintId: string): Pro
   return { data: rows, error: null };
 }
 
+export interface ComplaintStatusHistoryRow {
+  id: string;
+  oldStatus: AdminComplaintStatus;
+  newStatus: AdminComplaintStatus;
+  changedByName: string | null;
+  changedAt: string;
+}
+
+export interface ListComplaintStatusHistoryResult {
+  data: ComplaintStatusHistoryRow[];
+  error: string | null;
+}
+
+/** UAT A16 — complaint_status_history is written only by trg_log_complaint_status_change (public.complaints), not by any client write path; this is a read-only timeline. */
+export async function listComplaintStatusHistoryForAdmin(complaintId: string): Promise<ListComplaintStatusHistoryResult> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('complaint_status_history')
+    .select('id, old_status, new_status, changed_by, changed_at')
+    .eq('complaint_id', complaintId)
+    .order('changed_at', { ascending: true });
+
+  if (error) return { data: [], error: error.message };
+  if (!data || data.length === 0) return { data: [], error: null };
+
+  const changerIds = [...new Set(data.map((row) => row.changed_by).filter((id): id is string => !!id))];
+  let nameById = new Map<string, string>();
+  if (changerIds.length > 0) {
+    const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', changerIds);
+    if (usersError) return { data: [], error: usersError.message };
+    nameById = new Map((users ?? []).map((u) => [u.id, u.full_name!]));
+  }
+
+  const rows = data.map((row) => ({
+    id: row.id,
+    oldStatus: row.old_status,
+    newStatus: row.new_status,
+    changedByName: row.changed_by ? (nameById.get(row.changed_by) ?? null) : null,
+    changedAt: row.changed_at,
+  }));
+
+  return { data: rows, error: null };
+}
+
 export interface AdminComplaintWriteResult {
   error: string | null;
 }

@@ -42,6 +42,13 @@ function fakeAccountsClient() {
           }),
         };
       }
+      if (table === 'admin_passenger_directory') {
+        return {
+          select: () => ({
+            order: async () => ({ data: users.filter((u) => u.role === 'passenger'), error: null }),
+          }),
+        };
+      }
       if (table === 'driver_profiles' || table === 'tricycles') {
         return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       }

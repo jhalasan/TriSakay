@@ -34,8 +34,16 @@ async function readFileBytes(uri: string): Promise<ArrayBuffer> {
  * non-'approved' status here) once they've confirmed their email and logged
  * in for the first time, so it's the only place left that can finish the
  * job — reusing the same plate + 4-document form register.tsx's step 2 uses.
+ *
+ * UAT D5 (2026-09-21): also reused for a 'rejected' driver's resubmission.
+ * `submit_driver_documents`'s live RPC body was reviewed and confirmed safe
+ * to call a second time — its `on conflict ... do update` on both
+ * `tricycles` and `driver_documents` resets status back to 'pending' and
+ * clears the old remarks/reviewer fields on the existing rows rather than
+ * creating duplicates, so a second full 4-document submission is exactly
+ * what a resubmission needs.
  */
-function UnsubmittedUpload() {
+function UnsubmittedUpload({ rejectionReason }: { rejectionReason?: string | null }) {
   const t = useTranslation();
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
   const check = useVerificationStore((state) => state.check);
@@ -98,6 +106,13 @@ function UnsubmittedUpload() {
       <Text style={styles.title}>{t.driver.verificationPending.unsubmittedTitle}</Text>
       <Text style={styles.body}>{t.driver.verificationPending.unsubmittedBody}</Text>
 
+      {rejectionReason && (
+        <View style={styles.reasonBox}>
+          <Text style={styles.reasonLabel}>{t.driver.verificationPending.rejectionReasonLabel}</Text>
+          <Text style={styles.reasonText}>{rejectionReason}</Text>
+        </View>
+      )}
+
       <TextField
         label={t.driver.verificationPending.plateNumber}
         placeholder={t.driver.verificationPending.plateNumberPlaceholder}
@@ -150,21 +165,16 @@ export default function VerificationPendingScreen() {
     setRefreshing(false);
   }
 
-  if (status === 'unsubmitted') {
+  if (status === 'unsubmitted' || status === 'rejected') {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <UnsubmittedUpload />
+        <UnsubmittedUpload rejectionReason={status === 'rejected' ? rejectionReason : undefined} />
         <View style={styles.logoutFooter}>
           <Button label={t.driver.verificationPending.logOut} variant="ghost" tone="neutral" onPress={() => router.push('/logout')} fullWidth />
         </View>
       </SafeAreaView>
     );
   }
-
-  const copy =
-    status === 'rejected'
-      ? { title: t.driver.verificationPending.rejectedTitle, body: t.driver.verificationPending.rejectedBody }
-      : { title: t.driver.verificationPending.pendingTitle, body: t.driver.verificationPending.pendingBody };
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
@@ -173,15 +183,8 @@ export default function VerificationPendingScreen() {
         <View style={styles.iconBadge}>
           <Ionicons name="time-outline" size={30} color={colors.accentBluePressed} />
         </View>
-        <Text style={styles.title}>{copy.title}</Text>
-        <Text style={styles.body}>{copy.body}</Text>
-
-        {status === 'rejected' && rejectionReason && (
-          <View style={styles.reasonBox}>
-            <Text style={styles.reasonLabel}>{t.driver.verificationPending.rejectionReasonLabel}</Text>
-            <Text style={styles.reasonText}>{rejectionReason}</Text>
-          </View>
-        )}
+        <Text style={styles.title}>{t.driver.verificationPending.pendingTitle}</Text>
+        <Text style={styles.body}>{t.driver.verificationPending.pendingBody}</Text>
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 

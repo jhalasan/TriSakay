@@ -38,6 +38,13 @@ export const NAV_ICONS: Record<string, (props: SVGProps<SVGSVGElement>) => React
       <circle cx="12" cy="9.5" r="2.3" />
     </Svg>
   ),
+  '/ride-log': (props) => (
+    <Svg {...props}>
+      <path d="M5.1 9.1A7.5 7.5 0 1 1 5 15" />
+      <path d="M4.5 4.5v5h5" />
+      <path d="M12 8.5v4l3 2" />
+    </Svg>
+  ),
   '/emergency-alerts': (props) => (
     <Svg {...props}>
       <path d="M12 3.5 21.5 20h-19L12 3.5Z" />

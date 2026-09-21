@@ -160,6 +160,48 @@ export type Database = {
           },
         ]
       }
+      complaint_status_history: {
+        Row: {
+          changed_at: string
+          changed_by: string | null
+          complaint_id: string
+          id: string
+          new_status: Database["public"]["Enums"]["complaint_status"]
+          old_status: Database["public"]["Enums"]["complaint_status"]
+        }
+        Insert: {
+          changed_at?: string
+          changed_by?: string | null
+          complaint_id: string
+          id?: string
+          new_status: Database["public"]["Enums"]["complaint_status"]
+          old_status: Database["public"]["Enums"]["complaint_status"]
+        }
+        Update: {
+          changed_at?: string
+          changed_by?: string | null
+          complaint_id?: string
+          id?: string
+          new_status?: Database["public"]["Enums"]["complaint_status"]
+          old_status?: Database["public"]["Enums"]["complaint_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "complaint_status_history_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_status_history_changed_by_fkey"
+            columns: ["changed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       complaints: {
         Row: {
           against_user_id: string | null
@@ -291,6 +333,7 @@ export type Database = {
           doc_type: Database["public"]["Enums"]["document_type"]
           driver_id: string
           expiry_date: string | null
+          expiry_notified_at: string | null
           id: string
           remarks: string | null
           reviewed_at: string | null
@@ -304,6 +347,7 @@ export type Database = {
           doc_type: Database["public"]["Enums"]["document_type"]
           driver_id: string
           expiry_date?: string | null
+          expiry_notified_at?: string | null
           id?: string
           remarks?: string | null
           reviewed_at?: string | null
@@ -317,6 +361,7 @@ export type Database = {
           doc_type?: Database["public"]["Enums"]["document_type"]
           driver_id?: string
           expiry_date?: string | null
+          expiry_notified_at?: string | null
           id?: string
           remarks?: string | null
           reviewed_at?: string | null
@@ -1349,6 +1394,19 @@ export type Database = {
       }
     }
     Views: {
+      admin_passenger_directory: {
+        Row: {
+          id: string | null
+          first_name: string | null
+          last_name: string | null
+          full_name: string | null
+          contact_no: string | null
+          email: string | null
+          status: Database["public"]["Enums"]["account_status"] | null
+          created_at: string | null
+        }
+        Relationships: []
+      }
       v_driver_earnings: {
         Row: {
           driver_id: string | null

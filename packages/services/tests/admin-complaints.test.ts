@@ -4,6 +4,7 @@ import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import {
   listComplaintAttachmentsForAdmin,
   listComplaintsForAdmin,
+  listComplaintStatusHistoryForAdmin,
   recordComplaintResolutionForAdmin,
   recordDhDirectiveForAdmin,
   scheduleComplaintMediationForAdmin,
@@ -229,6 +230,50 @@ test('listComplaintAttachmentsForAdmin returns { data: [], error } when the quer
   } as any);
 
   const { data, error } = await listComplaintAttachmentsForAdmin('cmp1');
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
+});
+
+test('listComplaintStatusHistoryForAdmin scopes to the given complaint, ordered oldest first, and resolves changer names (UAT A16)', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'complaint_status_history') {
+        return {
+          select: () => ({
+            eq: () => ({
+              order: async () => ({
+                data: [
+                  { id: 'h1', old_status: 'open', new_status: 'under_review', changed_by: 'staff1', changed_at: '2026-09-01T00:00:00.000Z' },
+                  { id: 'h2', old_status: 'under_review', new_status: 'resolved', changed_by: null, changed_at: '2026-09-02T00:00:00.000Z' },
+                ],
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'users') {
+        return { select: () => ({ in: async () => ({ data: [{ id: 'staff1', full_name: 'Rhea Santillan' }], error: null }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await listComplaintStatusHistoryForAdmin('cmp1');
+
+  assert.equal(error, null);
+  assert.deepEqual(data, [
+    { id: 'h1', oldStatus: 'open', newStatus: 'under_review', changedByName: 'Rhea Santillan', changedAt: '2026-09-01T00:00:00.000Z' },
+    { id: 'h2', oldStatus: 'under_review', newStatus: 'resolved', changedByName: null, changedAt: '2026-09-02T00:00:00.000Z' },
+  ]);
+});
+
+test('listComplaintStatusHistoryForAdmin returns { data: [], error } when the query fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+  } as any);
+
+  const { data, error } = await listComplaintStatusHistoryForAdmin('cmp1');
   assert.deepEqual(data, []);
   assert.equal(error, 'connection refused');
 });

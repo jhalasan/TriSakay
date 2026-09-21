@@ -78,14 +78,26 @@ test('createBarangayForAdmin inserts the given fields, stamped with the signed-i
   assert.equal(typeof captured!.updated_at, 'string');
 });
 
-test('createBarangayForAdmin surfaces an insert error (e.g. duplicate name)', async () => {
+test('createBarangayForAdmin surfaces a generic insert error unchanged', async () => {
   __setSupabaseClientForTests({
-    from: () => ({ insert: async () => ({ error: { message: 'duplicate key value violates unique constraint "barangays_name_key"' } }) }),
+    from: () => ({ insert: async () => ({ error: { message: 'connection refused' } }) }),
     auth: { getSession: async () => ({ data: SESSION }) },
   } as any);
 
   const { error } = await createBarangayForAdmin({ name: 'Apopong', cluster: 'red', isSplit: false, notes: null });
-  assert.match(error ?? '', /duplicate key/);
+  assert.equal(error, 'connection refused');
+});
+
+test('createBarangayForAdmin translates a duplicate-name constraint violation (23505) into a friendly message (UAT A19)', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({
+      insert: async () => ({ error: { code: '23505', message: 'duplicate key value violates unique constraint "barangays_name_key"' } }),
+    }),
+    auth: { getSession: async () => ({ data: SESSION }) },
+  } as any);
+
+  const { error } = await createBarangayForAdmin({ name: 'Apopong', cluster: 'red', isSplit: false, notes: null });
+  assert.equal(error, 'A barangay with that name already exists.');
 });
 
 test('updateBarangayForAdmin updates the given row by id, stamped with the signed-in admin and a timestamp', async () => {
@@ -112,6 +124,18 @@ test('updateBarangayForAdmin updates the given row by id, stamped with the signe
   assert.equal(capturedUpdate!.updated_by, 'admin1');
   assert.equal(typeof capturedUpdate!.updated_at, 'string');
   assert.deepEqual(capturedEq, ['id', 'b1']);
+});
+
+test('updateBarangayForAdmin translates a duplicate-name constraint violation (23505) into a friendly message (UAT A19)', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({
+      update: () => ({ eq: async () => ({ error: { code: '23505', message: 'duplicate key value violates unique constraint "barangays_name_key"' } }) }),
+    }),
+    auth: { getSession: async () => ({ data: SESSION }) },
+  } as any);
+
+  const { error } = await updateBarangayForAdmin('b1', { name: 'Apopong', cluster: 'red', isSplit: false, notes: null });
+  assert.equal(error, 'A barangay with that name already exists.');
 });
 
 test('deleteBarangayForAdmin deletes the given row by id', async () => {

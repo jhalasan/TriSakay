@@ -206,7 +206,7 @@ test('updateDriverDocumentExpiry scopes the update to the signed-in driver (D13)
   const { error } = await updateDriverDocumentExpiry('d1', '2027-06-15');
 
   assert.equal(error, null);
-  assert.deepEqual(capturedUpdate, { expiry_date: '2027-06-15' });
+  assert.deepEqual(capturedUpdate, { expiry_date: '2027-06-15', expiry_notified_at: null });
   assert.deepEqual(capturedFilters, [
     { column: 'id', value: 'd1' },
     { column: 'driver_id', value: 'driver1' },
