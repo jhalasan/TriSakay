@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import {
+  countRideRequestsForBarangay,
   createBarangayForAdmin,
   deleteBarangayForAdmin,
   listBarangaysForAdmin,
@@ -133,4 +134,38 @@ test('deleteBarangayForAdmin surfaces a delete error', async () => {
 
   const { error } = await deleteBarangayForAdmin('b1');
   assert.equal(error, 'Only an Administrator may modify barangay reference data');
+});
+
+test('countRideRequestsForBarangay counts ride_requests by pickup_barangay_id with a head-only count query', async () => {
+  let capturedEq: [string, string] | null = null;
+  let capturedSelectOpts: unknown = null;
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table !== 'ride_requests') throw new Error(`unexpected table ${table}`);
+      return {
+        select: (columns: string, opts: unknown) => {
+          capturedSelectOpts = opts;
+          return { eq: async (col: string, val: string) => ((capturedEq = [col, val]), { count: 7, error: null }) };
+        },
+      };
+    },
+  } as any);
+
+  const { rideRequestCount, error } = await countRideRequestsForBarangay('b1');
+
+  assert.equal(error, null);
+  assert.equal(rideRequestCount, 7);
+  assert.deepEqual(capturedEq, ['pickup_barangay_id', 'b1']);
+  assert.deepEqual(capturedSelectOpts, { count: 'exact', head: true });
+});
+
+test('countRideRequestsForBarangay surfaces a query error', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ eq: async () => ({ count: null, error: { message: 'connection refused' } }) }) }),
+  } as any);
+
+  const { rideRequestCount, error } = await countRideRequestsForBarangay('b1');
+  assert.equal(rideRequestCount, null);
+  assert.equal(error, 'connection refused');
 });

@@ -1,4 +1,5 @@
 import {
+  countRideRequestsForBarangay,
   createBarangayForAdmin,
   deleteBarangayForAdmin,
   listBarangaysForAdmin,
@@ -28,4 +29,10 @@ export async function updateBarangay(id: string, input: BarangayInput): Promise<
 export async function deleteBarangay(id: string): Promise<ServiceResult<null>> {
   const { error } = await deleteBarangayForAdmin(id);
   return { data: null, error };
+}
+
+/** UAT A19 — the real "how many ride requests reference this barangay" count shown before delete. */
+export async function countBarangayRideRequests(barangayId: string): Promise<ServiceResult<number | null>> {
+  const { rideRequestCount, error } = await countRideRequestsForBarangay(barangayId);
+  return { data: rideRequestCount, error };
 }

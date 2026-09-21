@@ -111,3 +111,27 @@ export async function deleteBarangayForAdmin(id: string): Promise<BarangayWriteR
 
   return { error: error?.message ?? null };
 }
+
+export interface BarangayUsageResult {
+  rideRequestCount: number | null;
+  error: string | null;
+}
+
+/**
+ * UAT A19 — the panelist wants a *real* dependency check before deleting a
+ * barangay, not a static warning. `pickup_barangay_id` is the only actual
+ * FK referencing this table (drivers/passengers relate to a barangay only
+ * indirectly, via tricycle cluster, which is not a foreign key), so a count
+ * of ride_requests rows is the true "how many records will lose this
+ * reference" answer.
+ */
+export async function countRideRequestsForBarangay(barangayId: string): Promise<BarangayUsageResult> {
+  const client = getSupabaseClient();
+  const { count, error } = await client
+    .from('ride_requests')
+    .select('id', { count: 'exact', head: true })
+    .eq('pickup_barangay_id', barangayId);
+
+  if (error) return { rideRequestCount: null, error: error.message };
+  return { rideRequestCount: count ?? 0, error: null };
+}

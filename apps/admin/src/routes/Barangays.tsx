@@ -12,6 +12,7 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { useBarangaysStore } from '../store/useBarangaysStore';
+import { countBarangayRideRequests } from '../services/barangays';
 import type { BarangayInput, BarangayRow, TricycleCluster } from '../services/barangays';
 import { formatDate, titleCaseLabel } from '../lib/format';
 import styles from './Barangays.module.css';
@@ -68,6 +69,12 @@ export function Barangays() {
   const [saving, setSaving] = useState(false);
   const [pendingDelete, setPendingDelete] = useState<BarangayRow | null>(null);
   const [deleting, setDeleting] = useState(false);
+  const [pendingDeleteUsage, setPendingDeleteUsage] = useState<{ count: number | null; loading: boolean; error: string | null }>({
+    count: null,
+    loading: false,
+    error: null,
+  });
+  const [confirmingClusterChange, setConfirmingClusterChange] = useState(false);
   const [search, setSearch] = useState('');
   const [clusterFilter, setClusterFilter] = useState<TricycleCluster | 'all'>('all');
   const { showToast } = useToast();
@@ -106,6 +113,27 @@ export function Barangays() {
     if (!ok) return;
     showToast({ message: wasEditing ? `${draft.name} updated.` : `${draft.name} added.` });
     closeForm();
+  }
+
+  /** UAT A19: editing a barangay's cluster changes which tricycles can serve it, so that specific field gets a confirmation step; a name/notes-only edit does not. */
+  function handleSaveClick() {
+    if (editingId && draft.cluster !== editingOriginal.cluster) {
+      setConfirmingClusterChange(true);
+      return;
+    }
+    handleSave();
+  }
+
+  async function handleConfirmClusterChange() {
+    setConfirmingClusterChange(false);
+    await handleSave();
+  }
+
+  async function openDeleteConfirm(row: BarangayRow) {
+    setPendingDelete(row);
+    setPendingDeleteUsage({ count: null, loading: true, error: null });
+    const { data, error } = await countBarangayRideRequests(row.id);
+    setPendingDeleteUsage({ count: data, loading: false, error });
   }
 
   async function handleConfirmDelete() {
@@ -154,7 +182,7 @@ export function Barangays() {
           <Button variant="outline" tone="neutral" size="sm" onClick={() => openEditForm(b)}>
             Edit
           </Button>
-          <Button variant="outline" tone="danger" size="sm" onClick={() => setPendingDelete(b)}>
+          <Button variant="outline" tone="danger" size="sm" onClick={() => openDeleteConfirm(b)}>
             Delete
           </Button>
         </div>
@@ -227,7 +255,7 @@ export function Barangays() {
               <Button variant="outline" tone="neutral" onClick={closeForm}>
                 Cancel
               </Button>
-              <Button onClick={handleSave} loading={saving} disabled={!draft.name.trim()}>
+              <Button onClick={handleSaveClick} loading={saving} disabled={!draft.name.trim()}>
                 {saving ? 'Saving…' : editingId ? 'Save changes' : 'Add barangay'}
               </Button>
             </div>
@@ -267,13 +295,33 @@ export function Barangays() {
       {pendingDelete && (
         <ConfirmModal
           title="Delete barangay"
-          message={`Delete "${pendingDelete.name}"? Any ride requests that recorded this barangay as a pickup point keep their history — only the reference row is removed. Drivers assigned to it keep their current cluster until reassigned.`}
+          message={
+            pendingDeleteUsage.loading
+              ? `Delete "${pendingDelete.name}"? Checking how many ride requests reference it…`
+              : pendingDeleteUsage.error
+                ? `Delete "${pendingDelete.name}"? Couldn't verify how many ride requests reference it (${pendingDeleteUsage.error}) — its history is kept either way; only the reference row is removed.`
+                : pendingDeleteUsage.count
+                  ? `Delete "${pendingDelete.name}"? ${pendingDeleteUsage.count} ride request${pendingDeleteUsage.count === 1 ? '' : 's'} recorded it as a pickup point and will keep their history with this reference cleared. Drivers assigned to it keep their current cluster until reassigned.`
+                  : `Delete "${pendingDelete.name}"? No ride requests reference it. Drivers assigned to it keep their current cluster until reassigned.`
+          }
           confirmLabel="Delete"
           tone="danger"
           confirmLoading={deleting}
           error={error}
           onCancel={() => setPendingDelete(null)}
           onConfirm={handleConfirmDelete}
+        />
+      )}
+
+      {confirmingClusterChange && (
+        <ConfirmModal
+          title="Change tricycle cluster?"
+          message={`Changing "${editingOriginal.name}"'s cluster from ${editingOriginal.cluster ? titleCaseLabel(editingOriginal.cluster) : 'none (split)'} to ${draft.cluster ? titleCaseLabel(draft.cluster) : 'none (split)'} changes which tricycles can be matched to pickups here, effective immediately for new bookings.`}
+          confirmLabel="Save changes"
+          tone="danger"
+          confirmLoading={saving}
+          onCancel={() => setConfirmingClusterChange(false)}
+          onConfirm={handleConfirmClusterChange}
         />
       )}
     </div>
