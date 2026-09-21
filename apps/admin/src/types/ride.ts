@@ -13,3 +13,25 @@ export interface ActiveTricycleRow {
   seatsTaken: number;
   maxSeats: number;
 }
+
+export type RideLogStatus = 'pending' | 'assigned' | 'ongoing' | 'completed' | 'cancelled';
+
+/**
+ * One row on the Ride Log screen (UAT A3) — a searchable, date-bounded
+ * ride_requests read, distinct from Ride Monitoring's live-only tricycle
+ * roster and Reports' paid-transactions-only view. Covers every status,
+ * including cancelled/in-progress rides that never produce a transaction.
+ */
+export interface RideLogRow {
+  id: string;
+  passengerName: string | null;
+  driverName: string | null;
+  status: RideLogStatus;
+  pickupLabel: string | null;
+  destLabel: string | null;
+  requestedAt: string;
+  completedAt: string | null;
+  cancelledAt: string | null;
+  finalFare: number | null;
+  hasEmergencyAlert: boolean;
+}

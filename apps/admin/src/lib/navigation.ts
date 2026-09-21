@@ -30,6 +30,7 @@ export const NAV_GROUPS: NavGroup[] = [
     items: [
       { to: '/', label: 'Dashboard', title: 'Dashboard', min: 'staff' },
       { to: '/monitoring', label: 'Ride Monitoring', title: 'Ride Monitoring', min: 'staff' },
+      { to: '/ride-log', label: 'Ride Log', title: 'Ride Log', min: 'staff' },
       { to: '/emergency-alerts', label: 'Emergency Alerts', title: 'Emergency Alerts', min: 'staff' },
     ],
   },

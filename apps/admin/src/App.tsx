@@ -17,6 +17,7 @@ const Tricycles = lazy(() => import('./routes/Tricycles').then((m) => ({ default
 const DriverVerification = lazy(() => import('./routes/DriverVerification').then((m) => ({ default: m.DriverVerification })));
 const Passengers = lazy(() => import('./routes/Passengers').then((m) => ({ default: m.Passengers })));
 const RideMonitoring = lazy(() => import('./routes/RideMonitoring').then((m) => ({ default: m.RideMonitoring })));
+const RideLog = lazy(() => import('./routes/RideLog').then((m) => ({ default: m.RideLog })));
 const Complaints = lazy(() => import('./routes/Complaints').then((m) => ({ default: m.Complaints })));
 const Reports = lazy(() => import('./routes/Reports').then((m) => ({ default: m.Reports })));
 const RatingOversight = lazy(() => import('./routes/RatingOversight').then((m) => ({ default: m.RatingOversight })));
@@ -120,6 +121,7 @@ export default function App() {
               <Route path="verification" element={<DriverVerification />} />
               <Route path="passengers" element={<Passengers />} />
               <Route path="monitoring" element={<RideMonitoring />} />
+              <Route path="ride-log" element={<RideLog />} />
               <Route path="complaints" element={<Complaints />} />
               <Route path="reports" element={<Reports />} />
               <Route path="audit-log" element={<AuditLog />} />

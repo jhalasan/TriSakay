@@ -2,6 +2,14 @@ import { formatCurrency } from '@trisakay/utils';
 
 export { formatCurrency };
 
+/** Same derivation as the passenger/driver apps' getReferenceCode — a short, human-quotable code from a UUID-style id. */
+export function getReferenceCode(id: string | null | undefined, length = 6): string | null {
+  if (!id) return null;
+  const alphanumeric = id.replace(/[^0-9A-Za-z]/g, '');
+  if (!alphanumeric) return null;
+  return alphanumeric.slice(-length).toUpperCase();
+}
+
 /**
  * P1-17 (2026-09-15 launch audit): converts a stored UTC timestamptz ISO
  * string to the "YYYY-MM-DDTHH:mm" value an `<input type="datetime-local">`
