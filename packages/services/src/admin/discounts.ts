@@ -13,6 +13,8 @@ export interface PendingDiscountRow {
   idNumber: string | null;
   dateOfBirth: string | null;
   issuingOffice: string | null;
+  /** UAT A11 — null until approved; set to reviewed_at + 1 year by approveDiscount(). */
+  expiresAt: string | null;
 }
 
 export interface ListPendingDiscountsResult {
@@ -26,7 +28,7 @@ export async function listPendingDiscounts(): Promise<ListPendingDiscountsResult
 
   const { data, error } = await client
     .from('passenger_discounts')
-    .select('id, passenger_id, category, status, submitted_at, remarks, id_photo_front_path, id_photo_back_path, id_number, date_of_birth, issuing_office')
+    .select('id, passenger_id, category, status, submitted_at, remarks, id_photo_front_path, id_photo_back_path, id_number, date_of_birth, issuing_office, expires_at')
     .order('submitted_at', { ascending: true });
 
   if (error) return { data: [], error: error.message };
@@ -49,6 +51,7 @@ export async function listPendingDiscounts(): Promise<ListPendingDiscountsResult
     idNumber: d.id_number,
     dateOfBirth: d.date_of_birth,
     issuingOffice: d.issuing_office,
+    expiresAt: d.expires_at,
   }));
 
   return { data: rows, error: null };
@@ -88,15 +91,32 @@ export interface ReviewDiscountResult {
   error: string | null;
 }
 
+/** UAT A11 — decided policy default: 1 year from approval, then re-verification (a fresh application) is required. */
+const DISCOUNT_VALIDITY_YEARS = 1;
+
 async function reviewDiscount(id: string, status: 'approved' | 'rejected', remarks: string | null): Promise<ReviewDiscountResult> {
   const client = getSupabaseClient();
   const { data: sessionData } = await client.auth.getSession();
   const reviewerId = sessionData.session?.user.id;
   if (!reviewerId) return { error: 'Not signed in' };
 
+  const reviewedAt = new Date();
+  const expiresAt = status === 'approved' ? new Date(reviewedAt.getTime()) : null;
+  if (expiresAt) expiresAt.setFullYear(expiresAt.getFullYear() + DISCOUNT_VALIDITY_YEARS);
+
   const { error } = await client
     .from('passenger_discounts')
-    .update({ status, reviewed_by: reviewerId, reviewed_at: new Date().toISOString(), remarks })
+    .update({
+      status,
+      reviewed_by: reviewerId,
+      reviewed_at: reviewedAt.toISOString(),
+      remarks,
+      // Rejecting clears any prior expiry too — this is also the path PSO
+      // uses to reset an already-expired approved row (still 'approved' in
+      // the DB, no scheduler exists to flip it) so a passenger blocked by
+      // passenger_discounts_one_live_claim can submit a fresh application.
+      expires_at: expiresAt ? expiresAt.toISOString() : null,
+    })
     .eq('id', id);
 
   if (error) return { error: error.message };

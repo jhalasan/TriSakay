@@ -14,8 +14,13 @@ import { useToast } from '../components/Toast';
 import { useDiscountsStore } from '../store/useDiscountsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import type { DiscountRow } from '../types/discount';
-import { formatRelativeTime, titleCaseLabel } from '../lib/format';
+import { formatDate, formatRelativeTime } from '../lib/format';
 import styles from './DiscountReview.module.css';
+
+/** UAT A11 — an approved row whose 1-year validity has passed. Status stays 'approved' in the DB (no scheduler exists to flip it); this is the lazy, read-time check. */
+function isExpired(d: DiscountRow): boolean {
+  return d.status === 'approved' && !!d.expiresAt && new Date(d.expiresAt).getTime() < Date.now();
+}
 
 const CATEGORY_LABEL: Record<DiscountRow['category'], string> = {
   senior_citizen: 'Senior Citizen',
@@ -24,7 +29,7 @@ const CATEGORY_LABEL: Record<DiscountRow['category'], string> = {
 };
 
 function queueBadge(d: DiscountRow): { label: string; tone: BadgeTone } {
-  if (d.status === 'approved') return { label: 'Approved', tone: 'success' };
+  if (d.status === 'approved') return isExpired(d) ? { label: 'Expired', tone: 'danger' } : { label: 'Approved', tone: 'success' };
   if (d.status === 'rejected') return { label: 'Rejected', tone: 'danger' };
   return { label: 'Pending', tone: 'warn' };
 }
@@ -154,6 +159,9 @@ export function DiscountReview() {
             </span>
           </div>
           {fareConfig && <Badge label={`${fareConfig.discountRatePercent}% statutory discount`} tone="info" />}
+          {d.status === 'approved' && d.expiresAt && (
+            <Badge label={isExpired(d) ? `Expired ${formatDate(d.expiresAt)}` : `Expires ${formatDate(d.expiresAt)}`} tone={isExpired(d) ? 'danger' : 'neutral'} />
+          )}
         </div>
 
         <div className="evidence-grid">
@@ -220,14 +228,18 @@ export function DiscountReview() {
                 superscript="S+"
                 fullWidth
                 loading={deciding === 'reject'}
-                disabled={deciding !== null || d.status !== 'pending' || !remarksDraft.trim()}
+                disabled={deciding !== null || (d.status !== 'pending' && !isExpired(d)) || !remarksDraft.trim()}
                 onClick={() => setPendingDecision('reject')}
               >
-                {deciding === 'reject' ? 'Rejecting…' : 'Reject'}
+                {deciding === 'reject' ? 'Rejecting…' : isExpired(d) ? 'Reject (reset expired)' : 'Reject'}
               </Button>
             </div>
             <p className="footnote">
-              {d.status === 'pending' ? 'Rejecting requires remarks — the passenger sees them in the app.' : `This application was already ${d.status}. Decisions can't be changed here.`}
+              {d.status === 'pending'
+                ? 'Rejecting requires remarks — the passenger sees them in the app.'
+                : isExpired(d)
+                  ? `Expired ${d.expiresAt ? formatDate(d.expiresAt) : ''} — no longer applied to fares. Rejecting clears it so the passenger can submit a fresh application.`
+                  : `This application was already ${d.status}. Decisions can't be changed here.`}
             </p>
           </RoleGate>
         </div>

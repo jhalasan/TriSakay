@@ -15,4 +15,6 @@ export interface DiscountRow {
   idNumber: string;
   dateOfBirth: string; // ISO date, '' if not yet transcribed
   issuingOffice: string;
+  /** UAT A11 — null until approved; set to reviewed_at + 1 year on approval. */
+  expiresAt: string | null;
 }

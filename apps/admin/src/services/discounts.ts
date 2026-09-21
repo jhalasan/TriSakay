@@ -24,6 +24,7 @@ export async function listPendingDiscounts(): Promise<ServiceResult<DiscountRow[
     idNumber: d.idNumber ?? '',
     dateOfBirth: d.dateOfBirth ?? '',
     issuingOffice: d.issuingOffice ?? '',
+    expiresAt: d.expiresAt,
   }));
 
   return { data: rows, error: null };

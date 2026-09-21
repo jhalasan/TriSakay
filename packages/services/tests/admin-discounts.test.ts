@@ -23,6 +23,7 @@ function fakeClient() {
                   id_number: null,
                   date_of_birth: null,
                   issuing_office: null,
+                  expires_at: null,
                 },
               ],
               error: null,
@@ -65,6 +66,7 @@ test('listPendingDiscounts maps rows and resolves passengerName', async () => {
       idNumber: null,
       dateOfBirth: null,
       issuingOffice: null,
+      expiresAt: null,
     },
   ]);
 });
@@ -92,6 +94,22 @@ test('approveDiscount writes status=approved with the signed-in reviewer id', as
   assert.equal(captured.patch.remarks, 'Verified ID at PSO office');
 });
 
+test('approveDiscount sets expires_at to 1 year from reviewed_at (A11)', async () => {
+  __setSupabaseClientForTests(fakeClient());
+
+  const before = Date.now();
+  const { error } = await approveDiscount('disc1');
+  assert.equal(error, null);
+
+  const captured = (globalThis as any).__capturedUpdate;
+  const reviewedAt = new Date(captured.patch.reviewed_at).getTime();
+  const expiresAt = new Date(captured.patch.expires_at).getTime();
+  assert.ok(reviewedAt >= before);
+  // A year later, give or take a day for leap-year/DST edge cases.
+  const oneYearMs = 365 * 24 * 60 * 60 * 1000;
+  assert.ok(Math.abs(expiresAt - reviewedAt - oneYearMs) < 2 * 24 * 60 * 60 * 1000);
+});
+
 test('rejectDiscount writes status=rejected', async () => {
   __setSupabaseClientForTests(fakeClient());
 
@@ -101,6 +119,16 @@ test('rejectDiscount writes status=rejected', async () => {
   const captured = (globalThis as any).__capturedUpdate;
   assert.equal(captured.patch.status, 'rejected');
   assert.equal(captured.patch.remarks, 'ID photo unreadable');
+});
+
+test('rejectDiscount clears expires_at (A11) — also how PSO resets an expired approved row for reapplication', async () => {
+  __setSupabaseClientForTests(fakeClient());
+
+  const { error } = await rejectDiscount('disc1', 'Expired, please reapply');
+  assert.equal(error, null);
+
+  const captured = (globalThis as any).__capturedUpdate;
+  assert.equal(captured.patch.expires_at, null);
 });
 
 test('approveDiscount surfaces an error when there is no active session', async () => {
