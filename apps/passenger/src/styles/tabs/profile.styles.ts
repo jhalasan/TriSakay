@@ -251,4 +251,35 @@ export const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+
+  // P19 (UAT audit) — password re-confirmation before a phone-number change.
+  confirmBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: spacing.xl,
+  },
+  confirmCard: {
+    alignSelf: 'stretch',
+    backgroundColor: colors.white,
+    borderRadius: radius.lg,
+    padding: spacing.xl,
+    gap: spacing.md,
+  },
+  confirmTitle: {
+    ...typography.h2,
+    color: colors.ink,
+  },
+  confirmMessage: {
+    ...typography.body,
+    color: colors.inkSoft,
+  },
+  confirmActions: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  confirmActionButton: {
+    flex: 1,
+  },
 });

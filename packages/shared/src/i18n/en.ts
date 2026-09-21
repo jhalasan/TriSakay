@@ -200,6 +200,8 @@ export const en = {
     verifiedPassenger: 'Verified passenger',
     ridesSuffix: 'rides',
     discountActiveSuffix: 'discount active',
+    // A11 (UAT audit) — the discount banner's validity line.
+    discountExpiresSuffix: 'valid until {date}',
     applyForDiscountTitle: 'Apply for a fare discount',
     email: 'Email',
     phone: 'Phone',
@@ -215,6 +217,11 @@ export const en = {
     couldNotUploadPhotoTitle: 'Could not upload photo',
     couldNotSavePhotoTitle: 'Could not save photo',
     tryAgainFallback: 'Please try again.',
+    // P19 (UAT audit): re-auth gate before a phone-number change saves.
+    confirmPhoneChangeTitle: 'Confirm your password',
+    confirmPhoneChangeMessage: "Enter your password to change the phone number on your account.",
+    currentPasswordLabel: 'Password',
+    confirmButton: 'Confirm',
   },
   confirm: {
     title: 'Confirm ride',
@@ -986,6 +993,17 @@ export const en = {
       upload: 'Upload',
       removeAccessibilityLabel: 'Remove {label}',
       uploadAccessibilityLabel: 'Upload {label}',
+      // UAT D13 — the "My Documents" expiry-tracking screen.
+      myDocumentsTitle: 'My Documents',
+      myDocumentsSubtitle: 'Set the expiry date on each document so you can tell when it needs renewing.',
+      expiryLabel: 'Expiry date',
+      expiryPlaceholder: 'YYYY-MM-DD',
+      expiryInvalid: 'Enter a date as YYYY-MM-DD.',
+      expirySave: 'Save',
+      expiryNotSet: 'Not set',
+      expiryStatusExpired: 'Expired',
+      expiryStatusExpiringSoon: 'Expiring soon',
+      expiryStatusValid: 'Valid',
     },
     requestCard: {
       decline: 'Decline',
