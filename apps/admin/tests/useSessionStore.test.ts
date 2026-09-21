@@ -162,6 +162,9 @@ test('completePasswordChange() sets the new password, clears the flag, and updat
     fakeClient({
       session: { user: { id: 'u1' } },
       userRow: { ...PSO_ROW, must_change_password: true },
+      // A21/A17 reuse check re-signs-in with the CANDIDATE new password first;
+      // it must fail (differs from the temp password) for the change to proceed.
+      reauthSignInError: 'Invalid login credentials',
       onUpdateUser: (attrs) => updateUserCalls.push(attrs),
       onUsersUpdate: (attrs) => usersUpdateCalls.push(attrs),
     })
@@ -182,6 +185,7 @@ test('completePasswordChange() surfaces an auth error without clearing the flag'
     fakeClient({
       session: { user: { id: 'u1' } },
       userRow: { ...PSO_ROW, must_change_password: true },
+      reauthSignInError: 'Invalid login credentials',
       updateUserError: 'Password should be at least 6 characters.',
     })
   );
@@ -190,6 +194,26 @@ test('completePasswordChange() surfaces an auth error without clearing the flag'
   const failure = await useSessionStore.getState().completePasswordChange('short');
 
   assert.equal(failure, 'Password should be at least 6 characters.');
+  assert.equal(useSessionStore.getState().user?.mustChangePassword, true);
+});
+
+test('completePasswordChange() rejects reuse of the temporary password as the new password', async () => {
+  const updateUserCalls: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: { ...PSO_ROW, must_change_password: true },
+      // No reauthSignInError set: re-signing-in with the "new" password
+      // succeeds, meaning it's identical to the still-active temp password.
+      onUpdateUser: (attrs) => updateUserCalls.push(attrs),
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+
+  const failure = await useSessionStore.getState().completePasswordChange('the-temp-password');
+
+  assert.equal(failure, 'Your new password cannot be the same as your temporary password.');
+  assert.deepEqual(updateUserCalls, []);
   assert.equal(useSessionStore.getState().user?.mustChangePassword, true);
 });
 

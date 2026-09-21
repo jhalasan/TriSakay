@@ -142,13 +142,23 @@ export const useSessionStore = create<SessionState>()((set, get) => {
     },
 
     completePasswordChange: async (newPassword) => {
+      const current = get().user;
+      if (current) {
+        // A21/A17 (UAT): reject reuse of the temporary password as the new
+        // one. The client never has the temp password's plaintext to
+        // compare directly, so this re-runs the standard sign-in check
+        // (verifyCurrentPassword) with the CANDIDATE new password: if it
+        // succeeds, the candidate matches the still-active (temp) password.
+        const { error: matchesCurrent } = await authService.verifyCurrentPassword(current.email, newPassword);
+        if (!matchesCurrent) return 'Your new password cannot be the same as your temporary password.';
+      }
+
       const { error: updateError } = await authService.updatePassword(newPassword);
       if (updateError) return updateError;
 
       const { error: clearError } = await authService.clearMustChangePassword();
       if (clearError) return clearError;
 
-      const current = get().user;
       if (current) set({ user: { ...current, mustChangePassword: false } });
       return null;
     },
