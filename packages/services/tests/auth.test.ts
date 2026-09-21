@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
 import {
+  deactivateOwnAccount,
   getCurrentUserProfile,
   onAuthStateChange,
   requestPasswordReset,
@@ -141,6 +142,45 @@ test('signOut calls the underlying auth.signOut with local scope, not global', a
   );
   await signOut();
   assert.deepEqual(capturedArgs, { scope: 'local' });
+});
+
+test('deactivateOwnAccount calls the self_deactivate_account RPC then signs out locally', async () => {
+  let capturedRpc: { fn: string; args: unknown } | null = null;
+  let signOutCalled = false;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn, args) => {
+        capturedRpc = { fn, args };
+        return { data: null, error: null };
+      },
+      signOut: async () => {
+        signOutCalled = true;
+      },
+    })
+  );
+
+  const { error } = await deactivateOwnAccount();
+
+  assert.equal(error, null);
+  assert.equal(capturedRpc!.fn, 'self_deactivate_account');
+  assert.equal(signOutCalled, true);
+});
+
+test('deactivateOwnAccount surfaces the RPC error and does not sign out', async () => {
+  let signOutCalled = false;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: null, error: { message: 'This account cannot be self-deactivated from its current status — visit the PSO office.' } }),
+      signOut: async () => {
+        signOutCalled = true;
+      },
+    })
+  );
+
+  const { error } = await deactivateOwnAccount();
+
+  assert.match(error ?? '', /visit the PSO office/);
+  assert.equal(signOutCalled, false);
 });
 
 test('getCurrentUserProfile returns null when there is no active session', async () => {

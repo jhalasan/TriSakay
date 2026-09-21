@@ -174,6 +174,9 @@ export const fil: Translations = {
     language: 'Wika',
     languageEnglish: 'Ingles',
     languageFilipino: 'Filipino',
+    sectionAccount: 'Account',
+    deactivateAccountRow: 'I-deactivate ang account',
+    deactivateAccountRowSubtitle: 'Isara ang iyong TriSakay account',
     logOut: 'Mag-log Out',
     versionFooter: 'TriSakay v1.0 · General Santos City PSO',
   },
@@ -559,6 +562,13 @@ export const fil: Translations = {
       title: 'Mag-log out?',
       message: 'Kailangan mong mag-log in muli para mag-book ng sakay.',
       confirm: 'Mag-log out',
+    },
+    deactivateAccount: {
+      title: 'I-deactivate ang iyong account?',
+      message:
+        'Hindi ka makakapag-book ng sakay hangga\'t hindi ka bumibisita sa PSO office para i-reactivate. Hindi nito bubura ang kasaysayan ng iyong mga sakay.',
+      confirm: 'I-deactivate ang account',
+      errorFallback: 'Hindi na-deactivate ang iyong account. Pakisubukang muli.',
     },
   },
   driver: {

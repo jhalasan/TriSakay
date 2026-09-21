@@ -9,6 +9,7 @@ import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/compon
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useBookingStore } from '../../src/store/useBookingStore';
+import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { reverseGeocode } from '../../src/utils/geocode';
 import { styles } from '../../src/styles/booking/request.styles';
 
@@ -21,6 +22,7 @@ export default function RequestTricycleScreen() {
   const resetBooking = useBookingStore((state) => state.reset);
   const t = useTranslation();
   const { isGranted } = useLocationPermission();
+  const locationTrackingEnabled = useSettingsStore((state) => state.locationTrackingEnabled);
   const [locating, setLocating] = useState(false);
   // Surfaced only for a manual retap of the target button — the silent
   // mount-time auto-fetch stays silent (the rider can still drop a pin by
@@ -48,12 +50,16 @@ export default function RequestTricycleScreen() {
       .finally(() => setLocating(false));
   }
 
+  // P20 (UAT settings audit): the Settings "Location tracking" toggle now
+  // gates this silent auto-detect-on-open only — the explicit "use current
+  // location" button below stays available regardless, since it's a
+  // one-time action the rider directly asked for, not automatic tracking.
   useEffect(() => {
-    if (!isGranted || pickup || hasRequestedFix.current) return;
+    if (!isGranted || !locationTrackingEnabled || pickup || hasRequestedFix.current) return;
     hasRequestedFix.current = true;
     useCurrentLocationForPickup(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isGranted, pickup]);
+  }, [isGranted, locationTrackingEnabled, pickup]);
 
   function handlePickupDrag(point: { latitude: number; longitude: number }) {
     setLocating(true);

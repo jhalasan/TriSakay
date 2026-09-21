@@ -89,6 +89,10 @@ function useProtectedRoute(
     // rider could confirm it (mirrors the same fix in apps/driver's layout).
     if (root === 'logout') return;
 
+    // Same reasoning as logout above — deactivate-account (UAT P20) is a
+    // routed confirm modal, not a real screen with content of its own.
+    if (root === 'deactivate-account') return;
+
     // The first-launch walkthrough and its follow-on landing screen both run
     // before authentication even applies — splash.tsx and walkthrough.tsx are
     // the only things that route here, and they already decide whether this
@@ -309,6 +313,10 @@ function RootLayoutNav() {
             />
             <Stack.Screen
               name="logout"
+              options={{ presentation: 'transparentModal', animation: 'fade' }}
+            />
+            <Stack.Screen
+              name="deactivate-account"
               options={{ presentation: 'transparentModal', animation: 'fade' }}
             />
           </Stack>

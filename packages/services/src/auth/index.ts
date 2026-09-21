@@ -129,6 +129,19 @@ export async function verifyCurrentPassword(email: string, currentPassword: stri
   return { error: error ? 'Current password is incorrect.' : null };
 }
 
+/**
+ * UAT P20: passenger-initiated account closure. Calls self_deactivate_account()
+ * (SECURITY DEFINER — only ever touches the caller's own row, only from
+ * 'active' status) then signs out locally, since the account is no longer
+ * usable and the client has nothing further to do with the session.
+ */
+export async function deactivateOwnAccount(): Promise<UpdatePasswordResult> {
+  const { error } = await getSupabaseClient().rpc('self_deactivate_account');
+  if (error) return { error: error.message };
+  await signOut();
+  return { error: null };
+}
+
 export async function getSession(): Promise<Session | null> {
   const { data } = await getSupabaseClient().auth.getSession();
   return data.session;

@@ -102,11 +102,10 @@ export default function SettingsScreen() {
           <Text style={styles.tagline}>{t.settings.tagline}</Text>
         </View>
 
-        {/* Re-added on request (2026-09-15) as prototype controls: SMS/email
-            receipts and location tracking aren't wired to anything real yet
-            (P1-20, 2026-09-15 launch audit) — no SMS/email is ever sent, and
-            location tracking isn't gated by any flag anywhere in the app.
-            See useSettingsStore.ts. */}
+        {/* Re-added on request (2026-09-15) as prototype controls
+            (P1-20, 2026-09-15 launch audit): no SMS/email receipt is ever
+            sent. Location tracking is real as of 2026-09-21 (UAT P20) — see
+            useSettingsStore.ts / app/booking/request.tsx. */}
         <SectionLabel label={t.settings.sectionNotifications} />
         <Card variant="raised" style={styles.card}>
           <ToggleRow
@@ -195,6 +194,22 @@ export default function SettingsScreen() {
                 <Text style={styles.rowLabel}>{t.settings.replayTour}</Text>
                 <Text style={styles.rowSubtitle} numberOfLines={1}>
                   {t.settings.replayTourSubtitle}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+          </Pressable>
+        </Card>
+
+        <SectionLabel label={t.settings.sectionAccount} />
+        <Card variant="raised" style={styles.card}>
+          <Pressable style={styles.row} onPress={() => router.push('/deactivate-account')} accessibilityRole="button">
+            <View style={styles.rowLeading}>
+              <IconBadge name="person-remove-outline" />
+              <View style={styles.rowTextSlot}>
+                <Text style={styles.rowLabel}>{t.settings.deactivateAccountRow}</Text>
+                <Text style={styles.rowSubtitle} numberOfLines={1}>
+                  {t.settings.deactivateAccountRowSubtitle}
                 </Text>
               </View>
             </View>

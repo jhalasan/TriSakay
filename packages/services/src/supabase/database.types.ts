@@ -1651,6 +1651,10 @@ export type Database = {
         }
         Returns: undefined
       }
+      self_deactivate_account: {
+        Args: never
+        Returns: undefined
+      }
       start_ride_leg: {
         Args: { p_ride_request_id: string; p_trip_id: string }
         Returns: {

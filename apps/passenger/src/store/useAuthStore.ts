@@ -46,6 +46,8 @@ interface AuthState {
     password: string
   ) => Promise<'signed_in' | 'check_email' | 'error'>;
   logout: () => Promise<void>;
+  /** UAT P20: self-service account closure. Returns an error message on failure, null on success (already signed out). */
+  deactivateAccount: () => Promise<string | null>;
   clearError: () => void;
   /** Re-fetches the profile row and refreshes `user` in place — for updates (e.g. avatar upload) made outside the auth-event flow. */
   refreshProfile: () => Promise<void>;
@@ -138,6 +140,11 @@ export const useAuthStore = create<AuthState>()((set) => {
 
     logout: async () => {
       await authService.signOut();
+    },
+
+    deactivateAccount: async () => {
+      const { error } = await authService.deactivateOwnAccount();
+      return error;
     },
 
     clearError: () => set({ error: null }),

@@ -176,6 +176,9 @@ export const en = {
     language: 'Language',
     languageEnglish: 'English',
     languageFilipino: 'Filipino',
+    sectionAccount: 'Account',
+    deactivateAccountRow: 'Deactivate account',
+    deactivateAccountRowSubtitle: 'Close your TriSakay account',
     logOut: 'Log out',
     versionFooter: 'TriSakay v1.0 · General Santos City PSO',
   },
@@ -568,6 +571,13 @@ export const en = {
       title: 'Log out?',
       message: "You'll need to log in again to book a ride.",
       confirm: 'Log out',
+    },
+    deactivateAccount: {
+      title: 'Deactivate your account?',
+      message:
+        "You won't be able to book rides until you visit the PSO office to reactivate. This does not delete your ride history.",
+      confirm: 'Deactivate account',
+      errorFallback: "Couldn't deactivate your account. Please try again.",
     },
   },
   driver: {

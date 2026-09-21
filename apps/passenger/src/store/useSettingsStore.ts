@@ -21,8 +21,10 @@ interface SettingsState {
 // and emailReceipts as dead — each was a toggle read by nothing (location
 // tracking is not gated by any flag anywhere in the app; nothing sends an SMS
 // or email receipt). Re-added on request (2026-09-15) as prototype-only
-// controls: they persist locally like any other setting here, but nothing
-// downstream reads them yet.
+// controls: they persist locally like any other setting here.
+// 2026-09-21 (UAT P20): locationTrackingEnabled is no longer dead — it now
+// gates the silent GPS auto-detect on the Request a Tricycle screen
+// (app/booking/request.tsx). smsReceipts/emailReceipts remain prototype-only.
 export const useSettingsStore = create<SettingsState>()(
   persist(
     (set) => ({
