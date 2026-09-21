@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { listSavedPlaces, saveSavedPlace, deleteSavedPlace } from '../src/saved-places/index.ts';
+import { listSavedPlaces, saveSavedPlace, updateSavedPlace, deleteSavedPlace } from '../src/saved-places/index.ts';
 
 test('listSavedPlaces returns the signed-in user\'s own rows, newest first', async () => {
   const capturedFilters: { column: string; value: unknown }[] = [];
@@ -117,6 +117,45 @@ test('saveSavedPlace does not dedupe by icon — a second save is a second row',
   await saveSavedPlace({ label: 'Gym 2', icon: 'briefcase-outline', address: 'B', latitude: 2, longitude: 2 });
 
   assert.equal(insertedRows.length, 2, 'each save inserts a new row instead of replacing a prior one');
+});
+
+test('updateSavedPlace scopes the update to the signed-in user (P22)', async () => {
+  let updatedRow: unknown = null;
+  const capturedFilters: { column: string; value: unknown }[] = [];
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
+      from: (table) => {
+        assert.equal(table, 'saved_places');
+        return {
+          update: (row: unknown) => {
+            updatedRow = row;
+            return {
+              eq: (column: string, value: unknown) => {
+                capturedFilters.push({ column, value });
+                return {
+                  eq: (column2: string, value2: unknown) => {
+                    capturedFilters.push({ column: column2, value: value2 });
+                    return Promise.resolve({ error: null });
+                  },
+                };
+              },
+            };
+          },
+        };
+      },
+    })
+  );
+
+  const { error } = await updateSavedPlace('p1', { label: 'Renamed', icon: 'school-outline' });
+
+  assert.equal(error, null);
+  assert.deepEqual(updatedRow, { label: 'Renamed', icon: 'school-outline' });
+  assert.deepEqual(capturedFilters, [
+    { column: 'id', value: 'p1' },
+    { column: 'user_id', value: 'u1' },
+  ]);
 });
 
 test('deleteSavedPlace scopes the delete to the signed-in user', async () => {

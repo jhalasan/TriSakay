@@ -57,6 +57,9 @@ export default function ActiveTripScreen() {
   const [startingIds, setStartingIds] = useState<Set<string>>(new Set());
   const [confirmingEndTrip, setConfirmingEndTrip] = useState(false);
   const [endingTrip, setEndingTrip] = useState(false);
+  // D8 (UAT audit): a single tap used to complete a leg immediately — this
+  // mirrors the Cancel/End Trip confirm pattern already on this screen.
+  const [completingPassenger, setCompletingPassenger] = useState<ActivePassenger | null>(null);
 
   const { height: windowHeight } = useWindowDimensions();
   // Bounds the sheet so it can never grow past the viewport — with it
@@ -131,8 +134,9 @@ export default function ActiveTripScreen() {
     });
   }
 
-  async function handleComplete(passenger: ActivePassenger) {
-    if (completingIds.has(passenger.id)) return;
+  async function handleConfirmComplete() {
+    const passenger = completingPassenger;
+    if (!passenger || completingIds.has(passenger.id)) return;
     setCompletingIds((prev) => new Set(prev).add(passenger.id));
     const closed = await completePassenger(passenger.id);
     setCompletingIds((prev) => {
@@ -140,6 +144,7 @@ export default function ActiveTripScreen() {
       next.delete(passenger.id);
       return next;
     });
+    setCompletingPassenger(null);
     // Trip history/earnings both read fresh from the backend on their own
     // tabs — recordCompletedTrip is only Dashboard's local today-stat tally.
     if (closed) recordCompletedTrip(closed.fare ?? 0);
@@ -286,7 +291,7 @@ export default function ActiveTripScreen() {
                       fullWidth
                       disabled={!canComplete}
                       loading={isCompleting}
-                      onPress={() => (tutorialDemo.active ? undefined : handleComplete(passenger))}
+                      onPress={() => (tutorialDemo.active ? undefined : setCompletingPassenger(passenger))}
                     />
                   </View>
                 )}
@@ -360,6 +365,17 @@ export default function ActiveTripScreen() {
         confirmLoading={confirmingCancel}
         onCancel={() => setCancellingId(null)}
         onConfirm={handleConfirmCancel}
+      />
+
+      <ConfirmModal
+        visible={!!completingPassenger}
+        title={t.driver.tripActive.completePassengerTitle}
+        message={t.driver.tripActive.completePassengerMessage}
+        cancelLabel={t.common.cancel}
+        confirmLabel={t.driver.tripActive.complete}
+        confirmLoading={!!completingPassenger && completingIds.has(completingPassenger.id)}
+        onCancel={() => setCompletingPassenger(null)}
+        onConfirm={handleConfirmComplete}
       />
 
       <ConfirmModal

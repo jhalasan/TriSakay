@@ -113,6 +113,11 @@ export function Dashboard() {
   const [statusBreakdown, setStatusBreakdown] = useState<TripStatusCount[]>([]);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  // A2 (UAT audit): "traceable to underlying records" is already true (the
+  // attention cards click through to their queues) but there was no visible
+  // "as of" timestamp — stamped once the load's Promise.all settles, success
+  // or partial failure either way, since that's genuinely when this data was read.
+  const [lastLoadedAt, setLastLoadedAt] = useState<string | null>(null);
 
   function load() {
     let cancelled = false;
@@ -144,6 +149,7 @@ export function Dashboard() {
       setAlerts(alertsResult.data);
       setAlertsError(alertsResult.error);
       setLoading(false);
+      setLastLoadedAt(new Date().toISOString());
     })();
     return () => {
       cancelled = true;
@@ -194,6 +200,7 @@ export function Dashboard() {
           <span className={styles.eyebrow}>Needs attention today</span>
           <span className={styles.sectionMeta}>
             {formatDayHeading()} · {queuesPastTarget} {queuesPastTarget === 1 ? 'queue' : 'queues'} past target
+            {lastLoadedAt && <> · As of {formatRelativeTime(lastLoadedAt)}</>}
           </span>
         </div>
         <div className={styles.attentionGrid}>

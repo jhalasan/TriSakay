@@ -1,8 +1,29 @@
 import { useEffect } from 'react';
-import { Platform } from 'react-native';
+import { Alert, Platform } from 'react-native';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 import { registerPushToken } from '@trisakay/services';
 import { useSettingsStore } from '../store/useSettingsStore';
+
+/**
+ * P6 (UAT audit): asks before the OS permission dialog fires on the very
+ * first request (status 'undetermined') — the panelist's "explain why" ask,
+ * done as a plain confirm rather than a full modal/store like
+ * useLocationPermission's, since this hook runs silently in the background
+ * on every app load rather than from a dedicated screen. Returns whether the
+ * caller should still proceed to requestPermissionsAsync().
+ */
+function confirmBeforeFirstAsk(): Promise<boolean> {
+  return new Promise((resolve) => {
+    Alert.alert(
+      'Enable notifications?',
+      "TriSakay uses notifications to tell you when a driver is matched, arriving, or when your fare changes.",
+      [
+        { text: 'Not now', style: 'cancel', onPress: () => resolve(false) },
+        { text: 'Enable', onPress: () => resolve(true) },
+      ],
+    );
+  });
+}
 
 /**
  * Registers (or clears) the signed-in user's Expo push token, driven by
@@ -42,6 +63,10 @@ export function usePushNotificationsSync(sessionUserId: string | null) {
         const existing = await Notifications.getPermissionsAsync();
         let granted = existing.granted;
         if (!granted) {
+          if (existing.status === 'undetermined') {
+            const wantsToEnable = await confirmBeforeFirstAsk();
+            if (!wantsToEnable || cancelled) return;
+          }
           const requested = await Notifications.requestPermissionsAsync();
           granted = requested.granted;
         }

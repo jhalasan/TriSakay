@@ -60,9 +60,24 @@ export async function signUp({ firstName, lastName, email, phone, password, role
   return { session: data.session, error: error ? translateSignUpError(error.message) : null };
 }
 
+/**
+ * P3/D1 (UAT audit): distinguishes "wrong email/password" from "couldn't
+ * reach the server" — both apps previously showed the same raw GoTrue error
+ * string for both. `AuthRetryableFetchError` is supabase-js's own name for a
+ * failed/timed-out network request (as opposed to `AuthApiError`, a real
+ * response from the server rejecting the credentials), so this checks the
+ * error's `name` rather than pattern-matching the message text.
+ */
+function translateLoginError(error: { name?: string; message: string }): string {
+  if (error.name === 'AuthRetryableFetchError') {
+    return "Couldn't reach the server. Check your connection and try again.";
+  }
+  return error.message;
+}
+
 export async function signIn({ email, password }: SignInInput): Promise<AuthResult> {
   const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
-  return { session: data.session, error: error?.message ?? null };
+  return { session: data.session, error: error ? translateLoginError(error) : null };
 }
 
 /**

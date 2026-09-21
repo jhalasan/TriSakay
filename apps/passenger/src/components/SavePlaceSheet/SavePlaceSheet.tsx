@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Modal, Pressable, Text, View } from 'react-native';
 import { Button, TextField, colors } from '@trisakay/ui';
-import { SAVED_PLACE_ICONS, saveSavedPlace, type SavedPlaceIcon } from '@trisakay/services';
+import { SAVED_PLACE_ICONS, saveSavedPlace, updateSavedPlace, type SavedPlaceIcon } from '@trisakay/services';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { LocationPoint } from '../../types/booking';
 import { styles } from './SavePlaceSheet.styles';
@@ -10,6 +10,14 @@ import { styles } from './SavePlaceSheet.styles';
 export interface SavePlaceSheetProps {
   /** Non-null shows the sheet; null hides it. */
   place: LocationPoint | null;
+  /**
+   * P22 (UAT audit): when set, the sheet edits this existing saved place's
+   * label/icon (updateSavedPlace) instead of creating a new one
+   * (saveSavedPlace) — same form, address/coordinates untouched either way.
+   */
+  editingId?: string | null;
+  initialLabel?: string;
+  initialIcon?: SavedPlaceIcon;
   onClose: () => void;
   /** Fires with the same `place` once the save succeeds, before `onClose`. */
   onSaved: (place: LocationPoint) => void;
@@ -17,7 +25,7 @@ export interface SavePlaceSheetProps {
 
 const DEFAULT_ICON: SavedPlaceIcon = 'location-outline';
 
-export function SavePlaceSheet({ place, onClose, onSaved }: SavePlaceSheetProps) {
+export function SavePlaceSheet({ place, editingId = null, initialLabel, initialIcon, onClose, onSaved }: SavePlaceSheetProps) {
   const t = useTranslation();
   const [label, setLabel] = useState('');
   const [icon, setIcon] = useState<SavedPlaceIcon>(DEFAULT_ICON);
@@ -29,22 +37,25 @@ export function SavePlaceSheet({ place, onClose, onSaved }: SavePlaceSheetProps)
       setError(null);
       return;
     }
-    setLabel(place.label);
-    setIcon(DEFAULT_ICON);
-  }, [place]);
+    setLabel(editingId ? (initialLabel ?? place.label) : place.label);
+    setIcon(editingId ? (initialIcon ?? DEFAULT_ICON) : DEFAULT_ICON);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [place, editingId]);
 
   async function handleSave() {
     if (!place || saving || label.trim().length === 0) return;
     setSaving(true);
     setError(null);
 
-    const { error: saveError } = await saveSavedPlace({
-      label: label.trim(),
-      icon,
-      address: place.address,
-      latitude: place.latitude,
-      longitude: place.longitude,
-    });
+    const { error: saveError } = editingId
+      ? await updateSavedPlace(editingId, { label: label.trim(), icon })
+      : await saveSavedPlace({
+          label: label.trim(),
+          icon,
+          address: place.address,
+          latitude: place.latitude,
+          longitude: place.longitude,
+        });
 
     setSaving(false);
     if (saveError) {
@@ -59,7 +70,7 @@ export function SavePlaceSheet({ place, onClose, onSaved }: SavePlaceSheetProps)
     <Modal visible={place !== null} transparent animationType="slide" onRequestClose={onClose}>
       <Pressable style={styles.backdrop} onPress={onClose}>
         <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-          <Text style={styles.title}>{t.savePlace.title}</Text>
+          <Text style={styles.title}>{editingId ? t.savePlace.editTitle : t.savePlace.title}</Text>
           {error && <Text style={styles.errorText}>{error}</Text>}
 
           <TextField
@@ -89,7 +100,7 @@ export function SavePlaceSheet({ place, onClose, onSaved }: SavePlaceSheetProps)
           </View>
 
           <Button
-            label={t.savePlace.saveButton}
+            label={editingId ? t.savePlace.saveChangesButton : t.savePlace.saveButton}
             fullWidth
             disabled={label.trim().length === 0}
             loading={saving}

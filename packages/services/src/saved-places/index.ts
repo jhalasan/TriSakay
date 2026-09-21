@@ -67,6 +67,29 @@ export async function saveSavedPlace(input: SaveSavedPlaceInput): Promise<SaveSa
   return { data: data ?? null, error: error?.message ?? null };
 }
 
+export interface UpdateSavedPlaceInput {
+  label: string;
+  icon: SavedPlaceIcon;
+}
+
+export interface UpdateSavedPlaceResult {
+  error: string | null;
+}
+
+/** P22 (UAT audit): edits an existing saved place's label/icon only — address/coordinates are re-saved as a new entry via saveSavedPlace, not edited in place. */
+export async function updateSavedPlace(id: string, input: UpdateSavedPlaceInput): Promise<UpdateSavedPlaceResult> {
+  const userId = await getSignedInUserId();
+  if (!userId) return { error: 'Not signed in' };
+
+  const { error } = await getSupabaseClient()
+    .from('saved_places')
+    .update(input)
+    .eq('id', id)
+    .eq('user_id', userId);
+
+  return { error: error?.message ?? null };
+}
+
 export interface DeleteSavedPlaceResult {
   error: string | null;
 }

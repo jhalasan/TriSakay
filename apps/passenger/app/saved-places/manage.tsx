@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BrandMotif, EmptyState, GradientSurface, Spinner, colors } from '@trisakay/ui';
+import { SavePlaceSheet } from '../../src/components/SavePlaceSheet';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useSavedPlacesStore } from '../../src/store/useSavedPlacesStore';
 import { SHORTCUT_ICON_TONE, DEFAULT_SHORTCUT_TONE } from '../../src/utils/savedPlaceIconTone';
@@ -18,6 +19,7 @@ export default function ManageSavedPlacesScreen() {
   const error = useSavedPlacesStore((state) => state.error);
   const load = useSavedPlacesStore((state) => state.load);
   const remove = useSavedPlacesStore((state) => state.remove);
+  const [editingItem, setEditingItem] = useState<SavedPlaceRow | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -84,6 +86,15 @@ export default function ManageSavedPlacesScreen() {
                 </View>
                 <Pressable
                   accessibilityRole="button"
+                  accessibilityLabel={t.savedPlacesManagement.editAccessibilityLabel.replace('{label}', item.label)}
+                  style={styles.removeButton}
+                  onPress={() => setEditingItem(item)}
+                  hitSlop={8}
+                >
+                  <Ionicons name="pencil-outline" size={20} color={colors.inkFaint} />
+                </Pressable>
+                <Pressable
+                  accessibilityRole="button"
                   accessibilityLabel={t.savedPlacesManagement.removeAccessibilityLabel.replace('{label}', item.label)}
                   style={styles.removeButton}
                   onPress={() => handleDelete(item)}
@@ -104,6 +115,19 @@ export default function ManageSavedPlacesScreen() {
           <Text style={styles.addRowLabel}>{t.savedPlacesManagement.addFromMap}</Text>
         </Pressable>
       </ScrollView>
+
+      <SavePlaceSheet
+        place={
+          editingItem
+            ? { label: editingItem.label, address: editingItem.address, latitude: editingItem.latitude, longitude: editingItem.longitude }
+            : null
+        }
+        editingId={editingItem?.id ?? null}
+        initialLabel={editingItem?.label}
+        initialIcon={editingItem?.icon as SavedPlaceIcon | undefined}
+        onClose={() => setEditingItem(null)}
+        onSaved={() => void load()}
+      />
     </SafeAreaView>
   );
 }

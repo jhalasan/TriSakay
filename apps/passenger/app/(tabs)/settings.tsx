@@ -187,6 +187,22 @@ export default function SettingsScreen() {
 
         <SectionLabel label={t.settings.sectionHelp} />
         <Card variant="raised" style={styles.card}>
+          <Pressable
+            style={[styles.row, styles.rowDivider]}
+            onPress={() => router.push('/walkthrough?replay=1')}
+            accessibilityRole="button"
+          >
+            <View style={styles.rowLeading}>
+              <IconBadge name="play-circle-outline" />
+              <View style={styles.rowTextSlot}>
+                <Text style={styles.rowLabel}>{t.settings.replayWalkthrough}</Text>
+                <Text style={styles.rowSubtitle} numberOfLines={1}>
+                  {t.settings.replayWalkthroughSubtitle}
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+          </Pressable>
           <Pressable style={styles.row} onPress={tutorial.start} accessibilityRole="button">
             <View style={styles.rowLeading}>
               <IconBadge name="help-circle-outline" />

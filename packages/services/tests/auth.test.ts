@@ -132,6 +132,30 @@ test('signIn returns a session on success', async () => {
   assert.equal(result.error, null);
 });
 
+test('signIn passes through a real credential rejection verbatim (P3/D1)', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signInWithPassword: async () =>
+        ({ data: { session: null }, error: { name: 'AuthApiError', message: 'Invalid login credentials' } }) as any,
+    })
+  );
+
+  const result = await signIn({ email: 'juan@example.com', password: 'wrong' });
+  assert.equal(result.error, 'Invalid login credentials');
+});
+
+test('signIn translates a network failure into a connection-specific message (P3/D1)', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signInWithPassword: async () =>
+        ({ data: { session: null }, error: { name: 'AuthRetryableFetchError', message: 'Failed to fetch' } }) as any,
+    })
+  );
+
+  const result = await signIn({ email: 'juan@example.com', password: 'secret1' });
+  assert.match(result.error ?? '', /Couldn't reach the server/);
+});
+
 test('signOut calls the underlying auth.signOut with local scope, not global', async () => {
   let capturedArgs: unknown;
   __setSupabaseClientForTests(

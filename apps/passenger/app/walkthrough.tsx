@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Pressable, Text, View, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Animated, {
@@ -108,6 +108,10 @@ function Slide({
 
 export default function WalkthroughScreen() {
   const router = useRouter();
+  // P2 (UAT audit): Settings' "Replay tour" now pushes here with ?replay=1
+  // so an already-registered rider lands back where they came from instead
+  // of the pre-signup /landing screen finish() otherwise routes to.
+  const { replay } = useLocalSearchParams<{ replay?: string }>();
   const { width } = useWindowDimensions();
   const insets = useSafeAreaInsets();
   const listRef = useRef<Animated.FlatList<WalkthroughSlide>>(null);
@@ -117,6 +121,10 @@ export default function WalkthroughScreen() {
   const bottomInset = Math.max(insets.bottom, moderateScale(34, width));
 
   const finish = () => {
+    if (replay) {
+      router.back();
+      return;
+    }
     void AsyncStorage.setItem(WALKTHROUGH_SEEN_KEY, '1');
     router.replace('/landing');
   };

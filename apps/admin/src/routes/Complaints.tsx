@@ -16,7 +16,7 @@ import { DocumentImage } from '../components/DocumentImage';
 import { useToast } from '../components/Toast';
 import { useComplaintsStore } from '../store/useComplaintsStore';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
-import { formatDate, titleCaseLabel, toDatetimeLocalValue } from '../lib/format';
+import { formatDate, getReferenceCode, titleCaseLabel, toDatetimeLocalValue } from '../lib/format';
 import { formatBulkTargets } from '../lib/bulkActions';
 import styles from './Complaints.module.css';
 
@@ -353,7 +353,8 @@ export function Complaints() {
           title={selected.subject}
           subtitle={
             <>
-              filed {formatDate(selected.createdAt)}
+              {/* A12 (UAT audit): same 4-char derivation as the passenger app's own complaint detail screen, so a rider quoting "#A1B2" over the phone maps to the same complaint here. */}
+              Ref. #{getReferenceCode(selected.id, 4)} · filed {formatDate(selected.createdAt)}
               {selected.rideRequestId ? ` · ride ${selected.rideRequestId}` : ''}
             </>
           }
