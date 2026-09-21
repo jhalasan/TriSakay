@@ -5,6 +5,7 @@ import {
   getAdminFareConfig,
   getAdminFeatureToggles,
   getAdminSystemSettings,
+  listFareConfigHistory,
   updateAdminFareConfig,
   updateAdminFeatureToggles,
 } from '../src/admin/settings.ts';
@@ -184,4 +185,92 @@ test('updateAdminFeatureToggles is a no-op that skips the write when the patch i
 
   const { error } = await updateAdminFeatureToggles({});
   assert.equal(error, null);
+});
+
+test('listFareConfigHistory orders every row (not just the active one) by effective_from desc and resolves updater names (A16)', async () => {
+  let capturedOrder: { column: string; opts: unknown } | null = null;
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'fare_config') {
+        return {
+          select: () => ({
+            order: async (column: string, opts: unknown) => {
+              capturedOrder = { column, opts };
+              return {
+                data: [
+                  {
+                    id: 'f2',
+                    base_fare: 17.0,
+                    base_km: 4.0,
+                    rate_per_km: 1.5,
+                    discount_rate_percent: 20.0,
+                    ordinance_ref: 'Ordinance No. 08, s.2023',
+                    effective_from: '2026-09-20T00:00:00Z',
+                    is_active: true,
+                    updated_by: 'sup1',
+                  },
+                  {
+                    id: 'f1',
+                    base_fare: 15.0,
+                    base_km: 4.0,
+                    rate_per_km: 1.0,
+                    discount_rate_percent: 20.0,
+                    ordinance_ref: 'Ordinance No. 08, s.2023',
+                    effective_from: '2026-08-12T00:00:00Z',
+                    is_active: false,
+                    updated_by: null,
+                  },
+                ],
+                error: null,
+              };
+            },
+          }),
+        };
+      }
+      if (table === 'users') {
+        return { select: () => ({ in: async () => ({ data: [{ id: 'sup1', full_name: 'Engr. Wilhelmina Nazareno' }], error: null }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error } = await listFareConfigHistory();
+
+  assert.equal(error, null);
+  assert.deepEqual(capturedOrder, { column: 'effective_from', opts: { ascending: false } });
+  assert.deepEqual(data, [
+    {
+      id: 'f2',
+      baseFare: 17.0,
+      baseKm: 4.0,
+      ratePerKm: 1.5,
+      discountRatePercent: 20.0,
+      ordinanceRef: 'Ordinance No. 08, s.2023',
+      effectiveFrom: '2026-09-20T00:00:00Z',
+      isActive: true,
+      updatedByName: 'Engr. Wilhelmina Nazareno',
+    },
+    {
+      id: 'f1',
+      baseFare: 15.0,
+      baseKm: 4.0,
+      ratePerKm: 1.0,
+      discountRatePercent: 20.0,
+      ordinanceRef: 'Ordinance No. 08, s.2023',
+      effectiveFrom: '2026-08-12T00:00:00Z',
+      isActive: false,
+      updatedByName: null,
+    },
+  ]);
+});
+
+test('listFareConfigHistory returns { data: [], error } when the query fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }),
+  } as any);
+
+  const { data, error } = await listFareConfigHistory();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
 });

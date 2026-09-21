@@ -28,6 +28,8 @@ export interface RequestCardProps {
   accepting?: boolean;
   variant?: 'compact' | 'incoming';
   copy: RequestCardCopy;
+  /** D7 (UAT audit): seconds remaining before this request expires — 'incoming' variant only. Omit/null hides the chip. */
+  countdownSeconds?: number | null;
 }
 
 /** "Pickup · 400 m away" once distance is known, else plain "Pickup". */
@@ -51,7 +53,7 @@ export function formatPaymentSeatsLabel(
   return `${paymentWord} · ${seats} ${seatWord}`;
 }
 
-export function RequestCard({ request, onAccept, onDecline, accepting = false, variant = 'compact', copy }: RequestCardProps) {
+export function RequestCard({ request, onAccept, onDecline, accepting = false, variant = 'compact', copy, countdownSeconds = null }: RequestCardProps) {
   const seatsLabel = `${request.seats} ${request.seats > 1 ? copy.seatsPlural : copy.seatsSingular}`;
   const routeLabel =
     request.pickupLabel && request.dropoffLabel ? `${request.pickupLabel} → ${request.dropoffLabel}` : copy.newRideRequest;
@@ -87,7 +89,14 @@ export function RequestCard({ request, onAccept, onDecline, accepting = false, v
           <Ionicons name="cash-outline" size={18} color={colors.accentGreenPressed} />
           <Text style={styles.headerBandLabel}>{formatPaymentSeatsLabel(request.paymentMethod, request.seats, copy)}</Text>
         </View>
-        <Text style={styles.fare}>{fareLabel}</Text>
+        <View style={styles.headerBandRight}>
+          {countdownSeconds !== null && (
+            <View style={styles.countdownChip}>
+              <Text style={styles.countdownChipText}>{countdownSeconds}s</Text>
+            </View>
+          )}
+          <Text style={styles.fare}>{fareLabel}</Text>
+        </View>
       </View>
       <View style={styles.body}>
         <View style={styles.timelineRail}>

@@ -6,6 +6,8 @@ import { StatTile } from '../components/StatTile';
 import { PeakHoursChart, RidesRevenueChart } from '../components/charts';
 import { getPeakHourHistogram, getReportSummary, getRidesRevenueOverTime, listTransactions, dateRangeSinceIso, type ReportDateRange } from '../services/reports';
 import { useSettingsStore } from '../store/useSettingsStore';
+import { useSessionStore } from '../store/useSessionStore';
+import { meetsRoleGate } from '../lib/rbac';
 import type { PeakHourBucket, ReportSummary, RidesRevenuePoint, TransactionRow } from '../types/report';
 import { formatCurrency, formatDate, formatDateTime, paymentMethodLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
@@ -48,6 +50,11 @@ export function Reports() {
   const fareConfig = useSettingsStore((state) => state.fareConfig);
   const fetchSettings = useSettingsStore((state) => state.fetch);
   const { showToast } = useToast();
+  // A15 (UAT audit): viewing the table stays open to every PSO role; only
+  // the bulk CSV export is gated — exfiltrating identifiable names in bulk
+  // is a distinct risk from the same names being visible on-screen.
+  const role = useSessionStore((state) => state.user?.role);
+  const canExport = role ? meetsRoleGate(role, 'supervisor') : false;
 
   useEffect(() => {
     if (!fareConfig) fetchSettings();
@@ -87,6 +94,7 @@ export function Reports() {
   useEffect(load, [dateRange]);
 
   function exportCsv() {
+    if (!canExport) return;
     const csv = toCsv(transactions, [
       { header: 'Date', value: (t) => t.createdAt },
       { header: 'Passenger', value: (t) => t.passengerName },
@@ -152,7 +160,8 @@ export function Reports() {
           tone="neutral"
           size="sm"
           style={{ marginLeft: 'auto' }}
-          disabled={transactions.length === 0}
+          disabled={transactions.length === 0 || !canExport}
+          title={canExport ? undefined : 'Limited to PSO Supervisor and Administrator'}
           onClick={exportCsv}
         >
           Export CSV

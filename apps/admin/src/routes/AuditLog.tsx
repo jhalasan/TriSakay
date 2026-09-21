@@ -7,7 +7,8 @@ import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { useAuditLogStore } from '../store/useAuditLogStore';
 import type { AccountActionRow, LoginEventRow, ReviewDecisionRow } from '../services/auditLog';
-import { formatDateTime, titleCaseLabel } from '../lib/format';
+import type { FareConfigHistoryRow } from '../services/settings';
+import { formatCurrency, formatDateTime, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import styles from './AuditLog.module.css';
 
@@ -57,6 +58,15 @@ const loginEventColumns: DataTableColumn<LoginEventRow>[] = [
     render: (r) => <Badge label={titleCaseLabel(r.eventType)} tone={LOGIN_EVENT_TONE[r.eventType]} />,
   },
   { key: 'user', header: 'User', sortValue: (r) => r.userName ?? '', render: (r) => <span style={{ fontWeight: 600 }}>{r.userName ?? '—'}</span> },
+];
+
+const fareHistoryColumns: DataTableColumn<FareConfigHistoryRow>[] = [
+  { key: 'when', header: 'Effective', sortValue: (r) => r.effectiveFrom, render: (r) => formatDateTime(r.effectiveFrom) },
+  { key: 'base', header: 'Base Fare', align: 'right', render: (r) => formatCurrency(r.baseFare) },
+  { key: 'baseKm', header: 'Base Distance', align: 'right', render: (r) => `${r.baseKm} km` },
+  { key: 'rate', header: 'Rate/km', align: 'right', render: (r) => formatCurrency(r.ratePerKm) },
+  { key: 'active', header: 'Status', render: (r) => (r.isActive ? <Badge label="Active" tone="success" /> : <Badge label="Superseded" tone="neutral" />) },
+  { key: 'by', header: 'Changed By', sortValue: (r) => r.updatedByName ?? '', render: (r) => r.updatedByName ?? '—' },
 ];
 
 const decisionColumns: DataTableColumn<ReviewDecisionRow>[] = [
@@ -109,8 +119,20 @@ const DATE_RANGE_OPTIONS = [
  * out as a known gap when the account_actions table above was added.
  */
 export function AuditLog() {
-  const { actions, loading, error, truncated, decisions, decisionsLoading, loginEvents, loginEventsLoading, loginEventsTruncated, fetch } =
-    useAuditLogStore();
+  const {
+    actions,
+    loading,
+    error,
+    truncated,
+    decisions,
+    decisionsLoading,
+    loginEvents,
+    loginEventsLoading,
+    loginEventsTruncated,
+    fareHistory,
+    fareHistoryLoading,
+    fetch,
+  } = useAuditLogStore();
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
   const [dateRange, setDateRange] = useState('7');
   const [performedBy, setPerformedBy] = useState('all');
@@ -248,6 +270,22 @@ export function AuditLog() {
           loading={loginEventsLoading}
           emptyMessage="No sign-ins or sign-outs recorded yet."
           emptyHint="Self-reported by each client on sign-in and sign-out (UAT A1) — not a server-verified session log."
+        />
+      </div>
+
+      <div className="panel">
+        <div className={styles.tableHeader}>
+          <h2 className="panel-title" style={{ marginBottom: 0 }}>
+            Fare Change History
+          </h2>
+          <span className={styles.recordCount}>Every fare_config version — not filtered by the date range above.</span>
+        </div>
+        <DataTable
+          columns={fareHistoryColumns}
+          rows={fareHistory}
+          getRowKey={(r) => r.id}
+          loading={fareHistoryLoading}
+          emptyMessage="No fare changes recorded yet."
         />
       </div>
     </div>

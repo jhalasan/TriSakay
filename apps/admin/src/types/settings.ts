@@ -9,6 +9,19 @@ export interface FareConfig {
   updatedByName: string | null;
 }
 
+/** A16 (UAT audit) — one row per historical fare_config version, newest first. */
+export interface FareConfigHistoryRow {
+  id: string;
+  baseFare: number;
+  baseKm: number;
+  ratePerKm: number;
+  discountRatePercent: number;
+  ordinanceRef: string | null;
+  effectiveFrom: string;
+  isActive: boolean;
+  updatedByName: string | null;
+}
+
 /** Mirrors docs/SCHEMA.MD `system_settings` (§3.4) — matching heuristic thresholds, FR-2.5. */
 export interface SystemSettings {
   bearingToleranceDeg: number; // 40.00

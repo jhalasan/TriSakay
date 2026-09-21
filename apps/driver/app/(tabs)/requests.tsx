@@ -3,8 +3,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { FlatList, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { BrandMotif, Button, colors, EmptyState, GradientSurface, RequestCard } from '@trisakay/ui';
+import { BrandMotif, Button, colors, EmptyState, GradientSurface, RequestCard, type RequestCardProps } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
+import { useRequestCountdown } from '../../src/hooks/useRequestCountdown';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useDriverStore } from '../../src/store/useDriverStore';
@@ -12,6 +13,16 @@ import { useRequestsStore } from '../../src/store/useRequestsStore';
 import { useRequestsTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/tabs/requests.styles';
+
+/**
+ * D7 (UAT audit): the Requests board lists every pending request, unlike
+ * Dashboard's single `incoming` one — a per-row wrapper is what lets each
+ * card call useRequestCountdown(its own expiresAt) independently.
+ */
+function RequestCardWithCountdown({ expiresAt, ...cardProps }: RequestCardProps & { expiresAt: string | null }) {
+  const countdownSeconds = useRequestCountdown(expiresAt);
+  return <RequestCard {...cardProps} countdownSeconds={countdownSeconds} />;
+}
 
 export default function RequestsScreen() {
   const router = useRouter();
@@ -96,7 +107,8 @@ export default function RequestsScreen() {
           )
         }
         renderItem={({ item }) => (
-          <RequestCard
+          <RequestCardWithCountdown
+            expiresAt={tutorialDemo.active ? null : (item.expiresAt ?? null)}
             request={item}
             variant="incoming"
             accepting={acceptingId === item.id}

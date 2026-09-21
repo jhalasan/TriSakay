@@ -1,6 +1,8 @@
 import { create } from 'zustand';
 import { listAccountActions, listLoginEvents, listReviewDecisions } from '../services/auditLog';
 import type { AccountActionRow, LoginEventRow, ReviewDecisionRow } from '../services/auditLog';
+import { getFareConfigHistory } from '../services/settings';
+import type { FareConfigHistoryRow } from '../services/settings';
 
 interface AuditLogState {
   actions: AccountActionRow[];
@@ -14,6 +16,9 @@ interface AuditLogState {
   loginEvents: LoginEventRow[];
   loginEventsLoading: boolean;
   loginEventsTruncated: boolean;
+  /** UAT A16 — fare_config's version history, not date-range scoped (it's naturally bounded — one row per amendment, never many). */
+  fareHistory: FareConfigHistoryRow[];
+  fareHistoryLoading: boolean;
   /**
    * `days`: '7' | '30' | 'all', mirrors AuditLog.tsx's date-range filter.
    * P1-22 (2026-09-15 launch audit): this used to fetch the entire table
@@ -38,14 +43,22 @@ export const useAuditLogStore = create<AuditLogState>()((set) => ({
   loginEvents: [],
   loginEventsLoading: false,
   loginEventsTruncated: false,
+  fareHistory: [],
+  fareHistoryLoading: false,
 
   fetch: async (days) => {
-    set({ loading: true, decisionsLoading: true, loginEventsLoading: true, error: null });
+    set({ loading: true, decisionsLoading: true, loginEventsLoading: true, fareHistoryLoading: true, error: null });
     const [
       { data: actions, error: actionsError, truncated },
       { data: decisions, error: decisionsError },
       { data: loginEvents, error: loginEventsError, truncated: loginEventsTruncated },
-    ] = await Promise.all([listAccountActions(sinceIsoForDays(days)), listReviewDecisions(), listLoginEvents(sinceIsoForDays(days))]);
+      { data: fareHistory, error: fareHistoryError },
+    ] = await Promise.all([
+      listAccountActions(sinceIsoForDays(days)),
+      listReviewDecisions(),
+      listLoginEvents(sinceIsoForDays(days)),
+      getFareConfigHistory(),
+    ]);
     set({
       actions,
       loading: false,
@@ -55,7 +68,9 @@ export const useAuditLogStore = create<AuditLogState>()((set) => ({
       loginEvents,
       loginEventsLoading: false,
       loginEventsTruncated,
-      error: actionsError ?? decisionsError ?? loginEventsError,
+      fareHistory,
+      fareHistoryLoading: false,
+      error: actionsError ?? decisionsError ?? loginEventsError ?? fareHistoryError,
     });
   },
 }));

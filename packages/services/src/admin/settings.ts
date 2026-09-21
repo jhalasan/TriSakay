@@ -53,6 +53,62 @@ export async function getAdminFareConfig(): Promise<GetAdminFareConfigResult> {
   };
 }
 
+export interface FareConfigHistoryRow {
+  id: string;
+  baseFare: number;
+  baseKm: number;
+  ratePerKm: number;
+  discountRatePercent: number;
+  ordinanceRef: string | null;
+  effectiveFrom: string;
+  isActive: boolean;
+  updatedByName: string | null;
+}
+
+export interface ListFareConfigHistoryResult {
+  data: FareConfigHistoryRow[];
+  error: string | null;
+}
+
+/**
+ * A16 (UAT audit): every fare_config row (not just the active one) is a
+ * historical version — updateAdminFareConfig() never edits a row in place,
+ * it deactivates the current one and inserts a new active one (see that
+ * function's own comment) — so the full table already *is* the fare-change
+ * audit trail the Audit Log screen was missing; this just reads it.
+ */
+export async function listFareConfigHistory(): Promise<ListFareConfigHistoryResult> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('fare_config')
+    .select('id, base_fare, base_km, rate_per_km, discount_rate_percent, ordinance_ref, effective_from, is_active, updated_by')
+    .order('effective_from', { ascending: false });
+
+  if (error) return { data: [], error: error.message };
+  if (!data || data.length === 0) return { data: [], error: null };
+
+  const updaterIds = [...new Set(data.map((row) => row.updated_by).filter((id): id is string => !!id))];
+  const names = new Map<string, string>();
+  if (updaterIds.length > 0) {
+    const { data: userRows } = await client.from('users').select('id, full_name').in('id', updaterIds);
+    for (const row of userRows ?? []) names.set(row.id, row.full_name!);
+  }
+
+  const rows: FareConfigHistoryRow[] = data.map((row) => ({
+    id: row.id,
+    baseFare: row.base_fare,
+    baseKm: row.base_km,
+    ratePerKm: row.rate_per_km,
+    discountRatePercent: row.discount_rate_percent,
+    ordinanceRef: row.ordinance_ref,
+    effectiveFrom: row.effective_from,
+    isActive: row.is_active,
+    updatedByName: row.updated_by ? (names.get(row.updated_by) ?? null) : null,
+  }));
+
+  return { data: rows, error: null };
+}
+
 export interface UpdateAdminFareConfigInput {
   baseFare: number;
   baseKm: number;

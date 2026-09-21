@@ -26,6 +26,12 @@ export const styles = StyleSheet.create({
   },
   headerBandLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
   headerBandLabel: { ...typography.eyebrow, color: colors.accentGreenPressed },
+  headerBandRight: { flexDirection: 'row', alignItems: 'center', gap: spacing.xs },
+  // D7 (UAT audit) — same chip styling as the driver app's own Dashboard
+  // countdown (apps/driver/src/styles/tabs/dashboard.styles.ts), reused here
+  // so the Requests board shows the same time-limit signal per card.
+  countdownChip: { backgroundColor: colors.dangerSoft, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
+  countdownChipText: { ...typography.bodySm, fontSize: 11, lineHeight: 16, color: colors.danger },
   fare: { fontSize: 22, lineHeight: 26, fontFamily: 'Poppins_800ExtraBold', letterSpacing: -0.6, color: colors.accentGreenPressed },
   body: { flexDirection: 'row', padding: spacing.lg, gap: spacing.tight14 },
   timelineRail: { alignItems: 'center', width: 12, paddingTop: 4 },

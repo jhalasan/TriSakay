@@ -54,7 +54,12 @@ export default function RegisterScreen() {
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [submitting, setSubmitting] = useState(false);
   const [avatarUri, setAvatarUri] = useState<string | null>(null);
+  // P5 (UAT audit): two separate acknowledgments — the backend already
+  // records ToS/Privacy as two independent user_consents rows
+  // (recordConsent() in packages/services), this was previously the only
+  // place collapsing them into one combined checkbox.
   const [termsChecked, setTermsChecked] = useState(false);
+  const [privacyChecked, setPrivacyChecked] = useState(false);
   const [legalTab, setLegalTab] = useState<'terms' | 'privacy'>('terms');
 
   function update<K extends keyof FormState>(key: K, value: FormState[K]) {
@@ -306,6 +311,7 @@ export default function RegisterScreen() {
               )}
 
           <Checkbox checked={termsChecked} onChange={setTermsChecked} label={t.auth.register.acceptTerms} />
+          <Checkbox checked={privacyChecked} onChange={setPrivacyChecked} label={t.auth.register.acceptPrivacy} />
 
           {authError ? <Text style={styles.authError}>{authError}</Text> : null}
 
@@ -313,7 +319,7 @@ export default function RegisterScreen() {
             label={t.auth.register.createAccountButton}
             onPress={handleCreateAccount}
             loading={submitting || awaitingGate}
-            disabled={!termsChecked}
+            disabled={!termsChecked || !privacyChecked}
             fullWidth
           />
         </ScrollView>

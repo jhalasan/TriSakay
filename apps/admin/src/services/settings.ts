@@ -2,11 +2,20 @@ import {
   getAdminFareConfig,
   getAdminFeatureToggles,
   getAdminSystemSettings,
+  listFareConfigHistory,
   updateAdminFareConfig,
   updateAdminFeatureToggles,
 } from '@trisakay/services';
-import type { FareConfig, FeatureToggles, SystemSettings } from '../types/settings';
+import type { FareConfig, FareConfigHistoryRow, FeatureToggles, SystemSettings } from '../types/settings';
 import type { ServiceResult } from './drivers';
+
+export type { FareConfigHistoryRow };
+
+/** A16 (UAT audit) — every fare_config row is a historical version; surfaced on the Audit Log screen. */
+export async function getFareConfigHistory(): Promise<ServiceResult<FareConfigHistoryRow[]>> {
+  const { data, error } = await listFareConfigHistory();
+  return { data, error };
+}
 
 /** Admin-only (FR-8.1). */
 export async function getFareConfig(): Promise<ServiceResult<FareConfig | null>> {
