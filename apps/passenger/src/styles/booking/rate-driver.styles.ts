@@ -62,6 +62,37 @@ export const styles = StyleSheet.create({
     marginTop: spacing.xl,
     marginBottom: spacing.xxl,
   },
+  // P16 (UAT audit) — predefined feedback category chips.
+  tagsWrap: {
+    alignSelf: 'stretch',
+    marginBottom: spacing.xl,
+  },
+  tagsLabel: {
+    ...typography.caption,
+    color: colors.inkSoft,
+    marginBottom: spacing.sm,
+  },
+  tagsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.sm,
+  },
+  tagChip: {
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.xs,
+    borderRadius: radius.pill,
+    backgroundColor: colors.accentBlueSoft,
+  },
+  tagChipSelected: {
+    backgroundColor: colors.accentBlue,
+  },
+  tagChipText: {
+    ...typography.caption,
+    color: colors.accentBluePressed,
+  },
+  tagChipTextSelected: {
+    color: colors.white,
+  },
   commentWrap: {
     alignSelf: 'stretch',
   },

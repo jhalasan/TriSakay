@@ -728,6 +728,7 @@ export type Database = {
           passenger_id: string
           ride_request_id: string
           stars: number
+          tags: Database["public"]["Enums"]["rating_tag"][]
         }
         Insert: {
           comment?: string | null
@@ -737,6 +738,7 @@ export type Database = {
           passenger_id: string
           ride_request_id: string
           stars: number
+          tags?: Database["public"]["Enums"]["rating_tag"][]
         }
         Update: {
           comment?: string | null
@@ -746,6 +748,7 @@ export type Database = {
           passenger_id?: string
           ride_request_id?: string
           stars?: number
+          tags?: Database["public"]["Enums"]["rating_tag"][]
         }
         Relationships: [
           {
@@ -1746,6 +1749,15 @@ export type Database = {
         | "settlement_notice"
       payment_method: "cash" | "gcash"
       payment_status: "pending" | "paid" | "failed" | "refunded"
+      rating_tag:
+        | "friendly"
+        | "safe_driving"
+        | "clean_vehicle"
+        | "on_time"
+        | "late"
+        | "rude"
+        | "unsafe_driving"
+        | "poor_vehicle_condition"
       ride_status:
         | "pending"
         | "assigned"
@@ -1933,6 +1945,16 @@ export const Constants = {
       ],
       payment_method: ["cash", "gcash"],
       payment_status: ["pending", "paid", "failed", "refunded"],
+      rating_tag: [
+        "friendly",
+        "safe_driving",
+        "clean_vehicle",
+        "on_time",
+        "late",
+        "rude",
+        "unsafe_driving",
+        "poor_vehicle_condition",
+      ],
       ride_status: ["pending", "assigned", "ongoing", "completed", "cancelled"],
       tricycle_cluster: ["red", "white", "apple_green", "melting_pot"],
       trip_status: ["forming", "active", "completed", "cancelled"],

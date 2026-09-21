@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { Avatar, BrandMotif, Button, Card, GradientSurface, StarRating, Textarea } from '@trisakay/ui';
-import { submitRating } from '@trisakay/services';
+import { RATING_TAGS, submitRating, type RatingTag } from '@trisakay/services';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { formatCurrency } from '../../src/utils/currency';
@@ -26,10 +26,31 @@ export default function RateDriverScreen() {
 
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState('');
+  const [selectedTags, setSelectedTags] = useState<Set<RatingTag>>(new Set());
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const canRate = Boolean(driver?.id) && Boolean(rideRequestId);
+
+  const TAG_LABEL: Record<RatingTag, string> = {
+    friendly: t.rateDriver.tagFriendly,
+    safe_driving: t.rateDriver.tagSafeDriving,
+    clean_vehicle: t.rateDriver.tagCleanVehicle,
+    on_time: t.rateDriver.tagOnTime,
+    late: t.rateDriver.tagLate,
+    rude: t.rateDriver.tagRude,
+    unsafe_driving: t.rateDriver.tagUnsafeDriving,
+    poor_vehicle_condition: t.rateDriver.tagPoorVehicleCondition,
+  };
+
+  function toggleTag(tag: RatingTag) {
+    setSelectedTags((prev) => {
+      const next = new Set(prev);
+      if (next.has(tag)) next.delete(tag);
+      else next.add(tag);
+      return next;
+    });
+  }
 
   function finish() {
     reset();
@@ -55,6 +76,7 @@ export default function RateDriverScreen() {
       driverId: driver!.id,
       stars: rating,
       comment,
+      tags: [...selectedTags],
     });
 
     setSubmitting(false);
@@ -88,6 +110,26 @@ export default function RateDriverScreen() {
             <>
               <View style={styles.starsRow}>
                 <StarRating value={rating} onChange={handleRatingChange} size={34} />
+              </View>
+
+              <View style={styles.tagsWrap}>
+                <Text style={styles.tagsLabel}>{t.rateDriver.tagsLabel}</Text>
+                <View style={styles.tagsRow}>
+                  {RATING_TAGS.map((tag) => {
+                    const selected = selectedTags.has(tag);
+                    return (
+                      <Pressable
+                        key={tag}
+                        accessibilityRole="button"
+                        accessibilityState={{ selected }}
+                        style={[styles.tagChip, selected && styles.tagChipSelected]}
+                        onPress={() => toggleTag(tag)}
+                      >
+                        <Text style={[styles.tagChipText, selected && styles.tagChipTextSelected]}>{TAG_LABEL[tag]}</Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
               </View>
 
               <View style={styles.commentWrap}>

@@ -382,6 +382,18 @@ export const en = {
     yourDriverFallback: 'Your driver',
     howWasYourRide: 'How was your ride?',
     paidVia: 'paid via',
+    // P16 (UAT audit): tappable predefined categories, in addition to the
+    // free-text comment box — same list/order as RATING_TAGS in
+    // packages/services/src/ratings/index.ts.
+    tagsLabel: 'What stood out? (optional)',
+    tagFriendly: 'Friendly',
+    tagSafeDriving: 'Safe driving',
+    tagCleanVehicle: 'Clean vehicle',
+    tagOnTime: 'On time',
+    tagLate: 'Late',
+    tagRude: 'Rude',
+    tagUnsafeDriving: 'Unsafe driving',
+    tagPoorVehicleCondition: 'Poor vehicle condition',
     commentLabel: 'Comment (optional)',
     commentPlaceholder: 'Tell us about your trip',
     submitRating: 'Submit rating',

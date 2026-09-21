@@ -1,4 +1,19 @@
 import { getSupabaseClient } from '../supabase/client.ts';
+import type { Database } from '../supabase/database.types.ts';
+
+export type RatingTag = Database['public']['Enums']['rating_tag'];
+
+/** UAT P16 — predefined feedback categories, in the order shown on Rate Driver. */
+export const RATING_TAGS: RatingTag[] = [
+  'friendly',
+  'safe_driving',
+  'clean_vehicle',
+  'on_time',
+  'late',
+  'rude',
+  'unsafe_driving',
+  'poor_vehicle_condition',
+];
 
 async function getSignedInUserId(): Promise<string | null> {
   const { data } = await getSupabaseClient().auth.getSession();
@@ -35,6 +50,7 @@ export interface SubmitRatingInput {
   driverId: string;
   stars: number;
   comment?: string;
+  tags?: RatingTag[];
 }
 
 export interface SubmitRatingResult {
@@ -52,6 +68,7 @@ export async function submitRating({
   driverId,
   stars,
   comment,
+  tags,
 }: SubmitRatingInput): Promise<SubmitRatingResult> {
   try {
     const userId = await getSignedInUserId();
@@ -65,6 +82,7 @@ export async function submitRating({
         driver_id: driverId,
         stars,
         comment: comment?.trim() || null,
+        tags: tags ?? [],
       });
 
     if (error) return { error: toFriendlyMessage(error) };
@@ -79,6 +97,7 @@ export interface DriverRatingEntry {
   rideRequestId: string;
   stars: number;
   comment: string | null;
+  tags: RatingTag[];
   createdAt: string;
 }
 
@@ -100,7 +119,7 @@ export async function listMyRatingsAsDriver(limit = 50): Promise<ListDriverRatin
 
   const { data, error } = await getSupabaseClient()
     .from('ratings')
-    .select('id, ride_request_id, stars, comment, created_at')
+    .select('id, ride_request_id, stars, comment, tags, created_at')
     .eq('driver_id', userId)
     .order('created_at', { ascending: false })
     .limit(limit);
@@ -113,6 +132,7 @@ export async function listMyRatingsAsDriver(limit = 50): Promise<ListDriverRatin
       rideRequestId: row.ride_request_id,
       stars: row.stars,
       comment: row.comment,
+      tags: row.tags ?? [],
       createdAt: row.created_at,
     })),
     error: null,

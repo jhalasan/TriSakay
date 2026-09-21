@@ -37,7 +37,27 @@ test('submitRating inserts the right row shape on success', async () => {
     driver_id: 'driver1',
     stars: 5,
     comment: 'Great ride!',
+    tags: [],
   });
+});
+
+test('submitRating includes the selected feedback tags (P16)', async () => {
+  let capturedInsert: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: () => ({
+        insert: async (row: unknown) => {
+          capturedInsert = row;
+          return { error: null };
+        },
+      }),
+    })
+  );
+
+  await submitRating({ rideRequestId: 'rr1', driverId: 'driver1', stars: 2, tags: ['late', 'rude'] });
+
+  assert.deepEqual(capturedInsert.tags, ['late', 'rude']);
 });
 
 test('submitRating sends null for an empty/whitespace-only comment', async () => {
@@ -170,8 +190,8 @@ function driverRatingsTable(rows: unknown[] | null, selectError?: string) {
 
 test('listMyRatingsAsDriver maps rows and scopes the read to the signed-in driver', async () => {
   const { query, getCapturedFilter } = driverRatingsTable([
-    { id: 'r1', ride_request_id: 'rr1', stars: 5, comment: 'Great ride!', created_at: '2026-08-20T00:00:00.000Z' },
-    { id: 'r2', ride_request_id: 'rr2', stars: 4, comment: null, created_at: '2026-08-18T00:00:00.000Z' },
+    { id: 'r1', ride_request_id: 'rr1', stars: 5, comment: 'Great ride!', tags: ['friendly', 'on_time'], created_at: '2026-08-20T00:00:00.000Z' },
+    { id: 'r2', ride_request_id: 'rr2', stars: 4, comment: null, tags: null, created_at: '2026-08-18T00:00:00.000Z' },
   ]);
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
@@ -183,8 +203,8 @@ test('listMyRatingsAsDriver maps rows and scopes the read to the signed-in drive
   const { data, error } = await listMyRatingsAsDriver();
   assert.equal(error, null);
   assert.deepEqual(data, [
-    { id: 'r1', rideRequestId: 'rr1', stars: 5, comment: 'Great ride!', createdAt: '2026-08-20T00:00:00.000Z' },
-    { id: 'r2', rideRequestId: 'rr2', stars: 4, comment: null, createdAt: '2026-08-18T00:00:00.000Z' },
+    { id: 'r1', rideRequestId: 'rr1', stars: 5, comment: 'Great ride!', tags: ['friendly', 'on_time'], createdAt: '2026-08-20T00:00:00.000Z' },
+    { id: 'r2', rideRequestId: 'rr2', stars: 4, comment: null, tags: [], createdAt: '2026-08-18T00:00:00.000Z' },
   ]);
   assert.deepEqual(getCapturedFilter(), { column: 'driver_id', value: 'driver1' });
 });
