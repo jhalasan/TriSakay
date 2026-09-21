@@ -3,10 +3,18 @@ import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { Sidebar } from '../Sidebar';
 import { TopBar } from '../TopBar';
 import { ConfirmModal } from '../ConfirmModal';
+import { useToast } from '../Toast';
 import { useSessionStore } from '../../store/useSessionStore';
 import { ROUTE_TITLES } from '../../lib/navigation';
 import { getDashboardStats } from '../../services/dashboard';
+import { useIdleTimeout } from '../../hooks/useIdleTimeout';
 import styles from './AppShell.module.css';
+
+// UAT A1: 15 minutes of no activity signs the session out; a warning toast
+// fires 2 minutes before that, giving the operator a chance to stay signed
+// in just by moving the mouse.
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000;
+const IDLE_WARNING_BEFORE_MS = 2 * 60 * 1000;
 
 /**
  * Sidebar (236px) + top bar + content frame, wrapping every authenticated
@@ -17,7 +25,18 @@ export function AppShell() {
   const location = useLocation();
   const navigate = useNavigate();
   const signOut = useSessionStore((state) => state.signOut);
+  const { showToast } = useToast();
   const [confirmingLogout, setConfirmingLogout] = useState(false);
+
+  useIdleTimeout({
+    timeoutMs: IDLE_TIMEOUT_MS,
+    warningBeforeMs: IDLE_WARNING_BEFORE_MS,
+    onWarning: () => showToast({ message: "You'll be signed out in 2 minutes due to inactivity.", tone: 'info' }),
+    onTimeout: async () => {
+      await signOut();
+      navigate('/login', { replace: true, state: { idleSignedOut: true } });
+    },
+  });
   // P1-23 (2026-09-15 launch audit): below 900px the 236px sidebar no longer
   // sits in the flex row — it becomes an off-canvas drawer, closed by
   // default, toggled by TopBar's hamburger button. Above 900px this state is

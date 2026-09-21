@@ -197,6 +197,14 @@
   animation: rise 200ms ease;
 }
 
+/* UAT A1 — idle-timeout notice on redirect back to /login, neutral tone rather than .error's danger styling since it isn't a failure. */
+.info {
+  composes: error;
+  color: var(--primary);
+  background: var(--primary-soft);
+  border-color: var(--primary-border);
+}
+
 .errorIcon {
   flex-shrink: 0;
   margin-top: 2px;

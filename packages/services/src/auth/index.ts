@@ -142,6 +142,20 @@ export async function deactivateOwnAccount(): Promise<UpdatePasswordResult> {
   return { error: null };
 }
 
+/**
+ * UAT A1: self-reported login/logout event for the admin portal's audit
+ * trail (login_events table). Best-effort and fire-and-forget by design —
+ * a failure here must never block the sign-in/out flow itself, so callers
+ * are expected to ignore the result rather than surface it to the user.
+ */
+export async function recordLoginEvent(eventType: 'login' | 'logout'): Promise<void> {
+  const client = getSupabaseClient();
+  const { data } = await client.auth.getSession();
+  const userId = data.session?.user.id;
+  if (!userId) return;
+  await client.from('login_events').insert({ user_id: userId, event_type: eventType });
+}
+
 export async function getSession(): Promise<Session | null> {
   const { data } = await getSupabaseClient().auth.getSession();
   return data.session;

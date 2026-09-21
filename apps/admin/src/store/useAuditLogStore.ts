@@ -1,6 +1,6 @@
 import { create } from 'zustand';
-import { listAccountActions, listReviewDecisions } from '../services/auditLog';
-import type { AccountActionRow, ReviewDecisionRow } from '../services/auditLog';
+import { listAccountActions, listLoginEvents, listReviewDecisions } from '../services/auditLog';
+import type { AccountActionRow, LoginEventRow, ReviewDecisionRow } from '../services/auditLog';
 
 interface AuditLogState {
   actions: AccountActionRow[];
@@ -10,6 +10,10 @@ interface AuditLogState {
   truncated: boolean;
   decisions: ReviewDecisionRow[];
   decisionsLoading: boolean;
+  /** UAT A1 — login/logout audit trail, same date-range scoping as actions above. */
+  loginEvents: LoginEventRow[];
+  loginEventsLoading: boolean;
+  loginEventsTruncated: boolean;
   /**
    * `days`: '7' | '30' | 'all', mirrors AuditLog.tsx's date-range filter.
    * P1-22 (2026-09-15 launch audit): this used to fetch the entire table
@@ -31,20 +35,27 @@ export const useAuditLogStore = create<AuditLogState>()((set) => ({
   truncated: false,
   decisions: [],
   decisionsLoading: false,
+  loginEvents: [],
+  loginEventsLoading: false,
+  loginEventsTruncated: false,
 
   fetch: async (days) => {
-    set({ loading: true, decisionsLoading: true, error: null });
-    const [{ data: actions, error: actionsError, truncated }, { data: decisions, error: decisionsError }] = await Promise.all([
-      listAccountActions(sinceIsoForDays(days)),
-      listReviewDecisions(),
-    ]);
+    set({ loading: true, decisionsLoading: true, loginEventsLoading: true, error: null });
+    const [
+      { data: actions, error: actionsError, truncated },
+      { data: decisions, error: decisionsError },
+      { data: loginEvents, error: loginEventsError, truncated: loginEventsTruncated },
+    ] = await Promise.all([listAccountActions(sinceIsoForDays(days)), listReviewDecisions(), listLoginEvents(sinceIsoForDays(days))]);
     set({
       actions,
       loading: false,
       truncated,
       decisions,
       decisionsLoading: false,
-      error: actionsError ?? decisionsError,
+      loginEvents,
+      loginEventsLoading: false,
+      loginEventsTruncated,
+      error: actionsError ?? decisionsError ?? loginEventsError,
     });
   },
 }));

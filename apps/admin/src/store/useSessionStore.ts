@@ -130,6 +130,9 @@ export const useSessionStore = create<SessionState>()((set, get) => {
         }
 
         set({ user, isAuthenticated: true, error: null });
+        // UAT A1: fire-and-forget — a failed audit-log write must never
+        // block a successful sign-in.
+        void authService.recordLoginEvent('login').catch(() => {});
         return true;
       } finally {
         signingIn = false;
@@ -137,6 +140,10 @@ export const useSessionStore = create<SessionState>()((set, get) => {
     },
 
     signOut: async () => {
+      // Must run before signOut() clears the session — recordLoginEvent
+      // reads the current session to attribute the row, and the insert RLS
+      // requires auth.uid() to still resolve to this user.
+      await authService.recordLoginEvent('logout').catch(() => {});
       await authService.signOut();
       set({ user: null, isAuthenticated: false });
     },

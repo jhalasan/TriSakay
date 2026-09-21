@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { TextField } from '../components/TextField';
 import { Button } from '../components/Button';
 import { useSessionStore } from '../store/useSessionStore';
@@ -13,8 +13,13 @@ import styles from './Login.module.css';
  */
 export function Login() {
   const navigate = useNavigate();
+  const location = useLocation();
   const signIn = useSessionStore((state) => state.signIn);
   const error = useSessionStore((state) => state.error);
+  // UAT A1: AppShell's idle-timeout redirects here with this state flag
+  // rather than a query param, so it doesn't survive a manual refresh (a
+  // refresh should show the plain login form, not repeat the notice).
+  const idleSignedOut = (location.state as { idleSignedOut?: boolean } | null)?.idleSignedOut ?? false;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
@@ -150,6 +155,17 @@ export function Login() {
             <Link to="/forgot-password" className={styles.forgotLink}>
               Forgot password?
             </Link>
+
+            {!error && idleSignedOut && (
+              <div className={styles.info} role="status">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true" className={styles.errorIcon}>
+                  <circle cx="12" cy="12" r="9.5" stroke="currentColor" strokeWidth="1.6" />
+                  <path d="M12 7.5v6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+                  <circle cx="12" cy="16.5" r="1" fill="currentColor" />
+                </svg>
+                <span>You were signed out after 15 minutes of inactivity.</span>
+              </div>
+            )}
 
             {error && (
               <div className={styles.error} role="alert">

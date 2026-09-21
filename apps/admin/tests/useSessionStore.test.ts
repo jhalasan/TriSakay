@@ -14,6 +14,8 @@ interface FakeConfig {
   updateUserError?: string;
   onUpdateUser?: (attrs: Record<string, unknown>) => void;
   onUsersUpdate?: (attrs: Record<string, unknown>) => void;
+  /** Captures each row inserted into login_events (UAT A1). */
+  onLoginEventInsert?: (row: Record<string, unknown>) => void;
 }
 
 function fakeClient(config: FakeConfig) {
@@ -25,6 +27,13 @@ function fakeClient(config: FakeConfig) {
     update: (attrs: Record<string, unknown>) => {
       config.onUsersUpdate?.(attrs);
       return usersQuery;
+    },
+  };
+
+  const loginEventsTable = {
+    insert: async (row: Record<string, unknown>) => {
+      config.onLoginEventInsert?.(row);
+      return { error: null };
     },
   };
 
@@ -52,7 +61,7 @@ function fakeClient(config: FakeConfig) {
         return { data: { subscription: { unsubscribe: () => {} } } };
       },
     },
-    from: () => usersQuery,
+    from: (table: string) => (table === 'login_events' ? loginEventsTable : usersQuery),
   } as any;
 }
 
@@ -76,6 +85,32 @@ test('signIn() with a PSO account authenticates and populates user', async () =>
   assert.equal(useSessionStore.getState().isAuthenticated, true);
   assert.equal(useSessionStore.getState().user?.role, 'pso_supervisor');
   assert.equal(useSessionStore.getState().error, null);
+});
+
+test('signIn() records a login event (UAT A1), fire-and-forget', async () => {
+  const inserts: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW, onLoginEventInsert: (row) => inserts.push(row) })
+  );
+
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  await new Promise((resolve) => setTimeout(resolve, 0)); // recordLoginEvent is fire-and-forget, not awaited by signIn()
+
+  assert.deepEqual(inserts, [{ user_id: 'u1', event_type: 'login' }]);
+});
+
+test('signOut() records a logout event before clearing the session (UAT A1)', async () => {
+  const inserts: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW, onLoginEventInsert: (row) => inserts.push(row) })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  await new Promise((resolve) => setTimeout(resolve, 0));
+  inserts.length = 0; // drop the login event recorded above
+
+  await useSessionStore.getState().signOut();
+
+  assert.deepEqual(inserts, [{ user_id: 'u1', event_type: 'logout' }]);
 });
 
 test('signIn() with a non-PSO account (driver/passenger) is rejected, not just hidden', async () => {

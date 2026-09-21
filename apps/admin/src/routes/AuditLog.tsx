@@ -6,7 +6,7 @@ import { Select } from '../components/Select';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { useAuditLogStore } from '../store/useAuditLogStore';
-import type { AccountActionRow, ReviewDecisionRow } from '../services/auditLog';
+import type { AccountActionRow, LoginEventRow, ReviewDecisionRow } from '../services/auditLog';
 import { formatDateTime, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import styles from './AuditLog.module.css';
@@ -42,6 +42,22 @@ const DECISION_TYPE_LABEL: Record<ReviewDecisionRow['type'], string> = {
   driver_verification: 'Driver Verification',
   discount: 'Fare Discount',
 };
+
+const LOGIN_EVENT_TONE: Record<LoginEventRow['eventType'], BadgeTone> = {
+  login: 'success',
+  logout: 'neutral',
+};
+
+const loginEventColumns: DataTableColumn<LoginEventRow>[] = [
+  { key: 'when', header: 'When', sortValue: (r) => r.createdAt, render: (r) => formatDateTime(r.createdAt) },
+  {
+    key: 'event',
+    header: 'Event',
+    sortValue: (r) => r.eventType,
+    render: (r) => <Badge label={titleCaseLabel(r.eventType)} tone={LOGIN_EVENT_TONE[r.eventType]} />,
+  },
+  { key: 'user', header: 'User', sortValue: (r) => r.userName ?? '', render: (r) => <span style={{ fontWeight: 600 }}>{r.userName ?? '—'}</span> },
+];
 
 const decisionColumns: DataTableColumn<ReviewDecisionRow>[] = [
   { key: 'when', header: 'When', sortValue: (r) => r.reviewedAt, render: (r) => formatDateTime(r.reviewedAt) },
@@ -93,7 +109,8 @@ const DATE_RANGE_OPTIONS = [
  * out as a known gap when the account_actions table above was added.
  */
 export function AuditLog() {
-  const { actions, loading, error, truncated, decisions, decisionsLoading, fetch } = useAuditLogStore();
+  const { actions, loading, error, truncated, decisions, decisionsLoading, loginEvents, loginEventsLoading, loginEventsTruncated, fetch } =
+    useAuditLogStore();
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
   const [dateRange, setDateRange] = useState('7');
   const [performedBy, setPerformedBy] = useState('all');
@@ -209,6 +226,28 @@ export function AuditLog() {
           getRowKey={(r) => r.id}
           loading={decisionsLoading}
           emptyMessage="No verification or discount decisions recorded yet."
+        />
+      </div>
+
+      <div className="panel">
+        <div className={styles.tableHeader}>
+          <h2 className="panel-title" style={{ marginBottom: 0 }}>
+            Login Activity
+          </h2>
+          <div className={styles.tableHeaderRight}>
+            <span className={styles.recordCount}>{loginEvents.length} recorded · newest first, scoped to the date range above.</span>
+            {loginEventsTruncated && (
+              <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />
+            )}
+          </div>
+        </div>
+        <DataTable
+          columns={loginEventColumns}
+          rows={loginEvents}
+          getRowKey={(r) => r.id}
+          loading={loginEventsLoading}
+          emptyMessage="No sign-ins or sign-outs recorded yet."
+          emptyHint="Self-reported by each client on sign-in and sign-out (UAT A1) — not a server-verified session log."
         />
       </div>
     </div>

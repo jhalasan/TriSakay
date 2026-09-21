@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { listAccountActions, listReviewDecisions } from '../src/admin/auditLog.ts';
+import { listAccountActions, listLoginEvents, listReviewDecisions } from '../src/admin/auditLog.ts';
 
 test('listAccountActions orders by created_at desc, caps rows, and resolves target/performer names', async () => {
   let capturedOrder: { column: string; opts: unknown } | null = null;
@@ -345,6 +345,121 @@ test('listReviewDecisions returns { data: [], error } when the passenger_discoun
   __setSupabaseClientForTests(fakeReviewDecisionsClient({ discountError: 'connection refused' }));
 
   const { data, error } = await listReviewDecisions();
+  assert.deepEqual(data, []);
+  assert.equal(error, 'connection refused');
+});
+
+test('listLoginEvents orders by created_at desc, caps rows, and resolves user names', async () => {
+  let capturedOrder: { column: string; opts: unknown } | null = null;
+  let capturedLimit: number | null = null;
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'login_events') {
+        return {
+          select: () => ({
+            order: (column: string, opts: unknown) => {
+              capturedOrder = { column, opts };
+              return {
+                limit: async (n: number) => {
+                  capturedLimit = n;
+                  return {
+                    data: [
+                      { id: 'e1', user_id: 'u1', event_type: 'login', created_at: '2026-09-21T08:00:00Z' },
+                      { id: 'e2', user_id: 'u1', event_type: 'logout', created_at: '2026-09-21T09:00:00Z' },
+                    ],
+                    error: null,
+                  };
+                },
+              };
+            },
+          }),
+        };
+      }
+      if (table === 'users') {
+        return { select: () => ({ in: async () => ({ data: [{ id: 'u1', full_name: 'Engr. Wilhelmina Nazareno' }], error: null }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error, truncated } = await listLoginEvents();
+
+  assert.equal(error, null);
+  assert.equal(truncated, false);
+  assert.deepEqual(capturedOrder, { column: 'created_at', opts: { ascending: false } });
+  assert.equal(capturedLimit, 2000);
+  assert.deepEqual(data, [
+    { id: 'e1', userId: 'u1', userName: 'Engr. Wilhelmina Nazareno', eventType: 'login', createdAt: '2026-09-21T08:00:00Z' },
+    { id: 'e2', userId: 'u1', userName: 'Engr. Wilhelmina Nazareno', eventType: 'logout', createdAt: '2026-09-21T09:00:00Z' },
+  ]);
+});
+
+test('listLoginEvents applies a since-filter when a date-range cutoff is given', async () => {
+  let capturedSince: string | null = null;
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'login_events') {
+        return {
+          select: () => ({
+            order: () => ({
+              limit: () => ({
+                gte: async (_column: string, value: string) => {
+                  capturedSince = value;
+                  return { data: [], error: null };
+                },
+              }),
+            }),
+          }),
+        };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const cutoff = '2026-09-08T00:00:00.000Z';
+  const { data, error } = await listLoginEvents(cutoff);
+
+  assert.equal(error, null);
+  assert.deepEqual(data, []);
+  assert.equal(capturedSince, cutoff);
+});
+
+test('listLoginEvents reports truncated: true when the row cap is hit', async () => {
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'login_events') {
+        return {
+          select: () => ({
+            order: () => ({
+              limit: async () => ({
+                data: Array.from({ length: 2000 }, (_, i) => ({
+                  id: `e${i}`,
+                  user_id: 'u1',
+                  event_type: 'login',
+                  created_at: '2026-09-21T08:00:00Z',
+                })),
+                error: null,
+              }),
+            }),
+          }),
+        };
+      }
+      if (table === 'users') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { truncated } = await listLoginEvents();
+  assert.equal(truncated, true);
+});
+
+test('listLoginEvents returns { data: [], error } when the query fails', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ select: () => ({ order: () => ({ limit: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+  } as any);
+
+  const { data, error } = await listLoginEvents();
   assert.deepEqual(data, []);
   assert.equal(error, 'connection refused');
 });

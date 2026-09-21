@@ -1,11 +1,19 @@
-import { listAccountActions as listAccountActionsShared, listReviewDecisions as listReviewDecisionsShared } from '@trisakay/services';
-import type { AccountActionRow, ReviewDecisionRow } from '@trisakay/services';
+import {
+  listAccountActions as listAccountActionsShared,
+  listLoginEvents as listLoginEventsShared,
+  listReviewDecisions as listReviewDecisionsShared,
+} from '@trisakay/services';
+import type { AccountActionRow, LoginEventRow, ReviewDecisionRow } from '@trisakay/services';
 import type { ServiceResult } from './drivers';
 
-export type { AccountActionRow, ReviewDecisionRow };
+export type { AccountActionRow, LoginEventRow, ReviewDecisionRow };
 
 export interface ListAccountActionsResult extends ServiceResult<AccountActionRow[]> {
   /** P1-22 (2026-09-15 launch audit) — see listAccountActions in packages/services. */
+  truncated: boolean;
+}
+
+export interface ListLoginEventsResult extends ServiceResult<LoginEventRow[]> {
   truncated: boolean;
 }
 
@@ -22,4 +30,10 @@ export async function listAccountActions(sinceIso: string | null = null): Promis
 export async function listReviewDecisions(): Promise<ServiceResult<ReviewDecisionRow[]>> {
   const { data, error } = await listReviewDecisionsShared();
   return { data, error };
+}
+
+/** UAT A1 — login/logout audit trail, same sinceIso/truncated shape as listAccountActions above. */
+export async function listLoginEvents(sinceIso: string | null = null): Promise<ListLoginEventsResult> {
+  const { data, error, truncated } = await listLoginEventsShared(sinceIso);
+  return { data, error, truncated };
 }

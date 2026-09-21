@@ -179,3 +179,53 @@ export async function listReviewDecisions(): Promise<ListReviewDecisionsResult> 
 
   return { data: rows, error: null };
 }
+
+export type LoginEventType = 'login' | 'logout';
+
+export interface LoginEventRow {
+  id: string;
+  userId: string;
+  userName: string | null;
+  eventType: LoginEventType;
+  createdAt: string;
+}
+
+export interface ListLoginEventsResult {
+  data: LoginEventRow[];
+  error: string | null;
+  truncated: boolean;
+}
+
+const LOGIN_EVENTS_ROW_CAP = 2000;
+
+/**
+ * UAT A1: reads login_events (supabase/migrations/20260921000003), the new
+ * self-reported sign-in/out audit trail. Same shape as listAccountActions()
+ * above — server-side date-range scoping, an explicit row cap with a
+ * `truncated` flag, one follow-up users lookup for names.
+ */
+export async function listLoginEvents(sinceIso: string | null = null): Promise<ListLoginEventsResult> {
+  const client = getSupabaseClient();
+  let query = client.from('login_events').select('*').order('created_at', { ascending: false }).limit(LOGIN_EVENTS_ROW_CAP);
+  if (sinceIso) query = query.gte('created_at', sinceIso);
+  const { data, error } = await query;
+
+  if (error) return { data: [], error: error.message, truncated: false };
+
+  const userIds = [...new Set((data ?? []).map((row) => row.user_id))];
+  const names = new Map<string, string>();
+  if (userIds.length > 0) {
+    const { data: userRows } = await client.from('users').select('id, full_name').in('id', userIds);
+    for (const row of userRows ?? []) names.set(row.id, row.full_name!);
+  }
+
+  const rows: LoginEventRow[] = (data ?? []).map((row) => ({
+    id: row.id,
+    userId: row.user_id,
+    userName: names.get(row.user_id) ?? null,
+    eventType: row.event_type as LoginEventType,
+    createdAt: row.created_at,
+  }));
+
+  return { data: rows, error: null, truncated: (data ?? []).length >= LOGIN_EVENTS_ROW_CAP };
+}

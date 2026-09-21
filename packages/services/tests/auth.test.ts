@@ -6,6 +6,7 @@ import {
   deactivateOwnAccount,
   getCurrentUserProfile,
   onAuthStateChange,
+  recordLoginEvent,
   requestPasswordReset,
   signIn,
   signOut,
@@ -181,6 +182,40 @@ test('deactivateOwnAccount surfaces the RPC error and does not sign out', async 
 
   assert.match(error ?? '', /visit the PSO office/);
   assert.equal(signOutCalled, false);
+});
+
+test('recordLoginEvent inserts a row for the signed-in user', async () => {
+  let capturedInsert: unknown = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: { user: { id: 'u1' } } } }),
+      from: (table) => {
+        if (table !== 'login_events') throw new Error(`unexpected table ${table}`);
+        return { insert: async (row: unknown) => ((capturedInsert = row), { error: null }) };
+      },
+    })
+  );
+
+  await recordLoginEvent('login');
+
+  assert.deepEqual(capturedInsert, { user_id: 'u1', event_type: 'login' });
+});
+
+test('recordLoginEvent is a no-op when there is no active session', async () => {
+  let insertCalled = false;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => ({ data: { session: null } }),
+      from: () => {
+        insertCalled = true;
+        throw new Error('should not query login_events without a session');
+      },
+    })
+  );
+
+  await recordLoginEvent('logout');
+
+  assert.equal(insertCalled, false);
 });
 
 test('getCurrentUserProfile returns null when there is no active session', async () => {
