@@ -23,6 +23,7 @@ import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsent
 import { wait } from '../src/mocks/delay';
 import { styles } from '../src/styles/splash.styles';
 import { WALKTHROUGH_SEEN_KEY } from '../src/constants/walkthrough';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../src/utils/withTimeout';
 
 /**
  * The looping indeterminate sweep on the splash loading bar: the indicator
@@ -76,7 +77,14 @@ function LoadingBar() {
 async function resolveActiveRideRoute(
   passengerId: string
 ): Promise<{ pathname: '/booking/trip'; status: 'assigned' | 'ongoing' } | { pathname: '/booking/finding-driver' } | null> {
-  const { data } = await getActiveRideForPassenger(passengerId).catch(() => ({ data: null }));
+  // P1 (UAT audit): neither call below timed out before this fix — a hung
+  // connection here (as opposed to an outright network error, already
+  // caught) stalled the splash screen's indeterminate loading bar
+  // indefinitely, with no fallback route. Same withTimeout/REQUEST_TIMEOUT_MS
+  // standard used everywhere else in this app.
+  const { data } = await withTimeout(getActiveRideForPassenger(passengerId), REQUEST_TIMEOUT_MS, 'Active ride lookup timed out').catch(
+    () => ({ data: null })
+  );
   if (!data) return null;
 
   useBookingStore.setState({
@@ -103,7 +111,9 @@ async function resolveActiveRideRoute(
     return { pathname: '/booking/finding-driver' };
   }
 
-  const { data: driverInfo } = await getTripDriverInfo(data.id).catch(() => ({ data: null }));
+  const { data: driverInfo } = await withTimeout(getTripDriverInfo(data.id), REQUEST_TIMEOUT_MS, 'Driver lookup timed out').catch(() => ({
+    data: null,
+  }));
   useBookingStore.setState({
     driver: {
       id: driverInfo?.driverId ?? '',
