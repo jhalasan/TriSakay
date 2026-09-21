@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { listEmergencyAlertsForAdmin, markEmergencyAlertReviewed } from '../src/admin/emergency.ts';
+import { listEmergencyAlertsForAdmin, markEmergencyAlertClosed, markEmergencyAlertReviewed } from '../src/admin/emergency.ts';
 
 const SESSION = { session: { user: { id: 'supervisor1' } } };
 
@@ -116,4 +116,17 @@ test('markEmergencyAlertReviewed returns an error when there is no active sessio
 
   const { error } = await markEmergencyAlertReviewed('alert1');
   assert.equal(error, 'Not signed in');
+});
+
+test('markEmergencyAlertClosed sets status to closed without touching reviewed_by/reviewed_at/notes', async () => {
+  __setSupabaseClientForTests(fakeClient());
+
+  await markEmergencyAlertReviewed('alert1', 'Contacted both parties, no further action.');
+  const { error } = await markEmergencyAlertClosed('alert1');
+  assert.equal(error, null);
+
+  const { data } = await listEmergencyAlertsForAdmin();
+  assert.equal(data[0].status, 'closed');
+  assert.equal(data[0].reviewedByName, 'Rina Cabuslay');
+  assert.equal(data[0].notes, 'Contacted both parties, no further action.');
 });

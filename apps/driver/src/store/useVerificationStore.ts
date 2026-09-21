@@ -17,6 +17,7 @@ const TIMEOUT_MESSAGE = 'Verification check timed out';
 
 interface VerificationState {
   status: VerificationGateStatus;
+  rejectionReason: string | null;
   error: string | null;
   check: () => Promise<void>;
   reset: () => void;
@@ -27,6 +28,7 @@ export const useVerificationStore = create<VerificationState>()((set) => {
 
   return {
     status: 'unknown',
+    rejectionReason: null,
     error: null,
 
     check: async () => {
@@ -34,24 +36,28 @@ export const useVerificationStore = create<VerificationState>()((set) => {
       set({ status: 'checking', error: null });
 
       try {
-        const { status, error } = await withTimeout(getDriverVerificationStatus(), REQUEST_TIMEOUT_MS, TIMEOUT_MESSAGE);
+        const { status, rejectionReason, error } = await withTimeout(
+          getDriverVerificationStatus(),
+          REQUEST_TIMEOUT_MS,
+          TIMEOUT_MESSAGE
+        );
         if (epoch !== requestEpoch) return;
 
         if (error || !status) {
-          set({ status: 'pending', error });
+          set({ status: 'pending', rejectionReason: null, error });
           return;
         }
 
-        set({ status, error: null });
+        set({ status, rejectionReason, error: null });
       } catch {
         if (epoch !== requestEpoch) return;
-        set({ status: 'pending', error: TIMEOUT_MESSAGE });
+        set({ status: 'pending', rejectionReason: null, error: TIMEOUT_MESSAGE });
       }
     },
 
     reset: () => {
       requestEpoch++;
-      set({ status: 'unknown', error: null });
+      set({ status: 'unknown', rejectionReason: null, error: null });
     },
   };
 });

@@ -139,6 +139,7 @@ export default function VerificationPendingScreen() {
   const router = useRouter();
   const t = useTranslation();
   const status = useVerificationStore((state) => state.status);
+  const rejectionReason = useVerificationStore((state) => state.rejectionReason);
   const error = useVerificationStore((state) => state.error);
   const check = useVerificationStore((state) => state.check);
   const [refreshing, setRefreshing] = useState(false);
@@ -174,6 +175,13 @@ export default function VerificationPendingScreen() {
         </View>
         <Text style={styles.title}>{copy.title}</Text>
         <Text style={styles.body}>{copy.body}</Text>
+
+        {status === 'rejected' && rejectionReason && (
+          <View style={styles.reasonBox}>
+            <Text style={styles.reasonLabel}>{t.driver.verificationPending.rejectionReasonLabel}</Text>
+            <Text style={styles.reasonText}>{rejectionReason}</Text>
+          </View>
+        )}
 
         {error ? <Text style={styles.error}>{error}</Text> : null}
 

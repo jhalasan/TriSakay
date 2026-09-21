@@ -9,6 +9,7 @@ import { triggerEmergencyAlert } from '@trisakay/services/src/emergency/index.ts
 import { interpolate } from '../../src/utils/interpolate';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useTripStore } from '../../src/store/useTripStore';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../../src/utils/withTimeout';
 import { styles } from '../../src/styles/trip/emergency.styles';
 
 type AlertState = 'sending' | 'sent' | 'failed';
@@ -40,13 +41,17 @@ export default function DriverEmergencyScreen() {
       // captures where the driver actually is regardless.
       const soleLeg = trip?.passengers.length === 1 ? trip.passengers[0] : null;
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const { error } = await triggerEmergencyAlert({
-        rideRequestId: soleLeg?.id ?? null,
-        triggeredRole: 'driver',
-        counterpartId: soleLeg?.passengerId ?? null,
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      });
+      const { error } = await withTimeout(
+        triggerEmergencyAlert({
+          rideRequestId: soleLeg?.id ?? null,
+          triggeredRole: 'driver',
+          counterpartId: soleLeg?.passengerId ?? null,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }),
+        REQUEST_TIMEOUT_MS,
+        'Emergency alert timed out'
+      );
       if (error) {
         setAlertState('failed');
       } else {

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Avatar, Badge, BrandMotif, EmptyState, GradientSurface, colors } from '@trisakay/ui';
@@ -22,6 +23,7 @@ function isThisMonth(iso: string) {
 
 export default function HistoryScreen() {
   const t = useTranslation();
+  const router = useRouter();
   const trips = useHistoryStore((state) => state.trips);
   const loading = useHistoryStore((state) => state.loading);
   const historyError = useHistoryStore((state) => state.error);
@@ -97,7 +99,11 @@ export default function HistoryScreen() {
           loading ? null : <EmptyState title={t.driver.history.emptyTitle} message={t.driver.history.emptyMessage} />
         }
         renderItem={({ item }) => (
-          <View style={styles.tripCard}>
+          <Pressable
+            style={styles.tripCard}
+            accessibilityRole="button"
+            onPress={() => router.push(`/history/${item.id}`)}
+          >
             {item.passengerName ? (
               <Avatar name={item.passengerName} size="md" />
             ) : (
@@ -120,7 +126,7 @@ export default function HistoryScreen() {
                 {item.fare !== null ? formatCurrency(item.fare) : '—'}
               </Text>
             </View>
-          </View>
+          </Pressable>
         )}
       />
     </SafeAreaView>

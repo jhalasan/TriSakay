@@ -100,10 +100,7 @@ export interface MarkEmergencyAlertReviewedResult {
 /**
  * FR-12.5 — PSO Supervisor+ marks an alert reviewed, with optional notes
  * (`emergency_review_supervisor` RLS: `is_supervisor()`, no new RPC needed,
- * same as Discount Review's direct-update pattern). The wireframe review
- * (item 10) names only this one action; `emergency_status`'s third value,
- * `closed`, has no UI trigger anywhere — see the design doc's note in
- * docs/superpowers/specs/2026-08-21-emergency-sos-alert-design.md.
+ * same as Discount Review's direct-update pattern).
  */
 export async function markEmergencyAlertReviewed(id: string, notes?: string): Promise<MarkEmergencyAlertReviewedResult> {
   const client = getSupabaseClient();
@@ -121,5 +118,22 @@ export async function markEmergencyAlertReviewed(id: string, notes?: string): Pr
     })
     .eq('id', id);
 
+  return { error: error?.message ?? null };
+}
+
+/**
+ * `emergency_status`'s third value, `closed`, was originally left unwired
+ * (see docs/superpowers/specs/2026-08-21-emergency-sos-alert-design.md,
+ * section E) since the wireframe review named only "Mark Reviewed" — noted
+ * there as worth revisiting if a real product need for a distinct closing
+ * step showed up. UAT panelist review (2026-09-21) is that need: PSO wants
+ * to explicitly close out a reviewed alert once follow-up is done, not leave
+ * it sitting as "Reviewed" indefinitely. Same RLS/role tier as review
+ * (`emergency_review_supervisor`), only reachable from `reviewed` — the
+ * route enforces that transition, this function doesn't re-check it.
+ */
+export async function markEmergencyAlertClosed(id: string): Promise<MarkEmergencyAlertReviewedResult> {
+  const client = getSupabaseClient();
+  const { error } = await client.from('emergency_alerts').update({ status: 'closed' }).eq('id', id);
   return { error: error?.message ?? null };
 }

@@ -22,6 +22,15 @@ export const styles = StyleSheet.create({
   title: { fontSize: 22, lineHeight: 29, fontFamily: typography.h2.fontFamily, letterSpacing: -0.4, color: colors.ink, textAlign: 'center' },
   body: { fontSize: 14, lineHeight: 21, fontFamily: typography.body.fontFamily, color: colors.inkSoft, textAlign: 'center' },
   error: { ...typography.caption, color: colors.danger, textAlign: 'center' },
+  reasonBox: {
+    width: '100%',
+    backgroundColor: colors.dangerSoft,
+    borderRadius: radius.card,
+    padding: spacing.md,
+    gap: 4,
+  },
+  reasonLabel: { ...typography.caption, color: colors.danger, fontFamily: typography.label.fontFamily },
+  reasonText: { ...typography.body, color: colors.ink },
   actions: { width: '100%', gap: spacing.sm, marginTop: spacing.md },
   uploadScroll: { flex: 1 },
   uploadScrollContent: {

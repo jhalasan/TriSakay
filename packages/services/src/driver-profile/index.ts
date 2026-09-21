@@ -13,13 +13,19 @@ async function getSignedInUserId(): Promise<string | null> {
  * before this read) is reported as 'unsubmitted' rather than null/error —
  * callers gate app entry on this, and "no row" must fail closed the same
  * way an explicit 'unsubmitted' does.
+ *
+ * `rejectionReason` is only populated when rejected — it comes from
+ * `driver_documents.remarks`, which `perform_verification_decision` writes
+ * identically to every document row for the driver, so any one of them
+ * carries the reviewer's reason (see admin/verification.ts).
  */
 export async function getDriverVerificationStatus(): Promise<{
   status: VerificationStatus | null;
+  rejectionReason: string | null;
   error: string | null;
 }> {
   const userId = await getSignedInUserId();
-  if (!userId) return { status: null, error: 'Not signed in' };
+  if (!userId) return { status: null, rejectionReason: null, error: 'Not signed in' };
 
   const { data, error } = await getSupabaseClient()
     .from('driver_profiles')
@@ -27,10 +33,22 @@ export async function getDriverVerificationStatus(): Promise<{
     .eq('user_id', userId)
     .maybeSingle();
 
-  if (error) return { status: null, error: error.message };
-  if (!data) return { status: 'unsubmitted', error: null };
+  if (error) return { status: null, rejectionReason: null, error: error.message };
+  if (!data) return { status: 'unsubmitted', rejectionReason: null, error: null };
 
-  return { status: data.verification_status, error: null };
+  if (data.verification_status !== 'rejected') {
+    return { status: data.verification_status, rejectionReason: null, error: null };
+  }
+
+  const { data: doc } = await getSupabaseClient()
+    .from('driver_documents')
+    .select('remarks')
+    .eq('driver_id', userId)
+    .not('remarks', 'is', null)
+    .limit(1)
+    .maybeSingle();
+
+  return { status: data.verification_status, rejectionReason: doc?.remarks ?? null, error: null };
 }
 
 export interface DriverUnitResult {

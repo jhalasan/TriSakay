@@ -8,6 +8,7 @@ import { triggerEmergencyAlert } from '@trisakay/services';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../../src/utils/withTimeout';
 import { styles } from '../../src/styles/profile/privacy-safety.styles';
 
 type SosState = 'idle' | 'sending' | 'sent' | 'failed';
@@ -50,13 +51,17 @@ export default function PrivacySafetyScreen() {
       }
 
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const { error } = await triggerEmergencyAlert({
-        rideRequestId: null,
-        triggeredRole: 'driver',
-        counterpartId: null,
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      });
+      const { error } = await withTimeout(
+        triggerEmergencyAlert({
+          rideRequestId: null,
+          triggeredRole: 'driver',
+          counterpartId: null,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }),
+        REQUEST_TIMEOUT_MS,
+        'Emergency alert timed out'
+      );
 
       if (error) {
         setSosState('failed');

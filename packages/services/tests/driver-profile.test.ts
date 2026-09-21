@@ -65,6 +65,57 @@ test('getDriverVerificationStatus returns an error when there is no active sessi
   assert.equal(error, 'Not signed in');
 });
 
+function driverDocumentsRemarksTable(remarks: string | null) {
+  const query = {
+    select: () => query,
+    eq: () => query,
+    not: () => query,
+    limit: () => query,
+    maybeSingle: async () => ({ data: remarks === null ? null : { remarks }, error: null }),
+  };
+  return query;
+}
+
+test('getDriverVerificationStatus fetches the rejection reason from driver_documents.remarks when rejected', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: (table) =>
+        table === 'driver_profiles'
+          ? driverProfilesTable({ verification_status: 'rejected' })
+          : table === 'driver_documents'
+            ? driverDocumentsRemarksTable('OR/CR photo is blurry — please resubmit clearly.')
+            : {},
+    })
+  );
+
+  const { status, rejectionReason, error } = await getDriverVerificationStatus();
+  assert.equal(error, null);
+  assert.equal(status, 'rejected');
+  assert.equal(rejectionReason, 'OR/CR photo is blurry — please resubmit clearly.');
+});
+
+test('getDriverVerificationStatus does not query driver_documents for a non-rejected status', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: (table) =>
+        table === 'driver_profiles'
+          ? driverProfilesTable({ verification_status: 'pending' })
+          : table === 'driver_documents'
+            ? (() => {
+                throw new Error('driver_documents should not be queried for a non-rejected status');
+              })()
+            : {},
+    })
+  );
+
+  const { status, rejectionReason, error } = await getDriverVerificationStatus();
+  assert.equal(error, null);
+  assert.equal(status, 'pending');
+  assert.equal(rejectionReason, null);
+});
+
 function driverEarningsView(
   rows: { earning_date: string; rides_completed: number; total_collected: number }[] | null,
   selectError?: string

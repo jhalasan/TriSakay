@@ -40,10 +40,11 @@ const ROLE_LABEL: Record<EmergencyAlertRow['triggeredRole'], string> = {
  * feature's purpose.
  */
 export function EmergencyAlerts() {
-  const { alerts, loading, error, fetch, markReviewed } = useEmergencyAlertsStore();
+  const { alerts, loading, error, fetch, markReviewed, close } = useEmergencyAlertsStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [notesDraft, setNotesDraft] = useState('');
   const [reviewing, setReviewing] = useState(false);
+  const [closing, setClosing] = useState(false);
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -65,6 +66,14 @@ export function EmergencyAlerts() {
     const ok = await markReviewed(selected.id, notesDraft || undefined);
     setReviewing(false);
     if (ok) showToast({ message: 'Alert marked reviewed.' });
+  }
+
+  async function handleClose() {
+    if (!selected) return;
+    setClosing(true);
+    const ok = await close(selected.id);
+    setClosing(false);
+    if (ok) showToast({ message: 'Alert closed.' });
   }
 
   const columns: DataTableColumn<EmergencyAlertRow>[] = [
@@ -188,20 +197,32 @@ export function EmergencyAlerts() {
 
           <RoleGate
             min="supervisor"
-            fallback={<div className="read-only-note">Mark Reviewed — PSO Supervisor &amp; Administrator only.</div>}
+            fallback={<div className="read-only-note">Mark Reviewed / Close — PSO Supervisor &amp; Administrator only.</div>}
           >
-            <Button
-              variant="solid"
-              tone="primary"
-              size="sm"
-              superscript="S+"
-              loading={reviewing}
-              disabled={selected.status !== 'logged'}
-              onClick={handleMarkReviewed}
-              style={{ alignSelf: 'flex-start' }}
-            >
-              {reviewing ? 'Marking reviewed…' : 'Mark reviewed'}
-            </Button>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <Button
+                variant="solid"
+                tone="primary"
+                size="sm"
+                superscript="S+"
+                loading={reviewing}
+                disabled={selected.status !== 'logged'}
+                onClick={handleMarkReviewed}
+              >
+                {reviewing ? 'Marking reviewed…' : 'Mark reviewed'}
+              </Button>
+              <Button
+                variant="outline"
+                tone="neutral"
+                size="sm"
+                superscript="S+"
+                loading={closing}
+                disabled={selected.status !== 'reviewed'}
+                onClick={handleClose}
+              >
+                {closing ? 'Closing…' : 'Close'}
+              </Button>
+            </div>
           </RoleGate>
         </Modal>
       )}

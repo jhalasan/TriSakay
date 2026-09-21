@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { listEmergencyAlerts, markAlertReviewed } from '../services/emergency';
+import { closeAlert, listEmergencyAlerts, markAlertReviewed } from '../services/emergency';
 import type { EmergencyAlertRow } from '../types/emergency';
 
 interface EmergencyAlertsState {
@@ -8,6 +8,7 @@ interface EmergencyAlertsState {
   error: string | null;
   fetch: () => Promise<void>;
   markReviewed: (id: string, notes?: string) => Promise<boolean>;
+  close: (id: string) => Promise<boolean>;
 }
 
 export const useEmergencyAlertsStore = create<EmergencyAlertsState>()((set, get) => ({
@@ -23,6 +24,16 @@ export const useEmergencyAlertsStore = create<EmergencyAlertsState>()((set, get)
 
   markReviewed: async (id, notes) => {
     const { error } = await markAlertReviewed(id, notes);
+    if (error) {
+      set({ error });
+      return false;
+    }
+    await get().fetch();
+    return true;
+  },
+
+  close: async (id) => {
+    const { error } = await closeAlert(id);
     if (error) {
       set({ error });
       return false;

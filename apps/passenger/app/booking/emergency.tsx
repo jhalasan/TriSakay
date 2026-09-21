@@ -9,6 +9,7 @@ import { triggerEmergencyAlert } from '@trisakay/services/src/emergency/index.ts
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { reverseGeocode } from '../../src/utils/geocode';
+import { REQUEST_TIMEOUT_MS, withTimeout } from '../../src/utils/withTimeout';
 import { styles } from '../../src/styles/booking/emergency.styles';
 
 type AlertState = 'sending' | 'sent' | 'failed';
@@ -36,13 +37,17 @@ export default function PassengerEmergencyScreen() {
     setAlertState('sending');
     try {
       const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-      const { error } = await triggerEmergencyAlert({
-        rideRequestId: rideRequestId ?? null,
-        triggeredRole: 'passenger',
-        counterpartId: driver?.id ?? null,
-        lat: position.coords.latitude,
-        lng: position.coords.longitude,
-      });
+      const { error } = await withTimeout(
+        triggerEmergencyAlert({
+          rideRequestId: rideRequestId ?? null,
+          triggeredRole: 'passenger',
+          counterpartId: driver?.id ?? null,
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        }),
+        REQUEST_TIMEOUT_MS,
+        'Emergency alert timed out'
+      );
       setAlertState(error ? 'failed' : 'sent');
       reverseGeocode(position.coords.latitude, position.coords.longitude)
         .then((point) => setCurrentLocationLabel(point.address))
