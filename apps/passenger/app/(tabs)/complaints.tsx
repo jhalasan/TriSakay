@@ -24,6 +24,12 @@ import { styles } from '../../src/styles/tabs/complaints.styles';
 
 const MAX_EVIDENCE_PHOTOS = 3;
 
+function formatRideDateTime(iso: string) {
+  const date = new Date(iso).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' });
+  const time = new Date(iso).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+  return `${date}, ${time}`;
+}
+
 /**
  * expo-file-system's `File` class is a no-op stub on web (every method warns
  * and does nothing — see ExpoFileSystem.web.ts) even though it's the
@@ -263,19 +269,29 @@ export default function ComplaintsScreen() {
                   }}
                   divider={rides.length > 0}
                 />
-                {rides.map((ride, index) => (
-                  <ListRow
-                    key={ride.id}
-                    title={`${ride.driverName || 'Driver'} · #${getReferenceCode(ride.id)}`}
-                    subtitle={ride.pickup && ride.dropoff ? `${ride.pickup} → ${ride.dropoff}` : undefined}
-                    onPress={() => {
-                      setRelatedTripId(ride.id);
-                      setGeneralComplaint(false);
-                      setPickerOpen(false);
-                    }}
-                    divider={index < rides.length - 1}
-                  />
-                ))}
+                {rides.length > 0 && (
+                  <ScrollView style={styles.pickerListScroll} nestedScrollEnabled keyboardShouldPersistTaps="handled">
+                    {rides.map((ride, index) => (
+                      <ListRow
+                        key={ride.id}
+                        leading={<Avatar name={ride.driverName} source={ride.driverAvatarUrl ? { uri: ride.driverAvatarUrl } : undefined} size="xs" />}
+                        title={`${ride.driverName || 'Driver'} · #${getReferenceCode(ride.id)}`}
+                        subtitle={
+                          ride.pickup && ride.dropoff
+                            ? `${formatRideDateTime(ride.date)} · ${ride.pickup} → ${ride.dropoff}`
+                            : formatRideDateTime(ride.date)
+                        }
+                        trailing={ride.status === 'cancelled' ? <Badge label="Cancelled" tone="danger" /> : undefined}
+                        onPress={() => {
+                          setRelatedTripId(ride.id);
+                          setGeneralComplaint(false);
+                          setPickerOpen(false);
+                        }}
+                        divider={index < rides.length - 1}
+                      />
+                    ))}
+                  </ScrollView>
+                )}
               </Card>
             )}
           </View>

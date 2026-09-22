@@ -73,6 +73,10 @@ export const styles = StyleSheet.create({
     borderRadius: radius.card,
     overflow: 'hidden',
   },
+  /** Caps the ride list's own height so a long history scrolls inside the dropdown card instead of pushing the rest of the form off-screen. */
+  pickerListScroll: {
+    maxHeight: 280,
+  },
   priorSection: {
     gap: spacing.sm,
     marginTop: spacing.sm,
