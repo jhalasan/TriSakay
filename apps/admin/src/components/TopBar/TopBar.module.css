@@ -1,6 +1,9 @@
 .bar {
   position: relative;
-  z-index: 1;
+  /* Above Leaflet's control panes (z-index up to 1000) — otherwise dropdowns
+     opened here (search results, notifications) render behind the map on
+     pages like Ride Monitoring instead of over it. */
+  z-index: 1100;
   height: var(--topbar-h);
   flex-shrink: 0;
   display: flex;

@@ -61,7 +61,7 @@ export function LiveMap({ cells, loading = false }: LiveMapProps) {
 
   return (
     <div className={styles.wrap}>
-      <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} style={{ height: '100%', width: '100%' }} scrollWheelZoom={false}>
+      <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
         <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
         {cells.map((cell) => (
           <Marker key={`${cell.lat},${cell.lng}`} position={[cell.lat, cell.lng]} icon={cellIcon(cell.count)}>
