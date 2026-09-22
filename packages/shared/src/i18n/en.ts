@@ -55,7 +55,7 @@ export const en = {
     statsDiscountLabel: 'Discount',
     statsTripsEmptyValue: '0',
     statsDiscountEmptyValue: 'Not set',
-    ctaFareChipPrefix: 'Fares from ₱25',
+    ctaFareChipPrefix: 'Fares from {amount}',
     ctaNearbySuffix: '{count} nearby',
     savedPlacesManage: 'Manage',
     discountLabelSeniorCitizen: 'Senior',

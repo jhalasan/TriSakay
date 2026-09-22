@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
@@ -14,9 +14,10 @@ import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
 import { useSavedPlacesStore } from '../../src/store/useSavedPlacesStore';
 import { SHORTCUT_ICON_TONE, DEFAULT_SHORTCUT_TONE } from '../../src/utils/savedPlaceIconTone';
-import { formatDiscountLabel } from '@trisakay/services';
+import { formatDiscountLabel, getFareConfig } from '@trisakay/services';
 import type { SavedPlaceIcon, SavedPlaceRow } from '@trisakay/services';
 import type { LocationPoint } from '../../src/types/booking';
+import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/tabs/home.styles';
 
 // Dev-only override for reaching the empty saved-places state without clearing real data.
@@ -54,6 +55,7 @@ export default function HomeScreen() {
   const removeSavedPlace = useSavedPlacesStore((state) => state.remove);
   const { stats } = usePassengerStats();
   const nearbyCount = useNearbyDriverCount();
+  const [baseFare, setBaseFare] = useState<number | null>(null);
   const isOffline = useConnectivityStore((state) => state.isOffline);
   const greetingHeaderTarget = useTutorialTarget('greeting-header');
   const requestCtaTarget = useTutorialTarget('request-cta');
@@ -65,6 +67,20 @@ export default function HomeScreen() {
       // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
   );
+
+  // The CTA chip used to show a hardcoded "Fares from ₱25" that didn't match
+  // the real base fare (₱15) anywhere else in the app — pulled live here
+  // instead, same call the Fare Matrix screen already makes, so it can't
+  // drift out of sync again if the base fare ever changes.
+  useEffect(() => {
+    let cancelled = false;
+    getFareConfig().then(({ data }) => {
+      if (!cancelled && data) setBaseFare(data.baseFare);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Routes through /booking/request rather than straight to /booking/confirm —
   // that screen is what resolves pickup (current-location fix on mount, or a
@@ -181,12 +197,21 @@ export default function HomeScreen() {
                     </View>
                     <View style={styles.ctaTextSlot}>
                       <Text style={styles.ctaTitle}>{t.home.ctaTitle}</Text>
-                      {nearbyCount != null ? (
+                      {baseFare != null || nearbyCount != null ? (
                         <View style={styles.ctaChipRow}>
-                          <View style={styles.ctaChip}>
-                            <Text style={styles.ctaChipText}>{t.home.ctaFareChipPrefix}</Text>
-                          </View>
-                          <Text style={styles.ctaNearbyText}>· {t.home.ctaNearbySuffix.replace('{count}', String(nearbyCount))}</Text>
+                          {baseFare != null && (
+                            <View style={styles.ctaChip}>
+                              <Text style={styles.ctaChipText}>
+                                {t.home.ctaFareChipPrefix.replace('{amount}', formatCurrency(baseFare))}
+                              </Text>
+                            </View>
+                          )}
+                          {nearbyCount != null && (
+                            <Text style={styles.ctaNearbyText}>
+                              {baseFare != null ? '· ' : ''}
+                              {t.home.ctaNearbySuffix.replace('{count}', String(nearbyCount))}
+                            </Text>
+                          )}
                         </View>
                       ) : (
                         <Text style={styles.ctaSubtitle}>{t.home.ctaSubtitle}</Text>

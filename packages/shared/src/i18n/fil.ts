@@ -56,7 +56,7 @@ export const fil: Translations = {
     statsDiscountLabel: 'Diskwento',
     statsTripsEmptyValue: '0',
     statsDiscountEmptyValue: 'Hindi pa naitatakda',
-    ctaFareChipPrefix: 'Simula sa ₱25 ang pamasahe',
+    ctaFareChipPrefix: 'Simula sa {amount} ang pamasahe',
     ctaNearbySuffix: '{count} malapit',
     savedPlacesManage: 'Pamahalaan',
     discountLabelSeniorCitizen: 'Senior',
