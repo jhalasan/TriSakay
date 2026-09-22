@@ -85,7 +85,11 @@ function RideCard({
         {isDone && (
           <View style={styles.driverRow}>
             <View style={styles.driverIdentity}>
-              <Avatar name={item.driverName || t.history.noDriverAssigned} size="sm" />
+              <Avatar
+                name={item.driverName || t.history.noDriverAssigned}
+                source={item.driverAvatarUrl ? { uri: item.driverAvatarUrl } : undefined}
+                size="sm"
+              />
               <Text style={styles.driverName}>{item.driverName || t.history.noDriverAssigned}</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />

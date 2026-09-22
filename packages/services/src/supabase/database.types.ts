@@ -1638,6 +1638,7 @@ export type Database = {
           distance_km: number
           duration_minutes: number
           fare: number
+          passenger_avatar_url: string
           passenger_name: string
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
@@ -1666,6 +1667,7 @@ export type Database = {
           discount_applied: boolean
           discount_percent: number
           distance_km: number
+          driver_avatar_url: string
           driver_name: string
           driver_rating: number
           duration_minutes: number

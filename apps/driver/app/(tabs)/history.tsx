@@ -105,7 +105,11 @@ export default function HistoryScreen() {
             onPress={() => router.push(`/history/${item.id}`)}
           >
             {item.passengerName ? (
-              <Avatar name={item.passengerName} size="md" />
+              <Avatar
+                name={item.passengerName}
+                source={item.passengerAvatarUrl ? { uri: item.passengerAvatarUrl } : undefined}
+                size="md"
+              />
             ) : (
               <View style={styles.fallbackAvatar}>
                 <Ionicons name="person" size={20} color={colors.lineStrong} />

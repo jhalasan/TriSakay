@@ -1,6 +1,7 @@
 export interface RideHistoryItem {
   id: string;
   driverName: string;
+  driverAvatarUrl: string | null;
   driverRating: number | null;
   plateNo: string | null;
   bodyNo: string | null;

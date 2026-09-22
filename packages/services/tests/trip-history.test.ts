@@ -17,6 +17,7 @@ test('listPassengerTripHistory maps a full RPC row and picks the right date', as
             {
               ride_request_id: 'rr1',
               driver_name: 'Juan Dela Cruz',
+              driver_avatar_url: 'https://example.com/juan.jpg',
               driver_rating: 4.8,
               plate_no: 'TRK 4821',
               body_no: '042',
@@ -52,6 +53,7 @@ test('listPassengerTripHistory maps a full RPC row and picks the right date', as
     {
       rideRequestId: 'rr1',
       driverName: 'Juan Dela Cruz',
+      driverAvatarUrl: 'https://example.com/juan.jpg',
       driverRating: 4.8,
       plateNo: 'TRK 4821',
       bodyNo: '042',
@@ -80,6 +82,7 @@ test('listPassengerTripHistory handles a cancelled-before-assignment row with no
           {
             ride_request_id: 'rr2',
             driver_name: null,
+            driver_avatar_url: null,
             driver_rating: null,
             plate_no: null,
             body_no: null,
@@ -112,6 +115,7 @@ test('listPassengerTripHistory handles a cancelled-before-assignment row with no
     {
       rideRequestId: 'rr2',
       driverName: null,
+      driverAvatarUrl: null,
       driverRating: null,
       plateNo: null,
       bodyNo: null,

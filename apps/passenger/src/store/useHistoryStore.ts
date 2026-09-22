@@ -37,6 +37,7 @@ export const useHistoryStore = create<HistoryState>()((set) => {
         items: data.map((item) => ({
           id: item.rideRequestId,
           driverName: item.driverName ?? '',
+          driverAvatarUrl: item.driverAvatarUrl,
           driverRating: item.driverRating,
           plateNo: item.plateNo,
           bodyNo: item.bodyNo,

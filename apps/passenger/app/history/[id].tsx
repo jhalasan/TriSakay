@@ -119,7 +119,11 @@ export default function RideDetailScreen() {
           <Card variant="raised" style={styles.section}>
             <Text style={styles.sectionLabel}>{t.history.driver}</Text>
             <View style={styles.driverRow}>
-              <Avatar name={item.driverName} size="md" />
+              <Avatar
+                name={item.driverName}
+                source={item.driverAvatarUrl ? { uri: item.driverAvatarUrl } : undefined}
+                size="md"
+              />
               <View style={styles.driverTextSlot}>
                 <Text style={styles.driverName}>{item.driverName}</Text>
                 {(item.bodyNo || item.plateNo) && (

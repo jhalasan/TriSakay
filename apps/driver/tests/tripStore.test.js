@@ -529,6 +529,7 @@ test('useHistoryStore.load() fetches and maps completed/cancelled trips from the
         {
           ride_request_id: 'rr1',
           passenger_name: 'Juan Dela Cruz',
+          passenger_avatar_url: 'https://example.com/juan.jpg',
           status: 'completed',
           fare: 45,
           completed_at: '2026-08-10T00:00:00.000Z',
@@ -546,6 +547,7 @@ test('useHistoryStore.load() fetches and maps completed/cancelled trips from the
         {
           ride_request_id: 'rr2',
           passenger_name: null,
+          passenger_avatar_url: null,
           status: 'cancelled',
           fare: null,
           completed_at: null,
@@ -575,6 +577,7 @@ test('useHistoryStore.load() fetches and maps completed/cancelled trips from the
   assert.deepEqual(trips[0], {
     id: 'rr1',
     passengerName: 'Juan Dela Cruz',
+    passengerAvatarUrl: 'https://example.com/juan.jpg',
     date: '2026-08-10T00:00:00.000Z',
     fare: 45,
     status: 'done',
@@ -590,6 +593,7 @@ test('useHistoryStore.load() fetches and maps completed/cancelled trips from the
   assert.deepEqual(trips[1], {
     id: 'rr2',
     passengerName: null,
+    passengerAvatarUrl: null,
     date: '2026-08-08T00:00:00.000Z',
     fare: null,
     status: 'cancelled',

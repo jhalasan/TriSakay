@@ -1,6 +1,7 @@
 export interface TripHistoryItem {
   id: string;
   passengerName: string | null;
+  passengerAvatarUrl: string | null;
   date: string;
   fare: number | null;
   status: 'done' | 'cancelled';

@@ -3,6 +3,7 @@ import { getSupabaseClient } from '../supabase/client.ts';
 export interface PassengerTripHistoryItem {
   rideRequestId: string;
   driverName: string | null;
+  driverAvatarUrl: string | null;
   driverRating: number | null;
   plateNo: string | null;
   bodyNo: string | null;
@@ -41,6 +42,7 @@ export async function listPassengerTripHistory(limit = 50): Promise<ListPassenge
   const rows = (data ?? []).map((row) => ({
     rideRequestId: row.ride_request_id,
     driverName: row.driver_name,
+    driverAvatarUrl: row.driver_avatar_url,
     driverRating: row.driver_rating,
     plateNo: row.plate_no,
     bodyNo: row.body_no,

@@ -29,6 +29,7 @@ export const useHistoryStore = create<HistoryState>()((set) => ({
       trips: data.map((item) => ({
         id: item.rideRequestId,
         passengerName: item.passengerName,
+        passengerAvatarUrl: item.passengerAvatarUrl,
         date: item.date,
         fare: item.fare,
         status: item.status === 'completed' ? 'done' : 'cancelled',

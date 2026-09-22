@@ -53,7 +53,11 @@ export default function TripDetailScreen() {
         <Card variant="raised" style={styles.section}>
           <Text style={styles.sectionLabel}>{t.driver.history.passenger}</Text>
           <View style={styles.passengerRow}>
-            <Avatar name={item.passengerName ?? undefined} size="md" />
+            <Avatar
+              name={item.passengerName ?? undefined}
+              source={item.passengerAvatarUrl ? { uri: item.passengerAvatarUrl } : undefined}
+              size="md"
+            />
             <Text style={styles.passengerName}>{item.passengerName || t.driver.history.passengerFallback}</Text>
           </View>
         </Card>

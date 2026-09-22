@@ -606,6 +606,7 @@ export async function getTripDriverInfo(rideRequestId: string): Promise<GetTripD
 export interface DriverTripHistoryItem {
   rideRequestId: string;
   passengerName: string | null;
+  passengerAvatarUrl: string | null;
   status: 'completed' | 'cancelled';
   fare: number | null;
   date: string;
@@ -644,6 +645,7 @@ export async function listDriverTripHistory(limit = 50): Promise<ListDriverTripH
   const rows = (data ?? []).map((row) => ({
     rideRequestId: row.ride_request_id,
     passengerName: row.passenger_name,
+    passengerAvatarUrl: row.passenger_avatar_url,
     status: row.status as 'completed' | 'cancelled',
     fare: row.fare,
     date: row.completed_at ?? row.cancelled_at ?? row.requested_at,
