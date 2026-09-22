@@ -5,6 +5,7 @@ import { Button } from '../components/Button';
 import { TextField } from '../components/TextField';
 import { Select } from '../components/Select';
 import { ConfirmModal, SevereIcon } from '../components/ConfirmModal';
+import { Modal } from '../components/Modal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
@@ -280,16 +281,11 @@ export function PsoUsers() {
       </p>
 
       {sessionsUser && (
-        <div className="panel detail-panel">
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <h2 className="panel-title">Sessions: {sessionsUser.fullName}</h2>
-            <Button variant="outline" tone="neutral" size="sm" onClick={() => setSessionsUser(null)}>
-              Close
-            </Button>
-          </div>
-          <p style={{ fontSize: 12, color: 'var(--ink-faint)', margin: 0 }}>
-            A password change or Disable doesn't sign an active session out — revoke a session here to do that immediately.
-          </p>
+        <Modal
+          title={`Sessions: ${sessionsUser.fullName}`}
+          subtitle="A password change or Disable doesn't sign an active session out — revoke a session here to do that immediately."
+          onClose={() => setSessionsUser(null)}
+        >
           {sessionsLoading && <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Loading…</span>}
           {!sessionsLoading && sessions.length === 0 && (
             <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No active sessions.</span>
@@ -318,7 +314,7 @@ export function PsoUsers() {
                 </Button>
               </div>
             ))}
-        </div>
+        </Modal>
       )}
 
       {pendingRevokeId && (

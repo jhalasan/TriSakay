@@ -101,6 +101,15 @@ const DATE_RANGE_OPTIONS = [
   { label: 'All time', value: 'all' },
 ];
 
+type SectionTab = 'actions' | 'decisions' | 'login' | 'fare';
+
+const SECTION_TABS: { label: string; value: SectionTab }[] = [
+  { label: 'Account Actions', value: 'actions' },
+  { label: 'Verification & Discount Decisions', value: 'decisions' },
+  { label: 'Login Activity', value: 'login' },
+  { label: 'Fare Change History', value: 'fare' },
+];
+
 /**
  * Reads account_actions (docs/SCHEMA.MD §3.2) — the audit trail every
  * Flag/Suspend/Reactivate/Deactivate/Unflag on Driver/Passenger/PSO User
@@ -133,6 +142,7 @@ export function AuditLog() {
     fareHistoryLoading,
     fetch,
   } = useAuditLogStore();
+  const [section, setSection] = useState<SectionTab>('actions');
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
   const [dateRange, setDateRange] = useState('7');
   const [performedBy, setPerformedBy] = useState('all');
@@ -190,104 +200,135 @@ export function AuditLog() {
     <div className="page">
       <div className={`panel ${styles.filterStrip}`}>
         <div className="segmented">
-          {ACTION_FILTER_TABS.map((tab) => (
+          {SECTION_TABS.map((tab) => (
             <button
               key={tab.value}
               type="button"
-              className={`segment-button ${actionFilter === tab.value ? 'segment-button-active' : ''}`}
-              onClick={() => setActionFilter(tab.value)}
+              className={`segment-button ${section === tab.value ? 'segment-button-active' : ''}`}
+              onClick={() => setSection(tab.value)}
             >
               {tab.label}
             </button>
           ))}
         </div>
-        <Select aria-label="Date range" value={dateRange} onChange={(e) => setDateRange(e.target.value)} options={DATE_RANGE_OPTIONS} />
-        <Select aria-label="Performed by" value={performedBy} onChange={(e) => setPerformedBy(e.target.value)} options={performerOptions} />
       </div>
 
-      <div className="panel">
-        <div className={styles.tableHeader}>
-          <h2 className="panel-title" style={{ marginBottom: 0 }}>
-            Account Actions
-          </h2>
-          <div className={styles.tableHeaderRight}>
-            <span className={styles.recordCount}>{filteredActions.length} recorded · newest first</span>
-            {/* P1-22 (2026-09-15 launch audit): account_actions has no natural
-                bound — this replaces a silent, invisible truncation (PostgREST's
-                default max-rows) with a visible one the operator can act on
-                (narrow the date range for a complete view). */}
-            {truncated && (
-              <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />
-            )}
-            <Badge label="Read-only · all PSO roles" tone="neutral" />
-            <Button variant="outline" tone="neutral" size="sm" disabled={filteredActions.length === 0} onClick={exportCsv}>
-              Export CSV
-            </Button>
+      {section === 'actions' && (
+        <>
+          <div className={`panel ${styles.filterStrip}`}>
+            <div className="segmented">
+              {ACTION_FILTER_TABS.map((tab) => (
+                <button
+                  key={tab.value}
+                  type="button"
+                  className={`segment-button ${actionFilter === tab.value ? 'segment-button-active' : ''}`}
+                  onClick={() => setActionFilter(tab.value)}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+            <Select aria-label="Date range" value={dateRange} onChange={(e) => setDateRange(e.target.value)} options={DATE_RANGE_OPTIONS} />
+            <Select aria-label="Performed by" value={performedBy} onChange={(e) => setPerformedBy(e.target.value)} options={performerOptions} />
           </div>
-        </div>
-        <DataTable
-          columns={columns}
-          rows={filteredActions}
-          getRowKey={(a) => a.id}
-          loading={loading}
-          emptyMessage="No account actions recorded yet."
-          emptyHint="Flags, suspensions and reinstatements appear here the moment they're made."
-        />
-      </div>
 
-      <div className="panel">
-        <div className={styles.tableHeader}>
-          <h2 className="panel-title" style={{ marginBottom: 0 }}>
-            Verification &amp; Discount Decisions
-          </h2>
-          <span className={styles.recordCount}>Approvals and rejections, both queues — not filtered above.</span>
-        </div>
-        <DataTable
-          columns={decisionColumns}
-          rows={decisions}
-          getRowKey={(r) => r.id}
-          loading={decisionsLoading}
-          emptyMessage="No verification or discount decisions recorded yet."
-        />
-      </div>
-
-      <div className="panel">
-        <div className={styles.tableHeader}>
-          <h2 className="panel-title" style={{ marginBottom: 0 }}>
-            Login Activity
-          </h2>
-          <div className={styles.tableHeaderRight}>
-            <span className={styles.recordCount}>{loginEvents.length} recorded · newest first, scoped to the date range above.</span>
-            {loginEventsTruncated && (
-              <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />
-            )}
+          <div className="panel">
+            <div className={styles.tableHeader}>
+              <h2 className="panel-title" style={{ marginBottom: 0 }}>
+                Account Actions
+              </h2>
+              <div className={styles.tableHeaderRight}>
+                <span className={styles.recordCount}>{filteredActions.length} recorded · newest first</span>
+                {/* P1-22 (2026-09-15 launch audit): account_actions has no natural
+                    bound — this replaces a silent, invisible truncation (PostgREST's
+                    default max-rows) with a visible one the operator can act on
+                    (narrow the date range for a complete view). */}
+                {truncated && (
+                  <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />
+                )}
+                <Badge label="Read-only · all PSO roles" tone="neutral" />
+                <Button variant="outline" tone="neutral" size="sm" disabled={filteredActions.length === 0} onClick={exportCsv}>
+                  Export CSV
+                </Button>
+              </div>
+            </div>
+            <DataTable
+              columns={columns}
+              rows={filteredActions}
+              getRowKey={(a) => a.id}
+              loading={loading}
+              emptyMessage="No account actions recorded yet."
+              emptyHint="Flags, suspensions and reinstatements appear here the moment they're made."
+            />
           </div>
-        </div>
-        <DataTable
-          columns={loginEventColumns}
-          rows={loginEvents}
-          getRowKey={(r) => r.id}
-          loading={loginEventsLoading}
-          emptyMessage="No sign-ins or sign-outs recorded yet."
-          emptyHint="Self-reported by each client on sign-in and sign-out (UAT A1) — not a server-verified session log."
-        />
-      </div>
+        </>
+      )}
 
-      <div className="panel">
-        <div className={styles.tableHeader}>
-          <h2 className="panel-title" style={{ marginBottom: 0 }}>
-            Fare Change History
-          </h2>
-          <span className={styles.recordCount}>Every fare_config version — not filtered by the date range above.</span>
+      {section === 'decisions' && (
+        <div className="panel">
+          <div className={styles.tableHeader}>
+            <h2 className="panel-title" style={{ marginBottom: 0 }}>
+              Verification &amp; Discount Decisions
+            </h2>
+            <span className={styles.recordCount}>Approvals and rejections, both queues — not filtered above.</span>
+          </div>
+          <DataTable
+            columns={decisionColumns}
+            rows={decisions}
+            getRowKey={(r) => r.id}
+            loading={decisionsLoading}
+            emptyMessage="No verification or discount decisions recorded yet."
+          />
         </div>
-        <DataTable
-          columns={fareHistoryColumns}
-          rows={fareHistory}
-          getRowKey={(r) => r.id}
-          loading={fareHistoryLoading}
-          emptyMessage="No fare changes recorded yet."
-        />
-      </div>
+      )}
+
+      {section === 'login' && (
+        <>
+          <div className={`panel ${styles.filterStrip}`}>
+            <Select aria-label="Date range" value={dateRange} onChange={(e) => setDateRange(e.target.value)} options={DATE_RANGE_OPTIONS} />
+          </div>
+
+          <div className="panel">
+            <div className={styles.tableHeader}>
+              <h2 className="panel-title" style={{ marginBottom: 0 }}>
+                Login Activity
+              </h2>
+              <div className={styles.tableHeaderRight}>
+                <span className={styles.recordCount}>{loginEvents.length} recorded · newest first, scoped to the date range above.</span>
+                {loginEventsTruncated && (
+                  <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />
+                )}
+              </div>
+            </div>
+            <DataTable
+              columns={loginEventColumns}
+              rows={loginEvents}
+              getRowKey={(r) => r.id}
+              loading={loginEventsLoading}
+              emptyMessage="No sign-ins or sign-outs recorded yet."
+              emptyHint="Self-reported by each client on sign-in and sign-out (UAT A1) — not a server-verified session log."
+            />
+          </div>
+        </>
+      )}
+
+      {section === 'fare' && (
+        <div className="panel">
+          <div className={styles.tableHeader}>
+            <h2 className="panel-title" style={{ marginBottom: 0 }}>
+              Fare Change History
+            </h2>
+            <span className={styles.recordCount}>Every fare_config version — not filtered by the date range above.</span>
+          </div>
+          <DataTable
+            columns={fareHistoryColumns}
+            rows={fareHistory}
+            getRowKey={(r) => r.id}
+            loading={fareHistoryLoading}
+            emptyMessage="No fare changes recorded yet."
+          />
+        </div>
+      )}
     </div>
   );
 }
