@@ -45,7 +45,7 @@ export const styles = StyleSheet.create({
   },
   sheetScrollContent: {
     gap: spacing.xl,
-    paddingTop: spacing.xs,
+    paddingTop: spacing.sm,
     paddingBottom: spacing.md,
   },
   routeCard: {
@@ -104,7 +104,7 @@ export const styles = StyleSheet.create({
   },
   /** The fare is the number the rider is looking for — the spec gives it the system's navy panel, not a white card. */
   fareCard: {
-    gap: spacing.xs,
+    gap: spacing.sm,
     backgroundColor: colors.accentBlue,
     borderColor: 'transparent',
     paddingVertical: spacing.xl,
@@ -155,7 +155,6 @@ export const styles = StyleSheet.create({
     ...typography.caption,
     color: colors.white,
     textDecorationLine: 'underline',
-    marginTop: spacing.xs,
   },
   requestButtonIcon: {
     width: 22,
