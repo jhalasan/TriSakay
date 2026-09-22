@@ -1631,12 +1631,20 @@ export type Database = {
       get_driver_trip_history: {
         Args: { p_limit?: number }
         Returns: {
+          cancel_reason: string
           cancelled_at: string
           completed_at: string
+          dest_label: string
+          distance_km: number
+          duration_minutes: number
           fare: number
           passenger_name: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_label: string
           requested_at: string
           ride_request_id: string
+          seats: number
           status: Database["public"]["Enums"]["ride_status"]
         }[]
       }

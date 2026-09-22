@@ -526,8 +526,40 @@ test('useHistoryStore.load() fetches and maps completed/cancelled trips from the
     removeChannel: () => {},
     rpc: async () => ({
       data: [
-        { ride_request_id: 'rr1', passenger_name: 'Juan Dela Cruz', status: 'completed', fare: 45, completed_at: '2026-08-10T00:00:00.000Z', cancelled_at: null, requested_at: '2026-08-09T23:00:00.000Z' },
-        { ride_request_id: 'rr2', passenger_name: null, status: 'cancelled', fare: null, completed_at: null, cancelled_at: '2026-08-08T00:00:00.000Z', requested_at: '2026-08-07T23:00:00.000Z' },
+        {
+          ride_request_id: 'rr1',
+          passenger_name: 'Juan Dela Cruz',
+          status: 'completed',
+          fare: 45,
+          completed_at: '2026-08-10T00:00:00.000Z',
+          cancelled_at: null,
+          requested_at: '2026-08-09T23:00:00.000Z',
+          pickup_label: 'Home',
+          dest_label: 'Mall',
+          distance_km: 3.2,
+          duration_minutes: 12,
+          seats: 2,
+          payment_method: 'cash',
+          payment_status: 'paid',
+          cancel_reason: null,
+        },
+        {
+          ride_request_id: 'rr2',
+          passenger_name: null,
+          status: 'cancelled',
+          fare: null,
+          completed_at: null,
+          cancelled_at: '2026-08-08T00:00:00.000Z',
+          requested_at: '2026-08-07T23:00:00.000Z',
+          pickup_label: null,
+          dest_label: null,
+          distance_km: null,
+          duration_minutes: null,
+          seats: null,
+          payment_method: null,
+          payment_status: null,
+          cancel_reason: 'Passenger no-show',
+        },
       ],
       error: null,
     }),
@@ -540,8 +572,36 @@ test('useHistoryStore.load() fetches and maps completed/cancelled trips from the
   assert.equal(useHistoryStore.getState().loading, false);
   assert.equal(useHistoryStore.getState().error, null);
   assert.equal(trips.length, 2);
-  assert.deepEqual(trips[0], { id: 'rr1', passengerName: 'Juan Dela Cruz', date: '2026-08-10T00:00:00.000Z', fare: 45, status: 'done' });
-  assert.deepEqual(trips[1], { id: 'rr2', passengerName: null, date: '2026-08-08T00:00:00.000Z', fare: null, status: 'cancelled' });
+  assert.deepEqual(trips[0], {
+    id: 'rr1',
+    passengerName: 'Juan Dela Cruz',
+    date: '2026-08-10T00:00:00.000Z',
+    fare: 45,
+    status: 'done',
+    pickup: 'Home',
+    dropoff: 'Mall',
+    distanceKm: 3.2,
+    durationMinutes: 12,
+    seats: 2,
+    paymentMethod: 'cash',
+    paymentStatus: 'paid',
+    cancelReason: null,
+  });
+  assert.deepEqual(trips[1], {
+    id: 'rr2',
+    passengerName: null,
+    date: '2026-08-08T00:00:00.000Z',
+    fare: null,
+    status: 'cancelled',
+    pickup: null,
+    dropoff: null,
+    distanceKm: null,
+    durationMinutes: null,
+    seats: null,
+    paymentMethod: null,
+    paymentStatus: null,
+    cancelReason: 'Passenger no-show',
+  });
 });
 
 test('useHistoryStore.load() surfaces an RPC error without touching trips', async () => {

@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import { ScrollView, Text, View } from 'react-native';
 import { Avatar, Badge, BrandMotif, Card, EmptyState, GradientSurface, colors } from '@trisakay/ui';
@@ -31,6 +32,7 @@ export default function TripDetailScreen() {
 
   const isDone = item.status === 'done';
   const reference = getReferenceCode(item.id);
+  const hasRoute = item.pickup && item.dropoff;
 
   return (
     <View style={styles.container}>
@@ -55,6 +57,84 @@ export default function TripDetailScreen() {
             <Text style={styles.passengerName}>{item.passengerName || t.driver.history.passengerFallback}</Text>
           </View>
         </Card>
+
+        {hasRoute && (
+          <Card variant="raised" style={styles.section}>
+            <Text style={styles.sectionLabel}>{t.driver.history.route}</Text>
+            <View style={styles.routeBlock}>
+              <View style={styles.routeMarkerCol}>
+                <View style={styles.routeDotPickup} />
+                <View style={styles.routeLine} />
+                <View style={styles.routeDotDropoff} />
+              </View>
+              <View style={styles.routeTextCol}>
+                <View>
+                  <Text style={styles.routeLabel}>{t.driver.history.pickup}</Text>
+                  <Text style={styles.routeAddress}>{item.pickup}</Text>
+                </View>
+                <View>
+                  <Text style={styles.routeLabel}>{t.driver.history.dropoff}</Text>
+                  <Text style={styles.routeAddress}>{item.dropoff}</Text>
+                </View>
+              </View>
+            </View>
+            {(item.distanceKm != null || item.durationMinutes != null || item.seats != null) && (
+              <View style={styles.distanceRow}>
+                {item.distanceKm != null && (
+                  <View style={styles.distanceItem}>
+                    <Ionicons name="navigate-outline" size={14} color={colors.inkSoft} />
+                    <Text style={styles.distanceText}>{item.distanceKm.toFixed(1)} km</Text>
+                  </View>
+                )}
+                {item.durationMinutes != null && (
+                  <View style={styles.distanceItem}>
+                    <Ionicons name="time-outline" size={14} color={colors.inkSoft} />
+                    <Text style={styles.distanceText}>
+                      {Math.round(item.durationMinutes)} {t.driver.history.minutesSuffix}
+                    </Text>
+                  </View>
+                )}
+                {item.seats != null && (
+                  <View style={styles.distanceItem}>
+                    <Ionicons name="person-outline" size={14} color={colors.inkSoft} />
+                    <Text style={styles.distanceText}>
+                      {item.seats} {t.driver.history.seatsSuffix}
+                    </Text>
+                  </View>
+                )}
+              </View>
+            )}
+          </Card>
+        )}
+
+        <Card variant="raised" style={styles.section}>
+          <Text style={styles.sectionLabel}>{t.driver.history.payment}</Text>
+          <View style={styles.paymentRow}>
+            <View style={styles.paymentMethodLabel}>
+              <Ionicons
+                name={item.paymentMethod === 'gcash' ? 'wallet-outline' : 'cash-outline'}
+                size={16}
+                color={colors.inkSoft}
+              />
+              <Text style={styles.paymentMethodText}>
+                {item.paymentMethod === 'gcash' ? 'GCash' : item.paymentMethod === 'cash' ? 'Cash' : 'No payment'}
+              </Text>
+            </View>
+            {item.paymentStatus && (
+              <Badge
+                label={item.paymentStatus.charAt(0).toUpperCase() + item.paymentStatus.slice(1)}
+                tone={item.paymentStatus === 'paid' ? 'green' : item.paymentStatus === 'failed' ? 'danger' : 'blue'}
+              />
+            )}
+          </View>
+        </Card>
+
+        {item.status === 'cancelled' && item.cancelReason && (
+          <Card variant="raised" style={styles.section}>
+            <Text style={styles.sectionLabel}>{t.driver.history.cancellationReason}</Text>
+            <Text style={styles.cancelReasonText}>{item.cancelReason}</Text>
+          </Card>
+        )}
 
         {reference && (
           <Card variant="raised" style={styles.section}>

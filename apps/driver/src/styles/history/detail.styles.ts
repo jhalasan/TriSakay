@@ -73,6 +73,88 @@ export const styles = StyleSheet.create({
     color: colors.ink,
   },
 
+  routeBlock: {
+    flexDirection: 'row',
+    gap: spacing.md,
+  },
+  routeMarkerCol: {
+    alignItems: 'center',
+    width: 10,
+    paddingTop: 3,
+  },
+  routeDotPickup: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    borderWidth: 2.5,
+    borderColor: colors.accentGreen,
+  },
+  routeDotDropoff: {
+    width: 10,
+    height: 10,
+    borderRadius: 2,
+    backgroundColor: colors.accentBlue,
+  },
+  routeLine: {
+    flex: 1,
+    minHeight: spacing.xl,
+    width: 2,
+    backgroundColor: colors.line,
+    marginVertical: 3,
+  },
+  routeTextCol: {
+    flex: 1,
+    gap: spacing.md,
+  },
+  routeLabel: {
+    ...typography.label,
+    fontSize: 10,
+    color: colors.inkFaint,
+  },
+  routeAddress: {
+    ...typography.bodyStrong,
+    color: colors.ink,
+  },
+  distanceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: colors.lineSoft,
+  },
+  distanceItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.xs,
+  },
+  distanceText: {
+    ...typography.bodyStrong,
+    fontSize: 13,
+    color: colors.inkSoft,
+  },
+
+  paymentRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  paymentMethodLabel: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+  },
+  paymentMethodText: {
+    ...typography.body,
+    color: colors.inkSoft,
+  },
+
+  cancelReasonText: {
+    ...typography.body,
+    color: colors.ink,
+  },
+
   referenceRow: {
     flexDirection: 'row',
     alignItems: 'center',

@@ -837,6 +837,13 @@ export const en = {
       totalFare: 'Total fare',
       passenger: 'Passenger',
       tripReference: 'Trip ref.',
+      route: 'Route',
+      pickup: 'Pickup',
+      dropoff: 'Drop-off',
+      minutesSuffix: 'min',
+      seatsSuffix: 'seats',
+      payment: 'Payment',
+      cancellationReason: 'Cancellation reason',
     },
     earnings: {
       title: 'Earnings',

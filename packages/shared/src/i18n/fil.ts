@@ -820,6 +820,13 @@ export const fil: Translations = {
       totalFare: 'Kabuuang pamasahe',
       passenger: 'Pasahero',
       tripReference: 'Ref. ng biyahe',
+      route: 'Ruta',
+      pickup: 'Pickup',
+      dropoff: 'Drop-off',
+      minutesSuffix: 'min',
+      seatsSuffix: 'upuan',
+      payment: 'Bayad',
+      cancellationReason: 'Dahilan ng Pagkansela',
     },
     earnings: {
       title: 'Kita',

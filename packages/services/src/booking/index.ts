@@ -609,6 +609,14 @@ export interface DriverTripHistoryItem {
   status: 'completed' | 'cancelled';
   fare: number | null;
   date: string;
+  pickup: string | null;
+  dropoff: string | null;
+  distanceKm: number | null;
+  durationMinutes: number | null;
+  seats: number | null;
+  paymentMethod: 'cash' | 'gcash' | null;
+  paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | null;
+  cancelReason: string | null;
 }
 
 export interface ListDriverTripHistoryResult {
@@ -622,6 +630,11 @@ export interface ListDriverTripHistoryResult {
  * need the same server-side join trick as getTripPassengerInfo above, just
  * for a list instead of one row). The function itself scopes results to
  * `auth.uid()`'s own trips and only 'completed'/'cancelled' ride requests.
+ * Mirrors listPassengerTripHistory's route/payment/cancellation fields
+ * (2026-09-22 follow-up to UAT D11) — the RPC reads from the same rows,
+ * minus the passenger-only discount fields and the other-party identity
+ * fields (driver rating/plate/body_no) that don't apply to a driver's own
+ * history view.
  */
 export async function listDriverTripHistory(limit = 50): Promise<ListDriverTripHistoryResult> {
   const { data, error } = await getSupabaseClient().rpc('get_driver_trip_history', { p_limit: limit });
@@ -634,6 +647,14 @@ export async function listDriverTripHistory(limit = 50): Promise<ListDriverTripH
     status: row.status as 'completed' | 'cancelled',
     fare: row.fare,
     date: row.completed_at ?? row.cancelled_at ?? row.requested_at,
+    pickup: row.pickup_label,
+    dropoff: row.dest_label,
+    distanceKm: row.distance_km,
+    durationMinutes: row.duration_minutes,
+    seats: row.seats,
+    paymentMethod: row.payment_method,
+    paymentStatus: row.payment_status,
+    cancelReason: row.cancel_reason,
   }));
 
   return { data: rows, error: null };
