@@ -1,9 +1,16 @@
 import { useCallback } from 'react';
 import { View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
 import { motion, spacing } from '../../theme';
 import { styles } from './MapOverlaySheet.styles';
+
+// Reanimated's own Easing, NOT the shared `motion.easing` token (that one is
+// built from core react-native's Easing for core-RN Animated consumers —
+// its functions aren't worklet-safe and crash if a Reanimated withTiming
+// call, which runs as a UI-thread worklet, tries to invoke one). Same curve
+// as motion.easing.out, sourced compatibly instead.
+const SNAP_EASING = Easing.bezier(0.16, 1, 0.3, 1);
 
 export interface MapOverlaySheetProps {
   children: React.ReactNode;
@@ -75,7 +82,7 @@ export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, style }:
       naturalHeight.value = target;
       if (collapsed.value) return; // stay at the peek height; the new size takes effect next time it's expanded
       sheetHeight.value =
-        isFirstMeasurement || reducedMotion ? target : withTiming(target, { duration: motion.duration.settle, easing: motion.easing.out });
+        isFirstMeasurement || reducedMotion ? target : withTiming(target, { duration: motion.duration.settle, easing: SNAP_EASING });
     },
     [naturalHeight, sheetHeight, collapsed, paddingBottom, maxHeight, reducedMotion]
   );
@@ -96,7 +103,7 @@ export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, style }:
       const target = expand ? naturalHeight.value : PEEK_HEIGHT;
       sheetHeight.value = reducedMotion
         ? target
-        : withTiming(target, { duration: motion.duration.settle, easing: motion.easing.out });
+        : withTiming(target, { duration: motion.duration.settle, easing: SNAP_EASING });
     });
 
   const animatedSheetStyle = useAnimatedStyle(() => ({

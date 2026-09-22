@@ -3,6 +3,15 @@ import { Easing } from 'react-native';
 /**
  * Shared timing so motion reads as one system. Everything eases OUT from an
  * already-visible default — content never fades in from nothing, it settles.
+ *
+ * `easing` here is core react-native's Easing, for core RN `Animated`
+ * consumers (Button, OsmMap, HoldToConfirmButton) — NOT worklet-safe.
+ * A Reanimated `withTiming`/`withSpring` call (e.g. inside a
+ * `Gesture.Pan` handler) needs its own easing sourced from
+ * `react-native-reanimated`'s `Easing` instead (see MapOverlaySheet) —
+ * reanimated's `Easing.bezier()` returns an `EasingFunctionFactory`, a
+ * different, incompatible type from core RN's plain `(value) => value`
+ * function, so the two can't share one token.
  */
 export const motion = {
   duration: {
