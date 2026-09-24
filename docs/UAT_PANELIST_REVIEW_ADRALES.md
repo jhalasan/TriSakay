@@ -136,20 +136,81 @@ Sources: three read-only code audits (database access rules and functions, ride/
 
 ---
 
-## Timeline: 2 weeks, 3 programmers (locked in)
+## Timeline: 2 weeks, 3 programmers (locked in) — every item assigned
 Tiers:
 - **Required:** the panel's items, F1–F6, X1–X11, and R1, R2, R4, R5.
 - **Fill-in if time allows:** Y1–Y5, Y9, R6–R8.
 - **Stretch (only if everything above is done):** C1 chat (text + quick replies only), N1, N2.
-- **Future work** (write up in the manuscript as designed but not built): C2 voice calls, S1, N3, chat photos/read receipts, optimal stop order, Y6/Y7/Y10, R9/R10.
+- **Future work** (designed below, not built this sprint — written up in the manuscript): C2 voice calls, S1, N3, chat photos/read receipts, optimal stop order, Y6/Y7/Y10, R9/R10.
 
 **Person 1 owns Maps + Domain end-to-end** (G2 and G1 are bundled on purpose: G2's admin key needs the domain to restrict it to, P1's email needs the domain verified, and G3's final screenshots need both done — one owner avoids two people blocking each other).
 
-| Person | Week 1 | Week 2 |
+### Person 1 — Maps & Domain
+| When | Item | Notes |
 |---|---|---|
-| **1 — Maps & Domain** | **Day 1:** buy the domain; connect it to the Vercel project. Create the Google Cloud project, enable billing, turn on Maps SDK / Maps JS / Places / Routes, set daily quota caps and budget alerts. Add Resend's DNS records for the domain (SPF/DKIM). **Days 2–5:** G2 display — swap `OsmMap` to `react-native-maps` (`PROVIDER_GOOGLE`) for the mobile apps, and swap `LiveMap`/`AlertLocationMap` in the admin to `@vis.gl/react-google-maps`. Needs a new dev/EAS build; check the Expo SDK 54 config-plugin docs first. | G2 continued — the `maps-proxy` edge function (session-token Places search, Routes) with the quiet fallback to the current free services. **Then:** G1 finish — add the domain to Supabase Auth's redirect URLs. **Then:** P1 email receipts (Resend, needs the verified domain) + F5 (receipt built from server data, not the local store). **Last 2 days:** G3 — final screenshots of the hosted admin (on the domain, with Google Maps) and every mobile screen on Android. |
-| **2 — Backend, ride flow, security** | **Day 1 (urgent, do first):** rotate the leaked notification secret — new secret in Supabase env + Vault, redeploy both edge functions, check the logs, then purge it from git history (coordinate the force-push/re-clone with the team). X0 — pull a live-database snapshot into a migration. **Days 2–4:** X1–X6 and X8–X11 column-lock triggers/policies, Y8 unique index, F6 atomic `accept_ride_request`, F3 free-seat fix. **Then:** F4 "I've arrived" step, PD1 + PD2 cancellation (strikes, stage gate, `cancel_ride_request` RPC) | D1 transfer (invites, handoff, fare/rating rules, L1–L18 safeguards). **If time allows:** Y1 (location/time checks on start/complete), Y9 (block expired documents), Y4/Y5 (complaint & SOS insert locks), R2 (matching radius + staleness), R3 (GPS trigger, reject mocked location — shared with F4/L3), R1 (ghost-driver offline cron) |
-| **3 — App UX, reliability, docs & QA** | **Day 1:** set up this tracker. G4 help tips (mobile `helperText`, admin `hint`), D2 nearest-next-stop sort. **Days 2–5:** R5 (passenger active-ride restore on login/foreground, handle `ongoing`/`completed`, store reset on user change), R4 (clear push tokens on logout; token table if time allows). **Docs, in parallel:** G5 scope note, P3 fare literature, PD3 cancellation literature, P2/PD4 survey questions, update `UAT_PANEL_PREP.md` | **From day 1 of week 2:** write the REST exploit test script for X1–X11 (each call must be *rejected*) and run it against Person 2's migrations as they land. **If time allows:** Y2 (block booking with an unpaid completed ride), Y3 (PayMongo fixes), R6 (driver gets a live update when the passenger cancels), R7 (session sign-out on password change). **Last 3 days:** full regression on real Android devices (all 3 people's work together), G3 screenshots handed to Person 1, final tracker update |
+| Week 1, Day 1 | G1 (start) | Buy the domain, connect it to the Vercel project. |
+| Week 1, Day 1 | G2 (start) | Create the Google Cloud project, enable billing, turn on Maps SDK / Maps JS / Places / Routes, set daily quota caps and budget alerts (see "G2 free-tier guardrails"). |
+| Week 1, Day 1 | *(prep for P1)* | Add Resend's DNS records for the domain (SPF/DKIM), so it's verified by the time Week 2's P1 needs it. |
+| Week 1, Days 2–5 | G2 display | Swap `OsmMap` to `react-native-maps` (`PROVIDER_GOOGLE`) in both mobile apps; swap `LiveMap`/`AlertLocationMap` in the admin to `@vis.gl/react-google-maps`. Needs a new dev/EAS build — check the Expo SDK 54 config-plugin docs first. |
+| Week 2 | G2 finish | `maps-proxy` edge function (session-token Places search, Routes) with the quiet fallback to today's free services. |
+| Week 2 | L14 | Build the proxy's abuse limits at the same time: session required (no anon), per-user rate limits, CORS restricted to the domain. |
+| Week 2 | G1 finish | Add the domain to Supabase Auth's redirect URLs. |
+| Week 2 | P1 | Email receipts via Resend (needs the domain verified above). |
+| Week 2 | L13 | Build P1's send limits at the same time: max 3 sends per ride, 20/day per user. |
+| Week 2 | F5 | Receipt built from server data, not the local store — do this alongside P1 since it's the same data. |
+| Week 2, last 2 days | G3 | Final screenshots: the hosted admin on the domain with Google Maps, every mobile screen on Android. Needs Person 2 and 3's features stable first. |
+
+### Person 2 — Backend, ride flow, security (heaviest track)
+| When | Item | Notes |
+|---|---|---|
+| Week 1, Day 1 (urgent) | X7 (= F1) | Rotate the leaked notification secret: new secret in Supabase env + Vault, redeploy both edge functions, check the logs, then purge it from git history (coordinate the force-push/re-clone). |
+| Week 1, Day 1 | X0 (= F2) | Pull a live-database snapshot into a migration; confirm every X/Y finding against it before changing anything. |
+| Week 1, Days 2–4 | X1–X6, X8–X11 | Column-lock triggers/policies (the critical, one-API-call loopholes). |
+| Week 1, Days 2–4 | Y8 | Unique partial index so "one active ride" can't be raced. |
+| Week 1, Days 2–4 | F6 | Atomic `accept_ride_request` RPC (fixes the leftover-empty-trip and double-seat-check bugs). |
+| Week 1, Days 2–4 | F3 | Match on free seats, not total seats. |
+| Week 1, end | F4 | "I've arrived" step (`arrived_at`, `mark_arrived` RPC). |
+| Week 1, end | L3 | Build F4's mocked-GPS rejection at the same time (shares code with R3). |
+| Week 1, end | PD1 + PD2 | Cancellation: stage gate, strikes, `cancel_ride_request` RPC. |
+| Week 1, end | L1, L2, L4, L15, L18 | Build these loophole fixes as part of PD1, since they're PD1's own safeguards. |
+| Week 2 | D1 | Transfer: invites, handoff, fare/rating rules. Needs PD1 (`cancelled_by`, reason codes) done first. |
+| Week 2 | L5–L10 | Build these as part of D1, since they're D1's own safeguards. |
+| Week 2, if time allows | Y1 | Location/time checks on start/complete. |
+| Week 2, if time allows | Y9 | Block expired documents from going online/accepting. |
+| Week 2, if time allows | Y4, Y5 | Complaint and SOS insert locks. |
+| Week 2, if time allows | R2 | Matching radius + staleness filter. |
+| Week 2, if time allows | R3 | GPS trigger, reject mocked location (shares code with L3/F4). |
+| Week 2, if time allows | R1 | Ghost-driver offline cron. |
+| Week 2, if C1 is reached | *(C1 backend)* | Quick add: the `ride_messages` table + RLS, same column-lock pattern as X1–X6. About an hour of work once the pattern exists — hand off to Person 3 for the UI. |
+
+### Person 3 — App UX, reliability, docs & QA
+| When | Item | Notes |
+|---|---|---|
+| Week 1, Day 1 | *(tracker)* | Own this tracker file — keep the Status column current as items land. |
+| Week 1, Day 1 | G4 | Help tips: mobile `helperText`, admin `hint`. |
+| Week 1, Day 1 | D2 | Nearest-next-stop sort, with the transfer-pickup and delay-fairness priority rules. |
+| Week 1, Days 2–5 | R5 | Passenger active-ride restore on login/foreground; handle `ongoing`/`completed`; reset stores on user change. |
+| Week 1, Days 2–5 | R4 | Clear push tokens on logout; a `push_tokens` table if time allows. |
+| Week 1, in parallel | G5, P3, PD3, P2, PD4 | Scope note, fare literature, cancellation literature, both survey questions. Update `UAT_PANEL_PREP.md`. |
+| Week 2, Day 1 on | Exploit test script | REST calls that try X1–X11 (and Y-items as they land); each must be *rejected*. Run against Person 2's migrations as they land. |
+| Week 2, if time allows | Y2 | Block booking with an unpaid completed ride. |
+| Week 2, if time allows | Y3 | PayMongo fixes. |
+| Week 2, if time allows | R6 | Driver gets a live update when the passenger cancels. |
+| Week 2, if time allows | R7 | Sign out other sessions on password change. |
+| Week 2, if time allows | L12 | Driver's own trip history shows only the barangay/area, not exact coordinates. Small UI change to the driver history screen. |
+| Week 2, if C1 is reached | *(C1 UI)* | Chat screens in both apps + Realtime wiring, once Person 2's `ride_messages` table lands. Include L11's phone-number masking in the same pass. |
+| Week 2, if C1+time allow | N1 | Ride-status push notifications (assigned/arriving/arrived/transferred/completed) — natural next step after C1, reuses the same notification pattern as R4. |
+| Week 2, last 3 days | Full regression | Real Android devices, all 3 people's work together. Hand G3 screenshots to Person 1. Final tracker update — mark every item DONE/STRETCH-not-reached/FUTURE. |
+
+### Ownership noted for future work (not built this sprint, but assigned so whoever revisits it knows where to start)
+| Item | Proposed owner when picked up |
+|---|---|
+| N2 — cancellation/transfer charts for PSO | Person 2 (query/data, reuses PD1+D1's data) + Person 3 (admin chart UI) |
+| N3 — Share my trip | Person 1 (it's a public map page, same stack as G2) |
+| C2 — in-app voice call | Person 1 (mobile native module + EAS build, same shape as G2) for the client, Person 2 for the `call-token` edge function |
+| S1 — route trail + PSO case view | Person 2 (trail table/RPC, append-only pattern) + Person 1 (the case-view map, reuses the G2 map component) |
+| Y6, Y7, Y10 | Person 2 — Y7 especially, confirm live first, it may be a one-line fix |
+| R9, R10 | Person 3 — low-effort backlog, good "if everything else is done" filler |
 
 **Cross-track dependencies:**
 - Person 3's D2 and Person 2's D1 driver-candidate list should share the same distance/radius logic once Person 2 lands R2 — flag this if D2 ships first.
@@ -158,6 +219,7 @@ Tiers:
 - Person 1's P1 needs Person 1's own G1 (domain) done first — no cross-person wait.
 - Person 3's exploit test script (week 2) depends on Person 2's X-fixes existing to test against.
 - G3 (Person 1, end of week 2) needs Person 2's and Person 3's features stable enough to screenshot.
+- C1, if reached: Person 2 builds the table first, then hands off to Person 3 for the UI — don't start the UI before the table lands.
 
 **Daily sync recommended:** a 10-minute standup, since Person 2's security migrations change tables Person 1 (receipts) and Person 3 (ride state, PD1 UI) both read from.
 
