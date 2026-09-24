@@ -22,7 +22,11 @@
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
-const SHARED_SECRET = '59a4b603ca44e480a724b4646a33f6da7094f1803cc2825685f09762a3aa47ae';
+// 2026-09-24: was a literal string committed in source (and this repo is
+// public) — rotated to an Edge Function secret. See the matching comment in
+// notify-drivers-new-request/index.ts and
+// supabase/migrations/20260924000001_rotate_notify_shared_secret.sql.
+const SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET') ?? '';
 
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
@@ -48,6 +52,12 @@ function json(body: unknown, status = 200): Response {
 
 Deno.serve(async (req: Request) => {
   try {
+    // Fail closed, not open: an empty SHARED_SECRET (env var not set) must
+    // never match an empty Authorization header.
+    if (!SHARED_SECRET) {
+      console.error('notify-expiring-documents: NOTIFY_SHARED_SECRET is not configured');
+      return json({ error: 'Server misconfigured' }, 500);
+    }
     const authHeader = req.headers.get('Authorization') ?? '';
     const provided = authHeader.replace(/^Bearer\s+/i, '');
     if (!timingSafeEqual(provided, SHARED_SECRET)) {
