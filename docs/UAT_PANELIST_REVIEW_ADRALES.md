@@ -69,18 +69,18 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 ### Loopholes in the existing system (audit 2026-09-24)
 Sources: three read-only code audits (database access rules and functions, ride/fare/payment logic, app reliability). The findings are based on `docs/SCHEMA.MD` and the migrations. The base schema and several function bodies exist **only in the live database**, so step X0 confirms everything there before fixing.
 
-**URGENT, before anything else: the repo `jhalasan/TriSakay` is PUBLIC (confirmed), so treat the X7 secret as already leaked.**
-1. Generate a new secret. Store it as a Supabase Edge Function secret and in Vault. Redeploy `notify-drivers-new-request` and `notify-expiring-documents` to read it from env, and update the two trigger/cron SQL definitions to read it from Vault.
-2. Check the Edge Function logs for unexpected calls.
-3. Purge the old value from git history (`git filter-repo`), then force-push. Coordinate with the team, since everyone must re-clone. Any public fork keeps the old value, which is why step 1 comes first.
-4. While there, scan history for any other committed keys.
+**X7 secret rotation: DONE (2026-09-24), git history purge deferred to end of sprint.**
+1. ~~Generate a new secret. Store it as a Supabase Edge Function secret and in Vault. Redeploy `notify-drivers-new-request` and `notify-expiring-documents` to read it from env, and update the two trigger/cron SQL definitions to read it from Vault.~~ **DONE.** New secret is in Vault + set as an Edge Function secret (never committed). Both functions redeployed reading `Deno.env.get('NOTIFY_SHARED_SECRET')`, fail closed (500) if unset. Trigger + cron job repointed at Vault via `supabase/migrations/20260924000001_rotate_notify_shared_secret.sql`, applied directly to the live DB (see note below on why `db push` couldn't be used). Confirmed live: the old secret now returns 401.
+2. Checking Edge Function logs for unexpected calls: **not done** — this CLI version has no `functions logs` subcommand; check via the Supabase dashboard's Logs Explorer when convenient. Low urgency now that the secret is rotated.
+3. **Purge the old value from git history (`git filter-repo`), then force-push — deferred to the end of the sprint by decision (2026-09-24), not before.** The live secret is already dead, so the old string sitting in history is inert; purging it is cleanup, not urgency, so it's better done once at the end than disrupting the team mid-sprint with a mandatory re-clone. Whoever does G3 (final screenshots, Person 1) should do this purge right before or after, as the last cleanup step. Any public fork still keeps the old value regardless of when the purge happens — that's expected and fine, since it's dead.
+4. While there, scan history for any other committed keys — do this in the same end-of-sprint pass as item 3.
 
 **Priority if time runs out (confirmed):**
 1. The panel's items, X1–X11, and R1, R2, R4, R5.
 2. Y items, as far as time allows.
 3. Stretch items (C1, N1, N2) move to future work.
 
-**X0: take a snapshot of the live database first (day 1, Person 2).** Link the Supabase CLI and run `supabase db pull`, or dump `pg_policies`, `pg_proc` definitions and storage policies, into a baseline migration. This covers F2. Tick off each finding below as confirmed or already fixed live before changing anything.
+**X0: take a snapshot of the live database first (day 1, Person 2) — bigger than originally scoped.** A real `supabase db push` was attempted on 2026-09-24 and failed: the live database has roughly 90 migrations that were never saved into `supabase/migrations/`. Link the Supabase CLI and run `supabase db pull`, review the diff carefully (it will be large), and reconcile it with the local migrations directory before anything else in this list. This covers F2. Tick off each finding below as confirmed or already fixed live before changing anything.
 
 **Pattern for most fixes:** Postgres row-level security (RLS) checks only the *new* row, so an "owner-only" rule still lets the owner change *every* column of their own row. Reuse the repo's existing column-lock trigger pattern (`enforce_driver_claim_columns_locked`, `enforce_notification_columns_locked`), or column-level `GRANT UPDATE (…)`, or move the write into a SECURITY DEFINER RPC.
 
@@ -93,7 +93,7 @@ Sources: three read-only code audits (database access rules and functions, ride/
 | X4 | `driver_update_self` locks only `verification_status` (SCHEMA.MD:1576) | The driver sets `rating_avg=5` and `rating_count=0`, and leaves the low-rating list. | Lock trigger: drivers may change only availability, location and declared destination. |
 | X5 | `tricycles_insert`/`update` (migration 20260915000002:85-100) | The driver deactivates their tricycle and inserts a **self-approved** one (any plate, cluster or seats). Or raises `seat_capacity`. | The insert is forced to `unsubmitted` with verification fields NULL. Lock `is_active`, `seat_capacity` and `plate_no`, or move vehicle changes into an RPC. |
 | X6 | `driver_documents` insert/update (migration 20260915000002:57-61) | The driver marks their own documents `approved`, or sets an approved one back to `pending`, then deletes the file (evidence destroyed). | Lock trigger: drivers may change only `expiry_date`, and `storage_path` only while not approved. The insert is forced to `pending`. |
-| X7 | Shared secret committed in 4 places (= F1) | Anyone with the repo can push-spam every driver or suppress document-expiry reminders. | Rotate. Use `Deno.env` in functions and Supabase Vault in SQL. Purge it from git history. Also move the hardcoded project ref out of migrations. |
+| X7 | Shared secret committed in 4 places (= F1) | Anyone with the repo can push-spam every driver or suppress document-expiry reminders. | **DONE (2026-09-24):** rotated, `Deno.env` in functions, Supabase Vault in SQL. Old secret confirmed dead (401). Git history purge deferred to end of sprint (see note above). Still open: move the hardcoded project ref out of migrations (low priority, not secret, just an env-split blocker). |
 | X8 | Suspension enforced only in the app UI | A suspended user can still book, complain, rate or go online through the API. | Add `is_account_active()` to passenger/driver write rules, the ride RPCs and the go-online trigger. Emergency alerts stay open on purpose. Also ban the user in Supabase Auth when suspending. |
 | X9 | `rr_passenger_cancel` checks only the new status | The cancel request can also set `trip_id`, `final_fare`, etc. | Replaced by PD1's `cancel_ride_request` RPC; remove the passenger's direct UPDATE permission. |
 | X10 | `trips` update doesn't lock `status` (migration 20260915000002:66-70) | The driver marks a trip `completed` with passengers still on it. They are then stuck: they can't cancel or rebook. | `status`, timestamps and `tricycle_id` change only through RPCs. Also check the tricycle belongs to the driver when a trip is inserted. |
@@ -159,12 +159,13 @@ Tiers:
 | Week 2 | L13 | Build P1's send limits at the same time: max 3 sends per ride, 20/day per user. |
 | Week 2 | F5 | Receipt built from server data, not the local store — do this alongside P1 since it's the same data. |
 | Week 2, last 2 days | G3 | Final screenshots: the hosted admin on the domain with Google Maps, every mobile screen on Android. Needs Person 2 and 3's features stable first. |
+| Week 2, very last step | *(git history purge)* | The deferred X7 cleanup: `git filter-repo` to scrub the old leaked secret string from all commit history, then force-push. Announce to the whole team first — everyone must re-clone or hard-reset right after. Do this last, once nobody has unmerged local branches that would be lost. |
 
 ### Person 2 — Backend, ride flow, security (heaviest track)
 | When | Item | Notes |
 |---|---|---|
-| Week 1, Day 1 (urgent) | X7 (= F1) | Rotate the leaked notification secret: new secret in Supabase env + Vault, redeploy both edge functions, check the logs, then purge it from git history (coordinate the force-push/re-clone). |
-| Week 1, Day 1 | X0 (= F2) | Pull a live-database snapshot into a migration; confirm every X/Y finding against it before changing anything. |
+| ~~Week 1, Day 1~~ DONE | X7 (= F1) | Already done (2026-09-24) — see the note above. Skip. |
+| Week 1, Day 1 | X0 (= F2) | **Bigger than originally scoped:** `supabase db pull`, and carefully reconcile ~90 migrations that are live but not in this repo, before touching anything else. Confirm every X/Y finding against the result before changing it. |
 | Week 1, Days 2–4 | X1–X6, X8–X11 | Column-lock triggers/policies (the critical, one-API-call loopholes). |
 | Week 1, Days 2–4 | Y8 | Unique partial index so "one active ride" can't be raced. |
 | Week 1, Days 2–4 | F6 | Atomic `accept_ride_request` RPC (fixes the leftover-empty-trip and double-seat-check bugs). |
