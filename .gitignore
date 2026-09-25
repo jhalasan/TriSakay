@@ -56,3 +56,6 @@ apps/*/android
 
 # Playwright MCP scratch snapshots/screenshots (local verification artifacts, not app code)
 /.playwright-mcp/
+
+# Supabase CLI local cache — contains a live DB connection string with password
+supabase/.temp/
