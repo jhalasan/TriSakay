@@ -14,7 +14,7 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 | ID | Recommendation | Status | Kind |
 |---|---|---|---|
 | G1 | Proper domain | TODO | Setup |
-| G2 | Use Google Maps | TODO | Code, large |
+| G2 | Use Google Maps | **BLOCKED (2026-09-25)** — code done, waiting on billing | Code, large |
 | G3 | Screenshots of the final hosted system with the domain and Google Maps | TODO | Last step |
 | G4 | Help tips for text boxes | TODO | Code, small |
 | G5 | Scope: iOS and Android, Android preferred | TODO | Docs |
@@ -148,20 +148,27 @@ Tiers:
 **Person 1 owns Maps + Domain end-to-end** (G2 and G1 are bundled on purpose: G2's admin key needs the domain to restrict it to, P1's email needs the domain verified, and G3's final screenshots need both done — one owner avoids two people blocking each other).
 
 ### Person 1 — Maps & Domain
+
+**⚠️ G2 BLOCKED as of 2026-09-25 — read before planning Person 1's week.** Google Cloud requires a card-verification hold (reported ~$50) to enable billing, and the team currently has no credit card and no other safe way to cover it (debit/prepaid risk losing access to that amount; a faculty-covered card or a GCash/Maya attempt are both unresolved). **Decision: pause G2 entirely until this is sorted** — do not spend more time on it in the meantime.
+
+**What this does NOT affect:** all of G2's code is already written, tested (typecheck + full test suites pass), and partly deployed — `OsmMap` → `react-native-maps`, the admin's `LiveMap`/`AlertLocationMap` → `@vis.gl/react-google-maps`, and the `maps-proxy` Edge Function (deployed, its auth gate verified live). None of that needs to be redone. The only missing piece is the real API keys, which need Google Cloud billing enabled first.
+
+**What this DOES affect:** G2 cannot be tested end-to-end on a real device, and G3 (final screenshots, which need Google Maps actually rendering) is blocked until G2 unblocks. **Tell your adviser about this risk now, not at the defense** — it may affect the timeline, and they may know a workaround (a faculty-covered card is often the simplest fix a program can offer).
+
+**Revised Person 1 plan — reprioritized around the blocker:**
+
 | When | Item | Notes |
 |---|---|---|
-| Week 1, Day 1 | G1 (start) | Buy the domain, connect it to the Vercel project. |
-| Week 1, Day 1 | G2 (start) | Create the Google Cloud project, enable billing, turn on Maps SDK / Maps JS / Places / Routes, set daily quota caps and budget alerts (see "G2 free-tier guardrails"). |
-| Week 1, Day 1 | *(prep for P1)* | Add Resend's DNS records for the domain (SPF/DKIM), so it's verified by the time Week 2's P1 needs it. |
-| Week 1, Days 2–5 | G2 display | Swap `OsmMap` to `react-native-maps` (`PROVIDER_GOOGLE`) in both mobile apps; swap `LiveMap`/`AlertLocationMap` in the admin to `@vis.gl/react-google-maps`. Needs a new dev/EAS build — check the Expo SDK 54 config-plugin docs first. |
-| Week 2 | G2 finish | `maps-proxy` edge function (session-token Places search, Routes) with the quiet fallback to today's free services. |
-| Week 2 | L14 | Build the proxy's abuse limits at the same time: session required (no anon), per-user rate limits, CORS restricted to the domain. |
-| Week 2 | G1 finish | Add the domain to Supabase Auth's redirect URLs. |
-| Week 2 | P1 | Email receipts via Resend (needs the domain verified above). |
-| Week 2 | L13 | Build P1's send limits at the same time: max 3 sends per ride, 20/day per user. |
-| Week 2 | F5 | Receipt built from server data, not the local store — do this alongside P1 since it's the same data. |
-| Week 2, last 2 days | G3 | Final screenshots: the hosted admin on the domain with Google Maps, every mobile screen on Android. Needs Person 2 and 3's features stable first. |
-| Week 2, very last step | *(git history purge)* | The deferred X7 cleanup: `git filter-repo` to scrub the old leaked secret string from all commit history, then force-push. Announce to the whole team first — everyone must re-clone or hard-reset right after. Do this last, once nobody has unmerged local branches that would be lost. |
+| Week 1, Day 1 | G1 (start) | Buy the domain, connect it to the Vercel project. Doesn't need Google Cloud at all — proceed regardless of the billing blocker. |
+| Week 1, Day 1 | *(prep for P1)* | Add Resend's DNS records for the domain (SPF/DKIM). |
+| Week 1, Days 2–5 | G1 finish | Add the domain to Supabase Auth's redirect URLs. |
+| Week 1–2 | P1 | Email receipts via Resend + F5 (receipt from server data). **Doesn't need Google Maps at all** — only needs the domain from G1. Bring this forward to fill the time G2 would have used. |
+| Week 1–2 | L13 | Build P1's send limits alongside it: max 3 sends per ride, 20/day per user. |
+| — | G2 | **Paused.** Revisit the moment a card/billing path is confirmed. Once unblocked: Google Cloud setup (project, billing, 4 APIs, Map ID, quota caps, budget alert, 3–4 restricted keys — see "## G2: full Google stack" and the step-by-step in chat) → wire keys into `app.config.js` (mobile), Supabase secrets (`GOOGLE_MAPS_SERVER_API_KEY`), and `apps/admin/.env` (`VITE_GOOGLE_MAPS_WEB_API_KEY`, `VITE_GOOGLE_MAPS_MAP_ID`) → `eas build --profile development` → real-device test. |
+| — | G3 | **Blocked on G2.** Final screenshots need Google Maps actually rendering on the domain and on Android. Do this last, once G2 unblocks and Person 2/3's features are stable. |
+| — | *(git history purge)* | The deferred X7 cleanup, unrelated to the G2 blocker — still fine to do whenever the team is ready to re-clone. See the note in the loophole section above. |
+
+**If G2 stays blocked past the deadline:** the manuscript can honestly describe the Google Maps migration as "designed and implemented in code, verified via automated tests and a live deployment check, pending a Google Cloud billing constraint outside the team's control" — this is a defensible, honest position for a capstone defense, not a gap to hide.
 
 ### Person 2 — Backend, ride flow, security (heaviest track)
 | When | Item | Notes |
