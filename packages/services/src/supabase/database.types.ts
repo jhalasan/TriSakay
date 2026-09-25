@@ -61,7 +61,21 @@ export type Database = {
             foreignKeyName: "account_actions_performed_by_fkey"
             columns: ["performed_by"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_actions_performed_by_fkey"
+            columns: ["performed_by"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "account_actions_target_user_id_fkey"
+            columns: ["target_user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -105,6 +119,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "barangays_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "barangays_updated_by_fkey"
             columns: ["updated_by"]
@@ -155,6 +176,13 @@ export type Database = {
             foreignKeyName: "complaint_attachments_uploaded_by_fkey"
             columns: ["uploaded_by"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_attachments_uploaded_by_fkey"
+            columns: ["uploaded_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -187,10 +215,10 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "complaint_status_history_complaint_id_fkey"
-            columns: ["complaint_id"]
+            foreignKeyName: "complaint_status_history_changed_by_fkey"
+            columns: ["changed_by"]
             isOneToOne: false
-            referencedRelation: "complaints"
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -198,6 +226,20 @@ export type Database = {
             columns: ["changed_by"]
             isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_status_history_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaint_status_history_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "v_overdue_complaints"
             referencedColumns: ["id"]
           },
         ]
@@ -280,7 +322,21 @@ export type Database = {
             foreignKeyName: "complaints_against_user_id_fkey"
             columns: ["against_user_id"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_against_user_id_fkey"
+            columns: ["against_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_dh_reviewed_by_fkey"
+            columns: ["dh_reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -294,7 +350,21 @@ export type Database = {
             foreignKeyName: "complaints_mediation_scheduled_by_fkey"
             columns: ["mediation_scheduled_by"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_mediation_scheduled_by_fkey"
+            columns: ["mediation_scheduled_by"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_resolved_by_fkey"
+            columns: ["resolved_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -315,7 +385,21 @@ export type Database = {
             foreignKeyName: "complaints_submitted_by_fkey"
             columns: ["submitted_by"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_triaged_by_fkey"
+            columns: ["triaged_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -384,6 +468,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_flagged_low_ratings"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "driver_documents_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "driver_documents_reviewed_by_fkey"
@@ -501,7 +592,21 @@ export type Database = {
             foreignKeyName: "driver_profiles_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: true
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: true
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_profiles_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -561,7 +666,21 @@ export type Database = {
             foreignKeyName: "emergency_alerts_counterpart_id_fkey"
             columns: ["counterpart_id"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_counterpart_id_fkey"
+            columns: ["counterpart_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -576,6 +695,13 @@ export type Database = {
             columns: ["ride_request_id"]
             isOneToOne: false
             referencedRelation: "ride_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "emergency_alerts_triggered_by_fkey"
+            columns: ["triggered_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -629,6 +755,13 @@ export type Database = {
             foreignKeyName: "fare_config_updated_by_fkey"
             columns: ["updated_by"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "fare_config_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -656,6 +789,49 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "login_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "login_events_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      maps_proxy_usage: {
+        Row: {
+          places_count: number
+          routes_count: number
+          usage_hour: string
+          user_id: string
+        }
+        Insert: {
+          places_count?: number
+          routes_count?: number
+          usage_hour: string
+          user_id: string
+        }
+        Update: {
+          places_count?: number
+          routes_count?: number
+          usage_hour?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "maps_proxy_usage_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "maps_proxy_usage_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
             referencedRelation: "users"
@@ -695,6 +871,13 @@ export type Database = {
           user_id?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "notifications_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "notifications_user_id_fkey"
             columns: ["user_id"]
@@ -758,7 +941,21 @@ export type Database = {
             foreignKeyName: "passenger_discounts_passenger_id_fkey"
             columns: ["passenger_id"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_discounts_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "passenger_discounts_reviewed_by_fkey"
+            columns: ["reviewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -820,6 +1017,13 @@ export type Database = {
             foreignKeyName: "ratings_passenger_id_fkey"
             columns: ["passenger_id"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ratings_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -828,6 +1032,88 @@ export type Database = {
             columns: ["ride_request_id"]
             isOneToOne: true
             referencedRelation: "ride_requests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_assignment_events: {
+        Row: {
+          actor_id: string | null
+          created_at: string
+          driver_id: string | null
+          event_type: Database["public"]["Enums"]["assignment_event_type"]
+          from_status: Database["public"]["Enums"]["ride_status"] | null
+          id: string
+          reason: string | null
+          ride_request_id: string
+          to_status: Database["public"]["Enums"]["ride_status"] | null
+          trip_id: string | null
+        }
+        Insert: {
+          actor_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          event_type: Database["public"]["Enums"]["assignment_event_type"]
+          from_status?: Database["public"]["Enums"]["ride_status"] | null
+          id?: string
+          reason?: string | null
+          ride_request_id: string
+          to_status?: Database["public"]["Enums"]["ride_status"] | null
+          trip_id?: string | null
+        }
+        Update: {
+          actor_id?: string | null
+          created_at?: string
+          driver_id?: string | null
+          event_type?: Database["public"]["Enums"]["assignment_event_type"]
+          from_status?: Database["public"]["Enums"]["ride_status"] | null
+          id?: string
+          reason?: string | null
+          ride_request_id?: string
+          to_status?: Database["public"]["Enums"]["ride_status"] | null
+          trip_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_assignment_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_assignment_events_actor_id_fkey"
+            columns: ["actor_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_assignment_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ride_assignment_events_driver_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: false
+            referencedRelation: "v_flagged_low_ratings"
+            referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "ride_assignment_events_ride_request_id_fkey"
+            columns: ["ride_request_id"]
+            isOneToOne: false
+            referencedRelation: "ride_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_assignment_events_trip_id_fkey"
+            columns: ["trip_id"]
+            isOneToOne: false
+            referencedRelation: "trips"
             referencedColumns: ["id"]
           },
         ]
@@ -959,6 +1245,13 @@ export type Database = {
             foreignKeyName: "ride_requests_passenger_id_fkey"
             columns: ["passenger_id"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_requests_passenger_id_fkey"
+            columns: ["passenger_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1014,44 +1307,15 @@ export type Database = {
             foreignKeyName: "saved_places_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "users"
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
-        ]
-      }
-      settlements: {
-        Row: {
-          amount: number
-          driver_id: string
-          id: string
-          notified_at: string
-        }
-        Insert: {
-          amount: number
-          driver_id: string
-          id?: string
-          notified_at?: string
-        }
-        Update: {
-          amount?: number
-          driver_id?: string
-          id?: string
-          notified_at?: string
-        }
-        Relationships: [
           {
-            foreignKeyName: "settlements_driver_id_fkey"
-            columns: ["driver_id"]
+            foreignKeyName: "saved_places_user_id_fkey"
+            columns: ["user_id"]
             isOneToOne: false
-            referencedRelation: "driver_profiles"
-            referencedColumns: ["user_id"]
-          },
-          {
-            foreignKeyName: "settlements_driver_id_fkey"
-            columns: ["driver_id"]
-            isOneToOne: false
-            referencedRelation: "v_flagged_low_ratings"
-            referencedColumns: ["driver_id"]
+            referencedRelation: "users"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1096,6 +1360,13 @@ export type Database = {
           updated_by?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "system_settings_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "system_settings_updated_by_fkey"
             columns: ["updated_by"]
@@ -1146,6 +1417,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "transactions_cash_confirmed_by_fkey"
+            columns: ["cash_confirmed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "transactions_cash_confirmed_by_fkey"
             columns: ["cash_confirmed_by"]
@@ -1225,6 +1503,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "v_flagged_low_ratings"
             referencedColumns: ["driver_id"]
+          },
+          {
+            foreignKeyName: "tricycles_verified_by_fkey"
+            columns: ["verified_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
           },
           {
             foreignKeyName: "tricycles_verified_by_fkey"
@@ -1339,6 +1624,13 @@ export type Database = {
             foreignKeyName: "user_consents_user_id_fkey"
             columns: ["user_id"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "user_consents_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1396,14 +1688,34 @@ export type Database = {
     Views: {
       admin_passenger_directory: {
         Row: {
-          id: string | null
-          first_name: string | null
-          last_name: string | null
-          full_name: string | null
           contact_no: string | null
-          email: string | null
-          status: Database["public"]["Enums"]["account_status"] | null
           created_at: string | null
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string | null
+          last_name: string | null
+          status: Database["public"]["Enums"]["account_status"] | null
+        }
+        Insert: {
+          contact_no?: never
+          created_at?: string | null
+          email?: never
+          first_name?: string | null
+          full_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          status?: Database["public"]["Enums"]["account_status"] | null
+        }
+        Update: {
+          contact_no?: never
+          created_at?: string | null
+          email?: never
+          first_name?: string | null
+          full_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          status?: Database["public"]["Enums"]["account_status"] | null
         }
         Relationships: []
       }
@@ -1485,6 +1797,13 @@ export type Database = {
             foreignKeyName: "driver_profiles_user_id_fkey"
             columns: ["driver_id"]
             isOneToOne: true
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "driver_profiles_user_id_fkey"
+            columns: ["driver_id"]
+            isOneToOne: true
             referencedRelation: "users"
             referencedColumns: ["id"]
           },
@@ -1523,7 +1842,21 @@ export type Database = {
             foreignKeyName: "complaints_against_user_id_fkey"
             columns: ["against_user_id"]
             isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_against_user_id_fkey"
+            columns: ["against_user_id"]
+            isOneToOne: false
             referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "complaints_submitted_by_fkey"
+            columns: ["submitted_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
             referencedColumns: ["id"]
           },
           {
@@ -1569,6 +1902,13 @@ export type Database = {
           ride_request_id: string
         }[]
       }
+      cancel_ride_request_as_passenger: {
+        Args: { p_reason?: string; p_ride_request_id: string }
+        Returns: {
+          ride_request_id: string
+        }[]
+      }
+      cancel_stale_pending_ride_requests: { Args: never; Returns: undefined }
       complete_ride_leg: {
         Args: { p_ride_request_id: string; p_trip_id: string }
         Returns: {
@@ -1712,6 +2052,10 @@ export type Database = {
         Args: { lat1: number; lat2: number; lng1: number; lng2: number }
         Returns: number
       }
+      increment_maps_proxy_usage: {
+        Args: { p_kind: string; p_limit: number; p_user_id: string }
+        Returns: boolean
+      }
       is_account_active: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_cluster_authorized: {
@@ -1757,10 +2101,7 @@ export type Database = {
         }
         Returns: undefined
       }
-      self_deactivate_account: {
-        Args: never
-        Returns: undefined
-      }
+      self_deactivate_account: { Args: never; Returns: undefined }
       start_ride_leg: {
         Args: { p_ride_request_id: string; p_trip_id: string }
         Returns: {
@@ -1790,6 +2131,13 @@ export type Database = {
         | "reactivate"
         | "deactivate"
       account_status: "active" | "flagged" | "suspended" | "deactivated"
+      assignment_event_type:
+        | "accepted"
+        | "cancelled_by_passenger"
+        | "cancelled_by_driver"
+        | "cancelled_by_system"
+        | "completed"
+        | "offered_declined"
       complaint_category:
         | "fare"
         | "conduct"
@@ -1982,6 +2330,14 @@ export const Constants = {
         "deactivate",
       ],
       account_status: ["active", "flagged", "suspended", "deactivated"],
+      assignment_event_type: [
+        "accepted",
+        "cancelled_by_passenger",
+        "cancelled_by_driver",
+        "cancelled_by_system",
+        "completed",
+        "offered_declined",
+      ],
       complaint_category: [
         "fare",
         "conduct",

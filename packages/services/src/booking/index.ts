@@ -122,26 +122,20 @@ export interface CancelRideRequestResult {
 }
 
 /**
- * Only succeeds while the row is still `pending` — enforced server-side by
- * the `rr_passenger_cancel` RLS policy, not re-checked here. A row RLS
- * silently excludes (e.g. already assigned) comes back as `data: null` with
- * no Postgres error, so that case is surfaced as a plain message rather than
- * reported as success.
+ * Delegates to the cancel_ride_request_as_passenger RPC (X9): the row's own
+ * columns beyond status/cancelled_at/cancel_reason can no longer be touched
+ * via a direct UPDATE (rr_passenger_cancel was removed), so this is now the
+ * only way to cancel. Succeeds while status is 'pending' or 'assigned' and
+ * the row is the caller's own — enforced server-side inside the RPC, which
+ * raises its own descriptive error otherwise.
  */
 export async function cancelRideRequest(rideRequestId: string, reason: string): Promise<CancelRideRequestResult> {
-  const { data, error } = await getSupabaseClient()
-    .from('ride_requests')
-    .update({
-      status: 'cancelled',
-      cancelled_at: new Date().toISOString(),
-      cancel_reason: reason,
-    })
-    .eq('id', rideRequestId)
-    .select()
-    .maybeSingle();
+  const { error } = await getSupabaseClient().rpc('cancel_ride_request_as_passenger', {
+    p_ride_request_id: rideRequestId,
+    p_reason: reason,
+  });
 
   if (error) return { error: error.message };
-  if (!data) return { error: 'Could not cancel — this ride may already be assigned or no longer active.' };
   return { error: null };
 }
 
