@@ -404,6 +404,12 @@ Tiers:
 - **Mobile display:**
   - `react-native-maps` with `PROVIDER_GOOGLE` replaces the Leaflet WebView in `packages/ui/src/components/OsmMap`, keeping the same component API so screens and `MapOverlaySheet` don't change.
   - Check the Expo SDK 54 docs for the config plugin and key setup. This needs a new dev/EAS build.
+  - **STRETCH within G2 (not a panel item — a team addition, found 2026-09-25): multi-pin support for the driver's active-trip map.** Today's `OsmMap`/`mapHtml.ts` supports only one marker + one line at a time, so with several passengers `trip/active.tsx` shows only the D2 "next stop" pin, not the full picture. **Cut this first if G2's core work (the map actually displaying via Google, search, routing) is at risk in the 2-week window** — the panel asked for nearest-drop-off-first *ordering*, not multiple pins; this rides along cheaply on the rewrite but isn't required. If there's time, since you're rewriting `OsmMap` for G2 anyway, it's cheaper to build this now than to patch the soon-to-be-replaced Leaflet map first:
+    - `OsmMap`'s new `react-native-maps` version takes an array of stops (one `<Marker>` per waiting pickup, one per on-board drop-off), not just a single `marker` prop.
+    - Color convention matches the app-wide standard from the Olaybal review: green = pickup, blue = drop-off.
+    - The D2 "next stop" pin is visually highlighted (larger, or an outline) so the sort order stays obvious alongside the full picture.
+    - Optional: tapping a pin scrolls/highlights that passenger's card in the list below.
+    - `MapOverlaySheet`/`trip/active.tsx` pass the full `trip.passengers` list to the map instead of just `routingPassenger`.
 - **Admin display:** `@vis.gl/react-google-maps` replaces react-leaflet in `LiveMap` and `AlertLocationMap`.
 - **Search and routing:**
   - A new `maps-proxy` edge function holds the server key, with per-user rate limiting and a short cache.
