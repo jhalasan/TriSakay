@@ -84,71 +84,48 @@ test('createRideRequest surfaces the Postgres error message', async () => {
   assert.equal(error, 'insert failed');
 });
 
-test('cancelRideRequest updates status to cancelled and returns no error on success', async () => {
-  let capturedUpdate: any = null;
-  let capturedId: any = null;
+// X9 (2026-09-25): cancelRideRequest now delegates to the
+// cancel_ride_request_as_passenger RPC instead of a direct UPDATE — the
+// rr_passenger_cancel RLS policy it used to rely on was removed, since a
+// passenger could otherwise change more than status/cancelled_at/
+// cancel_reason on their own row. These tests were rewritten to match.
+test('cancelRideRequest calls the RPC with the ride id + reason and returns no error on success', async () => {
+  let capturedFn: string | null = null;
+  let capturedArgs: unknown = null;
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      from: (table) => {
-        assert.equal(table, 'ride_requests');
-        return {
-          update: (row: unknown) => {
-            capturedUpdate = row;
-            return {
-              eq: (column: string, value: unknown) => {
-                assert.equal(column, 'id');
-                capturedId = value;
-                return {
-                  select: () => ({
-                    maybeSingle: async () => ({ data: { id: value, status: 'cancelled' }, error: null }),
-                  }),
-                };
-              },
-            };
-          },
-        };
+      rpc: async (fn: string, args: unknown) => {
+        capturedFn = fn;
+        capturedArgs = args;
+        return { data: null, error: null };
       },
     })
   );
 
   const { error } = await cancelRideRequest('rr1', 'Cancelled by passenger');
   assert.equal(error, null);
-  assert.equal(capturedId, 'rr1');
-  assert.equal(capturedUpdate.status, 'cancelled');
-  assert.equal(capturedUpdate.cancel_reason, 'Cancelled by passenger');
+  assert.equal(capturedFn, 'cancel_ride_request_as_passenger');
+  assert.deepEqual(capturedArgs, { p_ride_request_id: 'rr1', p_reason: 'Cancelled by passenger' });
 });
 
-test('cancelRideRequest reports a plain error when RLS rejects the update (already assigned)', async () => {
+test('cancelRideRequest surfaces the RPC\'s own message when the ride is no longer cancellable', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      from: () => ({
-        update: () => ({
-          eq: () => ({
-            select: () => ({
-              maybeSingle: async () => ({ data: null, error: null }),
-            }),
-          }),
-        }),
+      rpc: async () => ({
+        data: null,
+        error: { message: 'Could not cancel — this ride may already be picked up, completed, or no longer active.' },
       }),
     })
   );
 
   const { error } = await cancelRideRequest('rr1', 'Cancelled by passenger');
-  assert.equal(error, 'Could not cancel — this ride may already be assigned or no longer active.');
+  assert.equal(error, 'Could not cancel — this ride may already be picked up, completed, or no longer active.');
 });
 
 test('cancelRideRequest surfaces a genuine Postgres error', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      from: () => ({
-        update: () => ({
-          eq: () => ({
-            select: () => ({
-              maybeSingle: async () => ({ data: null, error: { message: 'network error' } }),
-            }),
-          }),
-        }),
-      }),
+      rpc: async () => ({ data: null, error: { message: 'network error' } }),
     })
   );
 
