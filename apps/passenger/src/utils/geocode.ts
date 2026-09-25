@@ -1,16 +1,21 @@
 import * as Location from 'expo-location';
+import { getSupabaseClient } from '@trisakay/services';
 import { DEFAULT_CENTER } from '@trisakay/ui';
 import type { LocationPoint } from '../types/booking';
 
 /**
- * Same free community endpoint whose usage policy this app already honours
- * for map tiles (see `OsmMap/mapHtml.ts`) — one request per keystroke batch,
- * a named User-Agent, and results bounded to the service area rather than a
- * global search, so this stays inside "low-volume, non-bulk" use.
+ * G2 (Google Maps): primary search is now the maps-proxy Edge Function
+ * (Places Text Search (New), server-side key + rate limit — see
+ * supabase/functions/maps-proxy). Nominatim stays as the quiet fallback for
+ * when the proxy fails or the caller has hit its hourly quota — this is the
+ * SAME free community endpoint this app already used as its only search
+ * before G2, so its own usage policy (one request per keystroke batch, a
+ * named User-Agent, results bounded to the service area) still applies
+ * whenever this path actually runs.
  */
 const NOMINATIM_SEARCH_URL = 'https://nominatim.openstreetmap.org/search';
 const SEARCH_USER_AGENT = 'TriSakayPassenger/1.0 (+mailto:nexasystems6@gmail.com)';
-/** Degrees, matching `mapHtml.ts`'s ROAM_DEGREES — the same service-area box every interactive map is clamped to. */
+/** Degrees, matching the old service-area box every interactive map is clamped to (packages/ui's OsmMap). */
 const SEARCH_BOX_DEGREES = 0.25;
 const SEARCH_RESULT_LIMIT = 8;
 
@@ -21,23 +26,14 @@ interface NominatimResult {
   name?: string;
 }
 
-/**
- * Forward-geocodes free text to candidate destinations within the General
- * Santos City service area. Returns `[]` on any failure (offline, rate limit,
- * malformed response) rather than throwing — a failed search should leave the
- * rider looking at an empty results list, not a crashed screen.
- */
-export async function searchPlaces(query: string): Promise<LocationPoint[]> {
-  const q = query.trim();
-  if (q.length < 2) return [];
-
+async function searchPlacesNominatim(query: string): Promise<LocationPoint[]> {
   const south = DEFAULT_CENTER.latitude - SEARCH_BOX_DEGREES;
   const north = DEFAULT_CENTER.latitude + SEARCH_BOX_DEGREES;
   const west = DEFAULT_CENTER.longitude - SEARCH_BOX_DEGREES;
   const east = DEFAULT_CENTER.longitude + SEARCH_BOX_DEGREES;
 
   const params = new URLSearchParams({
-    q,
+    q: query,
     format: 'jsonv2',
     limit: String(SEARCH_RESULT_LIMIT),
     viewbox: `${west},${north},${east},${south}`,
@@ -62,6 +58,36 @@ export async function searchPlaces(query: string): Promise<LocationPoint[]> {
   } catch {
     return [];
   }
+}
+
+interface MapsProxySearchResponse {
+  results?: LocationPoint[];
+  fallback?: boolean;
+}
+
+/**
+ * Forward-geocodes free text to candidate destinations within the General
+ * Santos City service area. Returns `[]` on total failure (offline, both
+ * Google and Nominatim down, malformed response) rather than throwing — a
+ * failed search should leave the rider looking at an empty results list,
+ * not a crashed screen.
+ */
+export async function searchPlaces(query: string): Promise<LocationPoint[]> {
+  const q = query.trim();
+  if (q.length < 2) return [];
+
+  try {
+    const { data, error } = await getSupabaseClient().functions.invoke<MapsProxySearchResponse>('maps-proxy', {
+      body: { action: 'search', query: q },
+    });
+    if (!error && data && !data.fallback && data.results) {
+      return data.results;
+    }
+  } catch {
+    // Falls through to Nominatim below — offline, timeout, or the function itself unreachable.
+  }
+
+  return searchPlacesNominatim(q);
 }
 
 /**

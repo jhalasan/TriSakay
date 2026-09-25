@@ -1,3 +1,4 @@
+import { getSupabaseClient } from '@trisakay/services';
 import { haversineDistanceKm } from '@trisakay/utils';
 
 export interface RouteEstimate {
@@ -5,8 +6,8 @@ export interface RouteEstimate {
   distanceKm: number;
   /** Ordered points of the route line, for drawing on the map. */
   geometry: { latitude: number; longitude: number }[];
-  /** 'osrm' = real road route; 'straight' = fallback line (OSRM unreachable). */
-  source: 'osrm' | 'straight';
+  /** 'google' = real road route via the Routes API; 'straight' = fallback line (Google unreachable/quota). */
+  source: 'google' | 'straight';
 }
 
 interface GeoPoint {
@@ -14,26 +15,19 @@ interface GeoPoint {
   longitude: number;
 }
 
-/**
- * OSRM's public demo server — light/evaluation use only (one request per
- * confirm screen). Swap this single constant for a self-hosted or commercial
- * router in production, exactly like the tile URL note in OsmMap/mapHtml.ts.
- */
-const OSRM_BASE_URL = 'https://router.project-osrm.org';
-const ROUTE_USER_AGENT = 'TriSakayPassenger/1.0 (+mailto:nexasystems6@gmail.com)';
-
-/** A hung OSRM demo server must not strand the fare — abort and fall back. */
-const ROUTE_TIMEOUT_MS = 8000;
-
-interface OsrmResponse {
-  code?: string;
-  routes?: { distance?: number; geometry?: { coordinates?: [number, number][] } }[];
+interface MapsProxyRouteResponse {
+  distanceKm?: number;
+  geometry?: { latitude: number; longitude: number }[];
+  fallback?: boolean;
 }
 
 /**
- * A two-point straight line + crow-flies distance. Returned on every OSRM
- * failure so the rider always sees a line and gets a fare — a routing outage
- * must never block a booking.
+ * A two-point straight line + crow-flies distance. Returned whenever the
+ * Google Routes API (via maps-proxy) is unreachable or over quota — a
+ * routing outage must never block a booking. This used to also be OSRM's
+ * fallback; G2 (Google Maps) removed OSRM entirely rather than keeping it
+ * as a second fallback tier — see docs/UAT_PANELIST_REVIEW_ADRALES.md,
+ * "## G2: full Google stack".
  */
 function straightLine(pickup: GeoPoint, dropoff: GeoPoint): RouteEstimate {
   return {
@@ -47,36 +41,22 @@ function straightLine(pickup: GeoPoint, dropoff: GeoPoint): RouteEstimate {
 }
 
 /**
- * Fetches the nearest suggested driving route from pickup to dropoff via OSRM.
- * Returns the road distance and the line to draw. Never throws — any failure
+ * Fetches the nearest suggested driving route from pickup to dropoff via the
+ * Google Routes API (through maps-proxy, which holds the server key and
+ * rate-limits per user). Returns the road distance and the line to draw.
+ * Never throws — any failure (offline, quota hit, malformed response)
  * degrades to `straightLine()`.
  */
 export async function fetchRouteEstimate(pickup: GeoPoint, dropoff: GeoPoint): Promise<RouteEstimate> {
-  // OSRM takes lon,lat — the reverse of the {latitude,longitude} used everywhere else.
-  const coords = `${pickup.longitude},${pickup.latitude};${dropoff.longitude},${dropoff.latitude}`;
-  const url = `${OSRM_BASE_URL}/route/v1/driving/${coords}?overview=full&geometries=geojson`;
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), ROUTE_TIMEOUT_MS);
   try {
-    const response = await fetch(url, {
-      headers: { 'User-Agent': ROUTE_USER_AGENT, Accept: 'application/json' },
-      signal: controller.signal,
+    const { data, error } = await getSupabaseClient().functions.invoke<MapsProxyRouteResponse>('maps-proxy', {
+      body: { action: 'route', pickup, dropoff },
     });
-    if (!response.ok) return straightLine(pickup, dropoff);
-    const data = (await response.json()) as OsrmResponse;
-    const route = data.code === 'Ok' ? data.routes?.[0] : undefined;
-    const coordinates = route?.geometry?.coordinates;
-    if (!route || typeof route.distance !== 'number' || !coordinates || coordinates.length < 2) {
-      return straightLine(pickup, dropoff);
+    if (!error && data && !data.fallback && typeof data.distanceKm === 'number' && data.geometry && data.geometry.length >= 2) {
+      return { distanceKm: data.distanceKm, geometry: data.geometry, source: 'google' };
     }
-    return {
-      distanceKm: route.distance / 1000,
-      geometry: coordinates.map(([lon, lat]) => ({ latitude: lat, longitude: lon })),
-      source: 'osrm',
-    };
   } catch {
-    return straightLine(pickup, dropoff);
-  } finally {
-    clearTimeout(timer);
+    // Falls through to the straight-line fallback below.
   }
+  return straightLine(pickup, dropoff);
 }
