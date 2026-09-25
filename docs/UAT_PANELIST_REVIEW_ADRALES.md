@@ -14,7 +14,7 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 | ID | Recommendation | Status | Kind |
 |---|---|---|---|
 | G1 | Proper domain | TODO | Setup |
-| G2 | Use Google Maps | **BLOCKED (2026-09-25)** — code done, waiting on billing | Code, large |
+| G2 | Use Google Maps | **UNBLOCKED (2026-09-25)** — billing verified, code done, GCP project created, enabling APIs next | Code, large |
 | G3 | Screenshots of the final hosted system with the domain and Google Maps | TODO | Last step |
 | G4 | Help tips for text boxes | TODO | Code, small |
 | G5 | Scope: iOS and Android, Android preferred | TODO | Docs |
@@ -149,7 +149,7 @@ Tiers:
 
 ### Person 1 — Maps & Domain
 
-**⚠️ G2 BLOCKED as of 2026-09-25 — read before planning Person 1's week.** Google Cloud requires a card-verification hold (reported ~$50) to enable billing, and the team currently has no credit card and no other safe way to cover it (debit/prepaid risk losing access to that amount; a faculty-covered card or a GCash/Maya attempt are both unresolved). **Decision: pause G2 entirely until this is sorted** — do not spend more time on it in the meantime.
+**✅ G2 UNBLOCKED as of 2026-09-25** — the Google Cloud billing verification passed and a project is created. Resume Person 1's revised plan below from "enable the 4 APIs" onward.
 
 **What this does NOT affect:** all of G2's code is already written, tested (typecheck + full test suites pass), and partly deployed — `OsmMap` → `react-native-maps`, the admin's `LiveMap`/`AlertLocationMap` → `@vis.gl/react-google-maps`, and the `maps-proxy` Edge Function (deployed, its auth gate verified live). None of that needs to be redone. The only missing piece is the real API keys, which need Google Cloud billing enabled first.
 
