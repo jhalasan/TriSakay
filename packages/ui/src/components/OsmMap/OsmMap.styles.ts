@@ -20,9 +20,67 @@ export const styles = StyleSheet.create({
   edgeToEdge: {
     borderRadius: 0,
   },
-  webview: {
+  map: {
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.fill,
+  },
+  /** Teardrop pin body — matches the old Leaflet divIcon's rotated rounded-square shape. */
+  pinWrap: {
+    alignItems: 'center',
+  },
+  pinBody: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    borderBottomLeftRadius: 2,
+    transform: [{ rotate: '-45deg' }],
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#002e60',
+    shadowOpacity: 0.35,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 6,
+  },
+  pinDot: {
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: '#fff',
+    transform: [{ rotate: '45deg' }],
+  },
+  pinShadow: {
+    width: 13,
+    height: 4,
+    borderRadius: 6,
+    backgroundColor: 'rgba(0,26,56,0.28)',
+    marginTop: 5,
+  },
+  /** Live driver dot — matches the old 22px filled-circle driver icon. */
+  driverDot: {
+    width: 22,
+    height: 22,
+    borderRadius: 11,
+    backgroundColor: colors.accentGreen,
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.35,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  /** Route start/end dot — matches the old Leaflet circleMarker endpoints. */
+  routeDot: {
+    width: 14,
+    height: 14,
+    borderRadius: 7,
+    borderWidth: 2,
+    borderColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
+    elevation: 3,
   },
   skeleton: {
     ...StyleSheet.absoluteFillObject,

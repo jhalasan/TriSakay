@@ -1,30 +1,38 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, Pressable, Text, View, type DimensionValue } from 'react-native';
-import { WebView, type WebViewMessageEvent } from 'react-native-webview';
+import MapView, { Marker, Polyline, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { colors, motion, spacing } from '../../theme';
 import { MapPlaceholder, type MapPlaceholderVariant } from '../MapPlaceholder';
-import {
-  DEFAULT_CENTER,
-  DEFAULT_ZOOM,
-  buildMapHtml,
-  type MapMessage,
-} from './mapHtml';
 import { styles } from './OsmMap.styles';
 
 /**
- * Identifies this app to the OSM tile service. `applicationNameForUserAgent`
- * APPENDS to the platform WebView UA rather than replacing it — a generic
- * library default is blocked without notice under the OSM tile policy, while a
- * bare non-browser UA risks tripping CDN heuristics.
+ * G2 (Google Maps migration, 2026-09): this used to be a Leaflet map inside a
+ * WebView (see git history / mapHtml.ts, now removed) talking to this
+ * component over postMessage. It's now a native `react-native-maps` view on
+ * `PROVIDER_GOOGLE`. The PUBLIC PROP API is unchanged on purpose — every
+ * screen that renders <OsmMap ... /> needed zero changes for this swap.
+ *
+ * Needs a dev/EAS build; PROVIDER_GOOGLE with a real API key does not work in
+ * Expo Go (the key is baked in natively via app.config.js, which a shared
+ * pre-built Expo Go binary has no way to pick up).
  */
-const APP_USER_AGENT = 'TriSakayPassenger/1.0 (+mailto:nexasystems6@gmail.com)';
 
-/** If no tile has painted by now, assume offline and keep the skeleton up. */
+export const DEFAULT_CENTER = { latitude: 6.116243, longitude: 125.171738 } as const;
+export const DEFAULT_ZOOM = 15;
+
+/** If the native map view never reports ready, assume something's badly wrong (not just slow tiles — unlike the old tile-paint signal, onMapReady fires once the native view mounts) and keep the skeleton up. */
 const READY_TIMEOUT_MS = 8000;
 
-/** Trailing `true;` is required — iOS misbehaves when the last expression isn't. */
-const RECENTER_JS = 'window.__recenter && window.__recenter(); true;';
+const RECENTER_DURATION_MS = 350;
+
+const finite = (value: number | undefined, fallback: number) =>
+  typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+
+/** Converts the app's existing Leaflet-style zoom levels (3-19) to a region delta, so every call site keeps using the same `zoom` numbers it already passes. */
+function zoomToDelta(zoom: number): number {
+  return 360 / Math.pow(2, zoom);
+}
 
 export interface OsmMapProps {
   /** Drives the fallback skeleton. Markers/routes are a later step. */
@@ -37,7 +45,11 @@ export interface OsmMapProps {
   latitude?: number;
   longitude?: number;
   zoom?: number;
-  /** Move attribution bottom-left where a bottom overlay would cover it. */
+  /**
+   * Was "move OSM's attribution to the opposite corner" — kept for API
+   * compatibility, but it's a no-op now. Google's terms of service fix where
+   * its logo/attribution sits; an app isn't allowed to relocate or cover it.
+   */
   attributionLeft?: boolean;
   /**
    * Pan, pinch/double-tap zoom, and a recenter button. Off by default, and the
@@ -48,32 +60,26 @@ export interface OsmMapProps {
   interactive?: boolean;
   /**
    * Pixels of the map's bottom edge covered by a native overlay (a driver strip,
-   * a sheet). Lifts both the OSM attribution and the recenter button clear of it
-   * — the screen owns this number because only it knows what it renders on top.
+   * a sheet). Lifts the recenter button clear of it, and pads route-fitting so
+   * the route doesn't end up hidden under the overlay either.
    */
   bottomInset?: number;
   /**
    * Renders a pin at these coordinates. `draggable` lets the rider fine-tune
-   * it by hand — drag position is reported via `onMarkerMove`, not fed back
-   * into this prop's own `latitude`/`longitude` for the `source` memo below,
-   * so a drag (or a fresher GPS fix) never remounts the WebView and re-fetches
-   * every tile.
+   * it by hand — drag position is reported via `onMarkerMove`.
    */
   marker?: { latitude: number; longitude: number; draggable?: boolean } | null;
   /** Fixed-marker pin color — navy for a pickup point, green for a destination. Defaults to the navy accent. */
   markerColor?: string;
   onMarkerMove?: (point: { latitude: number; longitude: number }) => void;
-  /** Tapping the map drops (or relocates) the marker there. See `mapHtml.ts`'s doc for why this defaults off. */
+  /** Tapping the map drops (or relocates) the marker there. */
   tapToPlace?: boolean;
-  /** Draws a suggested route line and frames it. See mapHtml's `route` option. */
+  /** Draws a suggested route line and frames it. */
   route?: { latitude: number; longitude: number }[] | null;
   /**
    * A second, independently-moving marker (the matched driver's live
-   * position) plus a connecting line to the fixed `marker` pin. Updated via
-   * injectJavaScript, NOT baked into the memoized HTML `source` — unlike
-   * `marker`'s own coordinates, this is expected to change every few seconds
-   * and must never remount the WebView / re-fetch tiles. Requires `marker`
-   * to also be set; a no-op otherwise.
+   * position) plus a connecting line to the fixed `marker` pin. Requires
+   * `marker` to also be set; a no-op otherwise.
    */
   liveDriverMarker?: { latitude: number; longitude: number } | null;
   onReady?: () => void;
@@ -83,6 +89,32 @@ export interface OsmMapProps {
 
 type MapState = 'loading' | 'ready' | 'error';
 
+/**
+ * Teardrop pin — reproduces the old Leaflet divIcon's shape (a rotated
+ * rounded square with a white dot, plus a drop-shadow ellipse) so pickup /
+ * destination markers keep the same silhouette after the map engine swap.
+ */
+function PinMarker({ color }: { color: string }) {
+  return (
+    <View style={styles.pinWrap} pointerEvents="none">
+      <View style={[styles.pinBody, { backgroundColor: color }]}>
+        <View style={styles.pinDot} />
+      </View>
+      <View style={styles.pinShadow} />
+    </View>
+  );
+}
+
+/** Live driver dot — matches the old 22px filled-circle driver icon. */
+function DriverDot() {
+  return <View style={styles.driverDot} pointerEvents="none" />;
+}
+
+/** Route start/end markers — small filled circles, matching the old Leaflet circleMarkers. */
+function RouteEndpointDot({ color }: { color: string }) {
+  return <View style={[styles.routeDot, { backgroundColor: color }]} pointerEvents="none" />;
+}
+
 export function OsmMap({
   variant = 'plain',
   caption,
@@ -91,11 +123,10 @@ export function OsmMap({
   latitude = DEFAULT_CENTER.latitude,
   longitude = DEFAULT_CENTER.longitude,
   zoom = DEFAULT_ZOOM,
-  attributionLeft = false,
   interactive = false,
   bottomInset = 0,
   marker = null,
-  markerColor,
+  markerColor = colors.accentGreen,
   onMarkerMove,
   tapToPlace = false,
   route = null,
@@ -108,41 +139,35 @@ export function OsmMap({
   const skeletonOpacity = useRef(new Animated.Value(1)).current;
   const recenterOpacity = useRef(new Animated.Value(0)).current;
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const webViewRef = useRef<WebView>(null);
-  /**
-   * Memoized: a fresh object literal each render remounts the WebView and
-   * re-fetches every tile. Several screens re-render from store subscriptions
-   * and animation ticks, and reload storms are exactly what the OSM tile policy
-   * blocks for.
-   *
-   * Every dependency here is constant for a given screen. `hasMoved` is
-   * deliberately NOT one — showing the recenter button must never rebuild the
-   * page and throw away the tiles the rider just panned to. `marker`'s own
-   * coordinates are excluded the same way: once a drag or a tap moves it,
-   * Leaflet has already updated the pin on-screen without any React
-   * involvement, so re-embedding that same position in the HTML would only
-   * force a needless reload. The callback still reads the *current* `marker`
-   * value (via closure, not a stale snapshot) whenever it reruns for another
-   * reason — e.g. `latitude`/`longitude` changing because the rider picked a
-   * different search result — so that remount still places the pin correctly.
-   */
-  const source = useMemo(
-    () => ({
-      html: buildMapHtml({
-        latitude,
-        longitude,
-        zoom,
-        attributionLeft,
-        interactive,
-        bottomInset,
-        marker,
-        markerColor,
-        tapToPlace,
-        route,
-      }),
-    }),
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- marker's coordinates are deliberately excluded; see the comment above. `route` is serialized via JSON.stringify so an equal-but-new array reference (a common shape from a fresh fetch/selector) doesn't force a remount — only a change in the actual points does. The route resolving asynchronously after mount therefore causes exactly one remount, same as a lat/lng change.
-    [latitude, longitude, zoom, attributionLeft, interactive, bottomInset, Boolean(marker), marker?.draggable, markerColor, tapToPlace, JSON.stringify(route ?? null)],
+  const mapRef = useRef<MapView>(null);
+
+  const lat = finite(latitude, DEFAULT_CENTER.latitude);
+  const lng = finite(longitude, DEFAULT_CENTER.longitude);
+  const delta = zoomToDelta(Math.min(19, Math.max(3, Math.round(finite(zoom, DEFAULT_ZOOM)))));
+
+  const markerLat = marker ? finite(marker.latitude, lat) : lat;
+  const markerLng = marker ? finite(marker.longitude, lng) : lng;
+  const markerDraggable = Boolean(marker?.draggable);
+
+  const routeCoords = useMemo(
+    () =>
+      (route ?? [])
+        .map((point) => ({ latitude: finite(point.latitude, NaN), longitude: finite(point.longitude, NaN) }))
+        .filter((point) => Number.isFinite(point.latitude) && Number.isFinite(point.longitude)),
+    [route],
+  );
+  const routeKey = useMemo(() => JSON.stringify(routeCoords), [routeCoords]);
+
+  // The initial camera only — an uncontrolled `region` (via `initialRegion`)
+  // so the rider's own pan/pinch is never fought by a re-render. Recentering
+  // after mount is driven imperatively by the effect below, keyed ONLY on
+  // [lat, lng, delta] — deliberately NOT on marker/liveDriverMarker moving,
+  // same exclusion the old memoized WebView `source` made and for the same
+  // reason: panning to follow every GPS tick would fight the rider's pan.
+  const initialRegion = useMemo<Region>(
+    () => ({ latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta }),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- intentionally seeded once; see comment above.
+    [],
   );
 
   const settle = useCallback(() => {
@@ -170,6 +195,11 @@ export function OsmMap({
     };
   }, [fail]);
 
+  const handleMapReady = useCallback(() => {
+    if (timeoutRef.current) clearTimeout(timeoutRef.current);
+    settle();
+  }, [settle]);
+
   /** The recenter button earns its place only once there is something to undo. */
   const showRecenter = useCallback(
     (visible: boolean) => {
@@ -184,76 +214,103 @@ export function OsmMap({
     [recenterOpacity],
   );
 
-  const handleMessage = useCallback(
-    (event: WebViewMessageEvent) => {
-      let message: MapMessage;
-      try {
-        message = JSON.parse(event.nativeEvent.data) as MapMessage;
-      } catch {
-        return;
-      }
-      if (message.type === 'ready') {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        settle();
-      } else if (message.type === 'error') {
-        if (timeoutRef.current) clearTimeout(timeoutRef.current);
-        if (__DEV__) console.warn(`[OsmMap] ${message.reason}`);
-        fail();
-      } else if (message.type === 'moved') {
-        showRecenter(true);
-      } else if (message.type === 'recentered') {
-        showRecenter(false);
-      } else if (message.type === 'marker-moved') {
-        onMarkerMove?.({ latitude: message.latitude, longitude: message.longitude });
-      }
+  const handleRecenter = useCallback(() => {
+    mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta }, RECENTER_DURATION_MS);
+    showRecenter(false);
+  }, [lat, lng, delta, showRecenter]);
+
+  const handlePress = useCallback(
+    (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+      if (!tapToPlace) return;
+      onMarkerMove?.(event.nativeEvent.coordinate);
     },
-    [settle, fail, showRecenter, onMarkerMove],
+    [tapToPlace, onMarkerMove],
   );
 
-  const handleRecenter = useCallback(() => {
-    webViewRef.current?.injectJavaScript(RECENTER_JS);
-  }, []);
+  const handleMarkerDragEnd = useCallback(
+    (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
+      onMarkerMove?.(event.nativeEvent.coordinate);
+    },
+    [onMarkerMove],
+  );
 
+  // Recenter the camera when the map's own "where should this be centered"
+  // props change — not on marker/liveDriverMarker movement. See the comment
+  // on `initialRegion` above.
   useEffect(() => {
     if (state !== 'ready') return;
-    if (liveDriverMarker) {
-      webViewRef.current?.injectJavaScript(
-        `window.__setDriverLocation && window.__setDriverLocation(${liveDriverMarker.latitude}, ${liveDriverMarker.longitude}); true;`
-      );
-    } else {
-      webViewRef.current?.injectJavaScript('window.__clearDriverLocation && window.__clearDriverLocation(); true;');
-    }
-  }, [state, liveDriverMarker?.latitude, liveDriverMarker?.longitude]);
+    mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta }, RECENTER_DURATION_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately excludes markerLat/markerLng/liveDriverMarker; see comment above.
+  }, [state, lat, lng, delta]);
+
+  // Frame the route whenever it actually changes (not on every render — same
+  // discipline as the position-recenter effect above).
+  useEffect(() => {
+    if (state !== 'ready' || routeCoords.length < 2) return;
+    mapRef.current?.fitToCoordinates(routeCoords, {
+      edgePadding: { top: 24, left: 24, bottom: 24 + Math.max(0, bottomInset), right: 24 },
+      animated: true,
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on routeKey (content), not the array reference.
+  }, [state, routeKey, bottomInset]);
 
   return (
     <View style={[styles.container, { height }, edgeToEdge && styles.edgeToEdge]}>
-      <WebView
-        ref={webViewRef}
-        style={styles.webview}
-        source={source}
-        originWhitelist={['*']}
-        applicationNameForUserAgent={APP_USER_AGENT}
-        javaScriptEnabled
-        domStorageEnabled={false}
-        // Left true on purpose: the OSM policy requires honouring cache headers.
-        cacheEnabled
-        setBuiltInZoomControls={false}
-        setDisplayZoomControls={false}
-        overScrollMode="never"
-        scrollEnabled={false}
-        bounces={false}
-        androidLayerType="hardware"
-        // Half of the freeze — Leaflet's own handlers in mapHtml.ts are the other
-        // half. Kept off by default so a map inside a ScrollView cannot swallow
-        // the vertical drag that belongs to the scroller.
+      <MapView
+        ref={mapRef}
+        style={styles.map}
+        provider={PROVIDER_GOOGLE}
+        initialRegion={initialRegion}
+        onMapReady={handleMapReady}
+        onPress={handlePress}
+        onPanDrag={() => showRecenter(true)}
+        scrollEnabled={interactive}
+        zoomEnabled={interactive}
+        rotateEnabled={interactive}
+        pitchEnabled={interactive}
         pointerEvents={interactive ? 'auto' : 'none'}
-        onMessage={handleMessage}
-        // These only fire for main-document failures — with source={{html}} the
-        // document always loads, so they never catch a dead CDN or failed tiles.
-        // Real detection is onMessage + the timeout above; these are a bonus.
-        onError={fail}
-        onHttpError={fail}
-      />
+        toolbarEnabled={false}
+        showsMyLocationButton={false}
+        showsCompass={false}
+      >
+        {routeCoords.length >= 2 && (
+          <>
+            <Polyline coordinates={routeCoords} strokeColor={colors.accentBlue} strokeWidth={5} />
+            <Marker coordinate={routeCoords[0]} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+              <RouteEndpointDot color={colors.accentGreen} />
+            </Marker>
+            <Marker coordinate={routeCoords[routeCoords.length - 1]} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+              <RouteEndpointDot color={colors.accentBlue} />
+            </Marker>
+          </>
+        )}
+
+        {marker && (
+          <Marker
+            coordinate={{ latitude: markerLat, longitude: markerLng }}
+            draggable={markerDraggable}
+            onDragEnd={handleMarkerDragEnd}
+            anchor={{ x: 0.5, y: 1 }}
+            tracksViewChanges={markerDraggable}
+          >
+            <PinMarker color={markerColor} />
+          </Marker>
+        )}
+
+        {marker && liveDriverMarker && (
+          <>
+            <Polyline
+              coordinates={[liveDriverMarker, { latitude: markerLat, longitude: markerLng }]}
+              strokeColor={colors.accentGreen}
+              strokeWidth={4}
+              lineDashPattern={[6, 6]}
+            />
+            <Marker coordinate={liveDriverMarker} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges>
+              <DriverDot />
+            </Marker>
+          </>
+        )}
+      </MapView>
 
       <Animated.View
         style={[styles.skeleton, { opacity: skeletonOpacity }]}
@@ -276,15 +333,13 @@ export function OsmMap({
 
       {/*
         Last child on purpose — the skeleton covers the full frame, so anything
-        that must stay tappable has to sit above it. Placed opposite the OSM
-        attribution and lifted by bottomInset so neither control nor credit lands
-        under whatever the screen renders along its bottom edge.
+        that must stay tappable has to sit above it.
       */}
       {interactive && (
         <Animated.View
           style={[
             styles.recenterButton,
-            attributionLeft ? { right: spacing.md } : { left: spacing.md },
+            { right: spacing.md },
             { bottom: bottomInset + spacing.md, opacity: recenterOpacity },
           ]}
           pointerEvents={hasMoved ? 'auto' : 'none'}
