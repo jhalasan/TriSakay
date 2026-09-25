@@ -1,6 +1,5 @@
-import { DivIcon } from 'leaflet';
-import { renderToStaticMarkup } from 'react-dom/server';
-import { MapContainer, Marker, Popup, TileLayer } from 'react-leaflet';
+import { useState } from 'react';
+import { AdvancedMarker, InfoWindow, Map } from '@vis.gl/react-google-maps';
 import type { ActiveTricycleLocationCell } from '../../services/monitoring';
 import styles from './LiveMap.module.css';
 
@@ -14,11 +13,18 @@ export interface LiveMapProps {
  * DEFAULT_CENTER (packages/ui is React Native-only and can't be imported
  * into this Vite app directly).
  */
-const DEFAULT_CENTER: [number, number] = [6.116243, 125.171738];
+const DEFAULT_CENTER = { lat: 6.116243, lng: 125.171738 };
 const DEFAULT_ZOOM = 13;
 
-const TILE_URL = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
-const TILE_ATTRIBUTION = '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
+/**
+ * G2 (Google Maps): AdvancedMarker (not the classic Marker) is what supports
+ * arbitrary HTML/React content as the pin — needed for the badge + count
+ * overlay this used to render as a Leaflet DivIcon. It requires a Map ID
+ * (Google Cloud Console > Maps Management > Map ID, vector rendering,
+ * free) set below; without one, AdvancedMarker falls back to a plain red
+ * pin with no custom content.
+ */
+const MAP_ID = import.meta.env.VITE_GOOGLE_MAPS_MAP_ID ?? undefined;
 
 /** Same tricycle glyph as the Sidebar nav icon and DetailSection's VehicleIcon — one icon vocabulary across the app, not a marker-specific one. */
 function TricycleGlyph() {
@@ -32,48 +38,43 @@ function TricycleGlyph() {
   );
 }
 
-function cellIcon(count: number): DivIcon {
-  return new DivIcon({
-    html: renderToStaticMarkup(
-      <div className={styles.markerBadge}>
-        <TricycleGlyph />
-        {count > 1 && <span className={styles.markerCount}>{count}</span>}
-      </div>
-    ),
-    className: '', // suppress Leaflet's default marker box/shadow classes
-    iconSize: [28, 28],
-    iconAnchor: [14, 14],
-  });
-}
-
 /**
  * Ride Monitoring live map (FR-5.1, 5.2). Plots grid-snapped driver
  * clusters, never exact coordinates — getActiveTricycleLocations() already
- * rounds every point before this component ever sees it (NFR-2.5). OSM
- * tiles, same source the Driver/Passenger apps use; a browser <img>-based
- * TileLayer can't set a custom User-Agent the way the mobile WebView does,
- * which is an accepted tradeoff for this low-volume, admin-only screen.
+ * rounds every point before this component ever sees it (NFR-2.5).
  */
 export function LiveMap({ cells, loading = false }: LiveMapProps) {
+  const [openKey, setOpenKey] = useState<string | null>(null);
+
   if (loading) {
     return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
   }
 
+  const openCell = cells.find((cell) => `${cell.lat},${cell.lng}` === openKey) ?? null;
+
   return (
     <div className={styles.wrap}>
-      <MapContainer center={DEFAULT_CENTER} zoom={DEFAULT_ZOOM} style={{ height: '100%', width: '100%' }} scrollWheelZoom>
-        <TileLayer url={TILE_URL} attribution={TILE_ATTRIBUTION} />
-        {cells.map((cell) => (
-          <Marker key={`${cell.lat},${cell.lng}`} position={[cell.lat, cell.lng]} icon={cellIcon(cell.count)}>
-            <Popup>
-              <div className={styles.popup}>
-                <div className={styles.popupTitle}>{cell.count === 1 ? '1 tricycle' : `${cell.count} tricycles`}</div>
-                <span className="mono">{cell.plateNos.join(', ')}</span>
+      <Map defaultCenter={DEFAULT_CENTER} defaultZoom={DEFAULT_ZOOM} mapId={MAP_ID} disableDefaultUI={false} gestureHandling="greedy">
+        {cells.map((cell) => {
+          const key = `${cell.lat},${cell.lng}`;
+          return (
+            <AdvancedMarker key={key} position={{ lat: cell.lat, lng: cell.lng }} onClick={() => setOpenKey(key)}>
+              <div className={styles.markerBadge}>
+                <TricycleGlyph />
+                {cell.count > 1 && <span className={styles.markerCount}>{cell.count}</span>}
               </div>
-            </Popup>
-          </Marker>
-        ))}
-      </MapContainer>
+            </AdvancedMarker>
+          );
+        })}
+        {openCell && (
+          <InfoWindow position={{ lat: openCell.lat, lng: openCell.lng }} onCloseClick={() => setOpenKey(null)}>
+            <div className={styles.popup}>
+              <div className={styles.popupTitle}>{openCell.count === 1 ? '1 tricycle' : `${openCell.count} tricycles`}</div>
+              <span className="mono">{openCell.plateNos.join(', ')}</span>
+            </div>
+          </InfoWindow>
+        )}
+      </Map>
     </div>
   );
 }
