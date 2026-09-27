@@ -15,12 +15,22 @@ function formatCompact(amount: number): string {
   return `₱${Math.round(amount)}`;
 }
 
+// R9 (existing-system audit): v_driver_earnings now buckets by Manila
+// calendar day (not UTC), so labeling must read that same Manila day back —
+// otherwise a driver whose phone happens to be set to a different timezone
+// would see the wrong day highlighted as "today", or a day-of-week label off
+// by one near midnight.
+const MANILA_TZ = 'Asia/Manila';
+
 function formatDayLabel(iso: string) {
-  return new Date(iso).toLocaleDateString('en-PH', { weekday: 'short' });
+  return new Date(iso).toLocaleDateString('en-PH', { weekday: 'short', timeZone: MANILA_TZ });
 }
 
 function isToday(iso: string) {
-  return new Date(iso).toLocaleDateString('en-CA') === new Date().toLocaleDateString('en-CA');
+  return (
+    new Date(iso).toLocaleDateString('en-CA', { timeZone: MANILA_TZ }) ===
+    new Date().toLocaleDateString('en-CA', { timeZone: MANILA_TZ })
+  );
 }
 
 /**

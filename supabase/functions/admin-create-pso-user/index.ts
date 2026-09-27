@@ -59,13 +59,20 @@ Deno.serve(async (req: Request) => {
 
     const { data: callerRow, error: callerError } = await supabase
       .from('users')
-      .select('role')
+      .select('role, status')
       .eq('id', userData.user.id)
       .single();
 
     if (callerError || !callerRow) return json({ userId: null, tempPassword: null, error: 'Could not verify caller' }, 500);
     if (callerRow.role !== 'admin') {
       return json({ userId: null, tempPassword: null, error: 'Only an Administrator may create PSO accounts' }, 403);
+    }
+    // R10 (existing-system audit): only role was checked, not status — a
+    // suspended/deactivated admin whose session token hadn't yet expired
+    // could still create PSO accounts. 'flagged' is a soft marker, not a
+    // restriction, matching is_account_active()'s own definition.
+    if (callerRow.status !== 'active' && callerRow.status !== 'flagged') {
+      return json({ userId: null, tempPassword: null, error: 'Your account is not active' }, 403);
     }
 
     const body = await req.json().catch(() => ({}) as Record<string, unknown>);

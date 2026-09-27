@@ -4,16 +4,25 @@ import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { getAdminReportSummary, getPeakHourHistogram, getRidesRevenueOverTime, listTransactionsForAdmin } from '../src/admin/reports.ts';
 
 /**
- * The peak-hour bucketing reads Date#getHours() (local wall-clock time,
- * deliberately — see admin/reports.ts's doc comment: this mirrors the rest
- * of the app rendering everything in the PSO's own local time). Building
- * fixtures via new Date(y, m, d, hour) instead of a hardcoded UTC ISO
- * string keeps the expected bucket correct regardless of which timezone
- * this test suite happens to run in.
+ * R9 (existing-system audit): the peak-hour/day bucketing is now pinned to
+ * Asia/Manila regardless of which timezone the test runner's machine is in
+ * (CI is typically UTC) — so fixtures must be built as the UTC instant that
+ * corresponds to a given Manila wall-clock hour, not the runner's own local
+ * time. Manila has no DST (fixed UTC+8 year-round), so this is a plain
+ * 8-hour offset from "today in Manila", not a real timezone conversion.
  */
+function todayInManila(): { year: number; month: number; day: number } {
+  const [year, month, day] = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }).split('-').map(Number);
+  return { year, month, day };
+}
+
+function manilaTimeIso(hour: number, minute = 0, dayOffset = 0): string {
+  const { year, month, day } = todayInManila();
+  return new Date(Date.UTC(year, month - 1, day + dayOffset, hour - 8, minute, 0, 0)).toISOString();
+}
+
 function todayAt(hour: number, minute = 0): string {
-  const now = new Date();
-  return new Date(now.getFullYear(), now.getMonth(), now.getDate(), hour, minute, 0, 0).toISOString();
+  return manilaTimeIso(hour, minute);
 }
 
 test('getAdminReportSummary sums paid revenue, counts completed rides, and picks the busiest 2-hour window', async () => {
@@ -47,7 +56,7 @@ test('getAdminReportSummary sums paid revenue, counts completed rides, and picks
   assert.equal(data.totalRides, 3);
   assert.equal(data.totalRevenue, 42.5);
   assert.equal(Math.round(data.averageFare * 100) / 100, 14.17);
-  // Two of three rides fall in the 6:00 AM–8:00 AM UTC window (6:15, 7:40).
+  // Two of three rides fall in the 6:00 AM–8:00 AM Manila window (6:15, 7:40).
   assert.equal(data.peakHourLabel, '6:00 AM–8:00 AM');
 });
 
@@ -254,11 +263,10 @@ test('getPeakHourHistogram returns { data: [], error } when the query fails', as
   assert.equal(error, 'connection refused');
 });
 
-test('getRidesRevenueOverTime buckets completed rides and paid revenue by calendar day', async () => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0).toISOString();
-  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 9, 0, 0).toISOString();
-  const since = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 0, 0, 0).toISOString();
+test('getRidesRevenueOverTime buckets completed rides and paid revenue by Manila calendar day', async () => {
+  const today = manilaTimeIso(9, 0);
+  const yesterday = manilaTimeIso(9, 0, -1);
+  const since = manilaTimeIso(0, 0, -1);
 
   __setSupabaseClientForTests({
     from: (table: string) => {

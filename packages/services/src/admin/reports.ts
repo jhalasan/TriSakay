@@ -1,6 +1,24 @@
 import { getSupabaseClient } from '../supabase/client.ts';
 import type { Database } from '../supabase/database.types.ts';
 
+// R9 (existing-system audit): these charts used the ADMIN'S OWN BROWSER
+// timezone (new Date(ts).getHours() / toLocaleDateString() with no explicit
+// timeZone) to bucket rides by hour/day — correct only by accident for an
+// admin viewing the dashboard from within the Philippines, and silently
+// wrong (a ride at 11pm PHT bucketed into "tomorrow", or peak-hour bars
+// shifted by whatever the offset is) for anyone elsewhere. The service
+// operates in one city, so the bucketing should reflect Manila local time
+// regardless of who's looking at the chart.
+const MANILA_TZ = 'Asia/Manila';
+
+function toManilaDateKey(iso: string): string {
+  return new Date(iso).toLocaleDateString('en-CA', { timeZone: MANILA_TZ });
+}
+
+function getManilaHour(iso: string): number {
+  return Number(new Date(iso).toLocaleString('en-US', { timeZone: MANILA_TZ, hour: 'numeric', hourCycle: 'h23' }));
+}
+
 export interface AdminReportSummary {
   totalRides: number;
   totalRevenue: number;
@@ -55,7 +73,7 @@ function emptySummary(): AdminReportSummary {
 function twoHourHistogram(timestamps: string[]): number[] {
   const counts = new Array(12).fill(0); // 12 two-hour buckets covering a day
   for (const ts of timestamps) {
-    const hour = new Date(ts).getHours();
+    const hour = getManilaHour(ts);
     counts[Math.floor(hour / 2)]++;
   }
   return counts;
@@ -202,7 +220,7 @@ export interface GetRidesRevenueOverTimeResult {
   error: string | null;
 }
 
-/** "Rides / Revenue" report chart — completed ride_requests and paid transactions in range, bucketed by local calendar day, oldest first. */
+/** "Rides / Revenue" report chart — completed ride_requests and paid transactions in range, bucketed by Manila calendar day (R9), oldest first. */
 export async function getRidesRevenueOverTime(sinceIso: string): Promise<GetRidesRevenueOverTimeResult> {
   const client = getSupabaseClient();
 
@@ -216,13 +234,13 @@ export async function getRidesRevenueOverTime(sinceIso: string): Promise<GetRide
 
   const ridesByDay = new Map<string, number>();
   for (const r of rides ?? []) {
-    const key = new Date(r.requested_at).toLocaleDateString('en-CA');
+    const key = toManilaDateKey(r.requested_at);
     ridesByDay.set(key, (ridesByDay.get(key) ?? 0) + 1);
   }
 
   const revenueByDay = new Map<string, number>();
   for (const t of paidTxns ?? []) {
-    const key = new Date(t.created_at).toLocaleDateString('en-CA');
+    const key = toManilaDateKey(t.created_at);
     revenueByDay.set(key, (revenueByDay.get(key) ?? 0) + Number(t.amount));
   }
 

@@ -87,12 +87,24 @@ Deno.serve(async (req: Request) => {
 
     const tokenByDriverId = new Map((users ?? []).map((u) => [u.id as string, u.push_token as string]));
 
-    const messages: { to: string; sound: string; title: string; body: string; data: Record<string, unknown> }[] = [];
-    const notifiedDocIds: string[] = [];
+    type PendingMessage = { to: string; sound: string; title: string; body: string; data: Record<string, unknown> };
+    const messages: PendingMessage[] = [];
+    // Parallel to `messages` — messageDocIds[i] is the doc that produced
+    // messages[i], so a batch's send result can be mapped back to which
+    // rows are actually safe to mark notified.
+    const messageDocIds: string[] = [];
+    // R10 (existing-system audit): docs with no push token at all are still
+    // marked notified immediately — there's genuinely nothing to send, and
+    // otherwise a token-less driver's rows would be re-queried (harmlessly,
+    // but wastefully) every day until they register one.
+    const noTokenDocIds: string[] = [];
 
     for (const doc of docs) {
       const token = tokenByDriverId.get(doc.driver_id as string);
-      if (!token) continue;
+      if (!token) {
+        noTokenDocIds.push(doc.id as string);
+        continue;
+      }
 
       const label = DOC_LABELS[doc.doc_type as string] ?? (doc.doc_type as string);
       messages.push({
@@ -102,34 +114,38 @@ Deno.serve(async (req: Request) => {
         body: `Your ${label} expires on ${doc.expiry_date}. Update it in My Documents to avoid a lapse.`,
         data: { type: 'document_expiring', documentId: doc.id },
       });
-      notifiedDocIds.push(doc.id as string);
+      messageDocIds.push(doc.id as string);
     }
 
+    // R10 (existing-system audit): every evaluated doc used to be marked
+    // notified unconditionally, even when the actual Expo push call failed
+    // (network error, non-2xx) — silently skipping that driver until their
+    // NEXT expiry date, since expiry_notified_at is only ever reset when the
+    // document itself is edited. Now a doc is only marked notified once its
+    // batch's send actually succeeded; a failed batch's docs stay eligible
+    // and are retried on tomorrow's run.
+    const sentDocIds: string[] = [...noTokenDocIds];
     for (let i = 0; i < messages.length; i += 100) {
       const batch = messages.slice(i, i + 100);
-      await fetch(EXPO_PUSH_URL, {
+      const batchDocIds = messageDocIds.slice(i, i + 100);
+      const ok = await fetch(EXPO_PUSH_URL, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify(batch),
-      }).catch((err) => {
-        console.error('notify-expiring-documents: Expo push send failed', err instanceof Error ? err.message : err);
-      });
+      })
+        .then((res) => res.ok)
+        .catch((err) => {
+          console.error('notify-expiring-documents: Expo push send failed', err instanceof Error ? err.message : err);
+          return false;
+        });
+      if (ok) sentDocIds.push(...batchDocIds);
     }
 
-    // Mark every eligible doc as notified, even ones skipped for lacking a
-    // push token — otherwise a token-less driver's rows would be re-queried
-    // (harmlessly, but wastefully) every single day until they register one.
-    if (docs.length > 0) {
-      await supabase
-        .from('driver_documents')
-        .update({ expiry_notified_at: new Date().toISOString() })
-        .in(
-          'id',
-          docs.map((d) => d.id as string),
-        );
+    if (sentDocIds.length > 0) {
+      await supabase.from('driver_documents').update({ expiry_notified_at: new Date().toISOString() }).in('id', sentDocIds);
     }
 
-    return json({ sent: messages.length, evaluated: docs.length });
+    return json({ sent: messages.length, evaluated: docs.length, markedNotified: sentDocIds.length });
   } catch (err) {
     console.error('notify-expiring-documents: unexpected error', err instanceof Error ? err.message : err);
     return json({ error: 'Internal error' }, 500);
