@@ -29,6 +29,11 @@ export interface ActivePassenger {
   assignedAt: string | null;
   pickedUpAt: string | null;
   distanceKm: number | null;
+  /** F4: set once the driver taps "I've arrived" at this passenger's pickup point. */
+  arrivedAt: string | null;
+  /** D1: set only while an after-pickup transfer TO this driver is accepted but not yet handoff-confirmed — where to meet the previous driver. */
+  handoffLat: number | null;
+  handoffLng: number | null;
 }
 
 /**

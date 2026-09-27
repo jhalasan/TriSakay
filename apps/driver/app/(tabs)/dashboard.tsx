@@ -99,11 +99,11 @@ export default function DashboardScreen() {
 
   async function handleToggleAvailable(next: boolean) {
     setTogglingAvailability(true);
-    let coords: { lat: number; lng: number } | undefined;
+    let coords: { lat: number; lng: number; mocked?: boolean } | undefined;
     if (next) {
       try {
         const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        coords = { lat: position.coords.latitude, lng: position.coords.longitude };
+        coords = { lat: position.coords.latitude, lng: position.coords.longitude, mocked: position.mocked };
       } catch {
         useDriverStore.setState({ error: t.driver.dashboard.locationError });
         setTogglingAvailability(false);

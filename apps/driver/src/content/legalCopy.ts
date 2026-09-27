@@ -36,7 +36,7 @@ export const TERMS_OF_SERVICE: PolicySection[] = [
   },
   {
     heading: '5. Accepting and Completing Rides',
-    body: 'You may accept or decline any ride request shown to you. Once you accept a request, you agree to complete the trip in good faith, take a reasonable route, and remain available to your passenger until the trip is finished or lawfully cancelled.',
+    body: 'You may accept or decline any ride request shown to you. Once you accept a request, you agree to complete the trip in good faith, take a reasonable route, and remain available to your passenger until the trip is finished or lawfully cancelled. Cancelling after accepting requires a reason and counts as a strike, except for a genuine passenger no-show reported at the pickup point at least 5 minutes after you mark yourself arrived. Repeat strikes may flag your account for PSO review.',
   },
   {
     heading: '6. Fares',

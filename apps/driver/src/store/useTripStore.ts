@@ -5,8 +5,10 @@ import {
   startRideLeg,
   endTrip as endTripRpc,
   getActiveTripForDriver,
+  markArrived as markArrivedRpc,
 } from '@trisakay/services/src/booking/index.ts';
 import { confirmCashPayment } from '@trisakay/services/src/payments/index.ts';
+import { completeHandoff as completeHandoffRpc, releaseToPool } from '@trisakay/services/src/transfers/index.ts';
 import { getTranslations } from '../utils/getTranslations.ts';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
 import type { PendingRequest } from '../types/request.ts';
@@ -30,6 +32,9 @@ function passengerFromRequest(request: PendingRequest): ActivePassenger {
     assignedAt: new Date().toISOString(),
     pickedUpAt: null,
     distanceKm: null,
+    arrivedAt: null,
+    handoffLat: null,
+    handoffLng: null,
   };
 }
 
@@ -50,10 +55,16 @@ interface TripState {
   confirmCash: (rideRequestId: string, driverId: string) => Promise<boolean>;
   /** Marks one passenger's leg picked up (assigned -> ongoing); Complete is unreachable before this succeeds. */
   startPassenger: (rideRequestId: string) => Promise<boolean>;
+  /** F4 (UAT audit): the driver's "I've arrived" tap. Idempotent, and rejected by the RPC beyond ~100m of the pickup point. */
+  markArrived: (rideRequestId: string) => Promise<boolean>;
   /** FR-2.5c — completes ONE passenger's leg; the trip and any other passenger aboard stay untouched. */
   completePassenger: (rideRequestId: string) => Promise<ActivePassenger | null>;
-  /** FR-2.5c — cancels ONE passenger's leg; the trip and any other passenger aboard stay untouched. */
-  cancelPassenger: (rideRequestId: string, reason: string) => Promise<ActivePassenger | null>;
+  /** FR-2.5c — cancels ONE passenger's leg; the trip and any other passenger aboard stay untouched. PD1: reasonCode is required by the RPC. */
+  cancelPassenger: (rideRequestId: string, reasonCode: string) => Promise<ActivePassenger | null>;
+  /** D1 (L5) — the FROM driver's fallback when no invited driver accepts a transfer. Always a strike; removes the passenger from this driver's local trip the same way cancelPassenger does. */
+  releasePassenger: (rideRequestId: string, reason: string) => Promise<ActivePassenger | null>;
+  /** D1 (L6) — the TO driver confirms they've physically taken a transferred passenger, clearing the FROM driver's stranding guard immediately. */
+  completeHandoff: (rideRequestId: string) => Promise<boolean>;
   /**
    * The driver's explicit "done for now" action. Only succeeds once the
    * passenger list is empty — mirrored client-side so the button can be
@@ -172,6 +183,39 @@ export const useTripStore = create<TripState>()((set, get) => {
       }
     },
 
+    markArrived: async (rideRequestId) => {
+      const trip = get().current;
+      const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
+      if (!trip || !passenger || passenger.status !== 'assigned' || passenger.arrivedAt) return false;
+      const fallbackMessage = getTranslations().driver.errors.markArrivedFailed;
+
+      try {
+        const { error, arrivedAt } = await withTimeout(markArrivedRpc(rideRequestId), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return false;
+        }
+
+        set((state) =>
+          state.current
+            ? {
+                current: {
+                  ...state.current,
+                  passengers: state.current.passengers.map((p) =>
+                    p.id === rideRequestId ? { ...p, arrivedAt: arrivedAt ?? new Date().toISOString() } : p
+                  ),
+                },
+                error: null,
+              }
+            : state
+        );
+        return true;
+      } catch {
+        set({ error: fallbackMessage });
+        return false;
+      }
+    },
+
     completePassenger: async (rideRequestId) => {
       const trip = get().current;
       const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
@@ -197,14 +241,14 @@ export const useTripStore = create<TripState>()((set, get) => {
       }
     },
 
-    cancelPassenger: async (rideRequestId, reason) => {
+    cancelPassenger: async (rideRequestId, reasonCode) => {
       const trip = get().current;
       const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
       if (!trip || !passenger) return null;
       const fallbackMessage = getTranslations().driver.errors.cancelPassengerFailed;
 
       try {
-        const { error } = await withTimeout(cancelRideLeg(trip.tripId, rideRequestId, reason), REQUEST_TIMEOUT_MS, fallbackMessage);
+        const { error } = await withTimeout(cancelRideLeg(trip.tripId, rideRequestId, reasonCode), REQUEST_TIMEOUT_MS, fallbackMessage);
         if (error) {
           set({ error });
           return null;
@@ -219,6 +263,59 @@ export const useTripStore = create<TripState>()((set, get) => {
       } catch {
         set({ error: fallbackMessage });
         return null;
+      }
+    },
+
+    releasePassenger: async (rideRequestId, reason) => {
+      const trip = get().current;
+      const passenger = trip?.passengers.find((p) => p.id === rideRequestId);
+      if (!trip || !passenger) return null;
+      const fallbackMessage = getTranslations().driver.errors.cancelPassengerFailed;
+
+      try {
+        const { error } = await withTimeout(releaseToPool(rideRequestId, reason), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return null;
+        }
+
+        set((state) =>
+          state.current
+            ? { current: { ...state.current, passengers: state.current.passengers.filter((p) => p.id !== rideRequestId) }, error: null }
+            : state
+        );
+        return passenger;
+      } catch {
+        set({ error: fallbackMessage });
+        return null;
+      }
+    },
+
+    completeHandoff: async (rideRequestId) => {
+      const fallbackMessage = getTranslations().driver.errors.cancelPassengerFailed;
+      try {
+        const { error } = await withTimeout(completeHandoffRpc(rideRequestId), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return false;
+        }
+        set((state) =>
+          state.current
+            ? {
+                current: {
+                  ...state.current,
+                  passengers: state.current.passengers.map((p) =>
+                    p.id === rideRequestId ? { ...p, handoffLat: null, handoffLng: null } : p
+                  ),
+                },
+                error: null,
+              }
+            : state
+        );
+        return true;
+      } catch {
+        set({ error: fallbackMessage });
+        return false;
       }
     },
 
@@ -281,6 +378,9 @@ export const useTripStore = create<TripState>()((set, get) => {
               assignedAt: p.assignedAt,
               pickedUpAt: p.pickedUpAt,
               distanceKm: p.distanceKm,
+              arrivedAt: p.arrivedAt,
+              handoffLat: p.handoffLat,
+              handoffLng: p.handoffLng,
             })),
           },
           error: null,

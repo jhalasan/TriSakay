@@ -40,7 +40,11 @@ export function useDriverLocationSync(
       const subscription = await Location.watchPositionAsync(
         { accuracy: Location.Accuracy.Balanced, distanceInterval: DISTANCE_INTERVAL_METERS, timeInterval: TIME_INTERVAL_MS },
         (position) => {
-          void pushDriverLocation({ lat: position.coords.latitude, lng: position.coords.longitude });
+          void pushDriverLocation({
+            lat: position.coords.latitude,
+            lng: position.coords.longitude,
+            mocked: position.mocked,
+          });
           // P1-14 (2026-09-15 launch audit): plain-data mirror for the
           // active-trip map's marker/route/recenter — see useDriverStore.
           useDriverStore.getState().setCurrentPosition(position.coords.latitude, position.coords.longitude);

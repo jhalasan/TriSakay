@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Poppins_400Regular,
   Poppins_600SemiBold,
@@ -11,13 +11,14 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
+import { ConfirmModal, colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useDriverTutorialNavigation } from '../src/hooks/useDriverTutorialNavigation';
 import { useDriverTutorialTrigger } from '../src/hooks/useDriverTutorialTrigger';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
+import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useComplaintsStore } from '../src/store/useComplaintsStore';
 import { useConnectivityStore } from '../src/store/useConnectivityStore';
@@ -29,6 +30,7 @@ import { useHistoryStore } from '../src/store/useHistoryStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
 import { useRatingsStore } from '../src/store/useRatingsStore';
 import { useRequestsStore } from '../src/store/useRequestsStore';
+import { useTransferInvitesStore } from '../src/store/useTransferInvitesStore';
 import { useSettingsStore } from '../src/store/useSettingsStore';
 import { useTripStore } from '../src/store/useTripStore';
 import { useVerificationStore, type VerificationGateStatus } from '../src/store/useVerificationStore';
@@ -214,6 +216,24 @@ function useRequestsSync(sessionUserId: string | null, isAvailable: boolean) {
   }, [sessionUserId, isAvailable, subscribe, unsubscribe]);
 }
 
+/**
+ * D1 (UAT audit): same lifecycle as useRequestsSync above — invite_transfer
+ * only ever targets an `is_available` driver, so there's nothing to listen
+ * for while offline.
+ */
+function useTransferInvitesSync(sessionUserId: string | null, isAvailable: boolean) {
+  const subscribe = useTransferInvitesStore((state) => state.subscribe);
+  const unsubscribe = useTransferInvitesStore((state) => state.unsubscribe);
+
+  useEffect(() => {
+    if (sessionUserId === null || !isAvailable) {
+      unsubscribe();
+      return;
+    }
+    subscribe(sessionUserId);
+  }, [sessionUserId, isAvailable, subscribe, unsubscribe]);
+}
+
 /** Also covers acceptRate — same reset-on-logout/check-on-session-change lifecycle as rating. */
 function useRatingSync(sessionUserId: string | null) {
   const checkRating = useDriverStore((state) => state.checkRating);
@@ -310,6 +330,50 @@ function useLocationPrompt(isAuthenticated: boolean, consentStatus: ConsentGateS
  * renders the provider) so its hooks can read useTutorial(). Drives
  * auto-start, screen-follows-tour navigation, and the overlay's own render.
  */
+/**
+ * D1 (UAT audit): a global gate so an incoming transfer invite surfaces
+ * wherever the driver currently is (dashboard, requests tab, an existing
+ * trip) — invites are only 30s-lived, so waiting for the driver to be on a
+ * specific screen isn't an option. Shows one invite at a time (oldest
+ * first, via the store's own ordering); accepting rehydrates the trip from
+ * the backend rather than trying to patch local state, since a transfer's
+ * exact effect on `current` (new trip entirely vs. added to an existing one)
+ * mirrors acceptRideRequest's own ambiguity.
+ */
+function TransferInviteGate() {
+  const t = useTranslation();
+  const router = useRouter();
+  const invites = useTransferInvitesStore((state) => state.invites);
+  const respond = useTransferInvitesStore((state) => state.respond);
+  const hydrate = useTripStore((state) => state.hydrate);
+  const invite = invites[0] ?? null;
+  const [responding, setResponding] = useState(false);
+
+  async function handleRespond(accept: boolean) {
+    if (!invite || responding) return;
+    setResponding(true);
+    const tripId = await respond(invite.id, accept);
+    setResponding(false);
+    if (tripId) {
+      await hydrate();
+      router.push('/trip/active');
+    }
+  }
+
+  return (
+    <ConfirmModal
+      visible={!!invite}
+      title={t.driver.transfer.inviteTitle}
+      message={invite?.reason || t.driver.transfer.inviteMessageFallback}
+      cancelLabel={t.driver.transfer.decline}
+      confirmLabel={t.driver.transfer.accept}
+      confirmLoading={responding}
+      onCancel={() => handleRespond(false)}
+      onConfirm={() => handleRespond(true)}
+    />
+  );
+}
+
 function DriverTutorialMount() {
   const firstName = useAuthStore((state) => state.user?.firstName);
   useDriverTutorialTrigger();
@@ -359,6 +423,7 @@ function RootLayoutNav() {
   useDriverDataSync(sessionUserId);
   useAvailabilitySync(sessionUserId);
   useRequestsSync(sessionUserId, isAvailable);
+  useTransferInvitesSync(sessionUserId, isAvailable);
   useDriverLocationSync(sessionUserId, isAvailable, locationTrackingEnabled);
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);
@@ -387,6 +452,7 @@ function RootLayoutNav() {
             <Stack.Screen name="logout" options={{ presentation: 'transparentModal', animation: 'fade' }} />
           </Stack>
           <DriverTutorialMount />
+          <TransferInviteGate />
         </TutorialProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

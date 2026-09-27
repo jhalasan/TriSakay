@@ -16,6 +16,7 @@ export * from './ratings/index.ts';
 export * from './saved-places/index.ts';
 export * from './location/index.ts';
 export * from './storage/index.ts';
+export * from './transfers/index.ts';
 export * from './trip-history/index.ts';
 export * from './analytics/index.ts';
 export * from './admin/accounts.ts';

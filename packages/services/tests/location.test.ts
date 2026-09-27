@@ -80,6 +80,70 @@ test('updateDriverAvailability translates the no-verified-tricycle trigger error
   assert.equal(error, "You can't go online yet — you don't have a verified tricycle on file.");
 });
 
+// Y9 (existing-system audit): enforce_driver_verified_before_available now
+// also blocks going online when a required document or the tricycle's MTOP
+// franchise has expired (20260927000010).
+test('updateDriverAvailability translates the expired-requirements trigger error into driver-facing copy', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: (table) =>
+        table === 'driver_profiles'
+          ? driverProfilesTable({ updateError: 'Driver abc cannot go available: a required document or the MTOP franchise has expired' })
+          : {},
+    })
+  );
+
+  const { error } = await updateDriverAvailability(true, { lat: 0, lng: 0 });
+  assert.equal(error, "You can't go online — a required document or your tricycle's MTOP franchise has expired. Please update it.");
+});
+
+// R3/L3 (existing-system audit): enforce_driver_location_integrity() now
+// rejects a mocked fix or an implied speed over 80 km/h (20260927000013/14).
+test('updateDriverAvailability translates the mock-location trigger error into driver-facing copy', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: (table) =>
+        table === 'driver_profiles'
+          ? driverProfilesTable({ updateError: 'Mock location detected — location updates from a fake-GPS app are rejected' })
+          : {},
+    })
+  );
+
+  const { error } = await updateDriverAvailability(true, { lat: 0, lng: 0, mocked: true });
+  assert.equal(error, "We couldn't verify your location — please disable mock/fake GPS apps and try again.");
+});
+
+test('updateDriverAvailability sends is_mocked based on the coords flag', async () => {
+  let captured: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: (table) =>
+        table === 'driver_profiles' ? driverProfilesTable({ onUpdate: (patch) => (captured = patch) }) : {},
+    })
+  );
+
+  await updateDriverAvailability(true, { lat: 6.1, lng: 125.1, mocked: true });
+  assert.equal(captured.is_mocked, true);
+});
+
+test('updateDriverAvailability translates the implied-speed trigger error into driver-facing copy', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: (table) =>
+        table === 'driver_profiles'
+          ? driverProfilesTable({ updateError: 'Location update rejected: implies about 253180 km/h, faster than physically possible for a tricycle' })
+          : {},
+    })
+  );
+
+  const { error } = await updateDriverAvailability(true, { lat: 0, lng: 0 });
+  assert.equal(error, 'Your location update looked physically impossible and was rejected. Please try again.');
+});
+
 test('updateDriverAvailability passes through an unrecognized error verbatim', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
@@ -101,7 +165,7 @@ test('updateDriverAvailability returns an error when there is no active session'
   assert.equal(error, 'Not signed in');
 });
 
-test('pushDriverLocation writes only lat/lng/location_updated_at for the signed-in driver', async () => {
+test('pushDriverLocation writes lat/lng/location_updated_at/is_mocked for the signed-in driver', async () => {
   let captured: any = null;
   let capturedEqArgs: [string, unknown] | null = null;
   __setSupabaseClientForTests(
@@ -124,11 +188,12 @@ test('pushDriverLocation writes only lat/lng/location_updated_at for the signed-
     })
   );
 
-  const { error } = await pushDriverLocation({ lat: 6.12, lng: 125.18 });
+  const { error } = await pushDriverLocation({ lat: 6.12, lng: 125.18, mocked: true });
   assert.equal(error, null);
   assert.equal(captured.current_lat, 6.12);
   assert.equal(captured.current_lng, 125.18);
   assert.equal(typeof captured.location_updated_at, 'string');
+  assert.equal(captured.is_mocked, true);
   assert.deepEqual(capturedEqArgs, ['user_id', 'u1']);
 });
 

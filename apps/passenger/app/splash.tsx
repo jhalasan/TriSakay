@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Image, Text, View } from 'react-native';
 import Animated, {
   Easing,
@@ -13,17 +13,15 @@ import Animated, {
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
-import { getActiveRideForPassenger, getTripDriverInfo } from '@trisakay/services';
 import { PopEntrance } from '../src/components/PopEntrance';
 import { MapGround } from '../src/components/MapGround';
 import { SplashIllustration } from '../src/components/illustrations';
 import { useAuthStore } from '../src/store/useAuthStore';
-import { useBookingStore } from '../src/store/useBookingStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { wait } from '../src/mocks/delay';
 import { styles } from '../src/styles/splash.styles';
 import { WALKTHROUGH_SEEN_KEY } from '../src/constants/walkthrough';
-import { REQUEST_TIMEOUT_MS, withTimeout } from '../src/utils/withTimeout';
+import { resolveActiveRideRoute } from '../src/utils/resolveActiveRideRoute';
 
 /**
  * The looping indeterminate sweep on the splash loading bar: the indicator
@@ -57,75 +55,6 @@ function LoadingBar() {
       <Animated.View style={[styles.loadingIndicator, animatedStyle]} />
     </View>
   );
-}
-
-/**
- * Re-hydrates useBookingStore from the passenger's own most recent
- * `pending`/`assigned`/`ongoing` ride request, if any, and returns where to
- * send them. Without this, useBookingStore always boots empty — a passenger
- * whose app restarted mid-ride would land on Home with a clean slate and
- * could start an entirely new booking while the backend still has their old
- * one active and a driver who thinks they still have this passenger.
- *
- * Stops at 'ongoing' — a 'completed' ride's payment/rating recovery is a
- * separate, already-tracked gap (both are still mock/local on those
- * screens), not something re-hydrating the booking store can fix. 'ongoing'
- * itself must be handled here (routed to /booking/trip, same as 'assigned')
- * because a ride now spends its entire in-tricycle duration in that state,
- * not just an instant.
- */
-async function resolveActiveRideRoute(
-  passengerId: string
-): Promise<{ pathname: '/booking/trip'; status: 'assigned' | 'ongoing' } | { pathname: '/booking/finding-driver' } | null> {
-  // P1 (UAT audit): neither call below timed out before this fix — a hung
-  // connection here (as opposed to an outright network error, already
-  // caught) stalled the splash screen's indeterminate loading bar
-  // indefinitely, with no fallback route. Same withTimeout/REQUEST_TIMEOUT_MS
-  // standard used everywhere else in this app.
-  const { data } = await withTimeout(getActiveRideForPassenger(passengerId), REQUEST_TIMEOUT_MS, 'Active ride lookup timed out').catch(
-    () => ({ data: null })
-  );
-  if (!data) return null;
-
-  useBookingStore.setState({
-    rideRequestId: data.id,
-    pickup: {
-      label: data.pickupLabel ?? 'Pickup',
-      address: data.pickupLabel ?? 'Pickup',
-      latitude: data.pickupLat,
-      longitude: data.pickupLng,
-    },
-    dropoff: {
-      label: data.destLabel ?? 'Drop-off',
-      address: data.destLabel ?? 'Drop-off',
-      latitude: data.destLat,
-      longitude: data.destLng,
-    },
-    seats: data.seats,
-    fare: data.estimatedFare,
-    paymentMethod: data.preferredMethod,
-  });
-
-  if (data.status !== 'assigned' && data.status !== 'ongoing') {
-    useBookingStore.setState({ tripStatus: 'searching' });
-    return { pathname: '/booking/finding-driver' };
-  }
-
-  const { data: driverInfo } = await withTimeout(getTripDriverInfo(data.id), REQUEST_TIMEOUT_MS, 'Driver lookup timed out').catch(() => ({
-    data: null,
-  }));
-  useBookingStore.setState({
-    driver: {
-      id: driverInfo?.driverId ?? '',
-      name: driverInfo?.driverName ?? '',
-      plateNumber: driverInfo?.plateNo ?? '',
-      rating: driverInfo?.ratingAvg ?? null,
-      etaMinutes: null,
-      avatarUrl: driverInfo?.avatarUrl ?? null,
-    },
-    tripStatus: 'matched',
-  });
-  return { pathname: '/booking/trip', status: data.status };
 }
 
 function waitUntilHydrated(): Promise<void> {
@@ -185,12 +114,18 @@ function waitUntilConsentResolved(): Promise<ConsentGateStatus> {
 
 export default function SplashScreen() {
   const router = useRouter();
+  // R5 (UAT audit): _layout.tsx routes back here — instead of straight to
+  // Home — on a same-session sign-in or account switch, so the active-ride
+  // lookup below runs then too, not just on a cold launch. The 1.4s brand
+  // beat belongs to a cold start; someone who just tapped "Log in" a second
+  // ago should not eat it a second time.
+  const { fast } = useLocalSearchParams<{ fast?: string }>();
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      await Promise.all([wait(1400), waitUntilHydrated()]);
+      await Promise.all([fast ? Promise.resolve() : wait(1400), waitUntilHydrated()]);
       if (cancelled) return;
 
       if (!useAuthStore.getState().isAuthenticated) {
@@ -231,7 +166,7 @@ export default function SplashScreen() {
     return () => {
       cancelled = true;
     };
-  }, [router]);
+  }, [router, fast]);
 
   return (
     <View style={styles.root}>

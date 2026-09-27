@@ -54,7 +54,7 @@ export default function NoDriversNearbyScreen() {
           router.replace({
             pathname: '/booking/ride-cancelled',
             params: {
-              byDriver: row.cancel_reason?.toLowerCase().includes('driver') ? '1' : '0',
+              byDriver: row.cancelled_by === 'driver' ? '1' : '0',
               discountApplied: row.discount_applied ? '1' : '0',
             },
           });
@@ -105,7 +105,8 @@ export default function NoDriversNearbyScreen() {
     setIsChangingPickup(true);
     setChangePickupError(null);
 
-    const { error } = await cancelRideRequest(rideRequestId, 'Cancelled by passenger');
+    // 'pending'-stage cancel — free, no reason code required (PD1).
+    const { error } = await cancelRideRequest(rideRequestId);
 
     setIsChangingPickup(false);
 

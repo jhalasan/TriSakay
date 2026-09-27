@@ -161,26 +161,14 @@ test('decline(id, driverId) sets error without restoring the dismissed item when
   assert.deepEqual(useRequestsStore.getState().pending, []);
 });
 
-test('accept(id, driverId) removes the accepted request and resolves it on success', async () => {
+test('accept(id) removes the accepted request and resolves it on success', async () => {
   const { useRequestsStore } = await import('../src/store/useRequestsStore.ts');
   const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
 
   __setSupabaseClientForTests({
     channel: () => { throw new Error('channel not needed for this test'); },
     removeChannel: () => {},
-    from: (table) => {
-      if (table === 'trips') {
-        return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: 'trip1' }, error: null }) }) }) }) };
-      }
-      if (table === 'ride_requests') {
-        return {
-          update: () => ({
-            eq: () => ({ eq: () => ({ select: () => ({ maybeSingle: async () => ({ data: { id: 'rr1' }, error: null }) }) }) }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
+    rpc: async () => ({ data: [{ ride_request_id: 'rr1', trip_id: 'trip1' }], error: null }),
   });
 
   useRequestsStore.setState({
@@ -188,7 +176,7 @@ test('accept(id, driverId) removes the accepted request and resolves it on succe
     error: null,
   });
 
-  const accepted = await useRequestsStore.getState().accept('rr1', 'driver1');
+  const accepted = await useRequestsStore.getState().accept('rr1');
 
   assert.equal(accepted.id, 'rr1');
   assert.equal(accepted.tripId, 'trip1');
@@ -196,25 +184,44 @@ test('accept(id, driverId) removes the accepted request and resolves it on succe
   assert.equal(useRequestsStore.getState().error, null);
 });
 
-test('accept(id, driverId) sets error and leaves pending untouched when the service reports a failure', async () => {
+test('accept(id) sets error and leaves pending untouched when the RPC reports the ride is already taken', async () => {
   const { useRequestsStore } = await import('../src/store/useRequestsStore.ts');
   const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
 
   __setSupabaseClientForTests({
     channel: () => { throw new Error('channel not needed for this test'); },
     removeChannel: () => {},
+    rpc: async () => ({ data: [], error: null }),
+  });
+
+  useRequestsStore.setState({
+    pending: [{ id: 'rr1', seats: 1, paymentMethod: 'cash', pickupLabel: null, dropoffLabel: null, fare: null, createdAt: 'now' }],
+    error: null,
+  });
+
+  const accepted = await useRequestsStore.getState().accept('rr1');
+
+  assert.equal(accepted, undefined);
+  assert.equal(useRequestsStore.getState().pending.length, 1);
+  assert.equal(useRequestsStore.getState().error, 'This ride was just accepted by another driver.');
+});
+
+// F6 (UAT audit): a network error/timeout on the RPC call doesn't mean it
+// never landed server-side — accept() re-reads the ride's own row (via
+// reconcileAcceptedRide, RLS-scoped) before reporting a failure.
+test('accept(id) recovers from a timeout by reconciling: the driver actually won', async () => {
+  const { useRequestsStore } = await import('../src/store/useRequestsStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    channel: () => { throw new Error('channel not needed for this test'); },
+    removeChannel: () => {},
+    rpc: async () => { throw new Error('network error'); }, // simulates a dropped response, not a clean {error} result
     from: (table) => {
-      if (table === 'trips') {
-        return { select: () => ({ eq: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { id: 'trip1' }, error: null }) }) }) }) };
-      }
-      if (table === 'ride_requests') {
-        return {
-          update: () => ({
-            eq: () => ({ eq: () => ({ select: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }) }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
+      assert.equal(table, 'ride_requests');
+      return {
+        select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: { status: 'assigned', trip_id: 'trip1' }, error: null }) }) }),
+      };
     },
   });
 
@@ -223,11 +230,37 @@ test('accept(id, driverId) sets error and leaves pending untouched when the serv
     error: null,
   });
 
-  const accepted = await useRequestsStore.getState().accept('rr1', 'driver1');
+  const accepted = await useRequestsStore.getState().accept('rr1');
+
+  assert.equal(accepted.id, 'rr1');
+  assert.equal(accepted.tripId, 'trip1');
+  assert.equal(useRequestsStore.getState().pending.length, 0);
+  assert.equal(useRequestsStore.getState().error, null);
+});
+
+test('accept(id) recovers from a timeout by reconciling: the driver genuinely did not win', async () => {
+  const { useRequestsStore } = await import('../src/store/useRequestsStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests({
+    channel: () => { throw new Error('channel not needed for this test'); },
+    removeChannel: () => {},
+    rpc: async () => { throw new Error('network error'); },
+    from: () => ({
+      select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: null, error: null }) }) }),
+    }),
+  });
+
+  useRequestsStore.setState({
+    pending: [{ id: 'rr1', seats: 1, paymentMethod: 'cash', pickupLabel: null, dropoffLabel: null, fare: null, createdAt: 'now' }],
+    error: null,
+  });
+
+  const accepted = await useRequestsStore.getState().accept('rr1');
 
   assert.equal(accepted, undefined);
   assert.equal(useRequestsStore.getState().pending.length, 1);
-  assert.equal(useRequestsStore.getState().error, 'This ride was just accepted by another driver.');
+  assert.ok(useRequestsStore.getState().error);
 });
 
 test('unsubscribe() clears pending and tears down the channel', async () => {

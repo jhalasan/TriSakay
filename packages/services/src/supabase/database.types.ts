@@ -543,6 +543,7 @@ export type Database = {
           declared_dest_lat: number | null
           declared_dest_lng: number | null
           is_available: boolean
+          is_mocked: boolean
           license_no: string | null
           location_updated_at: string | null
           rating_avg: number
@@ -560,6 +561,7 @@ export type Database = {
           declared_dest_lat?: number | null
           declared_dest_lng?: number | null
           is_available?: boolean
+          is_mocked?: boolean
           license_no?: string | null
           location_updated_at?: string | null
           rating_avg?: number
@@ -577,6 +579,7 @@ export type Database = {
           declared_dest_lat?: number | null
           declared_dest_lng?: number | null
           is_available?: boolean
+          is_mocked?: boolean
           license_no?: string | null
           location_updated_at?: string | null
           rating_avg?: number
@@ -623,6 +626,7 @@ export type Database = {
           counterpart_id: string | null
           created_at: string
           id: string
+          is_false_alarm: boolean
           lat: number
           lng: number
           notes: string | null
@@ -637,6 +641,7 @@ export type Database = {
           counterpart_id?: string | null
           created_at?: string
           id?: string
+          is_false_alarm?: boolean
           lat: number
           lng: number
           notes?: string | null
@@ -651,6 +656,7 @@ export type Database = {
           counterpart_id?: string | null
           created_at?: string
           id?: string
+          is_false_alarm?: boolean
           lat?: number
           lng?: number
           notes?: string | null
@@ -1162,7 +1168,9 @@ export type Database = {
         Row: {
           assigned_at: string | null
           cancel_reason: string | null
+          cancel_reason_code: string | null
           cancelled_at: string | null
+          cancelled_by: string | null
           completed_at: string | null
           dest_label: string | null
           dest_lat: number
@@ -1189,7 +1197,9 @@ export type Database = {
         Insert: {
           assigned_at?: string | null
           cancel_reason?: string | null
+          cancel_reason_code?: string | null
           cancelled_at?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
           dest_label?: string | null
           dest_lat: number
@@ -1216,7 +1226,9 @@ export type Database = {
         Update: {
           assigned_at?: string | null
           cancel_reason?: string | null
+          cancel_reason_code?: string | null
           cancelled_at?: string | null
+          cancelled_by?: string | null
           completed_at?: string | null
           dest_label?: string | null
           dest_lat?: number
@@ -1267,6 +1279,76 @@ export type Database = {
             columns: ["trip_id"]
             isOneToOne: false
             referencedRelation: "trips"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ride_transfers: {
+        Row: {
+          after_pickup: boolean
+          created_at: string
+          expires_at: string | null
+          from_driver_id: string
+          handoff_completed_at: string | null
+          handoff_lat: number | null
+          handoff_lng: number | null
+          id: string
+          reason: string
+          responded_at: string | null
+          ride_request_id: string
+          status: string
+          to_driver_id: string | null
+        }
+        Insert: {
+          after_pickup?: boolean
+          created_at?: string
+          expires_at?: string | null
+          from_driver_id: string
+          handoff_completed_at?: string | null
+          handoff_lat?: number | null
+          handoff_lng?: number | null
+          id?: string
+          reason: string
+          responded_at?: string | null
+          ride_request_id: string
+          status?: string
+          to_driver_id?: string | null
+        }
+        Update: {
+          after_pickup?: boolean
+          created_at?: string
+          expires_at?: string | null
+          from_driver_id?: string
+          handoff_completed_at?: string | null
+          handoff_lat?: number | null
+          handoff_lng?: number | null
+          id?: string
+          reason?: string
+          responded_at?: string | null
+          ride_request_id?: string
+          status?: string
+          to_driver_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_transfers_from_driver_id_fkey"
+            columns: ["from_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ride_transfers_to_driver_id_fkey"
+            columns: ["to_driver_id"]
+            isOneToOne: false
+            referencedRelation: "driver_profiles"
+            referencedColumns: ["user_id"]
+          },
+          {
+            foreignKeyName: "ride_transfers_ride_request_id_fkey"
+            columns: ["ride_request_id"]
+            isOneToOne: false
+            referencedRelation: "ride_requests"
             referencedColumns: ["id"]
           },
         ]
@@ -1329,6 +1411,12 @@ export type Database = {
           id: string
           is_active: boolean
           low_rating_threshold: number
+          passenger_cancel_cooldown_hours: number
+          passenger_cancel_strike_limit: number
+          passenger_cancel_strike_window_hours: number
+          passenger_search_cancel_limit: number
+          passenger_search_cancel_pause_minutes: number
+          passenger_search_cancel_window_minutes: number
           search_radius_km: number
           updated_at: string
           updated_by: string | null
@@ -1342,6 +1430,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           low_rating_threshold?: number
+          passenger_cancel_cooldown_hours?: number
+          passenger_cancel_strike_limit?: number
+          passenger_cancel_strike_window_hours?: number
+          passenger_search_cancel_limit?: number
+          passenger_search_cancel_pause_minutes?: number
+          passenger_search_cancel_window_minutes?: number
           search_radius_km?: number
           updated_at?: string
           updated_by?: string | null
@@ -1355,6 +1449,12 @@ export type Database = {
           id?: string
           is_active?: boolean
           low_rating_threshold?: number
+          passenger_cancel_cooldown_hours?: number
+          passenger_cancel_strike_limit?: number
+          passenger_cancel_strike_window_hours?: number
+          passenger_search_cancel_limit?: number
+          passenger_search_cancel_pause_minutes?: number
+          passenger_search_cancel_window_minutes?: number
           search_radius_km?: number
           updated_at?: string
           updated_by?: string | null
@@ -1870,6 +1970,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_ride_request: {
+        Args: { p_ride_request_id: string }
+        Returns: { ride_request_id: string; trip_id: string }[]
+      }
       admin_list_pso_last_sign_in: {
         Args: never
         Returns: {
@@ -1897,18 +2001,24 @@ export type Database = {
       }
       business_days_since: { Args: { p_start: string }; Returns: number }
       cancel_ride_leg: {
-        Args: { p_reason: string; p_ride_request_id: string; p_trip_id: string }
+        Args: { p_reason?: string; p_reason_code: string; p_ride_request_id: string; p_trip_id: string }
         Returns: {
           ride_request_id: string
         }[]
       }
-      cancel_ride_request_as_passenger: {
-        Args: { p_reason?: string; p_ride_request_id: string }
+      cancel_ride_request: {
+        Args: { p_reason?: string; p_reason_code?: string; p_ride_request_id: string }
         Returns: {
           ride_request_id: string
         }[]
       }
       cancel_stale_pending_ride_requests: { Args: never; Returns: undefined }
+      complete_handoff: {
+        Args: { p_ride_request_id: string }
+        Returns: {
+          ride_request_id: string
+        }[]
+      }
       complete_ride_leg: {
         Args: { p_ride_request_id: string; p_trip_id: string }
         Returns: {
@@ -1939,6 +2049,7 @@ export type Database = {
       get_active_trip_passengers: {
         Args: { p_trip_id: string }
         Returns: {
+          arrived_at: string
           assigned_at: string
           avatar_url: string
           cash_confirmed: boolean
@@ -1946,6 +2057,8 @@ export type Database = {
           dest_lng: number
           distance_km: number
           estimated_fare: number
+          handoff_lat: number | null
+          handoff_lng: number | null
           passenger_id: string
           passenger_name: string
           picked_up_at: string
@@ -2000,7 +2113,7 @@ export type Database = {
         }[]
       }
       get_passenger_trip_history: {
-        Args: { p_limit?: number }
+        Args: { p_limit?: number; p_ride_request_id?: string }
         Returns: {
           body_no: string
           cancel_reason: string
@@ -2059,6 +2172,20 @@ export type Database = {
         Args: { p_kind: string; p_limit: number; p_user_id: string }
         Returns: boolean
       }
+      invite_transfer: {
+        Args: {
+          p_handoff_lat?: number
+          p_handoff_lng?: number
+          p_reason: string
+          p_ride_request_id: string
+          p_to_driver_ids: string[]
+        }
+        Returns: {
+          expires_at: string
+          invite_id: string
+          to_driver_id: string
+        }[]
+      }
       is_account_active: { Args: never; Returns: boolean }
       is_admin: { Args: never; Returns: boolean }
       is_cluster_authorized: {
@@ -2070,6 +2197,21 @@ export type Database = {
       }
       is_pso: { Args: never; Returns: boolean }
       is_supervisor: { Args: never; Returns: boolean }
+      list_transfer_candidates: {
+        Args: { p_ride_request_id: string }
+        Returns: {
+          avatar_url: string | null
+          distance_km: number
+          driver_id: string
+          driver_name: string | null
+          free_seats: number
+          plate_no: string
+        }[]
+      }
+      mark_arrived: {
+        Args: { p_ride_request_id: string }
+        Returns: { arrived_at: string; ride_request_id: string }[]
+      }
       notify_expiring_franchises: { Args: never; Returns: undefined }
       perform_account_action: {
         Args: {
@@ -2095,6 +2237,21 @@ export type Database = {
           p_status: Database["public"]["Enums"]["complaint_status"]
         }
         Returns: undefined
+      }
+      release_expired_transfer_invites: { Args: never; Returns: undefined }
+      release_to_pool: {
+        Args: { p_reason: string; p_ride_request_id: string }
+        Returns: {
+          ride_request_id: string
+        }[]
+      }
+      respond_transfer: {
+        Args: { p_accept: boolean; p_invite_id: string }
+        Returns: {
+          accepted: boolean
+          ride_request_id: string
+          trip_id: string | null
+        }[]
       }
       schedule_complaint_mediation: {
         Args: {

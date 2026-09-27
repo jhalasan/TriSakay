@@ -57,6 +57,9 @@ const DEMO_TRIP: ActiveTrip = {
       assignedAt: null,
       pickedUpAt: null,
       distanceKm: null,
+      arrivedAt: null,
+      handoffLat: null,
+      handoffLng: null,
     },
   ],
 };

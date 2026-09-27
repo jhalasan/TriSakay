@@ -1,10 +1,26 @@
 import { useMemo, useRef, useState } from 'react';
-import { sortByNextStop } from '@trisakay/shared';
+import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, sortByNextStop } from '@trisakay/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { Linking, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar, Button, Card, ConfirmModal, EmptyState, HoldToConfirmButton, MapOverlaySheet, OsmMap, RequestCard, Toggle, colors, useTutorialTarget } from '@trisakay/ui';
+import {
+  Avatar,
+  Button,
+  Card,
+  ConfirmModal,
+  EmptyState,
+  HoldToConfirmButton,
+  MapOverlaySheet,
+  OsmMap,
+  ReasonPickerModal,
+  RequestCard,
+  Toggle,
+  TransferCandidatesModal,
+  colors,
+  useTutorialTarget,
+} from '@trisakay/ui';
+import { inviteTransfer, listTransferCandidates, type TransferCandidate } from '@trisakay/services';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useActiveTripTutorialDemo } from '../../src/hooks/useTutorialDemoState';
@@ -31,8 +47,12 @@ export default function ActiveTripScreen() {
   const driverLng = useDriverStore((state) => state.currentLng);
   const confirmCash = useTripStore((state) => state.confirmCash);
   const startPassenger = useTripStore((state) => state.startPassenger);
+  const markArrived = useTripStore((state) => state.markArrived);
   const completePassenger = useTripStore((state) => state.completePassenger);
   const cancelPassenger = useTripStore((state) => state.cancelPassenger);
+  const releasePassenger = useTripStore((state) => state.releasePassenger);
+  const completeHandoffAction = useTripStore((state) => state.completeHandoff);
+  const hydrateTrip = useTripStore((state) => state.hydrate);
   const endTrip = useTripStore((state) => state.endTrip);
   const recordCompletedTrip = useDriverStore((state) => state.recordCompletedTrip);
 
@@ -56,11 +76,24 @@ export default function ActiveTripScreen() {
   // button while one was already in flight, with no visual feedback.
   const [completingIds, setCompletingIds] = useState<Set<string>>(new Set());
   const [startingIds, setStartingIds] = useState<Set<string>>(new Set());
+  const [arrivingIds, setArrivingIds] = useState<Set<string>>(new Set());
   const [confirmingEndTrip, setConfirmingEndTrip] = useState(false);
   const [endingTrip, setEndingTrip] = useState(false);
   // D8 (UAT audit): a single tap used to complete a leg immediately — this
   // mirrors the Cancel/End Trip confirm pattern already on this screen.
   const [completingPassenger, setCompletingPassenger] = useState<ActivePassenger | null>(null);
+
+  // D1 (UAT audit): outgoing transfer flow — reason picker, then candidates.
+  const [transferringPassenger, setTransferringPassenger] = useState<ActivePassenger | null>(null);
+  const [transferReasonPickerVisible, setTransferReasonPickerVisible] = useState(false);
+  const [transferCandidatesVisible, setTransferCandidatesVisible] = useState(false);
+  const [transferReason, setTransferReason] = useState<string | null>(null);
+  const [candidates, setCandidates] = useState<TransferCandidate[]>([]);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [sendingInvites, setSendingInvites] = useState(false);
+  const [releasingPassenger, setReleasingPassenger] = useState<ActivePassenger | null>(null);
+  const [releasing, setReleasing] = useState(false);
+  const [completingHandoffIds, setCompletingHandoffIds] = useState<Set<string>>(new Set());
 
   const { height: windowHeight } = useWindowDimensions();
   // Bounds the sheet so it can never grow past the viewport — with it
@@ -136,6 +169,17 @@ export default function ActiveTripScreen() {
     });
   }
 
+  async function handleMarkArrived(passengerId: string) {
+    if (arrivingIds.has(passengerId)) return;
+    setArrivingIds((prev) => new Set(prev).add(passengerId));
+    await markArrived(passengerId);
+    setArrivingIds((prev) => {
+      const next = new Set(prev);
+      next.delete(passengerId);
+      return next;
+    });
+  }
+
   async function handleConfirmComplete() {
     const passenger = completingPassenger;
     if (!passenger || completingIds.has(passenger.id)) return;
@@ -152,12 +196,84 @@ export default function ActiveTripScreen() {
     if (closed) recordCompletedTrip(closed.fare ?? 0);
   }
 
-  async function handleConfirmCancel() {
+  async function handleConfirmCancel(reasonCode: string) {
     if (!cancellingId || confirmingCancel) return;
     setConfirmingCancel(true);
-    await cancelPassenger(cancellingId, 'Cancelled by driver');
+    await cancelPassenger(cancellingId, reasonCode);
     setConfirmingCancel(false);
     setCancellingId(null);
+  }
+
+  // D1 (UAT audit): after invites go out, this driver's own passenger list
+  // has no realtime signal for "the invite was accepted" (unlike the
+  // invited driver, who has subscribeToTransferInvites) — a short poll is a
+  // much smaller lift than a dedicated subscription for a one-shot, 30s-ish
+  // window, and hydrate() is already the authoritative rehydrate path used
+  // on app boot.
+  function pollTripAfterTransfer(rideRequestId: string) {
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts += 1;
+      await hydrateTrip();
+      const stillHere = useTripStore.getState().current?.passengers.some((p) => p.id === rideRequestId);
+      if (!stillHere || attempts >= 10) clearInterval(interval);
+    }, 4000);
+  }
+
+  function handleOpenTransfer(passenger: ActivePassenger) {
+    setTransferringPassenger(passenger);
+    setTransferReasonPickerVisible(true);
+  }
+
+  async function handleTransferReasonConfirm(reasonCode: string) {
+    setTransferReasonPickerVisible(false);
+    setTransferReason(reasonCode);
+    setTransferCandidatesVisible(true);
+    setCandidatesLoading(true);
+    const passenger = transferringPassenger;
+    if (passenger) {
+      const { data } = await listTransferCandidates(passenger.id);
+      setCandidates(data);
+    }
+    setCandidatesLoading(false);
+  }
+
+  async function handleSendInvites(driverIds: string[]) {
+    const passenger = transferringPassenger;
+    if (!passenger || !transferReason || sendingInvites) return;
+    setSendingInvites(true);
+    const reasonLabel = t.driver.transfer.reasons[transferReason as keyof typeof t.driver.transfer.reasons] ?? transferReason;
+    const { error } = await inviteTransfer(passenger.id, reasonLabel, driverIds);
+    setSendingInvites(false);
+    setTransferCandidatesVisible(false);
+    setTransferringPassenger(null);
+    setTransferReason(null);
+    if (error) {
+      useTripStore.setState({ error });
+      return;
+    }
+    pollTripAfterTransfer(passenger.id);
+  }
+
+  async function handleConfirmRelease(reasonCode: string) {
+    const passenger = releasingPassenger;
+    if (!passenger || releasing) return;
+    setReleasing(true);
+    const reasonLabel = t.driver.transfer.reasons[reasonCode as keyof typeof t.driver.transfer.reasons] ?? reasonCode;
+    await releasePassenger(passenger.id, reasonLabel);
+    setReleasing(false);
+    setReleasingPassenger(null);
+  }
+
+  async function handleCompleteHandoff(rideRequestId: string) {
+    if (completingHandoffIds.has(rideRequestId)) return;
+    setCompletingHandoffIds((prev) => new Set(prev).add(rideRequestId));
+    await completeHandoffAction(rideRequestId);
+    setCompletingHandoffIds((prev) => {
+      const next = new Set(prev);
+      next.delete(rideRequestId);
+      return next;
+    });
   }
 
   async function handleConfirmEndTrip() {
@@ -260,7 +376,26 @@ export default function ActiveTripScreen() {
                     <Text style={styles.ongoingChipText}>{t.driver.tripActive.ongoingStatus}</Text>
                   </View>
                 )}
+                {passenger.status === 'assigned' && passenger.arrivedAt && (
+                  <View style={styles.arrivedChip}>
+                    <Text style={styles.arrivedChipText}>{t.driver.tripActive.arrivedStatus}</Text>
+                  </View>
+                )}
               </View>
+
+              {passenger.handoffLat !== null && (
+                <>
+                  <Text style={styles.seatsLabel}>{t.driver.tripActive.handoffNotice}</Text>
+                  <Button
+                    label={t.driver.tripActive.completeHandoffButton}
+                    variant="outline"
+                    fullWidth
+                    loading={completingHandoffIds.has(passenger.id)}
+                    disabled={completingHandoffIds.has(passenger.id)}
+                    onPress={() => (tutorialDemo.active ? undefined : handleCompleteHandoff(passenger.id))}
+                  />
+                </>
+              )}
 
               {isCash && (
                 <View style={styles.cashRow}>
@@ -271,6 +406,17 @@ export default function ActiveTripScreen() {
                     disabled={passenger.cashConfirmed || confirmingCashId === passenger.id}
                   />
                 </View>
+              )}
+
+              {passenger.status === 'assigned' && !passenger.arrivedAt && (
+                <Button
+                  label={t.driver.tripActive.arrived}
+                  variant="outline"
+                  fullWidth
+                  loading={arrivingIds.has(passenger.id)}
+                  disabled={arrivingIds.has(passenger.id)}
+                  onPress={() => (tutorialDemo.active ? undefined : handleMarkArrived(passenger.id))}
+                />
               )}
 
               <View style={styles.actions}>
@@ -304,6 +450,28 @@ export default function ActiveTripScreen() {
                     />
                   </View>
                 )}
+              </View>
+
+              <View style={styles.actions}>
+                <View style={styles.actionButton}>
+                  <Button
+                    label={t.driver.tripActive.transferButton}
+                    variant="outline"
+                    fullWidth
+                    disabled={isCompleting || isStarting}
+                    onPress={() => (tutorialDemo.active ? undefined : handleOpenTransfer(passenger))}
+                  />
+                </View>
+                <View style={styles.actionButton}>
+                  <Button
+                    label={t.driver.tripActive.releaseButton}
+                    variant="outline"
+                    tone="danger"
+                    fullWidth
+                    disabled={isCompleting || isStarting}
+                    onPress={() => (tutorialDemo.active ? undefined : setReleasingPassenger(passenger))}
+                  />
+                </View>
               </View>
             </Card>
           );
@@ -364,13 +532,13 @@ export default function ActiveTripScreen() {
         />
       </MapOverlaySheet>
 
-      <ConfirmModal
+      <ReasonPickerModal
         visible={!!cancellingId}
         title={t.driver.tripActive.cancelPassengerTitle}
         message={t.driver.tripActive.cancelPassengerMessage}
+        options={DRIVER_CANCEL_REASON_CODES.map((code) => ({ code, label: t.driver.tripActive.cancelReasons[code] }))}
         cancelLabel={t.driver.tripActive.keep}
         confirmLabel={t.driver.tripActive.cancelRide}
-        destructive
         confirmLoading={confirmingCancel}
         onCancel={() => setCancellingId(null)}
         onConfirm={handleConfirmCancel}
@@ -396,6 +564,50 @@ export default function ActiveTripScreen() {
         confirmLoading={endingTrip}
         onCancel={() => setConfirmingEndTrip(false)}
         onConfirm={handleConfirmEndTrip}
+      />
+
+      <ReasonPickerModal
+        visible={transferReasonPickerVisible}
+        title={t.driver.transfer.reasonTitle}
+        options={TRANSFER_REASON_CODES.map((code) => ({ code, label: t.driver.transfer.reasons[code] }))}
+        cancelLabel={t.common.cancel}
+        confirmLabel={t.driver.transfer.sendInvites}
+        onCancel={() => {
+          setTransferReasonPickerVisible(false);
+          setTransferringPassenger(null);
+        }}
+        onConfirm={handleTransferReasonConfirm}
+      />
+
+      <TransferCandidatesModal
+        visible={transferCandidatesVisible}
+        title={t.driver.transfer.candidatesTitle}
+        loading={candidatesLoading}
+        candidates={candidates}
+        emptyMessage={t.driver.transfer.candidatesEmpty}
+        distanceLabel={(km) => t.driver.transfer.distanceLabel.replace('{km}', km.toFixed(1))}
+        seatsLabel={(seats) => t.driver.transfer.seatsLabel.replace('{seats}', String(seats))}
+        confirmLabel={t.driver.transfer.sendInvites}
+        cancelLabel={t.common.cancel}
+        confirmLoading={sendingInvites}
+        onCancel={() => {
+          setTransferCandidatesVisible(false);
+          setTransferringPassenger(null);
+          setTransferReason(null);
+        }}
+        onConfirm={handleSendInvites}
+      />
+
+      <ReasonPickerModal
+        visible={!!releasingPassenger}
+        title={t.driver.transfer.releaseTitle}
+        message={t.driver.transfer.releaseMessage}
+        options={TRANSFER_REASON_CODES.map((code) => ({ code, label: t.driver.transfer.reasons[code] }))}
+        cancelLabel={t.common.cancel}
+        confirmLabel={t.driver.transfer.releaseConfirm}
+        confirmLoading={releasing}
+        onCancel={() => setReleasingPassenger(null)}
+        onConfirm={handleConfirmRelease}
       />
     </SafeAreaView>
   );

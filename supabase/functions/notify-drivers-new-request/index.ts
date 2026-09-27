@@ -23,6 +23,13 @@
 // is applied here (not the soft bearing/detour heuristic, which needs a
 // driver's live position/declared route — a push notification's job is
 // only to wake the app, not to fully rank the board).
+//
+// R2 (existing-system audit): this used to push every eligible driver in
+// the whole system regardless of distance ("A passenger nearby..." going to
+// drivers city-wide). Now also requires the candidate driver's own
+// `current_lat/lng` to be within `search_radius_km` of the ride's pickup,
+// and their `location_updated_at` to be no more than 2 minutes old — same
+// radius/freshness rule as match-ride-request and nearby-driver-count.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
 
@@ -39,6 +46,18 @@ const SHARED_SECRET = Deno.env.get('NOTIFY_SHARED_SECRET') ?? '';
 const EXPO_PUSH_URL = 'https://exp.host/--/api/v2/push/send';
 
 type TricycleCluster = 'red' | 'white' | 'apple_green' | 'melting_pot';
+
+const EARTH_RADIUS_KM = 6371;
+const DEFAULT_SEARCH_RADIUS_KM = 3;
+const LOCATION_STALE_MS = 2 * 60 * 1000;
+
+function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
+  const toRad = (deg: number) => (deg * Math.PI) / 180;
+  const dLat = toRad(bLat - aLat);
+  const dLng = toRad(bLng - aLng);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(aLat)) * Math.cos(toRad(bLat)) * Math.sin(dLng / 2) ** 2;
+  return EARTH_RADIUS_KM * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
 
 function timingSafeEqual(a: string, b: string): boolean {
   if (a.length !== b.length) return false;
@@ -92,7 +111,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: rideRequest, error: rideError } = await supabase
       .from('ride_requests')
-      .select('id, status, pickup_barangay_id, seats_requested')
+      .select('id, status, pickup_barangay_id, pickup_lat, pickup_lng, seats_requested')
       .eq('id', rideRequestId)
       .maybeSingle();
 
@@ -102,6 +121,13 @@ Deno.serve(async (req: Request) => {
     if (!rideRequest || rideRequest.status !== 'pending') {
       return json({ sent: 0, skipped: 'not pending' });
     }
+
+    const { data: settings } = await supabase
+      .from('system_settings')
+      .select('search_radius_km')
+      .eq('is_active', true)
+      .maybeSingle();
+    const radiusKm = settings?.search_radius_km ?? DEFAULT_SEARCH_RADIUS_KM;
 
     let barangayCluster: TricycleCluster | null = null;
     if (rideRequest.pickup_barangay_id) {
@@ -116,23 +142,30 @@ Deno.serve(async (req: Request) => {
     const { data: candidates, error: candidatesError } = await supabase
       .from('driver_profiles')
       .select(
-        'user_id, users!driver_profiles_user_id_fkey!inner(push_token), tricycles!inner(cluster, seat_capacity, is_active, verification_status)',
+        'user_id, current_lat, current_lng, location_updated_at, users!driver_profiles_user_id_fkey!inner(push_token), tricycles!inner(cluster, seat_capacity, is_active, verification_status)',
       )
       .eq('is_available', true)
       .eq('verification_status', 'approved')
       .eq('tricycles.is_active', true)
       .eq('tricycles.verification_status', 'approved')
-      .not('users.push_token', 'is', null);
+      .not('users.push_token', 'is', null)
+      .not('current_lat', 'is', null)
+      .not('current_lng', 'is', null)
+      .not('location_updated_at', 'is', null);
 
     if (candidatesError) return json({ error: candidatesError.message }, 500);
 
     type Candidate = {
       user_id: string;
+      current_lat: number | null;
+      current_lng: number | null;
+      location_updated_at: string | null;
       users: { push_token: string | null } | { push_token: string | null }[];
       tricycles: { cluster: TricycleCluster | null; seat_capacity: number }[] | { cluster: TricycleCluster | null; seat_capacity: number };
     };
 
     const messages: { to: string; sound: string; title: string; body: string; data: Record<string, unknown> }[] = [];
+    const now = Date.now();
 
     for (const row of (candidates ?? []) as Candidate[]) {
       const usersRow = Array.isArray(row.users) ? row.users[0] : row.users;
@@ -141,6 +174,8 @@ Deno.serve(async (req: Request) => {
       if (!pushToken) continue;
       if (tricycle.seat_capacity < rideRequest.seats_requested) continue;
       if (!isClusterAuthorized(tricycle.cluster, barangayCluster)) continue;
+      if (now - new Date(row.location_updated_at!).getTime() > LOCATION_STALE_MS) continue;
+      if (haversineKm(row.current_lat!, row.current_lng!, rideRequest.pickup_lat, rideRequest.pickup_lng) > radiusKm) continue;
 
       messages.push({
         to: pushToken,

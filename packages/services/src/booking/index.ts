@@ -26,7 +26,20 @@ export interface CreateRideRequestResult {
   error: string | null;
 }
 
-/** Inserts the passenger's booking. `status` defaults to `'pending'` server-side — no driver is assigned yet. */
+/**
+ * Inserts the passenger's booking. `status` defaults to `'pending'`
+ * server-side — no driver is assigned yet.
+ *
+ * Y8 (existing-system audit): `enforce_one_active_ride_request_per_passenger`
+ * only ever checked this with an EXISTS query inside the insert trigger — no
+ * unique constraint backed it, so two concurrent inserts for the same
+ * passenger (two devices, or a retried request) could both pass that check
+ * before either committed. `ride_requests_one_active_per_passenger` (a
+ * partial unique index, 20260927000008) is the actual race-safe backstop;
+ * the trigger still gives a friendly message on the common single-device
+ * case, so a 23505 here reaching this far means the trigger's own check
+ * raced and lost — same message either way.
+ */
 export async function createRideRequest(input: CreateRideRequestInput): Promise<CreateRideRequestResult> {
   const { data, error } = await getSupabaseClient()
     .from('ride_requests')
@@ -47,6 +60,10 @@ export async function createRideRequest(input: CreateRideRequestInput): Promise<
     })
     .select()
     .single();
+
+  if (error?.code === '23505') {
+    return { data: null, error: 'You already have an active ride request.' };
+  }
 
   return { data: data ?? null, error: error?.message ?? null };
 }
@@ -122,17 +139,22 @@ export interface CancelRideRequestResult {
 }
 
 /**
- * Delegates to the cancel_ride_request_as_passenger RPC (X9): the row's own
- * columns beyond status/cancelled_at/cancel_reason can no longer be touched
- * via a direct UPDATE (rr_passenger_cancel was removed), so this is now the
- * only way to cancel. Succeeds while status is 'pending' or 'assigned' and
- * the row is the caller's own — enforced server-side inside the RPC, which
- * raises its own descriptive error otherwise.
+ * PD1 (UAT audit): calls the cancel_ride_request RPC, which enforces the
+ * full stage gate server-side — 'pending' is free (reasonCode may be
+ * omitted), 'assigned' requires a reasonCode and is recorded as a passenger
+ * strike, anything else (e.g. 'ongoing') is rejected. Replaces X9's
+ * cancel_ride_request_as_passenger, which only handled the RLS-loophole
+ * fix, not the policy itself.
  */
-export async function cancelRideRequest(rideRequestId: string, reason: string): Promise<CancelRideRequestResult> {
-  const { error } = await getSupabaseClient().rpc('cancel_ride_request_as_passenger', {
+export async function cancelRideRequest(
+  rideRequestId: string,
+  reasonCode?: string | null,
+  reason?: string,
+): Promise<CancelRideRequestResult> {
+  const { error } = await getSupabaseClient().rpc('cancel_ride_request', {
     p_ride_request_id: rideRequestId,
-    p_reason: reason,
+    p_reason_code: reasonCode ?? undefined,
+    p_reason: reason ?? undefined,
   });
 
   if (error) return { error: error.message };
@@ -145,92 +167,48 @@ export interface AcceptRideRequestResult {
 }
 
 /**
- * Finds (or creates) the driver's active trip, then assigns the ride request
- * to it. The final update is guarded by `status = 'pending'` so a driver who
- * loses a race against another driver gets a clear error instead of silently
- * overwriting someone else's assignment.
+ * F6 (UAT audit): a single-transaction RPC replaces what used to be several
+ * separate client calls (find-or-create trip, then a guarded UPDATE). Locks
+ * the ride row FOR UPDATE first — that lock is what makes "only one driver
+ * wins" airtight, not just the status check — then locks-or-creates the
+ * driver's trip FOR UPDATE (closing the old "same driver accepts two rides
+ * at once" double-seat-check race) before checking free seats and assigning.
+ * See the migration for the full account/availability/cluster/decline checks
+ * it also carries forward from X11.
  */
-export async function acceptRideRequest(driverId: string, rideRequestId: string): Promise<AcceptRideRequestResult> {
-  const client = getSupabaseClient();
+export async function acceptRideRequest(rideRequestId: string): Promise<AcceptRideRequestResult> {
+  const { data, error } = await getSupabaseClient().rpc('accept_ride_request', {
+    p_ride_request_id: rideRequestId,
+  });
 
-  const { data: existingTrip, error: tripLookupError } = await client
-    .from('trips')
-    .select('id')
-    .eq('driver_id', driverId)
-    .eq('status', 'active')
-    .maybeSingle();
+  if (error) return { error: error.message };
 
-  if (tripLookupError) return { error: "Couldn't check your active trips. Please try again." };
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { error: 'This ride was just accepted by another driver.' };
 
-  let tripId: string | undefined = existingTrip?.id;
+  return { error: null, tripId: row.trip_id };
+}
 
-  if (!tripId) {
-    const { data: tricycle, error: tricycleError } = await client
-      .from('tricycles')
-      .select('id, seat_capacity')
-      .eq('driver_id', driverId)
-      .eq('is_active', true)
-      .eq('verification_status', 'approved')
-      .maybeSingle();
-
-    if (tricycleError) return { error: "Couldn't check your vehicle assignment. Please try again." };
-    if (!tricycle) return { error: 'No active tricycle assigned yet — finish vehicle verification first.' };
-
-    const { data: newTrip, error: createTripError } = await client
-      .from('trips')
-      .insert({
-        driver_id: driverId,
-        tricycle_id: tricycle.id,
-        max_seats: tricycle.seat_capacity,
-        status: 'active',
-        started_at: new Date().toISOString(),
-      })
-      .select('id')
-      .single();
-
-    if (createTripError) {
-      // 23505 = unique_violation on trips_one_active_per_driver: a concurrent
-      // accept (double-tap, or Dashboard + Requests tab racing) already
-      // created this driver's active trip between the lookup above and this
-      // insert. That other call is the one that "won" — use its trip instead
-      // of failing outright, so a double-tap still results in one accepted
-      // ride rather than a stuck error.
-      if (createTripError.code === '23505') {
-        const { data: raceWinnerTrip, error: raceLookupError } = await client
-          .from('trips')
-          .select('id')
-          .eq('driver_id', driverId)
-          .eq('status', 'active')
-          .maybeSingle();
-
-        if (raceLookupError || !raceWinnerTrip) {
-          return { error: "Couldn't start a new trip. Please try again." };
-        }
-        tripId = raceWinnerTrip.id;
-      } else {
-        return { error: "Couldn't start a new trip. Please try again." };
-      }
-    } else {
-      tripId = newTrip.id;
-    }
-  }
-
-  const { data: assigned, error: assignError } = await client
+/**
+ * F6 (UAT audit): after a network error or client-side timeout wrapping
+ * acceptRideRequest(), the RPC may already have committed server-side before
+ * the response (or the timeout) reached this client — without this, a driver
+ * who actually won would be told the opposite and left thinking they need to
+ * retry. `rr_driver_read`'s own RLS makes this a safe, cheap check: a row
+ * comes back only while it's still 'pending' (genuinely never accepted by
+ * anyone) or while its trip belongs to the calling driver (this driver won);
+ * another driver's win is invisible to this query, which is exactly the
+ * signal needed — no row (or a still-pending row) means "you did not win."
+ */
+export async function reconcileAcceptedRide(rideRequestId: string): Promise<{ tripId: string | null }> {
+  const { data } = await getSupabaseClient()
     .from('ride_requests')
-    .update({
-      trip_id: tripId,
-      status: 'assigned',
-      assigned_at: new Date().toISOString(),
-    })
+    .select('status, trip_id')
     .eq('id', rideRequestId)
-    .eq('status', 'pending')
-    .select('id')
     .maybeSingle();
 
-  if (assignError) return { error: "Couldn't assign this ride. Please try again." };
-  if (!assigned) return { error: 'This ride was just accepted by another driver.' };
-
-  return { error: null, tripId };
+  if (data?.status === 'assigned' && data.trip_id) return { tripId: data.trip_id };
+  return { tripId: null };
 }
 
 export interface DeclineRideRequestResult {
@@ -255,7 +233,7 @@ export async function declineRideRequest(driverId: string, rideRequestId: string
 
 export type RideRequestStatusUpdate = Pick<
   RideRequestRow,
-  'id' | 'status' | 'cancel_reason' | 'discount_applied'
+  'id' | 'status' | 'cancel_reason' | 'cancelled_by' | 'discount_applied' | 'trip_id'
 >;
 
 /**
@@ -286,7 +264,7 @@ export function subscribeToRideRequestStatus(
       if (status === 'SUBSCRIBED') {
         client
           .from('ride_requests')
-          .select('id, status, cancel_reason, discount_applied')
+          .select('id, status, cancel_reason, cancelled_by, discount_applied, trip_id')
           .eq('id', rideRequestId)
           .maybeSingle()
           .then(({ data }: { data: RideRequestStatusUpdate | null }) => {
@@ -413,6 +391,11 @@ export interface CompleteRideLegResult {
  * that acceptRideRequest() can attach multiple, ending the whole trip on any
  * one passenger's drop-off would have force-ended everyone else's ride too.
  * See end_trip() below for closing the trip session itself.
+ *
+ * Y1 (existing-system audit): the RPC now enforces a ~300m-from-destination
+ * check and a minimum-plausible-duration check, both with their own
+ * descriptive messages — surfaced verbatim instead of a generic one, since a
+ * rejected completion needs to tell the driver why (too far / too soon).
  */
 export async function completeRideLeg(tripId: string, rideRequestId: string): Promise<CompleteRideLegResult> {
   const { error } = await getSupabaseClient().rpc('complete_ride_leg', {
@@ -420,7 +403,7 @@ export async function completeRideLeg(tripId: string, rideRequestId: string): Pr
     p_ride_request_id: rideRequestId,
   });
 
-  if (error) return { error: "Couldn't close out this passenger's ride. Please try again." };
+  if (error) return { error: error.message };
   return { error: null };
 }
 
@@ -428,30 +411,63 @@ export interface StartRideLegResult {
   error: string | null;
 }
 
-/** Marks ONE passenger's leg picked up (assigned -> ongoing). Must precede completeRideLeg for that same leg. */
+/**
+ * Marks ONE passenger's leg picked up (assigned -> ongoing). Must precede
+ * completeRideLeg for that same leg.
+ *
+ * Y1 (existing-system audit): the RPC now enforces a ~100m-from-pickup
+ * check, surfaced verbatim for the same reason as completeRideLeg above.
+ */
 export async function startRideLeg(tripId: string, rideRequestId: string): Promise<StartRideLegResult> {
   const { error } = await getSupabaseClient().rpc('start_ride_leg', {
     p_trip_id: tripId,
     p_ride_request_id: rideRequestId,
   });
 
-  if (error) return { error: "Couldn't start this passenger's ride. Please try again." };
+  if (error) return { error: error.message };
   return { error: null };
+}
+
+export interface MarkArrivedResult {
+  error: string | null;
+  arrivedAt: string | null;
+}
+
+/**
+ * F4 (UAT audit): the driver's "I've arrived" tap. Idempotent server-side —
+ * a second call for the same ride just returns the first call's timestamp
+ * rather than erroring — and rejected by the RPC unless the driver's last
+ * known position is within ~100m of the pickup point (L4).
+ */
+export async function markArrived(rideRequestId: string): Promise<MarkArrivedResult> {
+  const { data, error } = await getSupabaseClient().rpc('mark_arrived', { p_ride_request_id: rideRequestId });
+
+  if (error) return { error: error.message, arrivedAt: null };
+
+  const row = Array.isArray(data) ? data[0] : null;
+  return { error: null, arrivedAt: row?.arrived_at ?? null };
 }
 
 export interface CancelRideLegResult {
   error: string | null;
 }
 
-/** Cancels ONE passenger's leg via the cancel_ride_leg RPC — same reasoning as completeRideLeg above. */
-export async function cancelRideLeg(tripId: string, rideRequestId: string, reason: string): Promise<CancelRideLegResult> {
+/**
+ * Cancels ONE passenger's leg via the cancel_ride_leg RPC — same reasoning
+ * as completeRideLeg above. PD1 (UAT audit): reasonCode is now required by
+ * the RPC (it enforces the no-show wait/distance gate when reasonCode is
+ * 'passenger_no_show') — surfaces the RPC's own descriptive error instead of
+ * a generic one, since a rejected no-show needs to tell the driver why.
+ */
+export async function cancelRideLeg(tripId: string, rideRequestId: string, reasonCode: string, reason?: string): Promise<CancelRideLegResult> {
   const { error } = await getSupabaseClient().rpc('cancel_ride_leg', {
     p_trip_id: tripId,
     p_ride_request_id: rideRequestId,
-    p_reason: reason,
+    p_reason_code: reasonCode,
+    p_reason: reason ?? undefined,
   });
 
-  if (error) return { error: "Couldn't cancel this passenger's ride. Please try again." };
+  if (error) return { error: error.message };
 
   return { error: null };
 }
@@ -493,6 +509,11 @@ export interface ActiveTripPassenger {
   assignedAt: string | null;
   pickedUpAt: string | null;
   distanceKm: number | null;
+  /** F4: set once the driver taps "I've arrived" at this passenger's pickup point. */
+  arrivedAt: string | null;
+  /** D1: set only while an after-pickup transfer to this driver is accepted but not yet handoff-confirmed — the point to meet the previous driver, distinct from the ride's original pickup. */
+  handoffLat: number | null;
+  handoffLng: number | null;
 }
 
 export interface ActiveTripForDriver {
@@ -551,10 +572,13 @@ export async function getActiveTripForDriver(): Promise<GetActiveTripForDriverRe
         pickupLng: row.pickup_lng,
         destLat: row.dest_lat,
         destLng: row.dest_lng,
-        // `?? null`: until the D2 migration is applied live these columns are absent.
+        // `?? null`: until the D2/F4 migrations are applied live these columns are absent.
         assignedAt: row.assigned_at ?? null,
         pickedUpAt: row.picked_up_at ?? null,
         distanceKm: row.distance_km ?? null,
+        arrivedAt: row.arrived_at ?? null,
+        handoffLat: row.handoff_lat ?? null,
+        handoffLng: row.handoff_lng ?? null,
       })),
     },
     error: null,

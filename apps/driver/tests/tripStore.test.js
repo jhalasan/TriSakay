@@ -27,6 +27,9 @@ function passenger(id, overrides = {}) {
     assignedAt: null,
     pickedUpAt: null,
     distanceKm: null,
+    arrivedAt: null,
+    handoffLat: null,
+    handoffLng: null,
     ...overrides,
   };
 }
@@ -252,7 +255,9 @@ test('completePassenger() sets error and keeps the passenger when the backend ca
 
   assert.equal(closed, null);
   assert.equal(useTripStore.getState().current.passengers.length, 1);
-  assert.equal(useTripStore.getState().error, "Couldn't close out this passenger's ride. Please try again.");
+  // Y1 (existing-system audit): completeRideLeg now surfaces the RPC's own
+  // message verbatim, not a generic fallback.
+  assert.equal(useTripStore.getState().error, 'No active trip found for this driver to complete');
 });
 
 test('cancelPassenger() cancels just that leg, leaving any other passenger on the trip untouched', async () => {
@@ -331,7 +336,9 @@ test('startPassenger surfaces the error and leaves status unchanged on failure',
 
   assert.equal(ok, false);
   assert.equal(useTripStore.getState().current.passengers[0].status, 'assigned');
-  assert.equal(useTripStore.getState().error, "Couldn't start this passenger's ride. Please try again.");
+  // Y1 (existing-system audit): startRideLeg now surfaces the RPC's own
+  // message verbatim, not a generic fallback.
+  assert.equal(useTripStore.getState().error, 'boom');
 });
 
 test('passengerFromRequest defaults a freshly accepted passenger to status "assigned"', async () => {

@@ -44,7 +44,7 @@ export const TERMS_OF_SERVICE: PolicySection[] = [
   },
   {
     heading: '7. Cancellations',
-    body: 'You may cancel a ride request at any time before your driver arrives. Please cancel as early as possible if you no longer need the ride, so it can be offered to another passenger. Repeated late cancellations or failing to show up for a confirmed ride may lead to a warning or a temporary restriction on your account.',
+    body: 'You may cancel a ride request for free while we are still looking for a driver. Once a driver has accepted your ride, cancelling requires a reason and counts as a strike against your account; once the driver has picked you up, the ride can no longer be cancelled from the app and any issue should be reported to PSO instead. Three strikes within 7 days bring a 24-hour booking pause, with a warning shown at the second strike.',
   },
   {
     heading: '8. Your Conduct',

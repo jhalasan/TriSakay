@@ -3,6 +3,13 @@ import { getSupabaseClient } from '../supabase/client.ts';
 export interface Coordinates {
   lat: number;
   lng: number;
+  /**
+   * `expo-location`'s own mock-provider flag (Android only — always
+   * `undefined` on iOS). Forwarded as `is_mocked` so the R3 location-
+   * integrity trigger (`enforce_driver_location_integrity`, see SCHEMA.MD)
+   * can reject a fake-GPS fix server-side rather than trusting the client.
+   */
+  mocked?: boolean;
 }
 
 async function getSignedInUserId(): Promise<string | null> {
@@ -21,6 +28,15 @@ function toFriendlyMessage(message: string): string {
   }
   if (message.includes('no active, verified tricycle assigned')) {
     return "You can't go online yet — you don't have a verified tricycle on file.";
+  }
+  if (message.includes('a required document or the MTOP franchise has expired')) {
+    return "You can't go online — a required document or your tricycle's MTOP franchise has expired. Please update it.";
+  }
+  if (message.includes('Mock location detected')) {
+    return "We couldn't verify your location — please disable mock/fake GPS apps and try again.";
+  }
+  if (message.startsWith('Location update rejected')) {
+    return "Your location update looked physically impossible and was rejected. Please try again.";
   }
   return message;
 }
@@ -44,6 +60,7 @@ export async function updateDriverAvailability(
         current_lat: coords?.lat ?? null,
         current_lng: coords?.lng ?? null,
         location_updated_at: new Date().toISOString(),
+        is_mocked: coords?.mocked === true,
       }
     : { is_available: false };
 
@@ -88,6 +105,7 @@ export async function pushDriverLocation(coords: Coordinates): Promise<{ error: 
       current_lat: coords.lat,
       current_lng: coords.lng,
       location_updated_at: new Date().toISOString(),
+      is_mocked: coords.mocked === true,
     })
     .eq('user_id', userId);
 

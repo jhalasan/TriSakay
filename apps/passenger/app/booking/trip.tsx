@@ -4,19 +4,20 @@ import { Animated, Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   cancelRideRequest,
+  getTripDriverInfo,
   subscribeToDriverLocation,
   subscribeToRideRequestStatus,
   type DriverLocation,
 } from '@trisakay/services';
-import { ASSUMED_TRICYCLE_SPEED_KMH, estimateEtaMinutes, haversineKm } from '@trisakay/shared';
+import { ASSUMED_TRICYCLE_SPEED_KMH, PASSENGER_CANCEL_REASON_CODES, estimateEtaMinutes, haversineKm } from '@trisakay/shared';
 import {
   Badge,
   Button,
-  ConfirmModal,
   EmptyState,
   GradientSurface,
   HoldToConfirmButton,
   OsmMap,
+  ReasonPickerModal,
   colors,
   motion,
   spacing,
@@ -52,8 +53,15 @@ export default function TripScreen() {
   const fare = tutorialDemo.active ? tutorialDemo.data.fare : fareReal;
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
+  const setDriver = useBookingStore((state) => state.setDriver);
   const reset = useBookingStore((state) => state.reset);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
+  const [newDriverNotice, setNewDriverNotice] = useState<string | null>(null);
+  // D1 (UAT audit): tracks the trip_id this screen last saw so a transfer —
+  // which changes trip_id without changing status — can be detected. null
+  // means "not seen yet"; the very first status event seeds it without
+  // treating that as a transfer.
+  const lastTripIdRef = useRef<string | null | undefined>(undefined);
   const [cancelConfirmVisible, setCancelConfirmVisible] = useState(false);
   const [cancelling, setCancelling] = useState(false);
   const [cancelError, setCancelError] = useState<string | null>(null);
@@ -93,11 +101,37 @@ export default function TripScreen() {
     }
 
     let cancelled = false;
+    lastTripIdRef.current = undefined;
 
     const unsubscribe = subscribeToRideRequestStatus(
       rideRequestId,
       (row) => {
         if (cancelled || hasExitedRef.current) return;
+
+        // D1 (UAT audit): a transfer switches trip_id without changing
+        // status (before pickup it stays 'assigned', after pickup 'ongoing'),
+        // so this is the only signal this screen gets that the driver
+        // changed. The first event just seeds the ref — it's the ride's
+        // normal starting trip_id, not a transfer.
+        if (row.status === 'assigned' || row.status === 'ongoing') {
+          if (lastTripIdRef.current !== undefined && lastTripIdRef.current !== row.trip_id) {
+            getTripDriverInfo(rideRequestId).then(({ data }) => {
+              if (cancelled || !data) return;
+              setDriver({
+                id: data.driverId,
+                name: data.driverName ?? '',
+                plateNumber: data.plateNo ?? '',
+                rating: data.ratingAvg,
+                etaMinutes: null,
+                avatarUrl: data.avatarUrl,
+              });
+              setNewDriverNotice(t.trip.newDriverNotice);
+              setTimeout(() => setNewDriverNotice(null), 6000);
+            });
+          }
+          lastTripIdRef.current = row.trip_id;
+        }
+
         if (row.status === 'ongoing') {
           setRideStatus('ongoing');
         } else if (row.status === 'completed') {
@@ -109,7 +143,7 @@ export default function TripScreen() {
           router.replace({
             pathname: '/booking/ride-cancelled',
             params: {
-              byDriver: row.cancel_reason?.toLowerCase().includes('driver') ? '1' : '0',
+              byDriver: row.cancelled_by === 'driver' ? '1' : '0',
               discountApplied: row.discount_applied ? '1' : '0',
             },
           });
@@ -167,12 +201,12 @@ export default function TripScreen() {
    * ending an in-progress ride is a driver/PSO matter, not a passenger
    * self-cancel).
    *
-   * Uses the same `cancelRideRequest` call and "Cancelled by passenger"
-   * reason as no-drivers-nearby.tsx's own change-pickup cancel, and
-   * navigates straight to Home on success rather than through
-   * ride-cancelled.tsx — that screen's copy ("This ride was cancelled…") is
-   * written for a cancellation that happened *to* the passenger (by the
-   * driver or the system), not one they just chose themselves.
+   * PD1 (UAT audit): this is the 'assigned'-stage cancel, so a reasonCode is
+   * mandatory — the server rejects a null one at this stage. Navigates
+   * straight to Home on success rather than through ride-cancelled.tsx —
+   * that screen's copy ("This ride was cancelled…") is written for a
+   * cancellation that happened *to* the passenger (by the driver or the
+   * system), not one they just chose themselves.
    *
    * Known limitation: the driver app has no realtime subscription on an
    * active trip's passenger list (it only refreshes on driver-initiated
@@ -182,12 +216,12 @@ export default function TripScreen() {
    * notification to the driver here would need the same delivery
    * infrastructure as P1-12's ride-request alerts; out of scope for this fix.
    */
-  async function handleCancelRide() {
+  async function handleCancelRide(reasonCode: string) {
     if (!rideRequestId) return;
     setCancelling(true);
     setCancelError(null);
 
-    const { error } = await cancelRideRequest(rideRequestId, 'Cancelled by passenger');
+    const { error } = await cancelRideRequest(rideRequestId, reasonCode);
 
     setCancelling(false);
     setCancelConfirmVisible(false);
@@ -270,6 +304,7 @@ export default function TripScreen() {
           <View {...driverCardTarget}>
             <DriverInfoCard driver={driverForCard} seats={seats} fare={fare} />
             {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
+            {newDriverNotice && <Text style={styles.caption}>{newDriverNotice}</Text>}
             <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
 
             <View style={styles.sosBlock}>
@@ -293,13 +328,13 @@ export default function TripScreen() {
         </GradientSurface>
       </Animated.View>
 
-      <ConfirmModal
+      <ReasonPickerModal
         visible={cancelConfirmVisible}
         title={t.trip.cancelRideTitle}
         message={t.trip.cancelRideMessage}
+        options={PASSENGER_CANCEL_REASON_CODES.map((code) => ({ code, label: t.trip.cancelReasons[code] }))}
         cancelLabel={t.trip.cancelRideKeepIt}
         confirmLabel={t.trip.cancelRideConfirm}
-        destructive
         confirmLoading={cancelling}
         onCancel={() => setCancelConfirmVisible(false)}
         onConfirm={handleCancelRide}

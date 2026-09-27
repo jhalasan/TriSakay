@@ -6,6 +6,11 @@ const corsHeaders = {
 };
 
 const EARTH_RADIUS_KM = 6371;
+// R2 (existing-system audit): this count already filtered by radius, but not
+// by location freshness — a driver whose app died hours ago with a stale
+// `current_lat/lng` still counted as "nearby" until R1's offline cron caught
+// up. Same 2-minute cutoff as match-ride-request.
+const LOCATION_STALE_MS = 2 * 60 * 1000;
 
 function haversineKm(aLat: number, aLng: number, bLat: number, bLng: number): number {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
@@ -76,15 +81,19 @@ Deno.serve(async (req: Request) => {
 
     const { data: drivers, error } = await supabase
       .from('driver_profiles')
-      .select('current_lat, current_lng')
+      .select('current_lat, current_lng, location_updated_at')
       .eq('is_available', true)
       .not('current_lat', 'is', null)
-      .not('current_lng', 'is', null);
+      .not('current_lng', 'is', null)
+      .not('location_updated_at', 'is', null);
 
     if (error) return json({ error: error.message }, 500);
 
+    const now = Date.now();
     const count = (drivers ?? []).filter(
-      (d) => haversineKm(lat, lng, d.current_lat!, d.current_lng!) <= radiusKm,
+      (d) =>
+        now - new Date(d.location_updated_at!).getTime() <= LOCATION_STALE_MS &&
+        haversineKm(lat, lng, d.current_lat!, d.current_lng!) <= radiusKm,
     ).length;
 
     return json({ count });

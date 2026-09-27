@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import {
   Poppins_400Regular,
   Poppins_600SemiBold,
@@ -9,6 +9,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { colors, fontFamily, PASSENGER_FINISHED_MESSAGE, PASSENGER_STEPS, PASSENGER_WELCOME_BODY, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
@@ -22,6 +23,7 @@ import { useBookingStore } from '../src/store/useBookingStore';
 import { useConnectivityStore } from '../src/store/useConnectivityStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
+import { resolveActiveRideRoute } from '../src/utils/resolveActiveRideRoute';
 
 /**
  * Anchors the root stack to `index`. Screens declared as <Stack.Screen>
@@ -136,10 +138,69 @@ function useProtectedRoute(
       return;
     }
 
+    // R5 (UAT audit): through splash, not straight to Home. A same-session
+    // sign-in (or a suspension lifting) never used to look up whether this
+    // account already has an active ride — only a cold app launch did, via
+    // splash's own resolveActiveRideRoute() call. Replaying that same check
+    // here means signing in on a live app instance restores an in-progress
+    // ride exactly like relaunching the app does, instead of dropping the
+    // rider on an empty Home while a driver is still en route to them.
+    // `fast=1` skips splash's cold-start branding delay — this app instance
+    // is already warm, so there's nothing to cover for.
     if (inAuthGroup || onConsent || (onAccountSuspended && (!accountBlocked || hasActiveTrip))) {
-      router.replace('/(tabs)/home');
+      router.replace({ pathname: '/splash', params: { fast: '1' } });
     }
   }, [isAuthenticated, consentStatus, accountBlocked, hasActiveTrip, root, router]);
+}
+
+/**
+ * R5 (UAT audit): re-syncs with the backend's idea of "does this passenger
+ * have a ride right now" on a real background → foreground cycle — not on
+ * every render, and not on the 'inactive' blips iOS fires for Notification
+ * Center or an incoming call (same `wasBackgrounded` gating idiom as
+ * useLocationPermission's own AppState listener).
+ *
+ * Scoped to `tripStatus === 'idle'`: a ride already tracked locally is kept
+ * live by its own screen-level subscription (finding-driver.tsx,
+ * trip.tsx) — this only covers the gap those can't: the local store still
+ * reading empty while the backend has since assigned a driver, e.g. a push
+ * arrived while backgrounded and the realtime channel it would have used
+ * had already been torn down for the background state. A rider who only
+ * background/foreground-cycles while genuinely idle sees no effect at all.
+ */
+function useForegroundActiveRideSync(sessionUserId: string | null, consentStatus: ConsentGateStatus) {
+  const router = useRouter();
+  const wasBackgroundedRef = useRef(false);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', (nextState: AppStateStatus) => {
+      if (nextState === 'background') {
+        wasBackgroundedRef.current = true;
+        return;
+      }
+      if (nextState !== 'active' || !wasBackgroundedRef.current) return;
+      wasBackgroundedRef.current = false;
+
+      if (!sessionUserId || consentStatus !== 'accepted') return;
+      if (useBookingStore.getState().tripStatus !== 'idle') return;
+
+      resolveActiveRideRoute(sessionUserId)
+        .then((route) => {
+          if (!route) return;
+          if (route.pathname === '/booking/trip') {
+            router.replace({ pathname: '/booking/trip', params: { status: route.status } });
+          } else {
+            router.replace('/booking/finding-driver');
+          }
+        })
+        .catch(() => {
+          // Best-effort resync — a failed lookup leaves the rider exactly
+          // where they already were, never worse off.
+        });
+    });
+
+    return () => subscription.remove();
+  }, [sessionUserId, consentStatus, router]);
 }
 
 /**
@@ -168,6 +229,31 @@ function useConsentSync(sessionUserId: string | null) {
     if (sessionUserId === null) return;
     void check();
   }, [sessionUserId, check, reset]);
+}
+
+/**
+ * R5 (UAT audit): useBookingStore otherwise survives a sign-out or an
+ * account switch untouched, since nothing keys it to identity — a rider who
+ * logs out mid-ride, or who hands the device to someone else who signs in,
+ * would leave the previous account's pickup/dropoff/fare/tripStatus visible
+ * to whoever is signed in next (and `hasActiveTrip` in RootLayoutNav would
+ * wrongly reflect the *previous* user's ride when deciding the new user's
+ * account-suspended gate). Same sessionUserId-keyed shape as useConsentSync,
+ * for the same reason: it moves synchronously on every auth event, unlike
+ * `isAuthenticated`, which stays true across a same-client account switch.
+ *
+ * Deliberately resets on every change, including into a fresh sign-in — this
+ * always runs before splash.tsx's own resolveActiveRideRoute() populates the
+ * store for whoever is now signed in (that call is gated behind an await, so
+ * it can only run after this synchronous effect), so a legitimate restore is
+ * never clobbered by it.
+ */
+function useBookingStoreReset(sessionUserId: string | null) {
+  const reset = useBookingStore((state) => state.reset);
+
+  useEffect(() => {
+    reset();
+  }, [sessionUserId, reset]);
 }
 
 /**
@@ -284,10 +370,12 @@ function RootLayoutNav() {
   const tripStatus = useBookingStore((state) => state.tripStatus);
   const hasActiveTrip = tripStatus !== 'idle' && tripStatus !== 'rated';
   useConsentSync(sessionUserId);
+  useBookingStoreReset(sessionUserId);
   useNotificationsSync(sessionUserId);
   useConnectivitySync();
   usePushNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus, accountBlocked, hasActiveTrip);
+  useForegroundActiveRideSync(sessionUserId, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 
   return (

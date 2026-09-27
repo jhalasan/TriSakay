@@ -20,14 +20,23 @@
 //      to mean the request board was empty for every driver, always. Once
 //      pickup_barangay_id resolution ships, this becomes a real hard filter
 //      again for the requests it can classify.
-//   2. SOFT FILTER — bearing tolerance + detour ratio (both read from
+//   2. RADIUS + FRESHNESS (R2, existing-system audit): `declared_dest_lat/lng`
+//      is never actually written anywhere in either app, so the old
+//      "heuristicApplied" soft filter below never ran in practice — every
+//      available driver fell through to the hard-filtered list only, oldest
+//      request first, regardless of where they actually were. Every driver
+//      saw every pending request in the city. Now a hard radius filter
+//      (system_settings.search_radius_km, same fallback as
+//      nearby-driver-count) always applies against the driver's own live
+//      `current_lat/lng`, and a driver whose `location_updated_at` is more
+//      than 2 minutes old (or who has no location fix at all) sees an empty
+//      board rather than an unfiltered one — a stale/missing fix is no
+//      longer treated as "somewhere, so show everything".
+//   3. SOFT FILTER — bearing tolerance + detour ratio (both read from
 //      system_settings) between the driver's current position/declared
 //      route and each request's pickup/destination. Only applied once the
-//      driver has a known position and destination to compare against; a
-//      driver with no live location yet (client-side location writes are
-//      not implemented as of this pass — see docs/CHECKLIST.MD P0 "Driver
-//      availability toggle") gets the hard-filtered list only, oldest
-//      request first, so the request board never goes silently empty.
+//      driver also has a declared destination to compare against (still
+//      dormant today per the note above, but left in place for when it ships).
 //
 // Invoked by the driver app on every request-board refresh — see
 // subscribeToPendingRideRequests() in packages/services/src/booking/index.ts,
@@ -65,6 +74,8 @@ interface ScoredCandidate extends RideRequestRow {
 }
 
 const EARTH_RADIUS_KM = 6371;
+const DEFAULT_SEARCH_RADIUS_KM = 3;
+const LOCATION_STALE_MS = 2 * 60 * 1000;
 
 function toRad(deg: number): number {
   return (deg * Math.PI) / 180;
@@ -141,7 +152,9 @@ Deno.serve(async (req: Request) => {
       await Promise.all([
         supabase
           .from('driver_profiles')
-          .select('is_available, verification_status, current_lat, current_lng, declared_dest_lat, declared_dest_lng')
+          .select(
+            'is_available, verification_status, current_lat, current_lng, location_updated_at, declared_dest_lat, declared_dest_lng',
+          )
           .eq('user_id', driverId)
           .maybeSingle(),
         supabase
@@ -172,6 +185,19 @@ Deno.serve(async (req: Request) => {
       return json({ data: [], error: null, heuristicApplied: false });
     }
 
+    // R2: a driver with no location fix yet, or one older than 2 minutes,
+    // is not verifiably "nearby" anything — show an empty board rather than
+    // falling through to the unfiltered citywide list.
+    const locationFresh =
+      driverProfile.current_lat != null &&
+      driverProfile.current_lng != null &&
+      driverProfile.location_updated_at != null &&
+      Date.now() - new Date(driverProfile.location_updated_at).getTime() <= LOCATION_STALE_MS;
+
+    if (!locationFresh) {
+      return json({ data: [], error: null, heuristicApplied: false });
+    }
+
     const { data: pendingRows, error: pendingError } = await supabase
       .from('ride_requests')
       .select('*')
@@ -197,12 +223,31 @@ Deno.serve(async (req: Request) => {
       for (const b of barangays ?? []) barangayClusterById.set(b.id, b.cluster as TricycleCluster | null);
     }
 
-    const totalCapacity = activeTrip ? activeTrip.max_seats : tricycle.seat_capacity;
+    // Free seats, not total: a trip already carrying passengers has less
+    // room than max_seats. Mirrors enforce_trip_seat_capacity()'s own
+    // "taken" query (same status set, same trip) so a request shown here
+    // is one the DB trigger will actually allow the driver to accept.
+    let freeSeats = tricycle.seat_capacity;
+    if (activeTrip) {
+      const { data: onboardRows, error: onboardError } = await supabase
+        .from('ride_requests')
+        .select('seats_requested')
+        .eq('trip_id', activeTrip.id)
+        .in('status', ['assigned', 'ongoing']);
+
+      if (onboardError) return json({ data: null, error: onboardError.message }, 500);
+
+      const taken = (onboardRows ?? []).reduce((sum, r) => sum + (r.seats_requested as number), 0);
+      freeSeats = activeTrip.max_seats - taken;
+    }
+
+    const radiusKm = settings?.search_radius_km ?? DEFAULT_SEARCH_RADIUS_KM;
 
     const hardFiltered = rows.filter((r) => {
       const barangayCluster = r.pickup_barangay_id ? (barangayClusterById.get(r.pickup_barangay_id) ?? null) : null;
       if (!isClusterAuthorized(tricycle.cluster as TricycleCluster | null, barangayCluster)) return false;
-      if (r.seats_requested > totalCapacity) return false;
+      if (r.seats_requested > freeSeats) return false;
+      if (haversineKm(driverProfile.current_lat!, driverProfile.current_lng!, r.pickup_lat, r.pickup_lng) > radiusKm) return false;
       return true;
     });
 

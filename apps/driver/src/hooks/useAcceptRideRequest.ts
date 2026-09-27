@@ -30,7 +30,7 @@ export function useAcceptRideRequest() {
   async function acceptRideRequest(id: string) {
     if (!user || acceptingId) return;
     setAcceptingId(id);
-    const accepted = await accept(id, user.id);
+    const accepted = await accept(id);
     setAcceptingId(null);
     if (accepted) {
       if (useTripStore.getState().current) {

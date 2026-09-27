@@ -45,6 +45,8 @@ export const styles = StyleSheet.create({
   nextStopLabel: { ...typography.caption, fontWeight: '700', color: colors.accentGreenPressed },
   ongoingChip: { backgroundColor: colors.accentGreenSoft, borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: spacing.sm + 1 },
   ongoingChipText: { ...typography.label, fontSize: 10, color: colors.accentGreenPressed },
+  arrivedChip: { backgroundColor: colors.accentBlueSoft, borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: spacing.sm + 1, alignSelf: 'flex-start' },
+  arrivedChipText: { ...typography.label, fontSize: 10, color: colors.accentBluePressed },
   cashRow: {
     flexDirection: 'row',
     alignItems: 'center',

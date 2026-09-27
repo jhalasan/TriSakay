@@ -139,6 +139,15 @@ export const useAuthStore = create<AuthState>()((set) => {
     },
 
     logout: async () => {
+      // Clear the push token before signing out, while the session can still
+      // authorize the write — otherwise it survives on this account and the
+      // next person to sign in on this device inherits the previous user's
+      // pushes (R4, UAT audit).
+      try {
+        await authService.registerPushToken(null);
+      } catch {
+        // Best-effort: a failed clear must never block sign-out.
+      }
       await authService.signOut();
     },
 
