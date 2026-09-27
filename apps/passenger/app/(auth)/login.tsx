@@ -157,6 +157,7 @@ export default function LoginScreen() {
             {method === 'mobile' ? (
               <TextField
                 label={t.auth.login.mobileNumber}
+                helperText={t.hints.loginMobile}
                 placeholder="917 842 5510"
                 value={mobile}
                 onChangeText={setMobile}
@@ -173,6 +174,7 @@ export default function LoginScreen() {
             ) : (
               <TextField
                 label={t.auth.login.email}
+                helperText={t.hints.loginEmail}
                 placeholder="you@example.com"
                 value={email}
                 onChangeText={setEmail}
@@ -184,6 +186,7 @@ export default function LoginScreen() {
             )}
             <TextField
               label={t.auth.login.password}
+              helperText={t.hints.loginPassword}
               placeholder="••••••••"
               value={password}
               onChangeText={setPassword}

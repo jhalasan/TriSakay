@@ -208,6 +208,7 @@ export default function RegisterScreen() {
             <View style={styles.fields}>
               <TextField
                 label={t.auth.register.firstName}
+                helperText={t.hints.name}
                 required
                 placeholder="Juan"
                 value={form.firstName}
@@ -217,6 +218,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.lastName}
+                helperText={t.hints.lastName}
                 required
                 placeholder="Dela Cruz"
                 value={form.lastName}
@@ -226,6 +228,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.email}
+                helperText={t.hints.email}
                 required
                 placeholder="you@example.com"
                 value={form.email}
@@ -236,6 +239,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.phone}
+                helperText={t.hints.phone}
                 required
                 placeholder="09XX XXX XXXX"
                 value={form.phone}
@@ -245,6 +249,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.password}
+                helperText={t.hints.newPassword}
                 required
                 placeholder="••••••••"
                 value={form.password}
@@ -254,6 +259,7 @@ export default function RegisterScreen() {
               />
               <TextField
                 label={t.auth.register.confirmPassword}
+                helperText={t.hints.confirmPassword}
                 required
                 placeholder="••••••••"
                 value={form.confirmPassword}

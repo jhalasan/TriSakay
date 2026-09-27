@@ -75,6 +75,7 @@ export function SavePlaceSheet({ place, editingId = null, initialLabel, initialI
 
           <TextField
             label={t.savePlace.nameLabel}
+            helperText={t.hints.savedPlaceName}
             placeholder={t.savePlace.namePlaceholder}
             value={label}
             onChangeText={setLabel}

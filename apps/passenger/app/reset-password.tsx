@@ -4,6 +4,7 @@ import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-na
 import { requestPasswordReset, signOut, updatePassword, verifyPasswordReset } from '@trisakay/services';
 import { Button, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
+import { useTranslation } from '../src/hooks/useTranslation';
 import { isPasswordPolicyMet } from '@trisakay/utils';
 import { styles } from '../src/styles/auth/reset-password.styles';
 
@@ -15,6 +16,7 @@ interface FormErrors {
 
 export default function ResetPasswordScreen() {
   const router = useRouter();
+  const t = useTranslation();
   const { email } = useLocalSearchParams<{ email?: string }>();
 
   const [code, setCode] = useState('');
@@ -104,6 +106,7 @@ export default function ResetPasswordScreen() {
         <View style={styles.fields}>
           <TextField
             label="Code"
+            helperText={t.hints.resetCode}
             placeholder="123456"
             value={code}
             onChangeText={setCode}
@@ -112,6 +115,7 @@ export default function ResetPasswordScreen() {
           />
           <TextField
             label="New password"
+            helperText={t.hints.newPassword}
             placeholder="••••••••"
             value={password}
             onChangeText={setPassword}
@@ -121,6 +125,7 @@ export default function ResetPasswordScreen() {
           />
           <TextField
             label="Confirm new password"
+            helperText={t.hints.confirmPassword}
             placeholder="••••••••"
             value={confirmPassword}
             onChangeText={setConfirmPassword}

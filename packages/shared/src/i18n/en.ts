@@ -524,6 +524,28 @@ export const en = {
     locatingCurrentLocation: 'Locating…',
     confirmPickup: 'Confirm pickup',
   },
+  /** G4 (UAT panel, Adrales): one-line help tips under text fields, shared by the passenger and driver apps. */
+  hints: {
+    email: 'Use an email you can open — password reset codes are sent here.',
+    loginMobile: 'The 10 digits after +63, e.g. 917 842 5510.',
+    loginEmail: 'The email you signed up with.',
+    loginPassword: 'The password you chose when you signed up.',
+    name: 'Your real name, as it appears on a valid ID.',
+    lastName: 'Include a suffix if you have one, e.g. Dela Cruz Jr.',
+    phone: '11 digits starting with 09, e.g. 0917 842 5510.',
+    newPassword: 'At least 10 characters, with upper and lower case letters and a number or symbol.',
+    confirmPassword: 'Type the same password again.',
+    currentPassword: 'The password you use to sign in now.',
+    resetCode: 'The 6-digit code from the email we just sent you.',
+    passengerComplaintSubject: 'A short title, e.g. "Driver asked for a higher fare".',
+    driverComplaintSubject: 'A short title, e.g. "Passenger did not pay".',
+    complaintMessage: 'Say what happened, when and where. PSO reads every complaint.',
+    rateComment: 'What went well, or what the driver could do better.',
+    searchPlace: 'A landmark, street or barangay, e.g. KCC Mall or Lagao.',
+    savedPlaceName: "A short name you'll recognise, e.g. Home or Work.",
+    plateNumber: 'As printed on your OR/CR, e.g. GSC-1187.',
+    documentExpiry: 'Copy the date from the document, as YYYY-MM-DD, e.g. 2027-03-15.',
+  },
   /** P2 (2026-09-15 launch audit): passenger login/register/forgot-password/
    * logout were hardcoded English while the driver equivalents already use
    * t.driver.* — this closes that gap. Root-level (not nested under a role

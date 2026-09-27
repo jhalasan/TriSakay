@@ -121,6 +121,7 @@ export default function SetPickupScreen() {
         <MapSearchBar onBack={() => router.back()}>
           <TextField
             placeholder={t.setPickup.searchForPickup}
+            helperText={query ? undefined : t.hints.searchPlace}
             value={query}
             onChangeText={setQuery}
             autoFocus

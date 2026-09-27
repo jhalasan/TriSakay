@@ -135,6 +135,7 @@ export default function RateDriverScreen() {
               <View style={styles.commentWrap}>
                 <Textarea
                   label={t.rateDriver.commentLabel}
+                  helperText={t.hints.rateComment}
                   placeholder={t.rateDriver.commentPlaceholder}
                   value={comment}
                   onChangeText={handleCommentChange}

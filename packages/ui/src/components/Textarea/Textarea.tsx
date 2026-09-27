@@ -5,9 +5,10 @@ import { styles } from './Textarea.styles';
 
 export interface TextareaProps extends Omit<TextInputProps, 'style' | 'multiline'> {
   label?: string;
+  helperText?: string;
 }
 
-export function Textarea({ label, onFocus, onBlur, ...inputProps }: TextareaProps) {
+export function Textarea({ label, helperText, onFocus, onBlur, ...inputProps }: TextareaProps) {
   const [isFocused, setIsFocused] = useState(false);
 
   return (
@@ -30,6 +31,7 @@ export function Textarea({ label, onFocus, onBlur, ...inputProps }: TextareaProp
           {...inputProps}
         />
       </View>
+      {helperText && <Text style={styles.helperText}>{helperText}</Text>}
     </View>
   );
 }

@@ -33,6 +33,7 @@ export default function ChangePasswordScreen() {
         <View style={styles.fields}>
           <TextField
             label={t.changePassword.currentPassword}
+            helperText={t.hints.currentPassword}
             placeholder="••••••••"
             value={currentPassword}
             onChangeText={setCurrentPassword}
@@ -40,6 +41,7 @@ export default function ChangePasswordScreen() {
           />
           <TextField
             label={t.changePassword.newPassword}
+            helperText={t.hints.newPassword}
             placeholder="••••••••"
             value={newPassword}
             onChangeText={setNewPassword}
@@ -47,6 +49,7 @@ export default function ChangePasswordScreen() {
           />
           <TextField
             label={t.changePassword.confirmNewPassword}
+            helperText={t.hints.confirmPassword}
             placeholder="••••••••"
             value={confirmNewPassword}
             onChangeText={setConfirmNewPassword}

@@ -30,4 +30,8 @@ export const styles = StyleSheet.create({
     textAlignVertical: 'top',
     flex: 1,
   },
+  helperText: {
+    ...typography.caption,
+    color: colors.inkSoft,
+  },
 });

@@ -339,12 +339,14 @@ export default function ComplaintsScreen() {
 
           <TextField
             label={t.complaints.subject}
+            helperText={t.hints.passengerComplaintSubject}
             placeholder={t.complaints.subjectPlaceholder}
             value={subject}
             onChangeText={setSubject}
           />
           <Textarea
             label={t.complaints.message}
+            helperText={t.hints.complaintMessage}
             placeholder={t.complaints.messagePlaceholder}
             value={message}
             onChangeText={setMessage}

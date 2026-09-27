@@ -194,8 +194,8 @@ export default function ProfileScreen() {
             </Pressable>
             {isEditing ? (
               <View style={styles.editFieldWrap}>
-                <TextField value={firstName} onChangeText={setFirstName} autoCapitalize="words" placeholder={t.profile.firstNamePlaceholder} />
-                <TextField value={lastName} onChangeText={setLastName} autoCapitalize="words" placeholder={t.profile.lastNamePlaceholder} />
+                <TextField value={firstName} onChangeText={setFirstName} autoCapitalize="words" placeholder={t.profile.firstNamePlaceholder} helperText={t.hints.name} />
+                <TextField value={lastName} onChangeText={setLastName} autoCapitalize="words" placeholder={t.profile.lastNamePlaceholder} helperText={t.hints.lastName} />
               </View>
             ) : (
               <>
@@ -276,6 +276,7 @@ export default function ProfileScreen() {
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
                     placeholder={t.profile.phonePlaceholder}
+                    helperText={t.hints.phone}
                   />
                 </View>
               ) : (
@@ -333,6 +334,7 @@ export default function ProfileScreen() {
             <Text style={styles.confirmMessage}>{t.profile.confirmPhoneChangeMessage}</Text>
             <TextField
               label={t.profile.currentPasswordLabel}
+              helperText={t.hints.currentPassword}
               value={confirmPassword}
               onChangeText={(v) => {
                 setConfirmPassword(v);

@@ -104,6 +104,7 @@ export default function SetDestinationScreen() {
         <MapSearchBar onBack={() => router.back()}>
           <TextField
             placeholder={t.setDestination.searchForDestination}
+            helperText={query ? undefined : t.hints.searchPlace}
             value={query}
             onChangeText={setQuery}
             autoFocus
