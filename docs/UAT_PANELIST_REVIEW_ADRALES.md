@@ -16,13 +16,13 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 | G1 | Proper domain | TODO | Setup |
 | G2 | Use Google Maps | **UNBLOCKED (2026-09-25)** — billing verified, code done, GCP project created, enabling APIs next | Code, large |
 | G3 | Screenshots of the final hosted system with the domain and Google Maps | TODO | Last step |
-| G4 | Help tips for text boxes | TODO | Code, small |
+| G4 | Help tips for text boxes | IN PROGRESS (Person 3, started 2026-09-27) | Code, small |
 | G5 | Scope: iOS and Android, Android preferred | TODO | Docs |
 | P1 | Email receipt if the passenger agrees | TODO | Code, medium |
 | P2 | Ask passengers if they'd still use the app if the fare increases | TODO | Survey |
 | P3 | Suggested fare with supporting literature | TODO | Docs |
 | D1 | Driver can transfer a passenger to another tricycle | TODO | Code, large |
-| D2 | Nearest drop-off first when carrying several passengers | TODO | Code, small |
+| D2 | Nearest drop-off first when carrying several passengers | IN PROGRESS (Person 3, started 2026-09-27) | Code, small |
 | PD1 | Cancellation policy | TODO | Code, medium |
 | PD2 | Don't allow cancelling at every stage | TODO | Part of PD1 |
 | PD3 | Literature on how many cancellations to allow | TODO | Docs |
@@ -87,6 +87,8 @@ Sources: three read-only code audits (database access rules and functions, ride/
 **Gotcha confirmed live 2026-09-25, relevant to any brand-new function (e.g. `cancel_ride_request`, `accept_ride_request`, `invite_transfer` for PD1/F6/D1): a `REVOKE EXECUTE ... FROM anon, authenticated` alone is not always enough.** Postgres grants EXECUTE on a newly created function to `PUBLIC` by default, and `anon`/`authenticated` inherit that as implicit PUBLIC members — a revoke naming them individually doesn't touch the underlying PUBLIC grant they're still inheriting through. Found while building maps-proxy's `increment_maps_proxy_usage`: revoking from `anon, authenticated` left `has_function_privilege('anon', ..., 'execute')` still `true`; only revoking from `public` as well fixed it. **After any REVOKE on a function you just created, verify with `select has_function_privilege('anon', 'public.fn_name(arg_types)', 'execute');` — don't assume the REVOKE line worked just because it ran without error.**
 
 #### Critical: exploitable with a single API call (required, week 1)
+**Status (checked 2026-09-27 against git):** X0 and X1–X6, X8–X11 are committed (2026-09-25, migrations `20260925120000` through `20260925220000`), plus a follow-up test fix for X9. Marked *committed, awaiting Person 2's confirmation* rather than DONE until Person 2 confirms each one is verified live and whether the extra X0 reconciliation they mentioned changes anything. X7 is DONE (see above).
+
 | ID | Loophole | Exploit | Fix |
 |---|---|---|---|
 | X1 | `users_update_self` locks only `role` (SCHEMA.MD:1565) | A suspended user sends `PATCH users {status:'active'}` and is unsuspended. They can also change `email` and `must_change_password`. | Lock trigger: non-admins may change only name, contact number, avatar and push token. |
@@ -224,6 +226,7 @@ Tiers:
 
 **Cross-track dependencies:**
 - Person 3's D2 and Person 2's D1 driver-candidate list should share the same distance/radius logic once Person 2 lands R2 — flag this if D2 ships first.
+- D2's delay rule needs `assigned_at`, `picked_up_at` and `distance_km` from `get_active_trip_passengers`, which didn't return them. Person 3 wrote that migration (2026-09-27); it only adds return columns. Person 2: D1 changes the same function (handoff point as pickup) — build on the D2 version, and add the transfer flag D2's sort already accepts (`isTransferPickup`).
 - Person 2's PD1 (`cancelled_by`, reason codes) must land before Person 2 starts D1.
 - Person 2's X2/X9/X11 must land before PD1 and D1 are trustworthy (they close the "fake completed ride" and "forge cancellation/rating" loopholes) — this is why they're sequenced first in week 1.
 - Person 1's P1 needs Person 1's own G1 (domain) done first — no cross-person wait.
