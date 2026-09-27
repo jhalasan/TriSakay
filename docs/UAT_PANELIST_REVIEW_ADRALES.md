@@ -16,13 +16,13 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 | G1 | Proper domain | TODO | Setup |
 | G2 | Use Google Maps | **UNBLOCKED (2026-09-25)** — billing verified, code done, GCP project created, enabling APIs next | Code, large |
 | G3 | Screenshots of the final hosted system with the domain and Google Maps | TODO | Last step |
-| G4 | Help tips for text boxes | IN PROGRESS (Person 3) — code done 2026-09-27 (all mobile + admin form fields, en/fil); needs an on-device look before DONE | Code, small |
+| G4 | Help tips for text boxes | IN PROGRESS — code done 2026-09-27 (Person 3); on-device check **handed to Person 1**, see "Handoff: Person 3 → Person 1" | Code, small |
 | G5 | Scope: iOS and Android, Android preferred | TODO | Docs |
 | P1 | Email receipt if the passenger agrees | TODO | Code, medium |
 | P2 | Ask passengers if they'd still use the app if the fare increases | TODO | Survey |
 | P3 | Suggested fare with supporting literature | TODO | Docs |
 | D1 | Driver can transfer a passenger to another tricycle | TODO | Code, large |
-| D2 | Nearest drop-off first when carrying several passengers | IN PROGRESS (Person 3) — code + unit tests done 2026-09-27; migration `20260927000001` written, **not yet applied live**; then a 2+-passenger test on a driver account | Code, small |
+| D2 | Nearest drop-off first when carrying several passengers | IN PROGRESS — code + unit tests done 2026-09-27 (Person 3); applying migration `20260927000001` live and the device test **handed to Person 1**, see "Handoff: Person 3 → Person 1" | Code, small |
 | PD1 | Cancellation policy | TODO | Code, medium |
 | PD2 | Don't allow cancelling at every stage | TODO | Part of PD1 |
 | PD3 | Literature on how many cancellations to allow | TODO | Docs |
@@ -166,6 +166,7 @@ Tiers:
 | Week 1, Days 2–5 | G1 finish | Add the domain to Supabase Auth's redirect URLs. |
 | Week 1–2 | P1 | Email receipts via Resend + F5 (receipt from server data). **Doesn't need Google Maps at all** — only needs the domain from G1. Bring this forward to fill the time G2 would have used. |
 | Week 1–2 | L13 | Build P1's send limits alongside it: max 3 sends per ride, 20/day per user. |
+| Week 1–2 | *(from Person 3)* D2 + G4 finish | Apply the D2 migration live, device-test D2 and G4, `npm install`. Steps in "Handoff: Person 3 → Person 1" under Person 3's table. Do it with the first G2 dev build. |
 | — | G2 | **Paused.** Revisit the moment a card/billing path is confirmed. Once unblocked: Google Cloud setup (project, billing, 4 APIs, Map ID, quota caps, budget alert, 3–4 restricted keys — see "## G2: full Google stack" and the step-by-step in chat) → wire keys into `app.config.js` (mobile), Supabase secrets (`GOOGLE_MAPS_SERVER_API_KEY`), and `apps/admin/.env` (`VITE_GOOGLE_MAPS_WEB_API_KEY`, `VITE_GOOGLE_MAPS_MAP_ID`) → `eas build --profile development` → real-device test. |
 | — | G3 | **Blocked on G2.** Final screenshots need Google Maps actually rendering on the domain and on Android. Do this last, once G2 unblocks and Person 2/3's features are stable. |
 | — | *(git history purge)* | The deferred X7 cleanup, unrelated to the G2 blocker — still fine to do whenever the team is ready to re-clone. See the note in the loophole section above. |
@@ -213,6 +214,35 @@ Tiers:
 | Week 2, if C1 is reached | *(C1 UI)* | Chat screens in both apps + Realtime wiring, once Person 2's `ride_messages` table lands. Include L11's phone-number masking in the same pass. |
 | Week 2, if C1+time allow | N1 | Ride-status push notifications (assigned/arriving/arrived/transferred/completed) — natural next step after C1, reuses the same notification pattern as R4. |
 | Week 2, last 3 days | Full regression | Real Android devices, all 3 people's work together. Hand G3 screenshots to Person 1. Final tracker update — mark every item DONE/STRETCH-not-reached/FUTURE. |
+
+### Handoff: Person 3 → Person 1 (2026-09-27) — finish D2 and G4
+The code for D2 and G4 is pushed and every test suite passes. What's left needs live-database access or a real device, which Person 3 didn't have today. Person 1 already applies migrations live (e.g. `20260925000001_maps_proxy_rate_limit.sql`) and needs a dev build for G2 anyway, so these ride along. When all four steps are done, mark D2 and G4 **DONE** in the tracker above.
+
+**1. Apply the D2 migration** `supabase/migrations/20260927000001_d2_active_trip_passenger_timing.sql`.
+- What it does: rebuilds `get_active_trip_passengers` with three extra return columns (`assigned_at`, `picked_up_at`, `distance_km`). The body, filter and order are unchanged (the live version was checked on 2026-09-27 and matched `20260915000010` exactly).
+- **Record it under version `20260927000001`.** The live migration history uses the file names as versions since X0. A different version breaks `supabase db push` again.
+  - Preferred: `supabase db push` from a linked CLI (it records the file's version by itself). Run `--dry-run` first; it should list only this one file.
+  - Don't use the Supabase MCP `apply_migration` tool: it records the current time as the version.
+  - SQL editor fallback: run the file, then `insert into supabase_migrations.schema_migrations (version, name) values ('20260927000001', 'd2_active_trip_passenger_timing');`
+- Verify (both are read-only):
+  - `select pg_get_function_result('public.get_active_trip_passengers(uuid)'::regprocedure);` should end with `assigned_at timestamp with time zone, picked_up_at timestamp with time zone, distance_km numeric`.
+  - `select has_function_privilege('anon', 'public.get_active_trip_passengers(uuid)', 'execute');` must be **false** (the PUBLIC-grant gotcha above; the migration revokes it).
+- The app is safe before and after: it reads the new columns as `null` when they're missing, and then the "running late" rule simply never fires.
+
+**2. D2 device test** (driver dev build, one driver + 2–3 passenger test accounts, ideally in town with real GPS):
+- Accept 2+ rides. Expected: the cards are ordered by distance to each passenger's next stop (pickup while waiting, drop-off once started). The top card says **"Next stop · x.x km"**, the others show their distance, and the map pin and Navigate button point at the top card's stop.
+- Drive toward the second card's stop. It should move to the top only once it's at least 150 m closer than the current top, with no flickering between near-equal stops.
+- Turn off location. The order should freeze at the last shown order, with no distances.
+- The "running late" rule (needs step 1): a passenger on board longer than 1.5× the normal time for their ride distance at 20 km/h (never less than 5 min), or waiting longer than that since accept, jumps above closer stops. Easiest check: start a ride, wait more than 7.5 min, and it moves to the top.
+- The transfer-pickup rule can't be tested until Person 2's D1 sets `isTransferPickup`; it's covered by unit tests.
+
+**3. G4 on-device look** (tips are one grey line under each field, English and Filipino):
+- The screens most likely to need a spacing tweak: passenger **set-pickup / set-destination** (the tip sits under the search bar only while it's empty), both apps' **register** screens (every field has a tip now, so they're longer), passenger/driver **profile edit** (name + phone), driver **documents** (expiry date).
+- Admin: **Force password change** (two tips side by side above the strength checklist), **Settings → fare** (three number fields), **Discount review** and **Driver verification** forms.
+- Switch the app language to Filipino once and check that no tip wraps badly.
+- Fix any layout issue in the screen's styles; the wording is in `packages/shared/src/i18n/{en,fil}.ts` under `hints` (admin wording is inline in each route).
+
+**4. `npm install` at the repo root.** `npm run typecheck` shows 10 errors on main that were already there before D2/G4: missing packages `react-native-maps`, `@vis.gl/react-google-maps`, `expo-notifications`, `expo-network`. `npm run test:ui` also can't start (`tsx` not found). Most of these are G2's new dependencies, so installing fixes both. After installing, run `npm run typecheck` and `npm run test:ui`.
 
 ### Ownership noted for future work (not built this sprint, but assigned so whoever revisits it knows where to start)
 | Item | Proposed owner when picked up |
