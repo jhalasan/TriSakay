@@ -113,6 +113,20 @@ export default function TripCompleteScreen() {
           </Card>
         )}
 
+        {receipt?.fareFlagged && rideRequestId && (
+          <Card variant="raised" style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>{t.tripComplete.fareFlaggedNotice}</Text>
+            <Button
+              label={t.tripComplete.reportFareIssueButton}
+              variant="outline"
+              fullWidth
+              onPress={() =>
+                router.push({ pathname: '/(tabs)/complaints', params: { rideRequestId, category: 'fare' } })
+              }
+            />
+          </Card>
+        )}
+
         <View style={styles.continueWrap}>
           <Button
             label={t.tripComplete.continueButton}

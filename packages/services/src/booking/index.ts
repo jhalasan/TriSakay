@@ -280,6 +280,43 @@ export function subscribeToRideRequestStatus(
   };
 }
 
+/**
+ * R6 (existing-system audit): the driver previously had no live signal for a
+ * passenger cancelling mid-trip — `useTripStore.current` only ever refreshed
+ * via an explicit `hydrate()` (app boot, or after the driver's own action).
+ * Filters on `trip_id` rather than a single ride_request id since FR-2.5c
+ * allows several passengers aboard the same trip at once; the caller is
+ * expected to re-hydrate the whole trip on any change rather than try to
+ * patch one row, since a cancellation touches several columns at once
+ * (status, cancelled_at, cancel_reason, cancelled_by) and get_active_trip_passengers
+ * is the single source of truth for what's still actually on the trip.
+ */
+export function subscribeToTripRideRequests(
+  tripId: string,
+  onChange: () => void,
+  onError?: (message: string) => void,
+): () => void {
+  const client = getSupabaseClient();
+  const channel = client
+    .channel(`trip_ride_requests_${tripId}`)
+    .on(
+      'postgres_changes',
+      { event: 'UPDATE', schema: 'public', table: 'ride_requests', filter: `trip_id=eq.${tripId}` },
+      () => onChange(),
+    )
+    .subscribe((status: string) => {
+      if (status === 'SUBSCRIBED') {
+        onChange();
+      } else if (status === 'CHANNEL_ERROR' || status === 'TIMED_OUT') {
+        onError?.('Lost connection while tracking this trip. Pull to refresh if something looks off.');
+      }
+    });
+
+  return () => {
+    client.removeChannel(channel);
+  };
+}
+
 /** Collapses a burst of change events (one per passenger action, system-wide) into a single Edge Function call. */
 const PENDING_REQUESTS_REFETCH_DEBOUNCE_MS = 500;
 

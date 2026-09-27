@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, acceptRideRequest, reconcileAcceptedRide, declineRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver, startRideLeg } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, subscribeToTripRideRequests, acceptRideRequest, reconcileAcceptedRide, declineRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver, startRideLeg } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -441,6 +441,102 @@ test('subscribeToRideRequestStatus calls onError when the channel errors out or 
   assert.deepEqual(errors, [
     'Lost connection while waiting for a driver. Please check your connection.',
     'Lost connection while waiting for a driver. Please check your connection.',
+  ]);
+});
+
+// R6 (existing-system audit): the driver previously had no live signal when
+// a passenger cancelled mid-trip.
+test('subscribeToTripRideRequests filters on trip_id and calls onChange on SUBSCRIBED and on every UPDATE', async () => {
+  let capturedChannelName: string | null = null;
+  let capturedArgs: any = null;
+  let removedChannel: unknown = null;
+  // Wrapped in an object, not bare `let`s — same reasoning as
+  // location.test.ts's subscribeToDriverLocation test: a closure-assigned
+  // `let` gets control-flow-narrowed back to its initializer at the call
+  // site below, which would make TS treat the non-null-asserted call as `never`.
+  const captured: { handler: (() => void) | null; statusCallback: ((status: string) => void) | null } = {
+    handler: null,
+    statusCallback: null,
+  };
+  const fakeChannel = {
+    on: (_event: string, filterArgs: unknown, handler: () => void) => {
+      capturedArgs = filterArgs;
+      captured.handler = handler;
+      return fakeChannel;
+    },
+    subscribe: (statusCallback?: (status: string) => void) => {
+      captured.statusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: (name: string) => {
+        capturedChannelName = name;
+        return fakeChannel;
+      },
+      removeChannel: (channel: unknown) => {
+        removedChannel = channel;
+      },
+    })
+  );
+
+  let changeCount = 0;
+  const unsubscribe = subscribeToTripRideRequests('trip1', () => {
+    changeCount += 1;
+  });
+
+  assert.equal(capturedChannelName, 'trip_ride_requests_trip1');
+  assert.equal(capturedArgs.filter, 'trip_id=eq.trip1');
+  assert.equal(capturedArgs.event, 'UPDATE');
+  assert.equal(capturedArgs.table, 'ride_requests');
+  assert.ok(captured.statusCallback);
+
+  // SUBSCRIBED itself counts as a change (closes the same pre-join gap
+  // subscribeToPendingRideRequests/subscribeToTransferInvites already do).
+  captured.statusCallback!('SUBSCRIBED');
+  assert.equal(changeCount, 1);
+
+  captured.handler!();
+  assert.equal(changeCount, 2);
+
+  unsubscribe();
+  assert.equal(removedChannel, fakeChannel);
+});
+
+test('subscribeToTripRideRequests calls onError when the channel errors out or times out', async () => {
+  const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
+  const fakeChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      captured.statusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+    })
+  );
+
+  const errors: string[] = [];
+  subscribeToTripRideRequests(
+    'trip1',
+    () => {},
+    (message) => errors.push(message),
+  );
+
+  const statusCallback = captured.statusCallback;
+  assert.ok(statusCallback);
+  statusCallback('CHANNEL_ERROR');
+  statusCallback('TIMED_OUT');
+
+  assert.deepEqual(errors, [
+    'Lost connection while tracking this trip. Pull to refresh if something looks off.',
+    'Lost connection while tracking this trip. Pull to refresh if something looks off.',
   ]);
 });
 

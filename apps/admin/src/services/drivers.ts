@@ -16,7 +16,7 @@ export async function listDrivers(): Promise<ServiceResult<DriverRow[]>> {
     lastName: d.lastName,
     fullName: d.fullName,
     contactNo: d.contactNo ?? '',
-    email: d.email,
+    email: d.email ?? '',
     accountStatus: d.accountStatus,
     verificationStatus: d.verificationStatus,
     ratingAvg: d.ratingAvg,

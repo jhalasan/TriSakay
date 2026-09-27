@@ -45,8 +45,10 @@ export async function listTricyclesForAdmin(): Promise<ListTricyclesForAdminResu
   if (!tricycles || tricycles.length === 0) return { data: [], error: null };
 
   const driverIds = [...new Set(tricycles.map((t) => t.driver_id))];
+  // Y6 (existing-system audit): admin_driver_directory masks contact_no to
+  // null for anyone but a supervisor — see admin/drivers.ts's own comment.
   const { data: drivers, error: driversError } = await client
-    .from('users')
+    .from('admin_driver_directory')
     .select('id, full_name, contact_no, status')
     .in('id', driverIds);
 

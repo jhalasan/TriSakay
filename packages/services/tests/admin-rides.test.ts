@@ -16,6 +16,7 @@ function fakeClient() {
       completed_at: '2026-09-16T03:21:00.000Z',
       cancelled_at: null,
       final_fare: 15,
+      fare_flagged: true,
     },
     {
       id: 'ride2',
@@ -28,6 +29,7 @@ function fakeClient() {
       completed_at: null,
       cancelled_at: '2026-09-15T09:45:00.000Z',
       final_fare: null,
+      fare_flagged: false,
     },
   ];
   const trips = [{ id: 'trip1', driver_id: 'd1' }];
@@ -82,6 +84,7 @@ test('listRideLogForAdmin resolves passenger/driver names and flags the emergenc
     cancelledAt: null,
     finalFare: 15,
     hasEmergencyAlert: true,
+    fareFlagged: true,
   });
 });
 

@@ -21,6 +21,8 @@ export interface PassengerTripHistoryItem {
   discountApplied: boolean;
   discountPercent: number | null;
   cancelReason: string | null;
+  /** Y10 (existing-system audit): true when the actual drop-off point was more than ~500m from the booked destination. */
+  fareFlagged: boolean;
 }
 
 export interface ListPassengerTripHistoryResult {
@@ -51,6 +53,7 @@ function mapPassengerTripHistoryRow(row: PassengerTripHistoryRow): PassengerTrip
     discountApplied: row.discount_applied ?? false,
     discountPercent: row.discount_percent,
     cancelReason: row.cancel_reason,
+    fareFlagged: row.fare_flagged ?? false,
   };
 }
 

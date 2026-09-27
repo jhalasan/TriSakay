@@ -383,6 +383,8 @@ export const fil: Translations = {
     distanceLabel: 'Distansya',
     referenceLabel: 'Ref. ng biyahe',
     continueButton: 'Magpatuloy',
+    fareFlaggedNotice: 'Natapos ang biyaheng ito sa ibang lugar kaysa sa iyong nakalaang destinasyon.',
+    reportFareIssueButton: 'Mag-ulat ng problema sa pamasahe',
   },
   rateDriver: {
     tripCompletedEyebrow: 'Tapos na ang biyahe',

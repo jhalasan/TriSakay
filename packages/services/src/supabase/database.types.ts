@@ -1178,8 +1178,11 @@ export type Database = {
           discount_applied: boolean
           discount_percent: number | null
           distance_km: number | null
+          dropoff_lat: number | null
+          dropoff_lng: number | null
           estimated_fare: number | null
           expires_at: string
+          fare_flagged: boolean
           final_fare: number | null
           id: string
           passenger_id: string
@@ -1207,8 +1210,11 @@ export type Database = {
           discount_applied?: boolean
           discount_percent?: number | null
           distance_km?: number | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           estimated_fare?: number | null
           expires_at?: string
+          fare_flagged?: boolean
           final_fare?: number | null
           id?: string
           passenger_id: string
@@ -1236,8 +1242,11 @@ export type Database = {
           discount_applied?: boolean
           discount_percent?: number | null
           distance_km?: number | null
+          dropoff_lat?: number | null
+          dropoff_lng?: number | null
           estimated_fare?: number | null
           expires_at?: string
+          fare_flagged?: boolean
           final_fare?: number | null
           id?: string
           passenger_id?: string
@@ -1819,6 +1828,39 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_driver_directory: {
+        Row: {
+          contact_no: string | null
+          created_at: string | null
+          email: string | null
+          first_name: string | null
+          full_name: string | null
+          id: string | null
+          last_name: string | null
+          status: Database["public"]["Enums"]["account_status"] | null
+        }
+        Insert: {
+          contact_no?: never
+          created_at?: string | null
+          email?: never
+          first_name?: string | null
+          full_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          status?: Database["public"]["Enums"]["account_status"] | null
+        }
+        Update: {
+          contact_no?: never
+          created_at?: string | null
+          email?: never
+          first_name?: string | null
+          full_name?: string | null
+          id?: string | null
+          last_name?: string | null
+          status?: Database["public"]["Enums"]["account_status"] | null
+        }
+        Relationships: []
+      }
       v_driver_earnings: {
         Row: {
           driver_id: string | null
@@ -2128,6 +2170,7 @@ export type Database = {
           driver_rating: number
           duration_minutes: number
           fare: number
+          fare_flagged: boolean
           payment_method: Database["public"]["Enums"]["payment_method"]
           payment_status: Database["public"]["Enums"]["payment_status"]
           pickup_label: string

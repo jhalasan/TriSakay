@@ -122,10 +122,25 @@ export interface UpdatePasswordResult {
   error: string | null;
 }
 
-/** Sets a new password on the current (recovery) session established by verifyPasswordReset(). */
+/**
+ * Sets a new password — used both by the recovery flow (on the temporary
+ * session established by verifyPasswordReset()) and by a voluntary in-app
+ * password change (paired with verifyCurrentPassword() above).
+ *
+ * R7 (existing-system audit): a password change never signed out any other
+ * device the account was logged into elsewhere — exactly the moment that
+ * matters most for an account-takeover recovery ("I think someone else has
+ * my password"), since the whole point of the new password is to lock them
+ * out. `signOut({ scope: 'others' })` revokes every refresh token except the
+ * one that just set the new password, leaving this session untouched.
+ */
 export async function updatePassword(newPassword: string): Promise<UpdatePasswordResult> {
-  const { error } = await getSupabaseClient().auth.updateUser({ password: newPassword });
-  return { error: error?.message ?? null };
+  const client = getSupabaseClient();
+  const { error } = await client.auth.updateUser({ password: newPassword });
+  if (error) return { error: error.message };
+
+  await client.auth.signOut({ scope: 'others' });
+  return { error: null };
 }
 
 /**

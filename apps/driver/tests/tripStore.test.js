@@ -538,6 +538,56 @@ test('reset() clears current and error', async () => {
   assert.equal(useTripStore.getState().error, null);
 });
 
+// R6 (existing-system audit): live signal for a passenger cancelling
+// mid-trip — subscribeToCancellations wires subscribeToTripRideRequests to
+// hydrate(), so any change to this trip's ride_requests re-pulls the whole
+// trip from the backend instead of leaving the driver's screen stale.
+test('subscribeToCancellations calls hydrate() on every change and unsubscribeFromCancellations tears the channel down', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  let capturedChannelName = null;
+  let capturedFilter = null;
+  let capturedHandler = null;
+  let removedChannel = null;
+  const fakeChannel = {
+    on: (_event, filterArgs, handler) => {
+      capturedFilter = filterArgs;
+      capturedHandler = handler;
+      return fakeChannel;
+    },
+    subscribe: () => fakeChannel,
+  };
+
+  __setSupabaseClientForTests({
+    channel: (name) => {
+      capturedChannelName = name;
+      return fakeChannel;
+    },
+    removeChannel: (channel) => {
+      removedChannel = channel;
+    },
+  });
+
+  let hydrateCalls = 0;
+  useTripStore.setState({ hydrate: async () => { hydrateCalls += 1; } });
+
+  useTripStore.getState().subscribeToCancellations('trip-9');
+
+  assert.equal(capturedChannelName, 'trip_ride_requests_trip-9');
+  assert.equal(capturedFilter.filter, 'trip_id=eq.trip-9');
+  assert.ok(capturedHandler);
+
+  capturedHandler();
+  // subscribeToTripRideRequests's onChange is fire-and-forget from the
+  // store's side (`() => void get().hydrate()`) — flush microtasks.
+  await Promise.resolve();
+  assert.equal(hydrateCalls, 1);
+
+  useTripStore.getState().unsubscribeFromCancellations();
+  assert.equal(removedChannel, fakeChannel);
+});
+
 test('useHistoryStore.load() fetches and maps completed/cancelled trips from the RPC', async () => {
   const { useHistoryStore } = await import('../src/store/useHistoryStore.ts');
   const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');

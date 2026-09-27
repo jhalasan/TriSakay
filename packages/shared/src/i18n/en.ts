@@ -392,6 +392,11 @@ export const en = {
     distanceLabel: 'Distance',
     referenceLabel: 'Trip ref.',
     continueButton: 'Continue',
+    // Y10 (existing-system audit): shown when the driver's drop-off point was
+    // recorded well away from the booked destination, so the passenger can
+    // flag it without having to already know that's an option.
+    fareFlaggedNotice: 'This trip ended somewhere different from your booked destination.',
+    reportFareIssueButton: 'Report a fare issue',
   },
   rateDriver: {
     tripCompletedEyebrow: 'Trip completed',

@@ -23,7 +23,9 @@ function fakeClient() {
           }),
         };
       }
-      if (table === 'users') {
+      // Y6 (existing-system audit): driver contact lookup now goes through
+      // admin_driver_directory (a masked view), not raw `users`.
+      if (table === 'admin_driver_directory') {
         return { select: () => ({ in: async () => ({ data: [{ id: 'drv1', full_name: 'Ariel Cabahug', contact_no: '0917-555-0100' }], error: null }) }) };
       }
       if (table === 'tricycles') {
@@ -138,7 +140,7 @@ test('listPendingVerifications includes already-decided cases, not just pending 
           }),
         };
       }
-      if (table === 'users') return { select: () => ({ in: async () => ({ data: [{ id: 'drv1', full_name: 'Ariel Cabahug', contact_no: '0917-555-0100' }], error: null }) }) };
+      if (table === 'admin_driver_directory') return { select: () => ({ in: async () => ({ data: [{ id: 'drv1', full_name: 'Ariel Cabahug', contact_no: '0917-555-0100' }], error: null }) }) };
       if (table === 'tricycles') return { select: () => ({ in: () => ({ eq: async () => ({ data: [], error: null }) }) }) };
       if (table === 'driver_documents') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       throw new Error(`unexpected table ${table}`);

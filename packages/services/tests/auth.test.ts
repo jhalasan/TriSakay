@@ -375,31 +375,44 @@ test('verifyPasswordReset returns the error message for an invalid or expired co
   assert.equal(result.session, null);
 });
 
-test('updatePassword sends the new password to Supabase and reports no error on success', async () => {
+// R7 (existing-system audit): a password change now also signs out every
+// OTHER session on the account, so a stolen/leaked password can't keep an
+// attacker's session alive past the moment the real owner changes it.
+test('updatePassword sends the new password to Supabase, signs out other sessions, and reports no error on success', async () => {
   let capturedArgs: any = null;
+  let capturedSignOutArgs: unknown = 'not-called';
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       updateUser: async (args) => {
         capturedArgs = args;
         return { data: {}, error: null };
       },
+      signOut: async (args) => {
+        capturedSignOutArgs = args;
+      },
     })
   );
 
   const result = await updatePassword('newSecret1');
   assert.deepEqual(capturedArgs, { password: 'newSecret1' });
+  assert.deepEqual(capturedSignOutArgs, { scope: 'others' });
   assert.equal(result.error, null);
 });
 
-test('updatePassword returns the error message on failure', async () => {
+test('updatePassword returns the error message on failure without signing anyone out', async () => {
+  let signOutCalled = false;
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       updateUser: async () => ({ data: {}, error: { message: 'Password too weak' } }),
+      signOut: async () => {
+        signOutCalled = true;
+      },
     })
   );
 
   const result = await updatePassword('123');
   assert.equal(result.error, 'Password too weak');
+  assert.equal(signOutCalled, false);
 });
 
 test('onAuthStateChange forwards session changes and returns an unsubscribe function', () => {

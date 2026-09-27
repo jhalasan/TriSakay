@@ -34,4 +34,6 @@ export interface RideLogRow {
   cancelledAt: string | null;
   finalFare: number | null;
   hasEmergencyAlert: boolean;
+  /** Y10 (existing-system audit): the driver completed this leg more than ~500m from the booked destination. */
+  fareFlagged: boolean;
 }

@@ -6,17 +6,18 @@ import { listDriversForAdmin } from '../src/admin/drivers.ts';
 test('listDriversForAdmin merges users + driver_profiles + tricycles by id', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'users') {
+      // Y6 (existing-system audit): listDriversForAdmin now reads from
+      // admin_driver_directory (a masked view scoped to role='driver'
+      // server-side), not a plain `users` select filtered by `.eq('role', ...)`.
+      if (table === 'admin_driver_directory') {
         return {
           select: () => ({
-            eq: () => ({
-              order: async () => ({
-                data: [
-                  { id: 'd1', first_name: 'Ronnie', last_name: 'Bautista', full_name: 'Ronnie Bautista', contact_no: '0917-000-0001', email: 'ronnie@example.com', status: 'active', created_at: '2026-01-01T00:00:00.000Z' },
-                  { id: 'd2', first_name: 'Ariel', last_name: 'Cabahug', full_name: 'Ariel Cabahug', contact_no: null, email: 'ariel@example.com', status: 'active', created_at: '2026-02-01T00:00:00.000Z' },
-                ],
-                error: null,
-              }),
+            order: async () => ({
+              data: [
+                { id: 'd1', first_name: 'Ronnie', last_name: 'Bautista', full_name: 'Ronnie Bautista', contact_no: '0917-000-0001', email: 'ronnie@example.com', status: 'active', created_at: '2026-01-01T00:00:00.000Z' },
+                { id: 'd2', first_name: 'Ariel', last_name: 'Cabahug', full_name: 'Ariel Cabahug', contact_no: null, email: 'ariel@example.com', status: 'active', created_at: '2026-02-01T00:00:00.000Z' },
+              ],
+              error: null,
             }),
           }),
         };
@@ -99,7 +100,7 @@ test('listDriversForAdmin returns an empty array without querying profiles/tricy
   let profilesQueried = false;
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'users') return { select: () => ({ eq: () => ({ order: async () => ({ data: [], error: null }) }) }) };
+      if (table === 'admin_driver_directory') return { select: () => ({ order: async () => ({ data: [], error: null }) }) };
       profilesQueried = true;
       throw new Error(`should not query ${table}`);
     },
@@ -113,7 +114,7 @@ test('listDriversForAdmin returns an empty array without querying profiles/tricy
 
 test('listDriversForAdmin returns { data: [], error } when the users query fails', async () => {
   __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ eq: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
+    from: () => ({ select: () => ({ order: async () => ({ data: null, error: { message: 'connection refused' } }) }) }),
   } as any);
 
   const { data, error } = await listDriversForAdmin();
@@ -124,8 +125,8 @@ test('listDriversForAdmin returns { data: [], error } when the users query fails
 test('listDriversForAdmin returns { data: [], error } when the tricycles query fails', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'users') {
-        return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'd1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
+      if (table === 'admin_driver_directory') {
+        return { select: () => ({ order: async () => ({ data: [{ id: 'd1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) };
       }
       if (table === 'driver_profiles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       if (table === 'tricycles') return { select: () => ({ in: async () => ({ data: null, error: { message: 'connection refused' } }) }) };
@@ -142,8 +143,8 @@ test('listDriversForAdmin returns { data: [], error } when the tricycles query f
 test('listDriversForAdmin returns { data: [], error } when the trip-count RPC fails', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'users') {
-        return { select: () => ({ eq: () => ({ order: async () => ({ data: [{ id: 'd1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) }) };
+      if (table === 'admin_driver_directory') {
+        return { select: () => ({ order: async () => ({ data: [{ id: 'd1', full_name: 'X', contact_no: null, email: 'x@example.com', status: 'active', created_at: 'now' }], error: null }) }) };
       }
       if (table === 'driver_profiles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };
       if (table === 'tricycles') return { select: () => ({ in: async () => ({ data: [], error: null }) }) };

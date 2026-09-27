@@ -6,7 +6,8 @@ export interface AdminDriverRow {
   lastName: string;
   fullName: string;
   contactNo: string | null;
-  email: string;
+  /** Y6: null unless the caller is a pso_supervisor/admin — masked by admin_driver_directory. */
+  email: string | null;
   accountStatus: 'active' | 'flagged' | 'suspended' | 'deactivated';
   verificationStatus: 'unsubmitted' | 'pending' | 'approved' | 'rejected';
   ratingAvg: number;
@@ -43,16 +44,19 @@ export interface ListDriversForAdminResult {
 export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> {
   const client = getSupabaseClient();
 
+  // Y6 (existing-system audit): admin_driver_directory (a security_invoker
+  // view) masks contact_no/email to null for anyone but a supervisor, unlike
+  // a plain `public.users` select which had no such masking — mirrors
+  // admin_passenger_directory's own existing pattern for passengers.
   const { data: users, error: usersError } = await client
-    .from('users')
+    .from('admin_driver_directory')
     .select('id, first_name, last_name, full_name, contact_no, email, status, created_at')
-    .eq('role', 'driver')
     .order('created_at', { ascending: false });
 
   if (usersError) return { data: [], error: usersError.message };
   if (!users || users.length === 0) return { data: [], error: null };
 
-  const ids = users.map((u) => u.id);
+  const ids = users.map((u) => u.id!);
 
   const [
     { data: profiles, error: profilesError },
@@ -73,23 +77,23 @@ export async function listDriversForAdmin(): Promise<ListDriversForAdminResult> 
   const tripCountByDriverId = new Map((tripCounts ?? []).map((r) => [r.driver_id, Number(r.trip_count)]));
 
   const rows = users.map((u) => {
-    const profile = profileByUserId.get(u.id);
-    const tricycle = tricycleByDriverId.get(u.id);
+    const profile = profileByUserId.get(u.id!);
+    const tricycle = tricycleByDriverId.get(u.id!);
     return {
-      id: u.id,
-      firstName: u.first_name,
-      lastName: u.last_name,
+      id: u.id!,
+      firstName: u.first_name!,
+      lastName: u.last_name!,
       fullName: u.full_name!,
       contactNo: u.contact_no,
       email: u.email,
-      accountStatus: u.status,
+      accountStatus: u.status!,
       verificationStatus: profile?.verification_status ?? 'unsubmitted',
       ratingAvg: profile ? Number(profile.rating_avg) : 0,
       ratingCount: profile?.rating_count ?? 0,
       plateNo: tricycle?.plate_no ?? null,
       cluster: tricycle?.cluster ?? null,
-      tripCount: tripCountByDriverId.get(u.id) ?? 0,
-      createdAt: u.created_at,
+      tripCount: tripCountByDriverId.get(u.id!) ?? 0,
+      createdAt: u.created_at!,
     };
   });
 

@@ -12,6 +12,7 @@ import { StatusBar } from 'expo-status-bar';
 import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
 import { colors, fontFamily, PASSENGER_FINISHED_MESSAGE, PASSENGER_STEPS, PASSENGER_WELCOME_BODY, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { PASSENGER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
@@ -275,6 +276,32 @@ function useNotificationsSync(sessionUserId: string | null) {
 }
 
 /**
+ * R7 (existing-system audit): supabase-js's `autoRefreshToken` only actually
+ * ticks while something has called `startAutoRefresh()` — the standard React
+ * Native caveat from Supabase's own docs. Without stopping it in the
+ * background and restarting it in the foreground, a token nearing expiry
+ * while the app is backgrounded is never refreshed, so the first API call
+ * after returning to foreground can fail with a stale-token 401 instead of
+ * a transparent refresh.
+ */
+function useSupabaseAutoRefresh() {
+  useEffect(() => {
+    const client = getSupabaseClient();
+    if (AppState.currentState === 'active') void client.auth.startAutoRefresh();
+
+    const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') {
+        void client.auth.startAutoRefresh();
+      } else {
+        void client.auth.stopAutoRefresh();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
+}
+
+/**
  * Global connectivity listener — kept subscribed for the whole session (not
  * scoped to a single screen) since the offline strip and tab-bar dimming
  * must persist across every tab, per the redesign's system-states spec.
@@ -369,6 +396,7 @@ function RootLayoutNav() {
   const accountBlocked = accountStatus === 'suspended' || accountStatus === 'deactivated';
   const tripStatus = useBookingStore((state) => state.tripStatus);
   const hasActiveTrip = tripStatus !== 'idle' && tripStatus !== 'rated';
+  useSupabaseAutoRefresh();
   useConsentSync(sessionUserId);
   useBookingStoreReset(sessionUserId);
   useNotificationsSync(sessionUserId);

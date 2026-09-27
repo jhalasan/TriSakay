@@ -66,7 +66,9 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
     { data: tricycles, error: tricyclesError },
     { data: documents, error: documentsError },
   ] = await Promise.all([
-    client.from('users').select('id, full_name, contact_no').in('id', driverIds),
+    // Y6 (existing-system audit): admin_driver_directory masks contact_no to
+    // null for anyone but a supervisor — see admin/drivers.ts's own comment.
+    client.from('admin_driver_directory').select('id, full_name, contact_no').in('id', driverIds),
     client
       .from('tricycles')
       .select('id, driver_id, plate_no, mtop_no, mtop_expiry_date, cluster')

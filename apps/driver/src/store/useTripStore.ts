@@ -6,6 +6,7 @@ import {
   endTrip as endTripRpc,
   getActiveTripForDriver,
   markArrived as markArrivedRpc,
+  subscribeToTripRideRequests,
 } from '@trisakay/services/src/booking/index.ts';
 import { confirmCashPayment } from '@trisakay/services/src/payments/index.ts';
 import { completeHandoff as completeHandoffRpc, releaseToPool } from '@trisakay/services/src/transfers/index.ts';
@@ -82,10 +83,21 @@ interface TripState {
   hydrate: () => Promise<void>;
   /** Clears trip state on logout/session change — without this, a new driver signing in on the same device could inherit the previous driver's in-progress trip. */
   reset: () => void;
+  /**
+   * R6 (existing-system audit): live signal for a passenger cancelling
+   * mid-trip — re-hydrates the whole trip on any change to one of this
+   * trip's ride_requests rows, rather than trying to patch a single
+   * passenger locally. Owned by tripId, not by the trip existing at all,
+   * since a driver can end up back on this screen for the same trip more
+   * than once — see _layout.tsx's useTripCancellationSync.
+   */
+  subscribeToCancellations: (tripId: string) => void;
+  unsubscribeFromCancellations: () => void;
 }
 
 export const useTripStore = create<TripState>()((set, get) => {
   let hydrateEpoch = 0;
+  let stopRealtime: (() => void) | null = null;
 
   return {
     current: null,
@@ -394,6 +406,20 @@ export const useTripStore = create<TripState>()((set, get) => {
     reset: () => {
       hydrateEpoch += 1; // discard any in-flight hydrate() from the previous session
       set({ current: null, error: null });
+    },
+
+    subscribeToCancellations: (tripId) => {
+      stopRealtime?.();
+      stopRealtime = subscribeToTripRideRequests(
+        tripId,
+        () => void get().hydrate(),
+        (message) => set({ error: message }),
+      );
+    },
+
+    unsubscribeFromCancellations: () => {
+      stopRealtime?.();
+      stopRealtime = null;
     },
   };
 });

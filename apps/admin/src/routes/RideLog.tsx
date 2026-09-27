@@ -90,6 +90,7 @@ export function RideLog() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
           <Badge label={titleCaseLabel(r.status)} tone={STATUS_TONE[r.status]} />
           {r.hasEmergencyAlert && <Badge label="SOS" tone="danger" />}
+          {r.fareFlagged && <Badge label="Fare flagged" tone="warn" />}
         </div>
       ),
     },
@@ -171,6 +172,7 @@ export function RideLog() {
             <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
               <Badge label={titleCaseLabel(selected.status)} tone={STATUS_TONE[selected.status]} />
               {selected.hasEmergencyAlert && <Badge label="SOS" tone="danger" />}
+              {selected.fareFlagged && <Badge label="Fare flagged" tone="warn" />}
             </div>
           }
           onClose={() => setSelectedId(null)}

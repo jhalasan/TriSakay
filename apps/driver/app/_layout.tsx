@@ -9,8 +9,10 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFonts } from 'expo-font';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
 import { ConfirmModal, colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
@@ -109,6 +111,32 @@ function useProtectedRoute(
       router.replace('/(tabs)/dashboard');
     }
   }, [isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip, root, router]);
+}
+
+/**
+ * R7 (existing-system audit): supabase-js's `autoRefreshToken` only actually
+ * ticks while something has called `startAutoRefresh()` — the standard React
+ * Native caveat from Supabase's own docs. Without stopping it in the
+ * background and restarting it in the foreground, a token nearing expiry
+ * while the app is backgrounded is never refreshed, so the first API call
+ * after returning to foreground can fail with a stale-token 401 instead of
+ * a transparent refresh.
+ */
+function useSupabaseAutoRefresh() {
+  useEffect(() => {
+    const client = getSupabaseClient();
+    if (AppState.currentState === 'active') void client.auth.startAutoRefresh();
+
+    const subscription = AppState.addEventListener('change', (state: AppStateStatus) => {
+      if (state === 'active') {
+        void client.auth.startAutoRefresh();
+      } else {
+        void client.auth.stopAutoRefresh();
+      }
+    });
+
+    return () => subscription.remove();
+  }, []);
 }
 
 /**
@@ -269,6 +297,26 @@ function useTripSync(sessionUserId: string | null) {
 }
 
 /**
+ * R6 (existing-system audit): "the driver isn't told live when a passenger
+ * cancels" — same session-level ownership as useRequestsSync/
+ * useTransferInvitesSync above, keyed by tripId rather than sessionUserId
+ * since it only makes sense while a trip is actually active, and needs to
+ * re-subscribe if the driver ends one trip and starts another.
+ */
+function useTripCancellationSync(tripId: string | null) {
+  const subscribe = useTripStore((state) => state.subscribeToCancellations);
+  const unsubscribe = useTripStore((state) => state.unsubscribeFromCancellations);
+
+  useEffect(() => {
+    if (tripId === null) {
+      unsubscribe();
+      return;
+    }
+    subscribe(tripId);
+  }, [tripId, subscribe, unsubscribe]);
+}
+
+/**
  * Complaints/History/Earnings/Ratings tab screens only ever `load()` once on
  * mount (`useEffect(() => { void load(); }, [])`), and React Navigation's
  * tab screens stay mounted across a logout that doesn't unmount them — so
@@ -412,10 +460,12 @@ function RootLayoutNav() {
   const accountStatus = useAuthStore((state) => state.user?.accountStatus);
   const accountBlocked = accountStatus === 'suspended' || accountStatus === 'deactivated';
   const hasActiveTrip = useTripStore((state) => state.current !== null);
+  const activeTripId = useTripStore((state) => state.current?.tripId ?? null);
   const isAvailable = useDriverStore((state) => state.isAvailable);
   const locationTrackingEnabled = useSettingsStore((state) => state.locationTrackingEnabled);
   const consentStatus = useConsentStore((state) => state.status);
   const verificationStatus = useVerificationStore((state) => state.status);
+  useSupabaseAutoRefresh();
   useConnectivitySync();
   useConsentSync(sessionUserId);
   useVerificationSync(sessionUserId);
@@ -427,6 +477,7 @@ function RootLayoutNav() {
   useDriverLocationSync(sessionUserId, isAvailable, locationTrackingEnabled);
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);
+  useTripCancellationSync(activeTripId);
   useNotificationsSync(sessionUserId);
   usePushNotificationsSync(sessionUserId);
   useProtectedRoute(isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip);

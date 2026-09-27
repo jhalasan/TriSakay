@@ -36,6 +36,7 @@ test('listPassengerTripHistory maps a full RPC row and picks the right date', as
               discount_applied: true,
               discount_percent: 20,
               cancel_reason: null,
+              fare_flagged: true,
             },
           ],
           error: null,
@@ -70,6 +71,7 @@ test('listPassengerTripHistory maps a full RPC row and picks the right date', as
       discountApplied: true,
       discountPercent: 20,
       cancelReason: null,
+      fareFlagged: true,
     },
   ]);
 });
@@ -132,6 +134,7 @@ test('listPassengerTripHistory handles a cancelled-before-assignment row with no
       discountApplied: false,
       discountPercent: null,
       cancelReason: 'No drivers available',
+      fareFlagged: false,
     },
   ]);
 });
@@ -227,6 +230,7 @@ test('getPassengerRideReceipt asks for exactly one row scoped to the given ride'
     discountApplied: true,
     discountPercent: 20,
     cancelReason: null,
+    fareFlagged: false,
   });
 });
 

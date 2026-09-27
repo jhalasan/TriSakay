@@ -4,7 +4,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import {
   listMyComplaints,
   submitComplaint,
@@ -113,7 +113,12 @@ export default function ComplaintsScreen() {
     }, [])
   );
 
-  const [relatedTripId, setRelatedTripId] = useState<string | null>(null);
+  // Y10 (existing-system audit): trip-complete.tsx's "Report a fare issue"
+  // deep-links here with the flagged ride and 'fare' preselected, so the
+  // passenger doesn't have to already know this screen exists or hunt for
+  // the right ride in the picker themselves.
+  const params = useLocalSearchParams<{ rideRequestId?: string; category?: ComplaintCategory }>();
+  const [relatedTripId, setRelatedTripId] = useState<string | null>(params.rideRequestId ?? null);
   // P2 (2026-09-15 launch audit): "Complaints require a completed trip — a
   // passenger who was never picked up cannot file one." The backend never
   // actually required this (complaints.ride_request_id is nullable, and
@@ -125,7 +130,7 @@ export default function ComplaintsScreen() {
   // being unable to submit anything at all.
   const [generalComplaint, setGeneralComplaint] = useState(false);
   const [pickerOpen, setPickerOpen] = useState(false);
-  const [categoryState, setCategory] = useState<ComplaintCategory>('other');
+  const [categoryState, setCategory] = useState<ComplaintCategory>(params.category ?? 'other');
   const category = tutorialDemo.active ? tutorialDemo.data.category : categoryState;
   const [categoryPickerOpen, setCategoryPickerOpen] = useState(false);
   const [subject, setSubject] = useState('');

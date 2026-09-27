@@ -15,6 +15,8 @@ export interface AdminRideLogRow {
   cancelledAt: string | null;
   finalFare: number | null;
   hasEmergencyAlert: boolean;
+  /** Y10 (existing-system audit): true when the driver completed this leg more than ~500m from the booked destination. */
+  fareFlagged: boolean;
 }
 
 export interface ListRideLogForAdminResult {
@@ -38,7 +40,7 @@ export async function listRideLogForAdmin(sinceIso: string): Promise<ListRideLog
 
   const { data: rides, error: ridesError } = await client
     .from('ride_requests')
-    .select('id, passenger_id, trip_id, status, pickup_label, dest_label, requested_at, completed_at, cancelled_at, final_fare')
+    .select('id, passenger_id, trip_id, status, pickup_label, dest_label, requested_at, completed_at, cancelled_at, final_fare, fare_flagged')
     .gte('requested_at', sinceIso)
     .order('requested_at', { ascending: false });
 
@@ -83,6 +85,7 @@ export async function listRideLogForAdmin(sinceIso: string): Promise<ListRideLog
       cancelledAt: r.cancelled_at,
       finalFare: r.final_fare,
       hasEmergencyAlert: alertedRideIds.has(r.id),
+      fareFlagged: r.fare_flagged,
     };
   });
 

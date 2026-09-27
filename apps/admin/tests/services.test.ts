@@ -33,19 +33,19 @@ function fakeAccountsClient() {
 
   return {
     from: (table: string) => {
-      if (table === 'users') {
-        return {
-          select: () => ({
-            eq: (_col: string, value: string) => ({
-              order: async () => ({ data: users.filter((u) => u.role === value), error: null }),
-            }),
-          }),
-        };
-      }
       if (table === 'admin_passenger_directory') {
         return {
           select: () => ({
             order: async () => ({ data: users.filter((u) => u.role === 'passenger'), error: null }),
+          }),
+        };
+      }
+      // Y6 (existing-system audit): admin_driver_directory mirrors
+      // admin_passenger_directory's own masked-view shape for drivers.
+      if (table === 'admin_driver_directory') {
+        return {
+          select: () => ({
+            order: async () => ({ data: users.filter((u) => u.role === 'driver'), error: null }),
           }),
         };
       }
@@ -151,7 +151,9 @@ function fakeVerificationClient() {
           }),
         };
       }
-      if (table === 'users') {
+      // Y6 (existing-system audit): admin/verification.ts now reads driver
+      // contact info through admin_driver_directory, not raw `users`.
+      if (table === 'admin_driver_directory') {
         return { select: () => ({ in: async () => ({ data: users, error: null }) }) };
       }
       if (table === 'tricycles') {
