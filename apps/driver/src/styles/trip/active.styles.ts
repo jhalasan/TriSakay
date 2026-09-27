@@ -42,6 +42,7 @@ export const styles = StyleSheet.create({
   passengerInfo: { flex: 1, minWidth: 0 },
   passengerName: { ...typography.bodyStrong, color: colors.ink },
   seatsLabel: { ...typography.caption, color: colors.inkSoft },
+  nextStopLabel: { ...typography.caption, fontWeight: '700', color: colors.accentGreenPressed },
   ongoingChip: { backgroundColor: colors.accentGreenSoft, borderRadius: radius.pill, paddingVertical: 4, paddingHorizontal: spacing.sm + 1 },
   ongoingChipText: { ...typography.label, fontSize: 10, color: colors.accentGreenPressed },
   cashRow: {

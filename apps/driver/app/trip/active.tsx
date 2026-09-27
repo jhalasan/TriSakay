@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
+import { sortByNextStop } from '@trisakay/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import { Linking, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
@@ -69,6 +70,19 @@ export default function ActiveTripScreen() {
   // ScrollView so they're always reachable without scrolling.
   const sheetMaxHeight = Math.max(320, windowHeight - insets.top - 96);
 
+  // D2 (UAT panel, Adrales): passengers ordered by their next stop, with the
+  // transfer/overdue priorities — see packages/shared/src/utils/nextStop.ts.
+  // The last shown order feeds the 150 m no-jump rule. Recomputed on each
+  // GPS update, which is also when the overdue check re-evaluates.
+  const previousOrderRef = useRef<string[]>([]);
+  const passengers = trip?.passengers;
+  const sortedStops = useMemo(() => {
+    const driverPos = driverLat !== null && driverLng !== null ? { lat: driverLat, lng: driverLng } : null;
+    const sorted = sortByNextStop(passengers ?? [], driverPos, previousOrderRef.current);
+    previousOrderRef.current = sorted.map((s) => s.passenger.id);
+    return sorted;
+  }, [passengers, driverLat, driverLng]);
+
   if (!trip) {
     return <Redirect href="/(tabs)/dashboard" />;
   }
@@ -76,24 +90,12 @@ export default function ActiveTripScreen() {
   const incoming = pending[0];
   const hasPassengers = trip.passengers.length > 0;
 
-  // P1-14 (2026-09-15 launch audit): the map's routing target — the first
-  // 'assigned' passenger's pickup point (not yet picked up), or else the
-  // first 'ongoing' passenger's destination. With several passengers
-  // aboard simultaneously (FR-2.5c) this points at only one of them; a
-  // real multi-stop router is out of scope, same trigonometry-only
-  // principle the matching heuristic itself uses.
-  const routingPassenger =
-    trip.passengers.find((p) => p.status === 'assigned') ?? trip.passengers.find((p) => p.status === 'ongoing');
-  const targetLat = routingPassenger
-    ? routingPassenger.status === 'assigned'
-      ? routingPassenger.pickupLat
-      : routingPassenger.destLat
-    : null;
-  const targetLng = routingPassenger
-    ? routingPassenger.status === 'assigned'
-      ? routingPassenger.pickupLng
-      : routingPassenger.destLng
-    : null;
+  // P1-14 (2026-09-15 launch audit) + D2: the map's routing target and the
+  // Navigate button follow the top ("Next stop") card — its pickup while
+  // waiting, its destination once on board.
+  const routingPassenger = sortedStops[0]?.passenger;
+  const targetLat = sortedStops[0]?.stopLat ?? null;
+  const targetLng = sortedStops[0]?.stopLng ?? null;
   const hasTarget = targetLat !== null && targetLng !== null;
   const hasDriverPosition = driverLat !== null && driverLng !== null;
 
@@ -219,7 +221,7 @@ export default function ActiveTripScreen() {
           </View>
         )}
 
-        {trip.passengers.map((passenger, index) => {
+        {sortedStops.map(({ passenger, distanceKm }, index) => {
           const isCash = passenger.paymentMethod === 'cash';
           const isCompleting = completingIds.has(passenger.id);
           const isStarting = startingIds.has(passenger.id);
@@ -245,6 +247,13 @@ export default function ActiveTripScreen() {
                     {passenger.fare !== null ? formatCurrency(passenger.fare) : '—'}
                     {!isCash ? ` · ${t.driver.tripActive.gcashConfirmedInline}` : ''}
                   </Text>
+                  {(index === 0 || distanceKm !== null) && (
+                    <Text style={index === 0 ? styles.nextStopLabel : styles.seatsLabel}>
+                      {[index === 0 ? t.driver.tripActive.nextStop : null, distanceKm !== null ? `${distanceKm.toFixed(1)} km` : null]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </Text>
+                  )}
                 </View>
                 {passenger.status === 'ongoing' && (
                   <View style={styles.ongoingChip}>

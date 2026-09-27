@@ -27,6 +27,9 @@ function passengerFromRequest(request: PendingRequest): ActivePassenger {
     pickupLng: request.pickupLng ?? null,
     destLat: request.destLat ?? null,
     destLng: request.destLng ?? null,
+    assignedAt: new Date().toISOString(),
+    pickedUpAt: null,
+    distanceKm: null,
   };
 }
 
@@ -156,7 +159,7 @@ export const useTripStore = create<TripState>()((set, get) => {
             ? {
                 current: {
                   ...state.current,
-                  passengers: state.current.passengers.map((p) => (p.id === rideRequestId ? { ...p, status: 'ongoing' } : p)),
+                  passengers: state.current.passengers.map((p) => (p.id === rideRequestId ? { ...p, status: 'ongoing', pickedUpAt: new Date().toISOString() } : p)),
                 },
                 error: null,
               }
@@ -275,6 +278,9 @@ export const useTripStore = create<TripState>()((set, get) => {
               pickupLng: p.pickupLng,
               destLat: p.destLat,
               destLng: p.destLng,
+              assignedAt: p.assignedAt,
+              pickedUpAt: p.pickedUpAt,
+              distanceKm: p.distanceKm,
             })),
           },
           error: null,

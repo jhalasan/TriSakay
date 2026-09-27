@@ -131,6 +131,21 @@ Requests are kept only if they're within a configurable search radius (default 3
 
 **Honest framing for "is this AI/machine learning?"**: No. It's rule-based geometry — Haversine distance + bearing + a detour-ratio cutoff — not a trained model, not demand prediction, not dynamic pricing. The code itself calls this a "heuristic," not an "algorithm" or "AI," and is explicitly documented as provisional, pending real usage data to tune the thresholds. Be upfront about this rather than overselling it — it's a legitimate, real piece of engineering, just not machine learning.
 
+### Stop order when carrying several passengers (D2, added after the Adrales panel)
+
+**In plain words:** when a driver has several passengers, the app lists them by who the driver should serve next, and points the map and the Navigate button at that stop. Each passenger's "next stop" is their drop-off if they're on board, or their pickup if they're still waiting.
+
+**The rule, in order:**
+1. **Transfer pickup first.** A passenger waiting at a transfer handoff point (their first tricycle broke down or was full) goes to the top, because they're stranded. Exception: if an on-board passenger's drop-off is 300 m or less away, drop them off first.
+2. **Then anyone overdue.** A passenger who has taken more than 1.5× the normal time for their distance comes next. "Normal time" is the distance at an assumed tricycle speed of 20 km/h, and never less than 5 minutes. On board, the clock starts at pickup and uses the booked ride distance. Waiting, the clock starts when the driver accepted and uses the driver's current distance to the pickup. This stops a passenger from being pushed back forever by new passengers picked up mid-trip.
+3. **Then nearest first.** Everyone else by straight-line (Haversine) distance from the driver. A card only moves above another if its stop is at least 150 m closer, so GPS jitter doesn't keep reshuffling the list.
+
+**What to call it:** a **greedy nearest-neighbour heuristic with safety and fairness priorities**. "Greedy" because it always picks the best stop *right now* without planning the whole route. Straight-line distance is used on purpose: it's free (no Maps API call on every GPS update) and accurate enough for short in-town tricycle trips.
+
+**Known limitation / future work:** nearest-first can make the driver double back. The optimal version tries every order of the (at most 6) stops, keeps only the orders where each passenger's pickup comes before their drop-off, and picks the shortest total distance. With 6 stops that's small enough to compute on the phone, but it wasn't built for this deadline.
+
+**Code:** `packages/shared/src/utils/nextStop.ts` (`sortByNextStop`), unit-tested in `packages/shared/tests/nextStop.test.ts`; used by `apps/driver/app/trip/active.tsx`.
+
 ---
 
 ## 9. Fare calculation — a fixed formula, not a lookup table, not surge pricing

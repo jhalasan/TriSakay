@@ -6,3 +6,4 @@ export function getAppName(app: AppType) {
 }
 
 export * from './geo.ts';
+export * from './nextStop.ts';

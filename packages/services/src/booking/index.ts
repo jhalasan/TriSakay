@@ -489,6 +489,10 @@ export interface ActiveTripPassenger {
   pickupLng: number | null;
   destLat: number | null;
   destLng: number | null;
+  /** D2: the nearest-next-stop sort's overdue clock and ride distance. */
+  assignedAt: string | null;
+  pickedUpAt: string | null;
+  distanceKm: number | null;
 }
 
 export interface ActiveTripForDriver {
@@ -547,6 +551,10 @@ export async function getActiveTripForDriver(): Promise<GetActiveTripForDriverRe
         pickupLng: row.pickup_lng,
         destLat: row.dest_lat,
         destLng: row.dest_lng,
+        // `?? null`: until the D2 migration is applied live these columns are absent.
+        assignedAt: row.assigned_at ?? null,
+        pickedUpAt: row.picked_up_at ?? null,
+        distanceKm: row.distance_km ?? null,
       })),
     },
     error: null,

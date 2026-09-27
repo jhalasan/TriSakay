@@ -942,6 +942,7 @@ export const en = {
       passengerPlural: 'passengers',
       ongoingStatus: 'Ongoing',
       gcashConfirmedInline: 'GCash confirmed',
+      nextStop: 'Next stop',
     },
     complaints: {
       title: 'Complaints',

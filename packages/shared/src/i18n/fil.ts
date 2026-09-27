@@ -925,6 +925,7 @@ export const fil: Translations = {
       passengerPlural: 'pasahero',
       ongoingStatus: 'Ongoing',
       gcashConfirmedInline: 'Nakumpirma ang GCash',
+      nextStop: 'Susunod na hintuan',
     },
     complaints: {
       title: 'Mga Reklamo',

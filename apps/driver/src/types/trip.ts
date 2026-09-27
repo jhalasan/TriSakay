@@ -25,6 +25,10 @@ export interface ActivePassenger {
   pickupLng: number | null;
   destLat: number | null;
   destLng: number | null;
+  /** D2: when the ride was accepted / picked up, and its booked distance — the nearest-next-stop sort's overdue rule. */
+  assignedAt: string | null;
+  pickedUpAt: string | null;
+  distanceKm: number | null;
 }
 
 /**

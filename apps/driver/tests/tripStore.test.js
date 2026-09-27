@@ -24,8 +24,17 @@ function passenger(id, overrides = {}) {
     pickupLng: null,
     destLat: null,
     destLng: null,
+    assignedAt: null,
+    pickedUpAt: null,
+    distanceKm: null,
     ...overrides,
   };
+}
+
+/** assignedAt is stamped with the current time on accept — check it's a real timestamp, then compare the rest. */
+function withoutAssignedAt(p) {
+  assert.ok(!Number.isNaN(Date.parse(p.assignedAt)), `assignedAt should be an ISO timestamp, got ${p.assignedAt}`);
+  return { ...p, assignedAt: null };
 }
 
 test('startTrip populates current with one passenger from a pending request and a trip id', async () => {
@@ -40,7 +49,7 @@ test('startTrip populates current with one passenger from a pending request and 
   const current = useTripStore.getState().current;
   assert.equal(current.tripId, 'trip-9');
   assert.equal(current.passengers.length, 1);
-  assert.deepEqual(current.passengers[0], passenger('req-9'));
+  assert.deepEqual(withoutAssignedAt(current.passengers[0]), passenger('req-9'));
 });
 
 test('addPassenger appends a second leg onto the existing trip session (FR-2.5c mid-trip pickup)', async () => {
@@ -56,7 +65,7 @@ test('addPassenger appends a second leg onto the existing trip session (FR-2.5c 
   const current = useTripStore.getState().current;
   assert.equal(current.passengers.length, 2);
   assert.equal(current.passengers[0].id, 'req-9');
-  assert.deepEqual(current.passengers[1], passenger('req-10', { seats: 1, paymentMethod: 'gcash', fare: 20 }));
+  assert.deepEqual(withoutAssignedAt(current.passengers[1]), passenger('req-10', { seats: 1, paymentMethod: 'gcash', fare: 20 }));
 });
 
 test('addPassenger is a no-op when there is no active trip', async () => {
@@ -297,6 +306,9 @@ test('startPassenger marks the named passenger ongoing on success, leaves others
   const current = useTripStore.getState().current;
   assert.equal(current.passengers.find((p) => p.id === 'rr1').status, 'ongoing');
   assert.equal(current.passengers.find((p) => p.id === 'rr2').status, 'assigned');
+  // D2: the on-board overdue clock starts at pickup.
+  assert.ok(!Number.isNaN(Date.parse(current.passengers.find((p) => p.id === 'rr1').pickedUpAt)));
+  assert.equal(current.passengers.find((p) => p.id === 'rr2').pickedUpAt, null);
   assert.equal(useTripStore.getState().error, null);
 });
 
@@ -418,7 +430,7 @@ test('hydrate() populates current with every passenger leg the backend returns',
       if (fn === 'get_active_trip_passengers') {
         return {
           data: [
-            { ride_request_id: 'req-9', seats_requested: 2, preferred_method: 'cash', estimated_fare: 45, passenger_id: 'p1', passenger_name: 'Juan Dela Cruz', avatar_url: 'https://example.com/a.jpg', cash_confirmed: false, status: 'assigned', pickup_lat: 6.11, pickup_lng: 125.17, dest_lat: 6.12, dest_lng: 125.18 },
+            { ride_request_id: 'req-9', seats_requested: 2, preferred_method: 'cash', estimated_fare: 45, passenger_id: 'p1', passenger_name: 'Juan Dela Cruz', avatar_url: 'https://example.com/a.jpg', cash_confirmed: false, status: 'assigned', pickup_lat: 6.11, pickup_lng: 125.17, dest_lat: 6.12, dest_lng: 125.18, assigned_at: '2026-08-11T00:05:00.000Z', picked_up_at: null, distance_km: 1.4 },
           ],
           error: null,
         };
@@ -442,6 +454,8 @@ test('hydrate() populates current with every passenger leg the backend returns',
         pickupLng: 125.17,
         destLat: 6.12,
         destLng: 125.18,
+        assignedAt: '2026-08-11T00:05:00.000Z',
+        distanceKm: 1.4,
       }),
     ],
   });

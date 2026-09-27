@@ -1939,13 +1939,16 @@ export type Database = {
       get_active_trip_passengers: {
         Args: { p_trip_id: string }
         Returns: {
+          assigned_at: string
           avatar_url: string
           cash_confirmed: boolean
           dest_lat: number
           dest_lng: number
+          distance_km: number
           estimated_fare: number
           passenger_id: string
           passenger_name: string
+          picked_up_at: string
           pickup_lat: number
           pickup_lng: number
           preferred_method: Database["public"]["Enums"]["payment_method"]

@@ -54,6 +54,9 @@ const DEMO_TRIP: ActiveTrip = {
       pickupLng: 125.1717,
       destLat: 6.1188,
       destLng: 125.1655,
+      assignedAt: null,
+      pickedUpAt: null,
+      distanceKm: null,
     },
   ],
 };
