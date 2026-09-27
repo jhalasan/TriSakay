@@ -16,13 +16,13 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 | G1 | Proper domain | TODO | Setup |
 | G2 | Use Google Maps | **UNBLOCKED (2026-09-25)** — billing verified, code done, GCP project created, enabling APIs next | Code, large |
 | G3 | Screenshots of the final hosted system with the domain and Google Maps | TODO | Last step |
-| G4 | Help tips for text boxes | IN PROGRESS (Person 3, started 2026-09-27) | Code, small |
+| G4 | Help tips for text boxes | IN PROGRESS (Person 3) — code done 2026-09-27 (all mobile + admin form fields, en/fil); needs an on-device look before DONE | Code, small |
 | G5 | Scope: iOS and Android, Android preferred | TODO | Docs |
 | P1 | Email receipt if the passenger agrees | TODO | Code, medium |
 | P2 | Ask passengers if they'd still use the app if the fare increases | TODO | Survey |
 | P3 | Suggested fare with supporting literature | TODO | Docs |
 | D1 | Driver can transfer a passenger to another tricycle | TODO | Code, large |
-| D2 | Nearest drop-off first when carrying several passengers | IN PROGRESS (Person 3, started 2026-09-27) | Code, small |
+| D2 | Nearest drop-off first when carrying several passengers | IN PROGRESS (Person 3) — code + unit tests done 2026-09-27; migration `20260927000001` written, **not yet applied live**; then a 2+-passenger test on a driver account | Code, small |
 | PD1 | Cancellation policy | TODO | Code, medium |
 | PD2 | Don't allow cancelling at every stage | TODO | Part of PD1 |
 | PD3 | Literature on how many cancellations to allow | TODO | Docs |
