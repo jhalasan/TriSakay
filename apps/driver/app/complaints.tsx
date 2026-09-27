@@ -250,12 +250,14 @@ export default function ComplaintsScreen() {
 
               <TextField
                 label={t.driver.complaints.subject}
+                helperText={t.hints.driverComplaintSubject}
                 placeholder={t.driver.complaints.subjectPlaceholder}
                 value={subject}
                 onChangeText={setSubject}
               />
               <Textarea
                 label={t.driver.complaints.message}
+                helperText={t.hints.complaintMessage}
                 placeholder={t.driver.complaints.messagePlaceholder}
                 value={message}
                 onChangeText={setMessage}

@@ -104,6 +104,7 @@ export default function ResetPasswordScreen() {
         <View style={styles.fields}>
           <TextField
             label={t.driver.resetPassword.code}
+            helperText={t.hints.resetCode}
             placeholder="123456"
             value={code}
             onChangeText={setCode}
@@ -112,6 +113,7 @@ export default function ResetPasswordScreen() {
           />
           <TextField
             label={t.driver.resetPassword.newPassword}
+            helperText={t.hints.newPassword}
             placeholder="••••••••"
             value={password}
             onChangeText={setPassword}
@@ -121,6 +123,7 @@ export default function ResetPasswordScreen() {
           />
           <TextField
             label={t.driver.resetPassword.confirmNewPassword}
+            helperText={t.hints.confirmPassword}
             placeholder="••••••••"
             value={confirmPassword}
             onChangeText={setConfirmPassword}

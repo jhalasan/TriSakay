@@ -195,8 +195,8 @@ export default function ProfileScreen() {
             </Pressable>
             {isEditing ? (
               <View style={styles.editFieldWrap}>
-                <TextField value={firstName} onChangeText={setFirstName} autoCapitalize="words" placeholder={t.driver.register.firstNamePlaceholder} />
-                <TextField value={lastName} onChangeText={setLastName} autoCapitalize="words" placeholder={t.driver.register.lastNamePlaceholder} />
+                <TextField value={firstName} onChangeText={setFirstName} autoCapitalize="words" placeholder={t.driver.register.firstNamePlaceholder} helperText={t.hints.name} />
+                <TextField value={lastName} onChangeText={setLastName} autoCapitalize="words" placeholder={t.driver.register.lastNamePlaceholder} helperText={t.hints.lastName} />
               </View>
             ) : (
               <>
@@ -241,6 +241,7 @@ export default function ProfileScreen() {
                     onChangeText={setPhone}
                     keyboardType="phone-pad"
                     placeholder={t.driver.profile.phonePlaceholder}
+                    helperText={t.hints.phone}
                   />
                 </View>
               ) : (

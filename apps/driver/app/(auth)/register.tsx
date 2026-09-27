@@ -183,6 +183,7 @@ export default function RegisterScreen() {
           <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
             <TextField
               label={t.driver.register.firstName}
+              helperText={t.hints.name}
               required
               placeholder={t.driver.register.firstNamePlaceholder}
               value={form.firstName}
@@ -192,6 +193,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.lastName}
+              helperText={t.hints.lastName}
               required
               placeholder={t.driver.register.lastNamePlaceholder}
               value={form.lastName}
@@ -201,6 +203,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.email}
+              helperText={t.hints.email}
               required
               placeholder={t.driver.register.emailPlaceholder}
               value={form.email}
@@ -211,6 +214,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.phone}
+              helperText={t.hints.phone}
               required
               placeholder={t.driver.register.phonePlaceholder}
               value={form.phone}
@@ -220,6 +224,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.password}
+              helperText={t.hints.newPassword}
               required
               placeholder="••••••••"
               value={form.password}
@@ -229,6 +234,7 @@ export default function RegisterScreen() {
             />
             <TextField
               label={t.driver.register.confirmPassword}
+              helperText={t.hints.confirmPassword}
               required
               placeholder="••••••••"
               value={form.confirmPassword}
@@ -248,6 +254,7 @@ export default function RegisterScreen() {
 
               <TextField
                 label={t.driver.register.plateNumber}
+                helperText={t.hints.plateNumber}
                 required
                 placeholder={t.driver.register.plateNumberPlaceholder}
                 value={plateNo}

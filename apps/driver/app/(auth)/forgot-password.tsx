@@ -51,6 +51,7 @@ export default function ForgotPasswordScreen() {
         <View style={styles.fields}>
           <TextField
             label={t.driver.forgotPassword.email}
+            helperText={t.hints.email}
             placeholder="you@example.com"
             value={email}
             onChangeText={setEmail}

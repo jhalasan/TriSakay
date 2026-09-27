@@ -115,6 +115,7 @@ function UnsubmittedUpload({ rejectionReason }: { rejectionReason?: string | nul
 
       <TextField
         label={t.driver.verificationPending.plateNumber}
+        helperText={t.hints.plateNumber}
         placeholder={t.driver.verificationPending.plateNumberPlaceholder}
         value={plateNo}
         onChangeText={(v) => {

@@ -112,6 +112,7 @@ export default function MyDocumentsScreen() {
                   <View style={styles.fieldWrap}>
                     <TextField
                       label={t.driver.documents.expiryLabel}
+                      helperText={t.hints.documentExpiry}
                       placeholder={t.driver.documents.expiryPlaceholder}
                       value={drafts[doc.id] ?? ''}
                       onChangeText={(v) => setDrafts((prev) => ({ ...prev, [doc.id]: v }))}
