@@ -94,6 +94,7 @@ export function Login() {
 
             <TextField
               label="Email"
+              hint="The email on your admin account."
               type="email"
               autoComplete="username"
               placeholder="you@gensantos.gov.ph"
@@ -105,6 +106,7 @@ export function Login() {
 
             <TextField
               label="Password"
+              hint="Passwords are case-sensitive."
               type={showPassword ? 'text' : 'password'}
               autoComplete="current-password"
               placeholder="Enter your password"

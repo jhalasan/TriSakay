@@ -439,6 +439,7 @@ export function Complaints() {
 
               <Textarea
                 label="Department Head directive"
+                hint="The next step PSO staff should take on this complaint."
                 value={directiveDraft}
                 onChange={(e) => setDirectiveDraft(e.target.value)}
                 placeholder="e.g. Contact both parties and schedule MTFRB mediation."
@@ -464,12 +465,14 @@ export function Complaints() {
                     <div className="two-col">
                       <TextField
                         label="Meeting date/time"
+                        hint="When both parties should attend the mediation."
                         type="datetime-local"
                         value={meetingAtDraft}
                         onChange={(e) => setMeetingAtDraft(e.target.value)}
                       />
                       <TextField
                         label="Location"
+                        hint="Where the mediation meeting will be held."
                         value={meetingLocationDraft}
                         onChange={(e) => setMeetingLocationDraft(e.target.value)}
                         placeholder="e.g. PSO Office, City Hall"
@@ -518,6 +521,7 @@ export function Complaints() {
                     />
                     <Textarea
                       label="Outcome / settlement details"
+                      hint="What was agreed, for the record before the complaint is closed."
                       value={resolutionNotesDraft}
                       onChange={(e) => setResolutionNotesDraft(e.target.value)}
                       placeholder="e.g. Parties agreed to a fare refund at the MTFRB mediation meeting."

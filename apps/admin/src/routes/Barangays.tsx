@@ -236,7 +236,7 @@ export function Barangays() {
             {editingId && !draftsEqual(draft, editingOriginal) && <Badge label="Unsaved changes" tone="warn" />}
           </div>
           <div className={styles.formFields}>
-            <TextField label="Name" value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+            <TextField label="Name" hint="The official barangay name, e.g. Lagao." value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
             <Select
               label="Cluster"
               value={draft.cluster ?? ''}
@@ -245,6 +245,7 @@ export function Barangays() {
             />
             <Textarea
               label="Notes"
+              hint="For a split barangay, say where the boundary between clusters runs."
               value={draft.notes ?? ''}
               onChange={(e) => setDraft({ ...draft, notes: e.target.value || null })}
               placeholder="e.g. Northwest of national highway = White; Southeast = Apple Green"

@@ -226,10 +226,11 @@ export function PsoUsers() {
       )}
 
       <div className={`panel ${styles.inviteForm}`}>
-        <TextField label="First Name" placeholder="e.g. Jonalyn" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
-        <TextField label="Last Name" placeholder="e.g. Carreon" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+        <TextField label="First Name" hint="As on the staff member's government ID." placeholder="e.g. Jonalyn" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+        <TextField label="Last Name" hint="As on the staff member's government ID." placeholder="e.g. Carreon" value={lastName} onChange={(e) => setLastName(e.target.value)} />
         <TextField
           label="Work Email"
+          hint="They will sign in with this email."
           type="email"
           placeholder="name@gensantos.gov.ph"
           value={email}

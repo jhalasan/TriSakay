@@ -126,7 +126,7 @@ export function ConfirmModal({
           </span>
           <h2 className={styles.title}>{title}</h2>
           <p className={styles.message}>{message}</p>
-          {reasonRequired && <Textarea label={reasonLabel} rows={3} value={reason} onChange={(e) => onReasonChange?.(e.target.value)} />}
+          {reasonRequired && <Textarea label={reasonLabel} hint="Recorded in the audit log with this action." rows={3} value={reason} onChange={(e) => onReasonChange?.(e.target.value)} />}
           <ErrorBanner message={error} />
         </div>
         <div className={styles.actions}>

@@ -100,6 +100,7 @@ export function ForgotPassword() {
             <form className={styles.card} onSubmit={handleRequestCode} noValidate>
               <TextField
                 label="Email"
+                hint="The email on your admin account."
                 type="email"
                 autoComplete="username"
                 placeholder="you@gensantos.gov.ph"
@@ -126,6 +127,7 @@ export function ForgotPassword() {
             <form className={styles.card} onSubmit={handleConfirmReset} noValidate>
               <TextField
                 label="Reset code"
+                hint="The 6-digit code we just emailed you."
                 inputMode="numeric"
                 autoComplete="one-time-code"
                 placeholder="123456"
@@ -139,6 +141,7 @@ export function ForgotPassword() {
 
               <TextField
                 label="New password"
+                hint="At least 10 characters, with upper and lower case letters and a number or symbol."
                 type="password"
                 autoComplete="new-password"
                 value={password}
@@ -148,6 +151,7 @@ export function ForgotPassword() {
               />
               <TextField
                 label="Confirm new password"
+                hint="Type the same password again."
                 type="password"
                 autoComplete="new-password"
                 value={confirmPassword}

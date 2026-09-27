@@ -46,3 +46,8 @@
   font-size: 11.5px;
   color: var(--danger);
 }
+
+.hint {
+  font-size: 10px;
+  color: var(--ink-faint);
+}

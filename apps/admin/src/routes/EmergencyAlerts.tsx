@@ -188,6 +188,7 @@ export function EmergencyAlerts() {
 
           <Textarea
             label="Review notes"
+            hint="What was done about this alert, for the record."
             value={notesDraft}
             onChange={(e) => setNotesDraft(e.target.value)}
             placeholder="Optional notes on the review…"

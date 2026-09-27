@@ -213,12 +213,14 @@ export function DriverVerification() {
           <div className="decision-body">
             <TextField
               label="MTOP Number"
+              hint="As printed on the MTOP franchise, e.g. MTOP-2026-00123."
               value={c.mtopNo}
               onChange={(e) => updateFields(c.driverId, { mtopNo: e.target.value })}
               placeholder="e.g. MTOP-2026-00123"
             />
             <TextField
               label="MTOP Expiry Date"
+              hint="Copy the expiry date from the MTOP document."
               type="date"
               value={c.mtopExpiryDate}
               onChange={(e) => updateFields(c.driverId, { mtopExpiryDate: e.target.value })}
@@ -231,6 +233,7 @@ export function DriverVerification() {
             />
             <Textarea
               label="Reviewer Notes"
+              hint="Explain the decision. Required when rejecting."
               value={c.notes}
               onChange={(e) => updateFields(c.driverId, { notes: e.target.value })}
               placeholder="Required if rejecting…"

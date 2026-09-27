@@ -169,12 +169,13 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
               <div className={styles.form}>
                 <TextField
                   label="First Name"
+                  hint="Your given name, e.g. Jonalyn."
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   error={nameError ?? undefined}
                   autoFocus
                 />
-                <TextField label="Last Name" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                <TextField label="Last Name" hint="Your surname, e.g. Carreon." value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 <div className={styles.formActions}>
                   <Button variant="outline" tone="neutral" size="sm" onClick={() => setEditingName(false)}>
                     Cancel
@@ -207,6 +208,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                 <TextField
                   type="password"
                   placeholder="Current password"
+                  hint="The password you use to sign in now."
                   autoComplete="current-password"
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.target.value)}
@@ -216,6 +218,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                 <TextField
                   type="password"
                   placeholder="At least 10 characters"
+                  hint="At least 10 characters, with upper and lower case letters and a number or symbol."
                   autoComplete="new-password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
@@ -224,6 +227,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
                 <TextField
                   type="password"
                   placeholder="Confirm new password"
+                  hint="Type the same password again."
                   autoComplete="new-password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}

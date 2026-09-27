@@ -148,9 +148,9 @@ export function SystemSettings() {
             <Badge label="Affects live fares" tone="warn" />
           </div>
           <div className={styles.fareForm}>
-            <TextField label="Base Fare (₱)" type="number" step="0.01" value={baseFare} onChange={(e) => setBaseFare(e.target.value)} />
-            <TextField label="Base Distance (km)" type="number" step="0.1" value={baseKm} onChange={(e) => setBaseKm(e.target.value)} />
-            <TextField label="Rate per Succeeding km (₱)" type="number" step="0.01" value={ratePerKm} onChange={(e) => setRatePerKm(e.target.value)} />
+            <TextField label="Base Fare (₱)" hint="Charged for the base distance, per the fare ordinance." type="number" step="0.01" value={baseFare} onChange={(e) => setBaseFare(e.target.value)} />
+            <TextField label="Base Distance (km)" hint="Distance covered by the base fare, e.g. 4." type="number" step="0.1" value={baseKm} onChange={(e) => setBaseKm(e.target.value)} />
+            <TextField label="Rate per Succeeding km (₱)" hint="Added for each km after the base distance." type="number" step="0.01" value={ratePerKm} onChange={(e) => setRatePerKm(e.target.value)} />
 
             {workedExampleValid && (
               <div className={styles.workedExample}>

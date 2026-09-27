@@ -149,6 +149,7 @@ export function ForcePasswordChange() {
             <div className={styles.twoCol}>
               <TextField
                 label="New password"
+                hint="Don't reuse the temporary password."
                 type={showPassword ? 'text' : 'password'}
                 autoComplete="new-password"
                 value={password}
@@ -159,6 +160,7 @@ export function ForcePasswordChange() {
               />
               <TextField
                 label="Confirm new password"
+                hint="Type the same password again."
                 type={showConfirm ? 'text' : 'password'}
                 autoComplete="new-password"
                 value={confirmPassword}
