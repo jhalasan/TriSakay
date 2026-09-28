@@ -98,7 +98,7 @@ export default function RateDriverScreen() {
         {summaryParts.length > 0 && <Text style={styles.bandSummary}>{summaryParts.join(' · ')}</Text>}
       </GradientSurface>
 
-      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.container} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
           <Card variant="raised" style={styles.driverCard}>
             <Avatar name={driver?.name} size="xl" />

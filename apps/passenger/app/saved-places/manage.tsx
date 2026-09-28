@@ -84,24 +84,26 @@ export default function ManageSavedPlacesScreen() {
                     {item.address}
                   </Text>
                 </View>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t.savedPlacesManagement.editAccessibilityLabel.replace('{label}', item.label)}
-                  style={styles.removeButton}
-                  onPress={() => setEditingItem(item)}
-                  hitSlop={8}
-                >
-                  <Ionicons name="pencil-outline" size={20} color={colors.inkFaint} />
-                </Pressable>
-                <Pressable
-                  accessibilityRole="button"
-                  accessibilityLabel={t.savedPlacesManagement.removeAccessibilityLabel.replace('{label}', item.label)}
-                  style={styles.removeButton}
-                  onPress={() => handleDelete(item)}
-                  hitSlop={8}
-                >
-                  <Ionicons name="trash-outline" size={20} color={colors.danger} />
-                </Pressable>
+                <View style={styles.actions}>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t.savedPlacesManagement.editAccessibilityLabel.replace('{label}', item.label)}
+                    style={styles.editButton}
+                    onPress={() => setEditingItem(item)}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="pencil" size={17} color={colors.accentBlue} />
+                  </Pressable>
+                  <Pressable
+                    accessibilityRole="button"
+                    accessibilityLabel={t.savedPlacesManagement.removeAccessibilityLabel.replace('{label}', item.label)}
+                    style={styles.deleteButton}
+                    onPress={() => handleDelete(item)}
+                    hitSlop={8}
+                  >
+                    <Ionicons name="trash-outline" size={17} color={colors.danger} />
+                  </Pressable>
+                </View>
               </View>
             );
           })

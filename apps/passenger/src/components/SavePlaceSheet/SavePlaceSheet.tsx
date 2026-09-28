@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { Modal, Pressable, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Modal, Platform, Pressable, Text, View } from 'react-native';
 import { Button, TextField, colors } from '@trisakay/ui';
 import { SAVED_PLACE_ICONS, saveSavedPlace, updateSavedPlace, type SavedPlaceIcon } from '@trisakay/services';
 import { useTranslation } from '../../hooks/useTranslation';
@@ -68,47 +68,56 @@ export function SavePlaceSheet({ place, editingId = null, initialLabel, initialI
 
   return (
     <Modal visible={place !== null} transparent animationType="slide" onRequestClose={onClose}>
-      <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
-          <Text style={styles.title}>{editingId ? t.savePlace.editTitle : t.savePlace.title}</Text>
-          {error && <Text style={styles.errorText}>{error}</Text>}
+      {/*
+        Bare Modal + TextInput on Android: the keyboard covered the name
+        field with no way to see what was typed (UAT feedback) — Modal
+        renders in its own native window, which doesn't inherit the
+        Activity's own keyboard-resize behavior. KeyboardAvoidingView here
+        is the standard fix for exactly this case.
+      */}
+      <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <Pressable style={styles.backdrop} onPress={onClose}>
+          <Pressable style={styles.sheet} onPress={(e) => e.stopPropagation()}>
+            <Text style={styles.title}>{editingId ? t.savePlace.editTitle : t.savePlace.title}</Text>
+            {error && <Text style={styles.errorText}>{error}</Text>}
 
-          <TextField
-            label={t.savePlace.nameLabel}
-            helperText={t.hints.savedPlaceName}
-            placeholder={t.savePlace.namePlaceholder}
-            value={label}
-            onChangeText={setLabel}
-          />
+            <TextField
+              label={t.savePlace.nameLabel}
+              helperText={t.hints.savedPlaceName}
+              placeholder={t.savePlace.namePlaceholder}
+              value={label}
+              onChangeText={setLabel}
+            />
 
-          <Text style={styles.iconSectionLabel}>{t.savePlace.iconLabel}</Text>
-          <View style={styles.iconRow}>
-            {SAVED_PLACE_ICONS.map((option) => {
-              const selected = option === icon;
-              return (
-                <Pressable
-                  key={option}
-                  accessibilityRole="button"
-                  accessibilityLabel={option}
-                  accessibilityState={{ selected }}
-                  style={[styles.iconOption, selected && styles.iconOptionSelected]}
-                  onPress={() => setIcon(option)}
-                >
-                  <Ionicons name={option} size={20} color={selected ? colors.white : colors.accentBluePressed} />
-                </Pressable>
-              );
-            })}
-          </View>
+            <Text style={styles.iconSectionLabel}>{t.savePlace.iconLabel}</Text>
+            <View style={styles.iconRow}>
+              {SAVED_PLACE_ICONS.map((option) => {
+                const selected = option === icon;
+                return (
+                  <Pressable
+                    key={option}
+                    accessibilityRole="button"
+                    accessibilityLabel={option}
+                    accessibilityState={{ selected }}
+                    style={[styles.iconOption, selected && styles.iconOptionSelected]}
+                    onPress={() => setIcon(option)}
+                  >
+                    <Ionicons name={option} size={20} color={selected ? colors.white : colors.accentBluePressed} />
+                  </Pressable>
+                );
+              })}
+            </View>
 
-          <Button
-            label={editingId ? t.savePlace.saveChangesButton : t.savePlace.saveButton}
-            fullWidth
-            disabled={label.trim().length === 0}
-            loading={saving}
-            onPress={handleSave}
-          />
+            <Button
+              label={editingId ? t.savePlace.saveChangesButton : t.savePlace.saveButton}
+              fullWidth
+              disabled={label.trim().length === 0}
+              loading={saving}
+              onPress={handleSave}
+            />
+          </Pressable>
         </Pressable>
-      </Pressable>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }

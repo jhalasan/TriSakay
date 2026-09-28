@@ -2,6 +2,9 @@ import { StyleSheet } from 'react-native';
 import { colors, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
+  keyboardView: {
+    flex: 1,
+  },
   backdrop: {
     flex: 1,
     backgroundColor: colors.overlay,

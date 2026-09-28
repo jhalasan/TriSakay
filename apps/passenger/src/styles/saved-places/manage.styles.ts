@@ -66,7 +66,28 @@ export const styles = StyleSheet.create({
   textSlot: { flex: 1, gap: 2 },
   label: { ...typography.bodyStrong, color: colors.ink },
   address: { ...typography.caption, color: colors.inkSoft },
-  removeButton: { width: 44, height: 44, alignItems: 'center', justifyContent: 'center' },
+  // Edit + delete as one grouped, evenly-styled pair (tinted circular
+  // buttons, same shape as the search-result icon elsewhere in the app)
+  // instead of two bare icons with no visual container — the pencil used
+  // to sit ungrouped between the text and the trash icon with no clear
+  // affordance (UAT feedback: "out of place").
+  actions: { flexDirection: 'row', gap: spacing.xs },
+  editButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.accentBlueSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deleteButton: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.sm,
+    backgroundColor: colors.dangerSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   addRow: {
     flexDirection: 'row',
     alignItems: 'center',

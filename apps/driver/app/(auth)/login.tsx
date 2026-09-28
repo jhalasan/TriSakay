@@ -64,7 +64,7 @@ export default function LoginScreen() {
         </View>
       </View>
 
-      <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView style={styles.keyboardView} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <ScrollView contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
           <Text style={styles.title}>{t.driver.login.welcomeBack}</Text>
           <Text style={styles.subtitle}>{t.driver.login.subtitle}</Text>
