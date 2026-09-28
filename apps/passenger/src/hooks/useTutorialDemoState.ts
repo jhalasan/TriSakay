@@ -65,11 +65,31 @@ export function useTripTutorialDemo(): TripTutorialDemo {
 
 export interface ComplaintFormTutorialDemo {
   active: boolean;
-  data: { relatedTripLabel: string; category: 'fare' };
+  /**
+   * Which of the new-complaint flow's two local steps the tour is
+   * spotlighting right now — the 'complaint' screen has two coach marks
+   * (trip-and-category on step 1, evidence-and-submit on step 2), so the
+   * screen must force its own `step` state to match whichever is current
+   * rather than always resting on step 1.
+   */
+  step: 1 | 2 | null;
+  data: { relatedTripLabel: string; pickup: string; dropoff: string; fare: number; category: 'fare' };
 }
 
 export function useComplaintFormTutorialDemo(): ComplaintFormTutorialDemo {
-  return { active: useIsTutorialScreen('complaint'), data: { relatedTripLabel: 'Juan Dela Cruz · Sep 12', category: 'fare' } };
+  const { active, currentStep } = useTutorial();
+  const onScreen = active && currentStep?.screen === 'complaint';
+  return {
+    active: onScreen,
+    step: onScreen ? (currentStep?.targetId === 'evidence-and-submit' ? 2 : 1) : null,
+    data: {
+      relatedTripLabel: 'Juan Dela Cruz · Sep 12',
+      pickup: 'Home, Purok 5',
+      dropoff: 'Public Market, Stall 14',
+      fare: 45,
+      category: 'fare',
+    },
+  };
 }
 
 export interface ComplaintStatusTutorialDemo {

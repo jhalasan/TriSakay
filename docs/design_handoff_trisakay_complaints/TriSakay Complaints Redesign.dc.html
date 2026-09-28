@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e9eaec;font-family:Poppins,system-ui,sans-serif}
+a{color:#002E60}a:hover{color:#002043}
+</style>
+</helmet>
+
+<svg style="display:none" aria-hidden="true"><defs>
+<symbol id="ic-home" viewBox="0 0 512 512"><path fill="currentColor" d="M261.56 101.28a8 8 0 00-11.06 0L66.4 277.15a8 8 0 00-2.47 5.79L63.9 448a32 32 0 0032 32H192a16 16 0 0016-16V328a8 8 0 018-8h80a8 8 0 018 8v136a16 16 0 0016 16h96.06a32 32 0 0032-32V282.94a8 8 0 00-2.47-5.79z"></path><path fill="currentColor" d="M490.91 244.15l-74.8-71.56V64a16 16 0 00-16-16h-48a16 16 0 00-16 16v32l-57.92-55.38C272.77 35.14 264.71 32 256 32c-8.68 0-16.72 3.14-22.14 8.63l-212.7 203.5c-6.220 6-7 15.870-1.34 22.370A16 16 0 0043 267.560L250.5 69.28a8 8 0 0111.06 0l207.52 198.28a16 16 0 0022.59-.44c6.14-6.36 5.63-16.86-.76-22.97z"></path></symbol>
+<symbol id="ic-time" viewBox="0 0 512 512"><path fill="currentColor" d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm96 240h-96a16 16 0 01-16-16V128a16 16 0 0132 0v128h80a16 16 0 010 32z"></path></symbol>
+<symbol id="ic-chat" viewBox="0 0 512 512"><path fill="currentColor" d="M408 48H104a72.08 72.08 0 00-72 72v192a72.08 72.08 0 0072 72h24v64a16 16 0 0026.25 12.29L245.74 384H408a72.08 72.08 0 0072-72V120a72.08 72.08 0 00-72-72zM160 248a32 32 0 1132-32 32 32 0 01-32 32zm96 0a32 32 0 1132-32 32 32 0 01-32 32zm96 0a32 32 0 1132-32 32 32 0 01-32 32z"></path></symbol>
+<symbol id="ic-person" viewBox="0 0 512 512"><path fill="currentColor" d="M332.64 64.58C313.18 43.57 286 32 256 32c-30.16 0-57.430 11.5-76.8 32.38-19.58 21.11-29.12 49.8-26.88 80.78C156.76 206.28 203.27 256 256 256s99.16-49.71 103.67-110.82c2.27-30.7-7.33-59.33-27.03-80.6zM432 480H80a31 31 0 01-24.2-11.13c-6.5-7.77-9.12-18.38-7.18-29.11C57.06 392.94 83.4 353.61 124.8 326c36.78-24.51 83.37-38 131.2-38s94.42 13.5 131.2 38c41.4 27.6 67.74 66.93 76.18 113.75 1.94 10.73-.68 21.34-7.18 29.11A31 31 0 01432 480z"></path></symbol>
+<symbol id="ic-settings" viewBox="0 0 512 512"><path fill="currentColor" d="M256 176a80 80 0 1080 80 80.24 80.24 0 00-80-80zm172.72 80a165.53 165.53 0 01-1.64 22.34l48.69 38.12a11.59 11.59 0 012.63 14.78l-46.06 79.52a11.64 11.64 0 01-14.14 4.93l-57.25-23a176.56 176.56 0 01-38.82 22.67l-8.56 60.78a11.93 11.93 0 01-11.51 9.86h-92.12a12 12 0 01-11.51-9.53l-8.56-60.78A169.3 169.3 0 01151.05 393L93.8 416a11.64 11.64 0 01-14.14-4.92L33.6 331.57a11.59 11.59 0 012.63-14.78l48.69-38.12A174.58 174.58 0 0183.28 256a165.53 165.53 0 011.64-22.34l-48.69-38.12a11.59 11.59 0 01-2.63-14.78l46.06-79.52a11.64 11.64 0 0114.14-4.93l57.25 23a176.56 176.56 0 0138.82-22.67l8.56-60.78A11.93 11.93 0 01209.94 26h92.12a12 12 0 0111.51 9.53l8.56 60.78A169.3 169.3 0 01361 119l57.2-23a11.64 11.64 0 0114.14 4.92l46.06 79.52a11.59 11.59 0 01-2.63 14.78l-48.69 38.12a174.58 174.58 0 011.64 22.66z"></path></symbol>
+<symbol id="ic-back" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" d="M328 112L184 256l144 144"></path></symbol>
+<symbol id="ic-fwd" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" d="M184 112l144 144-144 144"></path></symbol>
+<symbol id="ic-arrow" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" d="M268 112l144 144-144 144M392 256H100"></path></symbol>
+<symbol id="ic-cash" viewBox="0 0 512 512"><rect x="32" y="112" width="448" height="256" rx="24" fill="none" stroke="currentColor" stroke-width="32"></rect><circle cx="256" cy="240" r="64" fill="none" stroke="currentColor" stroke-width="32"></circle></symbol>
+<symbol id="ic-person-o" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" d="M344 144c-3.92 52.87-44 96-88 96s-84.15-43.12-88-96c-4-55 35-96 88-96s92 42 88 96z"></path><path fill="none" stroke="currentColor" stroke-width="32" stroke-miterlimit="10" d="M256 304c-87 0-175.3 48-191.64 138.6C62.39 453.52 68.57 464 80 464h352c11.44 0 17.62-10.48 15.65-21.4C431.3 352 343 304 256 304z"></path></symbol>
+<symbol id="ic-shield" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="32" stroke-linejoin="round" d="M463.1 112.37C373.68 96.33 336.71 84.45 256 48c-80.71 36.45-117.68 48.33-207.1 64.37C32.7 369.13 240.58 457.79 256 464c15.42-6.21 223.3-94.87 207.1-351.63z"></path></symbol>
+<symbol id="ic-star-o" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="32" stroke-linejoin="round" d="M480 208H308L256 48l-52 160H32l140 96-54 160 138-100 138 100-54-160z"></path></symbol>
+<symbol id="ic-wrench" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="32" stroke-linejoin="round" d="M277 235l-42-42 92-92a96 96 0 00-124 124L96 296a48 48 0 0068 68l71-71a96 96 0 00124-124z"></path></symbol>
+<symbol id="ic-dots" viewBox="0 0 512 512"><circle cx="256" cy="256" r="28" fill="currentColor"></circle><circle cx="140" cy="256" r="28" fill="currentColor"></circle><circle cx="372" cy="256" r="28" fill="currentColor"></circle></symbol>
+<symbol id="ic-camera" viewBox="0 0 512 512"><rect x="48" y="144" width="416" height="288" rx="52" fill="none" stroke="currentColor" stroke-width="32"></rect><circle cx="256" cy="288" r="76" fill="none" stroke="currentColor" stroke-width="32"></circle><path fill="none" stroke="currentColor" stroke-width="32" stroke-linejoin="round" d="M190 144l26-52h80l26 52"></path></symbol>
+<symbol id="ic-photo" viewBox="0 0 512 512"><rect x="48" y="80" width="416" height="352" rx="48" fill="none" stroke="currentColor" stroke-width="32"></rect><circle cx="336" cy="176" r="30" fill="currentColor"></circle><path fill="none" stroke="currentColor" stroke-width="32" stroke-linejoin="round" d="M64 372l112-112 96 96 64-64 112 96"></path></symbol>
+<symbol id="ic-close" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="52" stroke-linecap="round" d="M368 368L144 144M368 144L144 368"></path></symbol>
+<symbol id="ic-check" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="48" stroke-linecap="round" stroke-linejoin="round" d="M416 128L192 384l-96-96"></path></symbol>
+<symbol id="ic-chevdown" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" d="M112 184l144 144 144-144"></path></symbol>
+<symbol id="ic-info" viewBox="0 0 512 512"><circle cx="256" cy="256" r="200" fill="none" stroke="currentColor" stroke-width="32"></circle><path fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="round" d="M256 232v128"></path><circle cx="256" cy="170" r="20" fill="currentColor"></circle></symbol>
+<symbol id="ic-call" viewBox="0 0 512 512"><path fill="currentColor" d="M451 374c-15-15-31-25-47-25-14 0-27 8-40 22l-15 16c-24-17-52-45-69-69l16-15c14-13 22-26 22-40 0-16-10-32-25-47l-20-20c-14-14-32-14-46 0l-18 18c-19 19-24 46-15 74 24 76 108 160 184 184 28 9 55 4 74-15l18-18c14-14 14-32 0-46z"></path></symbol>
+<symbol id="ic-pencil" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="34" stroke-linejoin="round" d="M364 68l80 80-248 248-104 24 24-104z"></path></symbol>
+<symbol id="ic-plus" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="44" stroke-linecap="round" d="M256 112v288M112 256h288"></path></symbol>
+<symbol id="ic-motif" viewBox="0 0 100 100"><path d="M 22 46 A 28 28 0 1 1 78 46" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"></path><path d="M 28 58 L 50 80 L 72 58" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></symbol>
+</defs></svg>
+
+<section id="2a" data-screen-label="Complaints redesign" style="padding:52px 56px 44px;border-bottom:1px solid rgba(0,0,0,.08);display:flex;flex-direction:column;align-items:flex-start">
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 6px"><span style="font:700 10px ui-monospace,Menlo,monospace;padding:4px 8px;background:#002E60;color:#fff;border-radius:5px;letter-spacing:.6px">2a · REDESIGN</span><span style="font:700 20px/26px Poppins;color:#14191D;letter-spacing:-.3px">Passenger — Complaints &amp; case tracker</span></div>
+  <p style="font:400 13px/20px Poppins;color:#5A646B;max-width:900px;margin:0 0 26px;text-wrap:pretty">The tab stops being one long form with past cases buried under the submit button. It opens on the same navy band as History and Profile, leads with <b>Report a problem</b>, and lists your cases with a three-segment progress bar so status reads without opening anything. Filing splits into two short steps — pick the trip and a category tile, then describe it with subject suggestions — and ends on a receipt with the reference number. The tracker puts the current stage in a “Now” card, dates every stage, and keeps the case details and evidence on the same page. Same tokens as <a href="#1a">1a</a>: navy for action, green for done, 16px fields, 38px icon tiles.</p>
+  <div style="display:flex;gap:18px">
+
+    <div data-screen-label="Complaints home" style="flex:none;width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9">
+      <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+        <div style="position:absolute;top:-30px;right:-34px;opacity:.12"><svg style="width:170px;height:170px;color:#fff"><use href="#ic-motif"></use></svg></div>
+        <div style="height:52px"></div>
+        <div style="position:relative;padding:6px 18px 20px;display:flex;flex-direction:column;gap:4px">
+          <div style="font:800 28px/34px Poppins;letter-spacing:-.7px;color:#fff">Complaints</div>
+          <div style="font:400 13px/19px Poppins;color:#fff;opacity:.72">Report a problem and follow it to a decision.</div>
+          <div style="display:flex;margin-top:14px;padding-top:14px;border-top:1px solid rgba(255,255,255,.14)">
+            <div style="flex:1;display:flex;flex-direction:column;gap:1px"><div style="font:800 22px/26px Poppins;color:#fff">1</div><div style="font:400 12px/16px Poppins;color:#fff;opacity:.72">In progress</div></div>
+            <div style="width:1px;background:rgba(255,255,255,.14);margin:0 16px"></div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:1px"><div style="font:800 22px/26px Poppins;color:#fff">2</div><div style="font:400 12px/16px Poppins;color:#fff;opacity:.72">Resolved</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:16px 16px 76px;display:flex;flex-direction:column;gap:18px">
+        <div style="display:flex;align-items:center;gap:14px;background:#fff;border-radius:22px;padding:16px;box-shadow:0 4px 14px rgba(0,46,96,.1)">
+          <div style="width:48px;height:48px;border-radius:15px;background:#002E60;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:22px;height:22px;color:#fff"><use href="#ic-plus"></use></svg></div>
+          <div style="flex:1;min-width:0"><div style="font:700 16px/22px Poppins;color:#14191D">Report a problem</div><div style="font:400 12.5px/18px Poppins;color:#5A646B">Takes about two minutes</div></div>
+          <svg style="width:18px;height:18px;color:#002E60;flex:none"><use href="#ic-arrow"></use></svg>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Common issues</div>
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+            <div style="background:#fff;border-radius:16px;padding:12px 10px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:8px"><div style="width:34px;height:34px;border-radius:11px;background:#E9F7E3;display:flex;align-items:center;justify-content:center"><svg style="width:16px;height:16px;color:#3B602B"><use href="#ic-cash"></use></svg></div><div style="font:600 12.5px/16px Poppins;color:#14191D">Fare dispute</div></div>
+            <div style="background:#fff;border-radius:16px;padding:12px 10px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:8px"><div style="width:34px;height:34px;border-radius:11px;background:#E3EDF7;display:flex;align-items:center;justify-content:center"><svg style="width:16px;height:16px;color:#002043"><use href="#ic-person-o"></use></svg></div><div style="font:600 12.5px/16px Poppins;color:#14191D">Driver conduct</div></div>
+            <div style="background:#fff;border-radius:16px;padding:12px 10px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:8px"><div style="width:34px;height:34px;border-radius:11px;background:#FBEAE8;display:flex;align-items:center;justify-content:center"><svg style="width:16px;height:16px;color:#931E17"><use href="#ic-shield"></use></svg></div><div style="font:600 12.5px/16px Poppins;color:#14191D">Safety</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:baseline;justify-content:space-between"><div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Your cases</div><div style="font:600 13px/18px Poppins;color:#002E60">See all</div></div>
+          <div style="background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font:600 11px/16px Poppins;letter-spacing:.5px;color:#666F75">#1042 · Fare dispute</div><div style="font:700 11px/16px Poppins;color:#002043;background:#E3EDF7;border-radius:999px;padding:3px 10px">Under review</div></div>
+            <div style="font:600 15px/21px Poppins;color:#14191D">Charged above the fare matrix</div>
+            <div style="display:flex;gap:4px"><div style="flex:1;height:5px;border-radius:3px;background:#477434"></div><div style="flex:1;height:5px;border-radius:3px;background:#002E60"></div><div style="flex:1;height:5px;border-radius:3px;background:#DCE2E6"></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font:400 12px/17px Poppins;color:#5A646B">Updated Sep 13 · driver asked to respond</div><svg style="width:14px;height:14px;color:#5A646B"><use href="#ic-fwd"></use></svg></div>
+          </div>
+          <div style="background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between;gap:8px"><div style="font:600 11px/16px Poppins;letter-spacing:.5px;color:#666F75">#0987 · Driver conduct</div><div style="font:700 11px/16px Poppins;color:#3B602B;background:#E9F7E3;border-radius:999px;padding:3px 10px">Resolved</div></div>
+            <div style="font:600 15px/21px Poppins;color:#14191D">Driver refused the drop-off point</div>
+            <div style="display:flex;gap:4px"><div style="flex:1;height:5px;border-radius:3px;background:#477434"></div><div style="flex:1;height:5px;border-radius:3px;background:#477434"></div><div style="flex:1;height:5px;border-radius:3px;background:#477434"></div></div>
+            <div style="display:flex;align-items:center;justify-content:space-between"><div style="font:400 12px/17px Poppins;color:#5A646B">Closed Aug 24</div><svg style="width:14px;height:14px;color:#5A646B"><use href="#ic-fwd"></use></svg></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:0;right:0;bottom:0;height:60px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0;box-sizing:border-box">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-home"></use></svg>Home</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-time"></use></svg>History</div>
+        <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px/16px Poppins;color:#002E60"><div style="position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:2px;background:#002E60"></div><svg style="width:24px;height:24px"><use href="#ic-chat"></use></svg>Complaints</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-person"></use></svg>Profile</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-settings"></use></svg>Settings</div>
+      </div>
+    </div>
+
+    <div data-screen-label="New complaint — step 1" style="flex:none;width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9">
+      <div style="height:52px"></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 10px">
+        <div style="width:40px;height:40px;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,46,96,.09);flex:none"><svg style="width:18px;height:18px;color:#14191D"><use href="#ic-close"></use></svg></div>
+        <div style="flex:1;font:700 18px/24px Poppins;letter-spacing:-.3px;color:#14191D">New complaint</div>
+        <div style="font:600 13px/18px Poppins;color:#5A646B;flex:none">1 of 2</div>
+      </div>
+      <div style="padding:0 16px 12px;display:flex;gap:6px"><div style="flex:1;height:5px;border-radius:3px;background:#002E60"></div><div style="flex:1;height:5px;border-radius:3px;background:#DCE2E6"></div></div>
+
+      <div style="padding:8px 16px 100px;display:flex;flex-direction:column;gap:20px">
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font:700 17px/23px Poppins;letter-spacing:-.2px;color:#14191D">Which trip was it?</div>
+          <div style="background:#fff;border:1.5px solid #002E60;border-radius:16px;padding:14px;box-shadow:0 4px 14px rgba(0,46,96,.1);display:flex;flex-direction:column;gap:12px">
+            <div style="display:flex;align-items:center;gap:10px">
+              <div style="width:36px;height:36px;border-radius:18px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 12px Poppins;color:#002043;flex:none">JS</div>
+              <div style="flex:1;min-width:0"><div style="font:600 14px/20px Poppins;color:#14191D">Jomar Santos</div><div style="font:400 12px/17px Poppins;color:#5A646B">Aug 28, 4:12 PM · #T-5518</div></div>
+              <div style="font:600 13px/18px Poppins;color:#002E60;flex:none">Change</div>
+            </div>
+            <div style="display:flex;gap:10px;padding-top:12px;border-top:1px solid #EBEFF2">
+              <div style="width:10px;display:flex;flex-direction:column;align-items:center;padding-top:5px"><div style="width:8px;height:8px;border-radius:4px;background:#477434"></div><div style="width:2px;flex:1;background:#DCE2E6;margin:3px 0"></div><div style="width:8px;height:8px;border-radius:2px;background:#002E60"></div></div>
+              <div style="flex:1;display:flex;flex-direction:column;gap:8px"><div style="font:400 13px/18px Poppins;color:#14191D">Poblacion Plaza</div><div style="font:400 13px/18px Poppins;color:#14191D">Public Market</div></div>
+              <div style="font:700 15px/20px Poppins;color:#14191D;align-self:flex-end">₱45.00</div>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:12px 14px">
+            <div style="width:18px;height:18px;border-radius:9px;border:2px solid #DCE2E6;box-sizing:border-box;flex:none"></div>
+            <div style="flex:1;min-width:0"><div style="font:600 14px/20px Poppins;color:#14191D">Not about a specific ride</div><div style="font:400 12px/17px Poppins;color:#5A646B">e.g. your driver never arrived</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="font:700 17px/23px Poppins;letter-spacing:-.2px;color:#14191D">What's it about?</div>
+          <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px">
+            <div style="position:relative;background:#fff;border:1.5px solid #002E60;border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px;box-shadow:0 4px 14px rgba(0,46,96,.1)">
+              <div style="width:34px;height:34px;border-radius:11px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:16px;height:16px;color:#3B602B"><use href="#ic-cash"></use></svg></div>
+              <div style="flex:1;font:600 13px/17px Poppins;color:#14191D">Fare dispute</div>
+              <div style="position:absolute;top:-6px;right:-6px;width:20px;height:20px;border-radius:10px;background:#002E60;border:2px solid #F6F7F9;display:flex;align-items:center;justify-content:center"><svg style="width:10px;height:10px;color:#fff"><use href="#ic-check"></use></svg></div>
+            </div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:11px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:16px;height:16px;color:#002043"><use href="#ic-person-o"></use></svg></div>
+              <div style="flex:1;font:600 13px/17px Poppins;color:#14191D">Driver conduct</div>
+            </div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:11px;background:#FBEAE8;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:16px;height:16px;color:#931E17"><use href="#ic-shield"></use></svg></div>
+              <div style="flex:1;font:600 13px/17px Poppins;color:#14191D">Safety</div>
+            </div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:11px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:16px;height:16px;color:#002043"><use href="#ic-wrench"></use></svg></div>
+              <div style="flex:1;font:600 13px/17px Poppins;color:#14191D">Vehicle condition</div>
+            </div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:11px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:16px;height:16px;color:#002043"><use href="#ic-star-o"></use></svg></div>
+              <div style="flex:1;font:600 13px/17px Poppins;color:#14191D">Low rating</div>
+            </div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:12px;display:flex;align-items:center;gap:10px">
+              <div style="width:34px;height:34px;border-radius:11px;background:#EDF1F4;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:16px;height:16px;color:#5A646B"><use href="#ic-dots"></use></svg></div>
+              <div style="flex:1;font:600 13px/17px Poppins;color:#14191D">Other</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 26px;background:#fff;border-top:1px solid #EBEFF2">
+        <div style="min-height:54px;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;gap:8px;font:700 17px/21px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.26)">Continue<svg style="width:18px;height:18px;color:#fff"><use href="#ic-arrow"></use></svg></div>
+      </div>
+    </div>
+
+    <div data-screen-label="New complaint — step 2" style="flex:none;width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9">
+      <div style="height:52px"></div>
+      <div style="display:flex;align-items:center;gap:12px;padding:6px 16px 10px">
+        <div style="width:40px;height:40px;border-radius:13px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,46,96,.09);flex:none"><svg style="width:18px;height:18px;color:#14191D"><use href="#ic-back"></use></svg></div>
+        <div style="flex:1;font:700 18px/24px Poppins;letter-spacing:-.3px;color:#14191D">New complaint</div>
+        <div style="font:600 13px/18px Poppins;color:#5A646B;flex:none">2 of 2</div>
+      </div>
+      <div style="padding:0 16px 12px;display:flex;gap:6px"><div style="flex:1;height:5px;border-radius:3px;background:#002E60"></div><div style="flex:1;height:5px;border-radius:3px;background:#002E60"></div></div>
+
+      <div style="padding:8px 16px 100px;display:flex;flex-direction:column;gap:16px">
+        <div style="display:flex;align-items:center;gap:10px;background:#EDF1F4;border-radius:14px;padding:10px 12px">
+          <div style="width:30px;height:30px;border-radius:10px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:15px;height:15px;color:#3B602B"><use href="#ic-cash"></use></svg></div>
+          <div style="flex:1;min-width:0;font:600 13px/18px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Fare dispute · Jomar Santos, Aug 28</div>
+          <svg style="width:15px;height:15px;color:#5A646B;flex:none"><use href="#ic-pencil"></use></svg>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Subject</div>
+          <div style="background:#fff;border:1.5px solid #002E60;border-radius:16px;padding:13px 14px;font:600 14px/20px Poppins;color:#14191D;box-shadow:0 4px 14px rgba(0,46,96,.1)">Charged above the fare matrix</div>
+          <div style="display:flex;flex-wrap:wrap;gap:6px">
+            <div style="background:#002E60;border-radius:999px;padding:6px 12px;font:600 12px/16px Poppins;color:#fff">Charged above the fare matrix</div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:999px;padding:6px 12px;font:600 12px/16px Poppins;color:#5A646B">No change given</div>
+            <div style="background:#fff;border:1px solid #DCE2E6;border-radius:999px;padding:6px 12px;font:600 12px/16px Poppins;color:#5A646B">Discount not applied</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:7px">
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">What happened</div>
+          <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px;min-height:112px;box-sizing:border-box;font:400 14px/20px Poppins;color:#14191D;text-wrap:pretty">The app quoted ₱45 but the driver asked for ₱60 at Public Market and said the matrix doesn't apply after 4 PM.</div>
+          <div style="font:400 12px/17px Poppins;color:#666F75">Include the fare quoted, what you paid and where you were dropped off.</div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Photos (optional)</div>
+            <div style="font:600 11px/16px Poppins;color:#5A646B;background:#EDF1F4;border-radius:999px;padding:2px 8px">1/3</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="position:relative;width:76px;height:76px;border-radius:14px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none">
+              <svg style="width:24px;height:24px;color:#002043;opacity:.5"><use href="#ic-photo"></use></svg>
+              <div style="position:absolute;top:-6px;right:-6px;width:22px;height:22px;border-radius:11px;background:#14191D;display:flex;align-items:center;justify-content:center"><svg style="width:10px;height:10px;color:#fff"><use href="#ic-close"></use></svg></div>
+            </div>
+            <div style="flex:1;height:76px;border-radius:14px;border:1px dashed #9FB9D4;background:#fff;display:flex;align-items:center;gap:10px;padding:0 14px;box-sizing:border-box">
+              <svg style="width:22px;height:22px;color:#002E60;flex:none"><use href="#ic-camera"></use></svg>
+              <div style="font:400 12px/17px Poppins;color:#5A646B;text-wrap:pretty"><span style="font-weight:600;color:#002E60">Add photo</span> — a receipt or the tricycle's body number</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 26px;background:#fff;border-top:1px solid #EBEFF2">
+        <div style="min-height:54px;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 17px/21px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.26)">Submit complaint</div>
+      </div>
+    </div>
+
+    <div data-screen-label="Complaint sent" style="flex:none;width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9">
+      <div style="height:52px"></div>
+      <div style="padding:40px 20px 0;display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px">
+        <div style="width:76px;height:76px;border-radius:38px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 10px rgba(233,247,227,.5)"><svg style="width:34px;height:34px;color:#3B602B"><use href="#ic-check"></use></svg></div>
+        <div style="font:800 26px/32px Poppins;letter-spacing:-.6px;color:#14191D;margin-top:12px">Complaint sent</div>
+        <div style="font:400 14px/21px Poppins;color:#5A646B;max-width:300px;text-wrap:pretty">The PSO has your report. We also texted the reference number to your phone.</div>
+      </div>
+
+      <div style="padding:22px 16px 0;display:flex;flex-direction:column;gap:14px">
+        <div style="position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);padding:16px 18px;display:flex;align-items:center;justify-content:space-between">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+          <div style="position:relative"><div style="font:700 11px/15px Poppins;letter-spacing:.8px;text-transform:uppercase;color:#fff;opacity:.6">Reference</div><div style="font:800 30px/36px Poppins;letter-spacing:-.8px;color:#fff">#1042</div></div>
+          <div style="position:relative;font:600 13px/18px Poppins;color:#fff;border:1px solid rgba(255,255,255,.34);border-radius:12px;padding:8px 14px">Copy</div>
+        </div>
+
+        <div style="background:#fff;border-radius:18px;padding:16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:14px">
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">What happens next</div>
+          <div style="display:flex;gap:12px"><div style="width:26px;height:26px;border-radius:8px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:12px;height:12px;color:#3B602B"><use href="#ic-check"></use></svg></div><div><div style="font:600 14px/19px Poppins;color:#14191D">Received</div><div style="font:400 12.5px/18px Poppins;color:#5A646B">Just now</div></div></div>
+          <div style="display:flex;gap:12px"><div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">2</div><div><div style="font:600 14px/19px Poppins;color:#14191D">Operator reviews it</div><div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">The driver is asked for their side</div></div></div>
+          <div style="display:flex;gap:12px"><div style="width:26px;height:26px;border-radius:8px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;font:800 12px Poppins;color:#002E60">3</div><div><div style="font:600 14px/19px Poppins;color:#14191D">You get a decision</div><div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">We'll notify you — it also shows in the tracker</div></div></div>
+        </div>
+      </div>
+
+      <div style="position:absolute;left:0;right:0;bottom:0;padding:12px 16px 26px;display:flex;flex-direction:column;gap:6px">
+        <div style="min-height:54px;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 17px/21px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.26)">Track this complaint</div>
+        <div style="min-height:48px;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#002E60">Back to complaints</div>
+      </div>
+    </div>
+
+    <div data-screen-label="Tracker — under review" style="flex:none;width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9">
+      <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+        <div style="position:absolute;top:-30px;right:-34px;opacity:.12"><svg style="width:170px;height:170px;color:#fff"><use href="#ic-motif"></use></svg></div>
+        <div style="height:52px"></div>
+        <div style="position:relative;padding:6px 16px 22px;display:flex;align-items:flex-start;gap:12px">
+          <div style="width:40px;height:40px;border-radius:13px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:18px;height:18px;color:#fff"><use href="#ic-back"></use></svg></div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+            <div style="font:700 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#fff;opacity:.72">Complaint #1042</div>
+            <div style="font:800 24px/30px Poppins;letter-spacing:-.6px;color:#fff;text-wrap:pretty">Charged above the fare matrix</div>
+            <div style="display:flex;align-items:center;gap:8px"><div style="font:700 11px/16px Poppins;color:#002043;background:#E3EDF7;border-radius:999px;padding:3px 10px">Under review</div><div style="font:400 12px/17px Poppins;color:#fff;opacity:.72">Filed Sep 12 · Fare dispute</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:16px 16px 24px;display:flex;flex-direction:column;gap:12px">
+        <div style="background:#fff;border-radius:20px;padding:16px;box-shadow:0 4px 14px rgba(0,46,96,.1);display:flex;gap:12px;border:1.5px solid #002E60">
+          <div style="width:38px;height:38px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:18px;height:18px;color:#002043"><use href="#ic-time"></use></svg></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#002E60">Now</div>
+            <div style="font:700 15px/21px Poppins;color:#14191D;margin-top:2px">Waiting for the driver's side</div>
+            <div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">The operator asked Jomar Santos to respond by Sep 15. Nothing needed from you.</div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:20px;padding:16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:14px">
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Progress</div>
+          <div style="display:flex;flex-direction:column">
+            <div style="display:flex;gap:12px">
+              <div style="width:22px;display:flex;flex-direction:column;align-items:center"><div style="width:22px;height:22px;border-radius:11px;background:#477434;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:11px;height:11px;color:#fff"><use href="#ic-check"></use></svg></div><div style="width:2px;flex:1;min-height:20px;background:#477434;margin:3px 0"></div></div>
+              <div style="flex:1;padding-bottom:14px;display:flex;justify-content:space-between;gap:8px"><div><div style="font:700 14px/22px Poppins;color:#14191D">Received</div><div style="font:400 12px/17px Poppins;color:#5A646B">Reference sent by SMS</div></div><div style="font:400 12px/22px Poppins;color:#666F75;flex:none">Sep 12, 9:14 AM</div></div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <div style="width:22px;display:flex;flex-direction:column;align-items:center"><div style="width:22px;height:22px;border-radius:11px;background:#fff;border:2px solid #002E60;box-sizing:border-box;display:flex;align-items:center;justify-content:center;flex:none;box-shadow:0 0 0 4px #E3EDF7"><div style="width:8px;height:8px;border-radius:4px;background:#002E60"></div></div><div style="width:2px;flex:1;min-height:20px;background:#DCE2E6;margin:3px 0"></div></div>
+              <div style="flex:1;padding-bottom:14px;display:flex;justify-content:space-between;gap:8px"><div><div style="font:700 14px/22px Poppins;color:#14191D">Under review</div><div style="font:400 12px/17px Poppins;color:#5A646B">Operator is checking the fare</div></div><div style="font:400 12px/22px Poppins;color:#666F75;flex:none">Sep 13</div></div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <div style="width:22px;display:flex;flex-direction:column;align-items:center"><div style="width:22px;height:22px;border-radius:11px;background:#fff;border:2px solid #DCE2E6;box-sizing:border-box;flex:none"></div></div>
+              <div style="flex:1;display:flex;justify-content:space-between;gap:8px"><div><div style="font:700 14px/22px Poppins;color:#666F75">Decision</div><div style="font:400 12px/17px Poppins;color:#5A646B">The outcome will appear here</div></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:20px;padding:4px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07)">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px solid #EBEFF2">
+            <div style="width:32px;height:32px;border-radius:16px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 11px Poppins;color:#002043;flex:none">JS</div>
+            <div style="flex:1;min-width:0"><div style="font:600 14px/20px Poppins;color:#14191D">Jomar Santos · Aug 28</div><div style="font:400 12px/17px Poppins;color:#5A646B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Poblacion Plaza → Public Market · ₱45.00</div></div>
+            <svg style="width:14px;height:14px;color:#5A646B;flex:none"><use href="#ic-fwd"></use></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 0">
+            <div style="width:32px;height:32px;border-radius:10px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:15px;height:15px;color:#002043;opacity:.6"><use href="#ic-photo"></use></svg></div>
+            <div style="flex:1;font:600 14px/20px Poppins;color:#14191D">1 photo attached</div>
+            <div style="font:600 13px/18px Poppins;color:#002E60;flex:none">Add more</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div data-screen-label="Tracker — resolved" style="flex:none;width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9">
+      <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+        <div style="position:absolute;top:-30px;right:-34px;opacity:.12"><svg style="width:170px;height:170px;color:#fff"><use href="#ic-motif"></use></svg></div>
+        <div style="height:52px"></div>
+        <div style="position:relative;padding:6px 16px 22px;display:flex;align-items:flex-start;gap:12px">
+          <div style="width:40px;height:40px;border-radius:13px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:18px;height:18px;color:#fff"><use href="#ic-back"></use></svg></div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+            <div style="font:700 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#fff;opacity:.72">Complaint #0987</div>
+            <div style="font:800 24px/30px Poppins;letter-spacing:-.6px;color:#fff;text-wrap:pretty">Driver refused the drop-off point</div>
+            <div style="display:flex;align-items:center;gap:8px"><div style="font:700 11px/16px Poppins;color:#3B602B;background:#E9F7E3;border-radius:999px;padding:3px 10px">Resolved</div><div style="font:400 12px/17px Poppins;color:#fff;opacity:.72">Filed Aug 19 · Driver conduct</div></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="padding:16px 16px 24px;display:flex;flex-direction:column;gap:12px">
+        <div style="background:#E9F7E3;border-radius:20px;padding:16px;display:flex;gap:12px">
+          <div style="width:38px;height:38px;border-radius:12px;background:#477434;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:18px;height:18px;color:#fff"><use href="#ic-check"></use></svg></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#3B602B">Decision · Aug 24</div>
+            <div style="font:700 15px/21px Poppins;color:#14191D;margin-top:2px">Resolved in your favour</div>
+            <div style="font:400 12.5px/18px Poppins;color:#14191D;text-wrap:pretty">The operator confirmed the driver refused a valid drop-off and issued a formal warning.</div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:20px;padding:16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:14px">
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Progress</div>
+          <div style="display:flex;flex-direction:column">
+            <div style="display:flex;gap:12px">
+              <div style="width:22px;display:flex;flex-direction:column;align-items:center"><div style="width:22px;height:22px;border-radius:11px;background:#477434;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:11px;height:11px;color:#fff"><use href="#ic-check"></use></svg></div><div style="width:2px;flex:1;min-height:14px;background:#477434;margin:3px 0"></div></div>
+              <div style="flex:1;padding-bottom:12px;display:flex;justify-content:space-between;gap:8px"><div style="font:700 14px/22px Poppins;color:#14191D">Received</div><div style="font:400 12px/22px Poppins;color:#666F75;flex:none">Aug 19</div></div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <div style="width:22px;display:flex;flex-direction:column;align-items:center"><div style="width:22px;height:22px;border-radius:11px;background:#477434;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:11px;height:11px;color:#fff"><use href="#ic-check"></use></svg></div><div style="width:2px;flex:1;min-height:14px;background:#477434;margin:3px 0"></div></div>
+              <div style="flex:1;padding-bottom:12px;display:flex;justify-content:space-between;gap:8px"><div style="font:700 14px/22px Poppins;color:#14191D">Under review</div><div style="font:400 12px/22px Poppins;color:#666F75;flex:none">Aug 20</div></div>
+            </div>
+            <div style="display:flex;gap:12px">
+              <div style="width:22px;display:flex;flex-direction:column;align-items:center"><div style="width:22px;height:22px;border-radius:11px;background:#477434;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:11px;height:11px;color:#fff"><use href="#ic-check"></use></svg></div></div>
+              <div style="flex:1;display:flex;justify-content:space-between;gap:8px"><div style="font:700 14px/22px Poppins;color:#14191D">Decision</div><div style="font:400 12px/22px Poppins;color:#666F75;flex:none">Aug 24</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div style="background:#fff;border-radius:20px;padding:4px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07)">
+          <div style="display:flex;align-items:center;gap:12px;padding:12px 0">
+            <div style="width:32px;height:32px;border-radius:16px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 11px Poppins;color:#002043;flex:none">RD</div>
+            <div style="flex:1;min-width:0"><div style="font:600 14px/20px Poppins;color:#14191D">Ramon Dela Cruz · Aug 18</div><div style="font:400 12px/17px Poppins;color:#5A646B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">City Hall → Lagao Terminal · ₱30.00</div></div>
+            <svg style="width:14px;height:14px;color:#5A646B;flex:none"><use href="#ic-fwd"></use></svg>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding:4px 4px">
+          <svg style="width:16px;height:16px;color:#5A646B;flex:none"><use href="#ic-info"></use></svg>
+          <div style="flex:1;font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">Still not right? <span style="font-weight:600;color:#002E60">File a follow-up</span> and quote #0987.</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+  <div style="display:flex;gap:18px;margin-top:14px">
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Complaints tab</div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Step 1 · trip &amp; category</div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Step 2 · details &amp; photos</div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Sent · reference receipt</div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Tracker · in progress</div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Tracker · resolved</div>
+  </div>
+</section>
+
+<section id="1a" data-screen-label="Complaints current" style="padding:52px 56px 44px;display:flex;flex-direction:column;align-items:flex-start">
+  <div style="display:flex;align-items:baseline;gap:12px;margin:0 0 6px"><span style="font:700 10px ui-monospace,Menlo,monospace;padding:4px 8px;background:#5A646B;color:#fff;border-radius:5px;letter-spacing:.6px">1a · CURRENT</span><span style="font:700 20px/26px Poppins;color:#14191D;letter-spacing:-.3px">As designed today</span></div>
+  <p style="font:400 13px/20px Poppins;color:#5A646B;max-width:820px;margin:0 0 26px;text-wrap:pretty">From TriSakay Passenger Screens and the tutorial's status screen (matches <b>(tabs)/complaints.tsx</b> and <b>complaints/[id].tsx</b>). Issues: the tab is only a form, so existing cases sit below Submit; trip and category are both dropdowns; no confirmation beyond an empty state; the tracker has one timestamp and no sense of what happens next.</p>
+  <div style="display:flex;gap:18px">
+
+    <div data-screen-label="Current — Complaints form" style="flex:none;width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9">
+      <div style="height:52px"></div>
+      <div style="padding:10px 16px 76px;display:flex;flex-direction:column;gap:16px">
+        <div>
+          <div style="font:800 28px/34px Poppins;letter-spacing:-.7px;color:#14191D">Complaints</div>
+          <div style="font:400 13px/19px Poppins;color:#5A646B;margin-top:2px">We're here to help make things right.</div>
+        </div>
+        <div>
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B;margin-bottom:7px">Related trip</div>
+          <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px">
+            <div style="width:30px;height:30px;border-radius:15px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 11px Poppins;color:#002043;flex:none">JS</div>
+            <div style="flex:1;min-width:0;font:600 14px/20px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Jomar Santos · Aug 28</div>
+            <svg style="width:16px;height:16px;color:#5A646B;flex:none"><use href="#ic-chevdown"></use></svg>
+          </div>
+        </div>
+        <div>
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B;margin-bottom:7px">Category</div>
+          <div style="display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px">
+            <div style="width:30px;height:30px;border-radius:10px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:15px;height:15px;color:#3B602B"><use href="#ic-cash"></use></svg></div>
+            <div style="flex:1;font:600 14px/20px Poppins;color:#14191D">Fare dispute</div>
+            <svg style="width:16px;height:16px;color:#5A646B;flex:none"><use href="#ic-chevdown"></use></svg>
+          </div>
+        </div>
+        <div>
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B;margin-bottom:7px">Subject</div>
+          <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px;font:600 14px/20px Poppins;color:#14191D">Charged above the fare matrix</div>
+        </div>
+        <div>
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B;margin-bottom:7px">Message</div>
+          <div style="background:#fff;border:1px solid #DCE2E6;border-radius:16px;padding:13px 14px;min-height:88px;box-sizing:border-box;font:400 14px/20px Poppins;color:#666F75;text-wrap:pretty">Describe what happened — the fare quoted, what you paid, and where you were dropped off.</div>
+        </div>
+        <div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Evidence (optional)</div>
+            <div style="font:600 11px/16px Poppins;color:#5A646B;background:#EDF1F4;border-radius:999px;padding:2px 8px">1/3</div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div style="position:relative;width:72px;height:72px;border-radius:14px;background:#E3EDF7;display:flex;align-items:center;justify-content:center">
+              <svg style="width:24px;height:24px;color:#002043;opacity:.5"><use href="#ic-photo"></use></svg>
+              <div style="position:absolute;top:-5px;right:-5px;width:22px;height:22px;border-radius:11px;background:#14191D;display:flex;align-items:center;justify-content:center"><svg style="width:10px;height:10px;color:#fff"><use href="#ic-close"></use></svg></div>
+            </div>
+            <div style="width:72px;height:72px;border-radius:14px;border:1px dashed #DCE2E6;background:#fff;display:flex;align-items:center;justify-content:center"><svg style="width:22px;height:22px;color:#5A646B"><use href="#ic-camera"></use></svg></div>
+          </div>
+        </div>
+        <div style="min-height:54px;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 17px/21px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.26)">Submit complaint</div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:60px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0;box-sizing:border-box">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-home"></use></svg>Home</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-time"></use></svg>History</div>
+        <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px/16px Poppins;color:#002E60"><div style="position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:2px;background:#002E60"></div><svg style="width:24px;height:24px"><use href="#ic-chat"></use></svg>Complaints</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-person"></use></svg>Profile</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-settings"></use></svg>Settings</div>
+      </div>
+    </div>
+
+    <div data-screen-label="Current — Complaint status" style="flex:none;width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9">
+      <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+        <div style="height:52px"></div>
+        <div style="position:relative;padding:6px 18px 22px;display:flex;flex-direction:column;gap:6px">
+          <div style="font:700 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#fff;opacity:.72">Complaint #1042</div>
+          <div style="font:800 24px/30px Poppins;letter-spacing:-.6px;color:#fff">Charged above the fare matrix</div>
+          <div style="display:flex;align-items:center;gap:8px"><div style="font:700 11px/16px Poppins;color:#002043;background:#E9F7E3;border-radius:999px;padding:3px 10px">Under review</div><div style="font:400 12px/17px Poppins;color:#fff;opacity:.72">Filed Sep 12 · Fare dispute</div></div>
+        </div>
+      </div>
+      <div style="padding:18px 16px 76px;display:flex;flex-direction:column;gap:14px">
+        <div style="background:#fff;border-radius:20px;padding:18px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:16px">
+          <div style="font:700 11px/15px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Progress</div>
+          <div style="display:flex;gap:14px">
+            <div style="width:20px;display:flex;flex-direction:column;align-items:center">
+              <div style="width:14px;height:14px;border-radius:7px;background:#477434;flex:none"></div>
+              <div style="width:2px;flex:1;background:#477434"></div>
+              <div style="width:14px;height:14px;border-radius:7px;background:#477434;flex:none"></div>
+              <div style="width:2px;flex:1;background:#DCE2E6"></div>
+              <div style="width:14px;height:14px;border-radius:7px;background:#fff;border:2px solid #DCE2E6;box-sizing:border-box;flex:none"></div>
+            </div>
+            <div style="flex:1;display:flex;flex-direction:column;gap:20px">
+              <div><div style="font:700 14px/19px Poppins;color:#14191D">Received</div><div style="font:400 12px/17px Poppins;color:#5A646B">Sep 12, 9:14 AM · reference sent by SMS</div></div>
+              <div><div style="font:700 14px/19px Poppins;color:#14191D">Under review by the operator</div><div style="font:400 12px/17px Poppins;color:#5A646B">Sep 13 · driver asked to respond within 48 hours</div></div>
+              <div><div style="font:700 14px/19px Poppins;color:#666F75">Resolution</div><div style="font:400 12px/17px Poppins;color:#5A646B">You will get a decision and any refund here</div></div>
+            </div>
+          </div>
+        </div>
+        <div style="background:#fff;border-radius:20px;padding:16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;align-items:center;gap:12px">
+          <div style="width:38px;height:38px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:18px;height:18px;color:#002043"><use href="#ic-info"></use></svg></div>
+          <div style="flex:1;font:400 13px/19px Poppins;color:#5A646B;text-wrap:pretty">Keep your receipt handy. You can add more evidence while the case is open.</div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:60px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0;box-sizing:border-box">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-home"></use></svg>Home</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-time"></use></svg>History</div>
+        <div style="position:relative;flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px/16px Poppins;color:#002E60"><div style="position:absolute;top:-4px;left:50%;transform:translateX(-50%);width:22px;height:3px;border-radius:2px;background:#002E60"></div><svg style="width:24px;height:24px"><use href="#ic-chat"></use></svg>Complaints</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-person"></use></svg>Profile</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/16px Poppins;color:#666F75"><svg style="width:24px;height:24px"><use href="#ic-settings"></use></svg>Settings</div>
+      </div>
+    </div>
+
+  </div>
+  <div style="display:flex;gap:18px;margin-top:14px">
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Complaints tab (form)</div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Complaint status</div>
+  </div>
+</section>
+</x-dc>
+</body>
+</html>

@@ -1,174 +1,87 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
+  container: { flex: 1, backgroundColor: colors.bg },
+  bandContent: {
+    paddingHorizontal: spacing.tight18,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.tight22,
   },
+  title: { ...typography.h1b, color: colors.white },
+  subline: { ...typography.caption, color: colors.white, opacity: 0.72, marginTop: 4 },
+  statsStrip: {
+    flexDirection: 'row',
+    marginTop: spacing.md,
+    paddingTop: spacing.md,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255,255,255,0.14)',
+  },
+  statsCol: { flex: 1, alignItems: 'center' },
+  statsDivider: { width: 1, backgroundColor: 'rgba(255,255,255,0.14)', marginHorizontal: spacing.md },
+  statsValue: { fontSize: 22, lineHeight: 26, fontFamily: typography.h1b.fontFamily, color: colors.white },
+  statsLabel: { ...typography.labelSm, color: colors.white, opacity: 0.72, marginTop: 2 },
+
   scrollContent: {
     paddingHorizontal: spacing.lg,
-    paddingTop: spacing.md,
-    // Matches home.styles.ts's scrollContent — spacing.xxxl alone isn't tall
-    // enough to clear the 60px tab bar, so the last card was clipped behind it.
+    paddingTop: spacing.lg,
     paddingBottom: spacing.tight44 * 1.7,
+    gap: spacing.xl,
+  },
+
+  reportCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
     gap: spacing.md,
-  },
-  headerBlock: {
-    gap: 2,
-    marginBottom: spacing.sm,
-  },
-  title: {
-    ...typography.h1b,
-    color: colors.ink,
-  },
-  tagline: {
-    ...typography.caption,
-    color: colors.inkSoft,
-  },
-  fieldLabel: {
-    ...typography.label,
-    color: colors.inkSoft,
-  },
-  pickerField: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    borderWidth: 1,
-    borderColor: colors.line,
-    borderRadius: radius.card,
     backgroundColor: colors.panel,
-    paddingHorizontal: spacing.lg,
-    minHeight: 52,
+    borderRadius: radius.lg2,
+    padding: spacing.lg,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  categoryFieldContent: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
+  reportTextSlot: { flex: 1, gap: 2 },
+  reportTitle: { ...typography.bodyStrong, color: colors.ink },
+  reportSub: { ...typography.caption, color: colors.inkSoft },
+
+  sectionLabel: { ...typography.eyebrow, color: colors.inkSoft, marginBottom: spacing.sm },
+
+  issueGrid: { flexDirection: 'row', gap: spacing.sm },
+  issueTile: {
     flex: 1,
-  },
-  categoryIconBadge: {
-    width: 30,
-    height: 30,
-    borderRadius: radius.md,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pickerFieldText: {
-    ...typography.body,
-    color: colors.ink,
-  },
-  pickerFieldPlaceholder: {
-    color: colors.inkFaint,
-  },
-  pickerEmpty: {
-    ...typography.body,
-    color: colors.inkSoft,
-    paddingVertical: spacing.md,
-    paddingHorizontal: spacing.lg,
-    textAlign: 'center',
-  },
-  pickerList: {
-    borderWidth: 1,
-    borderColor: colors.line,
+    backgroundColor: colors.panel,
     borderRadius: radius.card,
-    overflow: 'hidden',
-  },
-  /** Caps the ride list's own height so a long history scrolls inside the dropdown card instead of pushing the rest of the form off-screen. */
-  pickerListScroll: {
-    maxHeight: 280,
-  },
-  priorSection: {
+    padding: spacing.md,
     gap: spacing.sm,
+    ...elevation.card,
+  },
+  issueLabel: { fontSize: 12.5, lineHeight: 16, fontFamily: typography.bodyStrong.fontFamily, color: colors.ink },
+
+  casesHeaderRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  seeAll: { ...typography.chip, color: colors.accentBlue },
+  casesList: { gap: spacing.sm, marginTop: spacing.sm },
+  caseCard: {
+    backgroundColor: colors.panel,
+    borderRadius: radius.md3,
+    padding: spacing.lg,
+    gap: spacing.sm,
+    ...elevation.card,
+  },
+  caseTopRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: spacing.sm },
+  caseRefLine: { fontSize: 11, lineHeight: 16, fontFamily: typography.label.fontFamily, letterSpacing: 0.5, color: colors.inkFaint, textTransform: 'none' },
+  caseSubject: { ...typography.bodyLg, color: colors.ink },
+  caseMetaRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  caseMeta: { ...typography.caption, color: colors.inkSoft },
+
+  emptyPanel: {
     marginTop: spacing.sm,
-  },
-  error: {
-    ...typography.caption,
-    color: colors.danger,
-  },
-  successWrap: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-    gap: spacing.lg,
-  },
-  successWarning: {
-    ...typography.caption,
-    color: colors.danger,
-    textAlign: 'center',
-  },
-  successIconBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.pill,
-    backgroundColor: colors.accentGreenSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  evidenceLabelRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  evidenceCounter: {
-    backgroundColor: colors.fill,
-    borderRadius: radius.pill,
-    paddingHorizontal: spacing.sm,
-    paddingVertical: 2,
-  },
-  evidenceCounterText: {
-    ...typography.caption,
-    fontSize: 11,
-    color: colors.inkSoft,
-  },
-  evidenceRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: spacing.sm,
-  },
-  evidenceThumbWrap: {
-    width: 72,
-    height: 72,
-  },
-  evidenceThumb: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.sm2,
-  },
-  /** Tutorial demo state's fake evidence tile — no real photo bytes to show, so a generic icon tile stands in. */
-  evidenceThumbPlaceholder: {
-    backgroundColor: colors.fill,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  evidenceRemove: {
-    position: 'absolute',
-    top: -6,
-    right: -6,
-    backgroundColor: colors.ink,
-    borderRadius: 999,
-    width: 22,
-    height: 22,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  evidenceAddTile: {
-    width: 72,
-    height: 72,
-    borderRadius: radius.sm2,
     borderWidth: 1,
-    borderColor: colors.line,
     borderStyle: 'dashed',
-    backgroundColor: colors.panel,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: colors.line,
+    borderRadius: radius.card,
+    padding: spacing.xl,
   },
-  evidenceAddLabel: {
-    ...typography.caption,
-    color: colors.inkSoft,
-  },
-  evidenceHint: {
-    ...typography.caption,
-    color: colors.inkFaint,
-  },
+  emptyText: { ...typography.caption, color: colors.inkSoft, textAlign: 'center' },
 });

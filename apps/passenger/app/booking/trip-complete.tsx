@@ -121,7 +121,7 @@ export default function TripCompleteScreen() {
               variant="outline"
               fullWidth
               onPress={() =>
-                router.push({ pathname: '/(tabs)/complaints', params: { rideRequestId, category: 'fare' } })
+                router.push({ pathname: '/complaints/new', params: { rideRequestId, category: 'fare' } })
               }
             />
           </Card>

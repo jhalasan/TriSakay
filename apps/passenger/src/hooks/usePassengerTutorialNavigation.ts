@@ -8,7 +8,7 @@ const ROUTE_BY_SCREEN: Record<string, string> = {
   book: '/booking/request',
   confirm: '/booking/confirm',
   trip: '/booking/trip',
-  complaint: '/(tabs)/complaints',
+  complaint: '/complaints/new',
   status: `/complaints/${TUTORIAL_DEMO_COMPLAINT_ID}`,
 };
 

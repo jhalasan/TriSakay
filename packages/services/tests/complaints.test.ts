@@ -4,7 +4,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../src/supabase/database.types.ts';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { listMyComplaints, submitComplaint } from '../src/complaints/index.ts';
+import { getMyComplaint, listMyComplaints, submitComplaint } from '../src/complaints/index.ts';
 
 const SESSION = { data: { session: { user: { id: 'u1' } } } };
 
@@ -230,7 +230,16 @@ test('listMyComplaints scopes to the signed-in user and returns rows newest firs
                 order: (column2: string, opts: unknown) => {
                   capturedOrderArgs = [column2, opts];
                   return Promise.resolve({
-                    data: [{ id: 'c1', subject: 'Overcharged', status: 'open' }],
+                    data: [
+                      {
+                        id: 'c1',
+                        subject: 'Overcharged',
+                        status: 'open',
+                        category: 'fare',
+                        created_at: '2026-09-12T00:00:00.000Z',
+                        resolved_at: null,
+                      },
+                    ],
                     error: null,
                   });
                 },
@@ -247,7 +256,70 @@ test('listMyComplaints scopes to the signed-in user and returns rows newest firs
   assert.equal(error, null);
   assert.deepEqual(capturedEqArgs, ['submitted_by', 'u1']);
   assert.deepEqual(capturedOrderArgs, ['created_at', { ascending: false }]);
-  assert.deepEqual(data, [{ id: 'c1', subject: 'Overcharged', status: 'open' }]);
+  assert.deepEqual(data, [
+    {
+      id: 'c1',
+      subject: 'Overcharged',
+      status: 'open',
+      category: 'fare',
+      createdAt: '2026-09-12T00:00:00.000Z',
+      resolvedAt: null,
+    },
+  ]);
+});
+
+test('getMyComplaint returns the ride/mediation fields and a separately-queried attachment count', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      getSession: async () => SESSION,
+      from: (table) => {
+        if (table === 'complaints') {
+          return {
+            select: () => ({
+              eq: () => ({
+                eq: () => ({
+                  maybeSingle: async () => ({
+                    data: {
+                      id: 'c1',
+                      subject: 'Overcharged',
+                      status: 'under_review',
+                      category: 'fare',
+                      created_at: '2026-09-12T00:00:00.000Z',
+                      resolved_at: null,
+                      resolution_notes: null,
+                      ride_request_id: 'r1',
+                      mediation_meeting_at: null,
+                      mediation_location: null,
+                    },
+                    error: null,
+                  }),
+                }),
+              }),
+            }),
+          };
+        }
+        assert.equal(table, 'complaint_attachments');
+        return { select: () => ({ eq: async () => ({ count: 2, error: null }) }) };
+      },
+    })
+  );
+
+  const { data, error } = await getMyComplaint('c1');
+
+  assert.equal(error, null);
+  assert.deepEqual(data, {
+    id: 'c1',
+    subject: 'Overcharged',
+    status: 'under_review',
+    category: 'fare',
+    createdAt: '2026-09-12T00:00:00.000Z',
+    resolvedAt: null,
+    resolutionNotes: null,
+    rideRequestId: 'r1',
+    mediationMeetingAt: null,
+    mediationLocation: null,
+    attachmentCount: 2,
+  });
 });
 
 test('listMyComplaints returns an error when there is no active session', async () => {

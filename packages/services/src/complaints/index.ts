@@ -29,6 +29,8 @@ export interface SubmitComplaintInput {
 
 export interface SubmitComplaintResult {
   error: string | null;
+  /** The new complaint's id, set whenever `error` is null — lets the caller deep-link to its tracker (e.g. "Track this complaint"). */
+  id: string | null;
   /**
    * Set when the complaint itself was filed successfully but one or more
    * attachments failed to upload/record — the complaint is not rolled back
@@ -95,7 +97,7 @@ export async function submitComplaint({
   attachments,
 }: SubmitComplaintInput): Promise<SubmitComplaintResult> {
   const userId = await getSignedInUserId();
-  if (!userId) return { error: 'Not signed in', attachmentError: null };
+  if (!userId) return { error: 'Not signed in', id: null, attachmentError: null };
 
   const { data, error } = await getSupabaseClient()
     .from('complaints')
@@ -109,20 +111,23 @@ export async function submitComplaint({
     .select('id')
     .single();
 
-  if (error) return { error: error.message, attachmentError: null };
+  if (error) return { error: error.message, id: null, attachmentError: null };
 
   if (attachments && attachments.length > 0) {
     const { error: attachmentError } = await uploadComplaintAttachments(data.id, userId, attachments);
-    if (attachmentError) return { error: null, attachmentError };
+    if (attachmentError) return { error: null, id: data.id, attachmentError };
   }
 
-  return { error: null, attachmentError: null };
+  return { error: null, id: data.id, attachmentError: null };
 }
 
 export interface MyComplaintRow {
   id: string;
   subject: string;
   status: ComplaintDbStatus;
+  category: ComplaintCategory;
+  createdAt: string;
+  resolvedAt: string | null;
 }
 
 export interface ListMyComplaintsResult {
@@ -137,19 +142,32 @@ export async function listMyComplaints(): Promise<ListMyComplaintsResult> {
 
   const { data, error } = await getSupabaseClient()
     .from('complaints')
-    .select('id, subject, status')
+    .select('id, subject, status, category, created_at, resolved_at')
     .eq('submitted_by', userId)
     .order('created_at', { ascending: false });
 
   if (error) return { data: [], error: error.message };
-  return { data: data ?? [], error: null };
+  return {
+    data: (data ?? []).map((row) => ({
+      id: row.id,
+      subject: row.subject,
+      status: row.status,
+      category: row.category,
+      createdAt: row.created_at,
+      resolvedAt: row.resolved_at,
+    })),
+    error: null,
+  };
 }
 
 export interface ComplaintDetailRow extends MyComplaintRow {
-  category: ComplaintCategory;
-  createdAt: string;
-  resolvedAt: string | null;
   resolutionNotes: string | null;
+  /** For the tracker's Details card trip row — feed to getPassengerRideReceipt (trip-history/index.ts) for the driver/route/fare summary. */
+  rideRequestId: string | null;
+  mediationMeetingAt: string | null;
+  mediationLocation: string | null;
+  /** Evidence row count — a separate query since `complaint_attachments` isn't embedded in this select. */
+  attachmentCount: number;
 }
 
 export interface GetMyComplaintResult {
@@ -164,13 +182,18 @@ export async function getMyComplaint(id: string): Promise<GetMyComplaintResult> 
 
   const { data, error } = await getSupabaseClient()
     .from('complaints')
-    .select('id, subject, status, category, created_at, resolved_at, resolution_notes')
+    .select('id, subject, status, category, created_at, resolved_at, resolution_notes, ride_request_id, mediation_meeting_at, mediation_location')
     .eq('id', id)
     .eq('submitted_by', userId)
     .maybeSingle();
 
   if (error) return { data: null, error: error.message };
   if (!data) return { data: null, error: null };
+
+  const { count } = await getSupabaseClient()
+    .from('complaint_attachments')
+    .select('id', { count: 'exact', head: true })
+    .eq('complaint_id', id);
 
   return {
     data: {
@@ -181,6 +204,10 @@ export async function getMyComplaint(id: string): Promise<GetMyComplaintResult> 
       createdAt: data.created_at,
       resolvedAt: data.resolved_at,
       resolutionNotes: data.resolution_notes,
+      rideRequestId: data.ride_request_id,
+      mediationMeetingAt: data.mediation_meeting_at,
+      mediationLocation: data.mediation_location,
+      attachmentCount: count ?? 0,
     },
     error: null,
   };
