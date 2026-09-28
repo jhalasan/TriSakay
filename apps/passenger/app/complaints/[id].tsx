@@ -8,6 +8,7 @@ import { useTranslation } from '../../src/hooks/useTranslation';
 import { useComplaintStatusTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { styles } from '../../src/styles/complaints/detail.styles';
 import { getComplaintStageStates } from '../../src/utils/complaintStages';
+import { getReferenceCode } from '../../src/utils/reference';
 
 interface ComplaintStatusData {
   id: string;
@@ -130,7 +131,7 @@ export default function ComplaintStatusScreen() {
     { title: t.complaints.stageResolutionTitle, body: t.complaints.stageResolutionBody, state: stageStates.resolution },
   ];
 
-  const reference = complaint.id.replace(/[^0-9A-Za-z]/g, '').slice(-4).toUpperCase();
+  const reference = getReferenceCode(complaint.id);
 
   return (
     <View style={styles.container}>

@@ -261,6 +261,11 @@ export default function TripScreen() {
           zoom={15}
           interactive
           edgeToEdge
+          // Matches the navy sheet below (content-driven height: driver card +
+          // SOS button + notices) — without this the recenter button ends up
+          // hidden underneath it once the rider pans the map. Same pattern as
+          // apps/driver/app/trip/active.tsx.
+          bottomInset={340}
           marker={
             rideStatus === 'ongoing'
               ? dropoff

@@ -147,7 +147,12 @@ export default function RequestTricycleScreen() {
         {!isGranted && <LocationRequiredNotice />}
       </View>
 
-      <View style={[styles.bottomFloating, { paddingBottom: insets.bottom + spacing.lg }]}>
+      {/* On gesture-nav Android, insets.bottom can report 0 (the gesture
+          strip doesn't reserve persistent layout space) — confirmed live on
+          a real device this left the button sitting right on the map's
+          required Google attribution logo. Math.max floors the clearance
+          regardless of what insets.bottom reports. */}
+      <View style={[styles.bottomFloating, { paddingBottom: Math.max(insets.bottom, spacing.xl) + spacing.lg }]}>
         <Button
           label={t.home.confirmRideButton}
           fullWidth

@@ -156,6 +156,10 @@ export default function FindingDriverScreen() {
           // Full-screen with only a sheet below it — no scroller to compete with.
           interactive
           edgeToEdge
+          // Matches the sheet below — without this the recenter button ends up
+          // hidden underneath it once the rider pans the map. Same pattern as
+          // apps/driver/app/trip/active.tsx.
+          bottomInset={320}
         />
         <View style={styles.beaconWrap} pointerEvents="none">
           <PulseBeacon size={56}>

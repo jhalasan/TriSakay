@@ -104,10 +104,10 @@ export default function PaymentHistoryScreen() {
               </View>
               <View style={styles.textSlot}>
                 <Text style={styles.routeText} numberOfLines={1}>
-                  {item.pickup && item.dropoff ? `${item.pickup} → ${item.dropoff}` : 'Trip'}
+                  {item.pickup && item.dropoff ? `${item.pickup} → ${item.dropoff}` : t.accountPages.tripFallback}
                 </Text>
                 <Text style={styles.dateMethodText}>
-                  {formatDate(item.date)} · {isGcash ? 'GCash' : 'Cash'}
+                  {formatDate(item.date)} · {isGcash ? t.common.gcash : t.common.cash}
                 </Text>
               </View>
               <View style={styles.trailingSlot}>

@@ -112,6 +112,11 @@ export default function SetPickupScreen() {
           interactive
           edgeToEdge
           tapToPlace
+          // Matches the MapOverlaySheet's own maxHeight below — without this
+          // the recenter button (and the initial camera framing) ignores the
+          // sheet entirely and ends up hidden underneath it once the rider
+          // pans the map. Same pattern as apps/driver/app/trip/active.tsx.
+          bottomInset={440}
           marker={selected ? { latitude: selected.latitude, longitude: selected.longitude, draggable: true } : null}
           onMarkerMove={handleMapPoint}
         />

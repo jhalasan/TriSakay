@@ -157,7 +157,11 @@ export default function RideDetailScreen() {
                 color={colors.inkSoft}
               />
               <Text style={styles.paymentMethodText}>
-                {item.paymentMethod === 'gcash' ? 'GCash' : item.paymentMethod === 'cash' ? 'Cash' : 'No payment'}
+                {item.paymentMethod === 'gcash'
+                  ? t.common.gcash
+                  : item.paymentMethod === 'cash'
+                    ? t.common.cash
+                    : t.history.noPaymentMethod}
               </Text>
             </View>
             {item.paymentStatus && (

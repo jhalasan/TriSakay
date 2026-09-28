@@ -214,6 +214,12 @@ export default function ConfirmScreen() {
           zoom={14}
           interactive
           edgeToEdge
+          // Matches the sheet below (its scrollable content is capped at 440px
+          // via sheetScroll, plus its own chrome/padding) — without this the
+          // recenter button and the initial route-fit camera both ignore the
+          // sheet and end up hidden or clipped underneath it. Same pattern as
+          // apps/driver/app/trip/active.tsx.
+          bottomInset={520}
           route={route?.geometry}
         />
       </View>
