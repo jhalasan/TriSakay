@@ -1,6 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Animated, Pressable, Text, View, type DimensionValue } from 'react-native';
+import ReAnimated, {
+  Easing as ReanimatedEasing,
+  useAnimatedStyle,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
 import MapView, { Marker, Polyline, PROVIDER_GOOGLE, type Region } from 'react-native-maps';
 import { colors, motion, spacing } from '../../theme';
 import { MapPlaceholder, type MapPlaceholderVariant } from '../MapPlaceholder';
@@ -25,6 +32,13 @@ export const DEFAULT_ZOOM = 15;
 const READY_TIMEOUT_MS = 8000;
 
 const RECENTER_DURATION_MS = 350;
+
+/**
+ * Reanimated's own Easing — the shared `motion.easing` token is built from core
+ * react-native's Easing and is not worklet-safe (see the note on that token, and
+ * MapOverlaySheet). Same curve as motion.easing.out, sourced compatibly.
+ */
+const RECENTER_EASING = ReanimatedEasing.bezier(0.16, 1, 0.3, 1);
 
 const finite = (value: number | undefined, fallback: number) =>
   typeof value === 'number' && Number.isFinite(value) ? value : fallback;
@@ -64,6 +78,18 @@ export interface OsmMapProps {
    * the route doesn't end up hidden under the overlay either.
    */
   bottomInset?: number;
+  /**
+   * A live, animated counterpart to `bottomInset` for the recenter button only
+   * — pass a bottom sheet's current height (see MapOverlaySheet's `heightValue`)
+   * and the button tracks it frame-by-frame as the sheet is dragged, instead of
+   * stranding itself mid-map once the sheet collapses.
+   *
+   * Deliberately does NOT drive route edge-padding the way the static
+   * `bottomInset` does: re-framing the camera on every frame of a drag would
+   * fight the rider for control of the map. Pass both — the static one sizes
+   * the route fit to the sheet's expanded height, this one moves the button.
+   */
+  bottomInsetValue?: SharedValue<number>;
   /**
    * Renders a pin at these coordinates. `draggable` lets the rider fine-tune
    * it by hand — drag position is reported via `onMarkerMove`.
@@ -126,6 +152,7 @@ export function OsmMap({
   zoom = DEFAULT_ZOOM,
   interactive = false,
   bottomInset = 0,
+  bottomInsetValue,
   marker = null,
   markerColor = colors.accentGreen,
   onMarkerMove,
@@ -138,7 +165,10 @@ export function OsmMap({
   const [state, setState] = useState<MapState>('loading');
   const [hasMoved, setHasMoved] = useState(false);
   const skeletonOpacity = useRef(new Animated.Value(1)).current;
-  const recenterOpacity = useRef(new Animated.Value(0)).current;
+  // Reanimated, unlike the skeleton's core-RN Animated above, so this one style
+  // can carry both the fade and a `bottom` that tracks `bottomInsetValue` on the
+  // UI thread — a sheet-following button can't re-render per frame.
+  const recenterOpacity = useSharedValue(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mapRef = useRef<MapView>(null);
 
@@ -205,15 +235,20 @@ export function OsmMap({
   const showRecenter = useCallback(
     (visible: boolean) => {
       setHasMoved(visible);
-      Animated.timing(recenterOpacity, {
-        toValue: visible ? 1 : 0,
+      recenterOpacity.value = withTiming(visible ? 1 : 0, {
         duration: motion.duration.quick,
-        easing: motion.easing.out,
-        useNativeDriver: true,
-      }).start();
+        easing: RECENTER_EASING,
+      });
     },
     [recenterOpacity],
   );
+
+  // `bottomInsetValue` wins when supplied so the button rides a sheet's live
+  // height; `bottomInset` is the static fallback every other call site uses.
+  const recenterAnimatedStyle = useAnimatedStyle(() => ({
+    opacity: recenterOpacity.value,
+    bottom: (bottomInsetValue ? bottomInsetValue.value : bottomInset) + spacing.md,
+  }));
 
   const handleRecenter = useCallback(() => {
     mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta }, RECENTER_DURATION_MS);
@@ -348,12 +383,8 @@ export function OsmMap({
         that must stay tappable has to sit above it.
       */}
       {interactive && (
-        <Animated.View
-          style={[
-            styles.recenterButton,
-            { right: spacing.md },
-            { bottom: bottomInset + spacing.md, opacity: recenterOpacity },
-          ]}
+        <ReAnimated.View
+          style={[styles.recenterButton, { right: spacing.md }, recenterAnimatedStyle]}
           pointerEvents={hasMoved ? 'auto' : 'none'}
         >
           <Pressable
@@ -367,7 +398,7 @@ export function OsmMap({
           >
             <Ionicons name="locate" size={22} color={colors.ink} />
           </Pressable>
-        </Animated.View>
+        </ReAnimated.View>
       )}
     </View>
   );

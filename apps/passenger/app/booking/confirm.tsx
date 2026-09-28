@@ -3,6 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useSharedValue } from 'react-native-reanimated';
 import { createRideRequest, estimateFare, getFareDiscountRate, getMyDiscount } from '@trisakay/services';
 import { haversineDistanceKm } from '@trisakay/utils';
 import {
@@ -27,6 +28,15 @@ import { useBookingStore } from '../../src/store/useBookingStore';
 import { formatCurrency } from '../../src/utils/currency';
 import { fetchRouteEstimate, type RouteEstimate } from '../../src/utils/route';
 import { styles } from '../../src/styles/booking/confirm.styles';
+
+/**
+ * Roughly how tall the sheet stands expanded: its scrollable content is capped
+ * at 440px (`sheetScroll`) plus its own chrome and padding. Only an estimate —
+ * the sheet reports its real height into `sheetHeight` below once measured —
+ * but it seeds the map's chrome correctly for the first frame, and it is what
+ * the route-fit padding uses (that must not chase the sheet mid-drag).
+ */
+const SHEET_EXPANDED_INSET = 520;
 
 export default function ConfirmScreen() {
   const router = useRouter();
@@ -62,6 +72,9 @@ export default function ConfirmScreen() {
   const [discountRatePercentState, setDiscountRatePercent] = useState<number | null>(null);
   const discountRatePercent = tutorialDemo.active ? tutorialDemo.data.discountRatePercent : discountRatePercentState;
   const [route, setRoute] = useState<RouteEstimate | null>(null);
+  // The sheet's live height, so the map's recenter button rides up and down
+  // with it instead of being stranded mid-map once the sheet is collapsed.
+  const sheetHeight = useSharedValue(SHEET_EXPANDED_INSET);
   // True once we definitively know whether the passenger has an approved
   // discount AND (if so) what rate applies — gates the request button so we
   // never persist a guessed discount_percent.
@@ -215,12 +228,13 @@ export default function ConfirmScreen() {
           zoom={14}
           interactive
           edgeToEdge
-          // Matches the sheet below (its scrollable content is capped at 440px
-          // via sheetScroll, plus its own chrome/padding) — without this the
-          // recenter button and the initial route-fit camera both ignore the
-          // sheet and end up hidden or clipped underneath it. Same pattern as
-          // apps/driver/app/trip/active.tsx.
-          bottomInset={520}
+          // Without these the route-fit camera and the recenter button both
+          // ignore the sheet and end up clipped underneath it. The static value
+          // frames the route against the sheet's expanded height; the shared
+          // value additionally lets the button follow the sheet as it is
+          // dragged. Same pattern as apps/driver/app/trip/active.tsx.
+          bottomInset={SHEET_EXPANDED_INSET}
+          bottomInsetValue={sheetHeight}
           route={route?.geometry}
         />
       </View>
@@ -240,7 +254,7 @@ export default function ConfirmScreen() {
         </Card>
       </View>
 
-      <MapOverlaySheet bottomInset={insets.bottom}>
+      <MapOverlaySheet bottomInset={insets.bottom} heightValue={sheetHeight}>
         <ScrollView
           style={styles.sheetScroll}
           contentContainerStyle={styles.sheetScrollContent}
@@ -291,7 +305,7 @@ export default function ConfirmScreen() {
             <Stepper value={seats} onChange={setSeats} min={1} max={6} />
           </View>
 
-          <View {...fareSheetTarget}>
+          <View style={styles.fareSection} {...fareSheetTarget}>
           <Card variant="flat" style={styles.fareCard}>
             <BrandMotif size={130} color={colors.white} opacity={0.12} style={styles.fareMotif} />
             <View style={styles.fareLabelRow}>

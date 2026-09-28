@@ -102,6 +102,15 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
     marginBottom: spacing.md,
   },
+  /**
+   * The fare card, payment picker and request button are wrapped together in
+   * one tutorial-target View, so they are a SINGLE child of `sheetScrollContent`
+   * and its `gap` never lands between them — without this they sit flush
+   * against each other. Repeats that same gap so the rhythm is unbroken.
+   */
+  fareSection: {
+    gap: spacing.xl,
+  },
   /** The fare is the number the rider is looking for — the spec gives it the system's navy panel, not a white card. */
   fareCard: {
     gap: spacing.sm,

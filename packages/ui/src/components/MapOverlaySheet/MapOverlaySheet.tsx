@@ -1,8 +1,17 @@
 import { useCallback } from 'react';
 import { View, type LayoutChangeEvent, type StyleProp, type ViewStyle } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import Animated, { Easing, useAnimatedStyle, useReducedMotion, useSharedValue, withTiming } from 'react-native-reanimated';
-import { motion, spacing } from '../../theme';
+import Animated, {
+  Easing,
+  interpolateColor,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useReducedMotion,
+  useSharedValue,
+  withTiming,
+  type SharedValue,
+} from 'react-native-reanimated';
+import { colors, motion, spacing } from '../../theme';
 import { styles } from './MapOverlaySheet.styles';
 
 // Reanimated's own Easing, NOT the shared `motion.easing` token (that one is
@@ -11,6 +20,11 @@ import { styles } from './MapOverlaySheet.styles';
 // call, which runs as a UI-thread worklet, tries to invoke one). Same curve
 // as motion.easing.out, sourced compatibly instead.
 const SNAP_EASING = Easing.bezier(0.16, 1, 0.3, 1);
+
+// Hoisted to plain strings so the worklet below captures two primitives
+// rather than the whole `colors` object.
+const HANDLE_COLOR = colors.lineStrong;
+const HANDLE_COLOR_PRESSED = colors.inkSoft;
 
 export interface MapOverlaySheetProps {
   children: React.ReactNode;
@@ -25,6 +39,14 @@ export interface MapOverlaySheetProps {
    * `useSafeAreaInsets().bottom` explicitly instead.
    */
   bottomInset?: number;
+  /**
+   * A shared value this sheet writes its live height into, so a call site can
+   * keep map chrome (e.g. OsmMap's recenter button, via its `bottomInsetValue`)
+   * sitting just above the sheet as it is dragged, collapsed and expanded.
+   * Owned by the caller — seed it with the sheet's approximate expanded height
+   * so that chrome is already in the right place before the first layout pass.
+   */
+  heightValue?: SharedValue<number>;
   style?: StyleProp<ViewStyle>;
 }
 
@@ -62,7 +84,7 @@ const FLING_VELOCITY = 500;
  * target has to keep up with real content growth or it would clip once
  * that content arrives.
  */
-export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, style }: MapOverlaySheetProps) {
+export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, heightValue, style }: MapOverlaySheetProps) {
   const reducedMotion = useReducedMotion();
   // 0 means "not yet measured" — the sheet renders at its natural auto
   // height (exactly today's behavior) until the first layout pass reports
@@ -71,8 +93,22 @@ export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, style }:
   const sheetHeight = useSharedValue(0);
   const dragStartHeight = useSharedValue(0);
   const collapsed = useSharedValue(false);
+  /** 0 = resting, 1 = the handle is under a finger. */
+  const handlePressed = useSharedValue(0);
 
   const paddingBottom = styles.sheet.paddingBottom + bottomInset;
+
+  // Mirrored rather than handed out as `sheetHeight` itself so this component
+  // keeps sole ownership of its own animation. Gated on a real measurement:
+  // before the first layout pass `sheetHeight` is still 0 while the sheet is
+  // actually rendering at its natural auto height, and publishing that 0 would
+  // yank the caller's chrome to the screen's bottom edge for a frame.
+  useAnimatedReaction(
+    () => (naturalHeight.value === 0 ? null : sheetHeight.value),
+    (height) => {
+      if (height !== null && heightValue) heightValue.value = height;
+    },
+  );
 
   const handleContentLayout = useCallback(
     (event: LayoutChangeEvent) => {
@@ -88,6 +124,17 @@ export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, style }:
   );
 
   const panGesture = Gesture.Pan()
+    // onBegin/onFinalize, not onStart/onEnd — a Pan only *starts* once the
+    // finger has actually travelled, so the highlight would otherwise not
+    // appear until the drag was already underway. These two fire on touch
+    // down and on release (including a release that never became a drag),
+    // which is exactly the pressed state.
+    .onBegin(() => {
+      handlePressed.value = withTiming(1, { duration: motion.duration.instant, easing: SNAP_EASING });
+    })
+    .onFinalize(() => {
+      handlePressed.value = withTiming(0, { duration: motion.duration.quick, easing: SNAP_EASING });
+    })
     .onStart(() => {
       dragStartHeight.value = sheetHeight.value;
     })
@@ -110,6 +157,13 @@ export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, style }:
     height: naturalHeight.value === 0 ? undefined : sheetHeight.value,
   }));
 
+  // Darkens and widens the grip while it is held, so a tap that doesn't travel
+  // far enough to move the sheet still confirms the handle is a live control.
+  const animatedHandleStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(handlePressed.value, [0, 1], [HANDLE_COLOR, HANDLE_COLOR_PRESSED]),
+    transform: [{ scaleX: 1 + handlePressed.value * 0.15 }],
+  }));
+
   return (
     <View style={styles.sheetShadowWrap}>
       <Animated.View
@@ -117,7 +171,7 @@ export function MapOverlaySheet({ children, maxHeight, bottomInset = 0, style }:
       >
         <GestureDetector gesture={panGesture}>
           <View style={styles.handleTouchArea} hitSlop={{ top: spacing.sm, bottom: spacing.sm, left: spacing.xl, right: spacing.xl }}>
-            <View style={styles.handle} />
+            <Animated.View style={[styles.handle, animatedHandleStyle]} />
           </View>
         </GestureDetector>
         <View style={styles.content} onLayout={handleContentLayout}>

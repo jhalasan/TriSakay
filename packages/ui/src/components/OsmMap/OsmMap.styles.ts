@@ -87,17 +87,24 @@ export const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     elevation: 4,
   },
-  /** Route start/end dot — matches the old Leaflet circleMarker endpoints. */
+  /**
+   * Route start/end dot. Sized up from the original 14px (UAT: too small to
+   * read against a busy basemap at a glance).
+   *
+   * Deliberately NO `elevation`/shadow, unlike the pin and driver markers:
+   * react-native-maps rasterizes a custom marker View to a bitmap, and an
+   * Android elevation shadow pads that bitmap asymmetrically (the shadow falls
+   * below the dot). `anchor` centers the BITMAP, not the dot inside it, so that
+   * padding pushed the visible dot off its true coordinate and left a gap
+   * between each dot and the end of the route line it is supposed to cap. The
+   * white ring is what separates it from map imagery here, not a shadow.
+   */
   routeDot: {
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    borderWidth: 2,
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    borderWidth: 3,
     borderColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.3,
-    shadowRadius: 3,
-    elevation: 3,
   },
   skeleton: {
     ...StyleSheet.absoluteFillObject,
