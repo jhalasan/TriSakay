@@ -101,7 +101,10 @@ export default function ActiveTripScreen() {
   // with no way to scroll to them (confirmed live). The passenger list below
   // scrolls internally within this bound; SOS and End Trip stay outside the
   // ScrollView so they're always reachable without scrolling.
-  const sheetMaxHeight = Math.max(320, windowHeight - insets.top - 96);
+  // Capped at 62% of the screen (not "viewport minus a fixed offset") so the
+  // map stays visible behind the sheet even for a single passenger card —
+  // the ScrollView above still handles any overflow from extra passengers.
+  const sheetMaxHeight = Math.max(320, Math.min(windowHeight - insets.top - 96, windowHeight * 0.62));
 
   // D2 (UAT panel, Adrales): passengers ordered by their next stop, with the
   // transfer/overdue priorities — see packages/shared/src/utils/nextStop.ts.

@@ -90,16 +90,17 @@ export interface OsmMapProps {
 type MapState = 'loading' | 'ready' | 'error';
 
 /**
- * Teardrop pin — reproduces the old Leaflet divIcon's shape (a rotated
- * rounded square with a white dot, plus a drop-shadow ellipse) so pickup /
- * destination markers keep the same silhouette after the map engine swap.
+ * Pin — a circular head with a white dot, a triangular point, and a
+ * drop-shadow ellipse. See the `pinHead`/`pinPoint` comment in
+ * OsmMap.styles.ts for why this avoids `transform: rotate`.
  */
 function PinMarker({ color }: { color: string }) {
   return (
     <View style={styles.pinWrap} pointerEvents="none">
-      <View style={[styles.pinBody, { backgroundColor: color }]}>
+      <View style={[styles.pinHead, { backgroundColor: color }]}>
         <View style={styles.pinDot} />
       </View>
+      <View style={[styles.pinPoint, { borderTopColor: color }]} />
       <View style={styles.pinShadow} />
     </View>
   );
@@ -276,10 +277,18 @@ export function OsmMap({
         {routeCoords.length >= 2 && (
           <>
             <Polyline coordinates={routeCoords} strokeColor={colors.accentBlue} strokeWidth={5} />
-            <Marker coordinate={routeCoords[0]} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+            {/*
+              tracksViewChanges={true} here, not false — react-native-maps on
+              Android can snapshot a custom marker's content before it has
+              actually painted a first frame, caching a blank bitmap forever
+              once tracksViewChanges is false (confirmed: these dots weren't
+              rendering at all in UAT). Leaving it true forces a fresh
+              snapshot each render, which is cheap for two static dots.
+            */}
+            <Marker coordinate={routeCoords[0]} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges>
               <RouteEndpointDot color={colors.accentGreen} />
             </Marker>
-            <Marker coordinate={routeCoords[routeCoords.length - 1]} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges={false}>
+            <Marker coordinate={routeCoords[routeCoords.length - 1]} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges>
               <RouteEndpointDot color={colors.accentBlue} />
             </Marker>
           </>
@@ -291,7 +300,10 @@ export function OsmMap({
             draggable={markerDraggable}
             onDragEnd={handleMarkerDragEnd}
             anchor={{ x: 0.5, y: 1 }}
-            tracksViewChanges={markerDraggable}
+            // Same fix as the route-endpoint dots above — was
+            // `markerDraggable` (false for most call sites), which risked
+            // caching a blank first snapshot on Android.
+            tracksViewChanges
           >
             <PinMarker color={markerColor} />
           </Marker>

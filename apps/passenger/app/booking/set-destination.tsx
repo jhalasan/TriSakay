@@ -145,7 +145,10 @@ export default function SetDestinationScreen() {
         )}
       </View>
 
-      <MapOverlaySheet maxHeight={360} bottomInset={insets.bottom}>
+      {/* 360 clipped the Confirm button: label + the 220px-capped results
+          list + button + the sheet's own chrome/gaps adds up to ~420px, not
+          360 (UAT feedback: button was cut off at the bottom edge). */}
+      <MapOverlaySheet maxHeight={440} bottomInset={insets.bottom}>
         <Text style={styles.resultsLabel}>{t.setDestination.searchResults}</Text>
         <FlatList
           style={styles.resultsList}

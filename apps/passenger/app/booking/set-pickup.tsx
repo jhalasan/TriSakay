@@ -162,7 +162,10 @@ export default function SetPickupScreen() {
         )}
       </View>
 
-      <MapOverlaySheet maxHeight={360} bottomInset={insets.bottom}>
+      {/* Same fix as set-destination.tsx: 360 clipped the Confirm button —
+          label + the results list + button + the sheet's own chrome/gaps
+          adds up to ~420px, not 360. */}
+      <MapOverlaySheet maxHeight={440} bottomInset={insets.bottom}>
         <Text style={styles.resultsLabel}>{t.setDestination.searchResults}</Text>
         {query.trim().length >= 2 && (searching || results.length === 0) && (
           <Text style={styles.statusHint}>{searching ? t.setDestination.searching : t.setDestination.noMatches}</Text>

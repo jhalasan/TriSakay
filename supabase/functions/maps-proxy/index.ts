@@ -164,7 +164,7 @@ async function computeRoute(
         origin: { location: { latLng: { latitude: pickup.latitude, longitude: pickup.longitude } } },
         destination: { location: { latLng: { latitude: dropoff.latitude, longitude: dropoff.longitude } } },
         travelMode: 'DRIVE',
-        polylineQuality: 'OVERVIEW',
+        polylineQuality: 'HIGH_QUALITY',
       }),
     });
     if (!response.ok) return null;

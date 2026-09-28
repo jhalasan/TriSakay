@@ -3,7 +3,8 @@
     "allow": [
       "mcp__claude_ai_Supabase__list_extensions",
       "mcp__claude_ai_Supabase__apply_migration",
-      "mcp__claude_ai_Supabase__get_advisors"
+      "mcp__claude_ai_Supabase__get_advisors",
+      "Bash(adb -s ANRG6R4C24007553 exec-out screencap -p)"
     ]
   },
   "enabledPlugins": {

@@ -4,6 +4,10 @@ const path = require('path');
 const config = getDefaultConfig(__dirname);
 const workspaceRoot = path.resolve(__dirname, '../..');
 
+// TEMP (UAT build, low-RAM machine): cut Metro's transform worker count to
+// avoid OOM during release bundling. Revert after the build succeeds.
+config.maxWorkers = 1;
+
 // Extend (never replace) Expo's default watchFolders so the monorepo root
 // is watched in addition to expo-doctor's expected defaults.
 config.watchFolders = [...new Set([...(config.watchFolders ?? []), workspaceRoot])];

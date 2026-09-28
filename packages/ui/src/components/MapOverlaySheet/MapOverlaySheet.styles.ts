@@ -34,12 +34,18 @@ export const styles = StyleSheet.create({
     paddingVertical: spacing.sm,
     alignItems: 'center',
   },
-  /** Plain neutral grip, not the brand gradient — a drag handle is chrome, not a branded surface. */
+  /**
+   * Plain neutral grip, not the brand gradient — a drag handle is chrome,
+   * not a branded surface. Sized up from the original 40x4 and using
+   * `lineStrong` (the control-boundary token) instead of the decorative-only
+   * `line` — that subtle a bar against the sheet's own background read as
+   * decorative, not draggable, in UAT feedback.
+   */
   handle: {
-    width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: colors.line,
+    width: 48,
+    height: 5,
+    borderRadius: 3,
+    backgroundColor: colors.lineStrong,
   },
   content: {
     gap: spacing.md,

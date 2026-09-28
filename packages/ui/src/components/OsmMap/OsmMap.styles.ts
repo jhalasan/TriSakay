@@ -24,37 +24,54 @@ export const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     backgroundColor: colors.fill,
   },
-  /** Teardrop pin body — matches the old Leaflet divIcon's rotated rounded-square shape. */
+  /**
+   * Pin shape — a circular head plus a CSS-triangle point (border-color
+   * trick), deliberately with NO `transform: rotate`. The original build was
+   * a rotated rounded-square (matching the old Leaflet divIcon), but
+   * react-native-maps' Android marker rasterization didn't reliably respect
+   * that rotation transform: it rendered as a plain circle on-device even
+   * though it looked right in isolation (UAT feedback, confirmed against
+   * the built APK's bundle). The triangle needs no transform at all, so it
+   * can't hit that class of bug.
+   */
   pinWrap: {
     alignItems: 'center',
   },
-  pinBody: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderBottomLeftRadius: 2,
-    transform: [{ rotate: '-45deg' }],
+  pinHead: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
     shadowColor: '#002e60',
     shadowOpacity: 0.35,
-    shadowRadius: 8,
-    shadowOffset: { width: 0, height: 6 },
-    elevation: 6,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
   },
   pinDot: {
-    width: 11,
-    height: 11,
-    borderRadius: 6,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
     backgroundColor: '#fff',
-    transform: [{ rotate: '45deg' }],
+  },
+  /** The point: a zero-size box whose visible "triangle" comes from its border colors — top color is the pin color, the two sides are transparent. `borderTopColor` is set inline per-marker (matches `pinHead`'s dynamic color). */
+  pinPoint: {
+    width: 0,
+    height: 0,
+    marginTop: -3,
+    borderLeftWidth: 7,
+    borderRightWidth: 7,
+    borderTopWidth: 10,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
   },
   pinShadow: {
     width: 13,
     height: 4,
     borderRadius: 6,
     backgroundColor: 'rgba(0,26,56,0.28)',
-    marginTop: 5,
+    marginTop: 3,
   },
   /** Live driver dot — matches the old 22px filled-circle driver icon. */
   driverDot: {
