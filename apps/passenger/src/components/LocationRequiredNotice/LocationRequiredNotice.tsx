@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, Text } from 'react-native';
 import { colors } from '@trisakay/ui';
 import { useLocationPermission } from '../../hooks/useLocationPermission';
+import { useTranslation } from '../../hooks/useTranslation';
 import { styles } from './LocationRequiredNotice.styles';
 
 /**
@@ -12,7 +13,9 @@ import { styles } from './LocationRequiredNotice.styles';
  * having to find and focus a second element. Apply it only while that control
  * is actually disabled.
  */
-export const LOCATION_REQUIRED_HINT = 'Location access is required. Turn on location to enable this.';
+export function useLocationRequiredHint() {
+  return useTranslation().common.locationRequiredNotice;
+}
 
 /**
  * Renders nothing once permission is granted, so call sites can drop it in
@@ -23,19 +26,20 @@ export const LOCATION_REQUIRED_HINT = 'Location access is required. Turn on loca
 export function LocationRequiredNotice() {
   const router = useRouter();
   const { isGranted } = useLocationPermission();
+  const label = useLocationRequiredHint();
 
   if (isGranted) return null;
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Location required — tap to enable"
+      accessibilityLabel={label}
       hitSlop={8}
       style={styles.row}
       onPress={() => router.push('/location-permission')}
     >
       <Ionicons name="location-outline" size={14} color={colors.danger} />
-      <Text style={styles.text}>Location required — tap to enable</Text>
+      <Text style={styles.text}>{label}</Text>
     </Pressable>
   );
 }

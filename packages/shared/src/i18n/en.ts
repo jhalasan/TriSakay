@@ -5,6 +5,8 @@ export const en = {
     cancel: 'Cancel',
     delete: 'Delete',
     ok: 'OK',
+    goBackA11y: 'Go back',
+    locationRequiredNotice: 'Location required — tap to enable',
   },
   offline: {
     stripMessage: 'No connection — showing your last update',
@@ -85,6 +87,7 @@ export const en = {
     backAccessibilityLabel: 'Back',
   },
   accountPages: {
+    changeProfilePhotoA11y: 'Change profile photo',
     fareDiscountTitle: 'Fare discount',
     fareDiscountBannerSuffix: 'off every fare',
     fareDiscountBannerSubtitle: 'Seniors, PWDs, and students with a valid ID',
@@ -102,6 +105,10 @@ export const en = {
     idFrontEmptyTitle: 'Add the front',
     idBackEmptyTitle: 'Add the back',
     idEmptySubtitle: 'Hold the ID sideways to fill the frame',
+    idFrontChangeA11y: 'Change front ID photo',
+    idFrontAddA11y: 'Add front ID photo',
+    idBackChangeA11y: 'Change back ID photo',
+    idBackAddA11y: 'Add back ID photo',
     submitApplication: 'Submit application',
     discountDisclaimer: 'Your ID photo is only visible to you and to PSO Supervisor / Admin reviewers.',
     photoRequiredError: 'Add photos of both the front and back of your ID before submitting.',
@@ -468,6 +475,8 @@ export const en = {
     notNow: 'Not now',
   },
   complaints: {
+    removePhotoA11y: 'Remove photo',
+    addEvidencePhotoA11y: 'Add evidence photo',
     title: 'Complaints',
     tagline: "We're here to help make things right.",
     relatedTrip: 'Related trip',

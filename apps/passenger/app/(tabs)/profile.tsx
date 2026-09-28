@@ -174,7 +174,7 @@ export default function ProfileScreen() {
           <View style={styles.identity}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Change profile photo"
+              accessibilityLabel={t.accountPages.changeProfilePhotoA11y}
               style={styles.avatarWrap}
               disabled={uploadingAvatar}
               onPress={handleChangeAvatar}

@@ -5,7 +5,7 @@ import * as Location from 'expo-location';
 import { ActivityIndicator, Pressable, Text, View } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, Card, MapSearchBar, OsmMap, colors, spacing, useTutorialTarget } from '@trisakay/ui';
-import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
+import { LocationRequiredNotice, useLocationRequiredHint } from '../../src/components/LocationRequiredNotice';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -21,6 +21,7 @@ export default function RequestTricycleScreen() {
   const dropoff = useBookingStore((state) => state.dropoff);
   const resetBooking = useBookingStore((state) => state.reset);
   const t = useTranslation();
+  const locationRequiredHint = useLocationRequiredHint();
   const { isGranted } = useLocationPermission();
   const locationTrackingEnabled = useSettingsStore((state) => state.locationTrackingEnabled);
   const [locating, setLocating] = useState(false);
@@ -99,7 +100,7 @@ export default function RequestTricycleScreen() {
           <View style={styles.headerRow}>
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Go back"
+              accessibilityLabel={t.common.goBackA11y}
               hitSlop={8}
               style={styles.backButton}
               onPress={handleBack}
@@ -140,7 +141,7 @@ export default function RequestTricycleScreen() {
             icon={<Ionicons name="location" size={18} color={colors.accentBlue} />}
             disabled={!isGranted}
             onPress={() => (isGranted ? router.push('/booking/set-destination') : router.push('/location-permission'))}
-            accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
+            accessibilityHint={isGranted ? undefined : locationRequiredHint}
           />
           {locationError && <Text style={styles.locationErrorText}>{t.home.locationErrorMessage}</Text>}
         </Card>

@@ -3,6 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { colors } from '@trisakay/ui';
+import { useTranslation } from '../../hooks/useTranslation';
 import { styles } from './ScreenHeader.styles';
 
 export interface ScreenHeaderProps {
@@ -23,13 +24,14 @@ export interface ScreenHeaderProps {
 export function ScreenHeader({ title, onBack, showBack = true, right, titleSize = 'compact' }: ScreenHeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const t = useTranslation();
 
   return (
     <View style={[styles.row, { paddingTop: styles.row.paddingVertical + insets.top }]}>
       {showBack && (
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t.common.goBackA11y}
           hitSlop={8}
           // A screen reached via router.replace() (e.g. the guided tour jumping
           // straight to a step's screen) has no history to pop — router.back()

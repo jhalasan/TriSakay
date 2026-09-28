@@ -52,7 +52,7 @@ export default function RideCancelledScreen() {
       <View style={styles.topFloating}>
         <Pressable
           accessibilityRole="button"
-          accessibilityLabel="Go back"
+          accessibilityLabel={t.common.goBackA11y}
           hitSlop={8}
           style={styles.backButton}
           onPress={() => router.back()}

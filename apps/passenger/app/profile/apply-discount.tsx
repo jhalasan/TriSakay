@@ -127,7 +127,15 @@ export default function ApplyDiscountScreen() {
   ) => (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel={uri ? `Change ${side} ID photo` : `Add ${side} ID photo`}
+      accessibilityLabel={
+        side === 'front'
+          ? uri
+            ? t.accountPages.idFrontChangeA11y
+            : t.accountPages.idFrontAddA11y
+          : uri
+            ? t.accountPages.idBackChangeA11y
+            : t.accountPages.idBackAddA11y
+      }
       style={[styles.idSlot, uri ? styles.idSlotFilled : styles.idSlotEmpty]}
       onPress={onPress}
     >

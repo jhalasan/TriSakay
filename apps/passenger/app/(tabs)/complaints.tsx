@@ -382,7 +382,7 @@ export default function ComplaintsScreen() {
                       style={styles.evidenceRemove}
                       onPress={() => removeEvidence(index)}
                       accessibilityRole="button"
-                      accessibilityLabel="Remove photo"
+                      accessibilityLabel={t.complaints.removePhotoA11y}
                     >
                       <Ionicons name="close" size={14} color={colors.white} />
                     </Pressable>
@@ -394,7 +394,7 @@ export default function ComplaintsScreen() {
                   style={styles.evidenceAddTile}
                   onPress={() => (tutorialDemo.active ? undefined : handlePickEvidence())}
                   accessibilityRole="button"
-                  accessibilityLabel="Add evidence photo"
+                  accessibilityLabel={t.complaints.addEvidencePhotoA11y}
                 >
                   <Ionicons name="camera-outline" size={22} color={colors.inkSoft} />
                 </Pressable>

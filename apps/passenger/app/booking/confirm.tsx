@@ -17,7 +17,7 @@ import {
   colors,
   useTutorialTarget,
 } from '@trisakay/ui';
-import { LOCATION_REQUIRED_HINT, LocationRequiredNotice } from '../../src/components/LocationRequiredNotice';
+import { LocationRequiredNotice, useLocationRequiredHint } from '../../src/components/LocationRequiredNotice';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useConfirmTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
@@ -51,6 +51,7 @@ export default function ConfirmScreen() {
   const { isGranted } = useLocationPermission();
   const insets = useSafeAreaInsets();
   const t = useTranslation();
+  const locationRequiredHint = useLocationRequiredHint();
   const [fareError, setFareError] = useState<string | null>(null);
   const [isRequesting, setIsRequesting] = useState(false);
   const [requestError, setRequestError] = useState<string | null>(null);
@@ -155,7 +156,7 @@ export default function ConfirmScreen() {
         disabled={!tutorialDemo.active && (!isGranted || fare === null || fareError !== null || isRequesting || !discountInfoReady)}
         // Only while disabled — an enabled button must not announce a reason
         // that no longer applies.
-        accessibilityHint={isGranted ? undefined : LOCATION_REQUIRED_HINT}
+        accessibilityHint={isGranted ? undefined : locationRequiredHint}
         onPress={tutorialDemo.active ? undefined : handleRequestRide}
       />
       {requestError && <Text style={styles.requestError}>{requestError}</Text>}
@@ -228,7 +229,7 @@ export default function ConfirmScreen() {
         <Card variant="raised" style={styles.headerBar}>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Go back"
+            accessibilityLabel={t.common.goBackA11y}
             hitSlop={8}
             style={styles.backButton}
             onPress={() => router.back()}

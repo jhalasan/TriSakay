@@ -7,6 +7,8 @@ export const fil: Translations = {
     cancel: 'Kanselahin',
     delete: 'Tanggalin',
     ok: 'OK',
+    goBackA11y: 'Bumalik',
+    locationRequiredNotice: 'Kinakailangan ang lokasyon — i-tap para i-enable',
   },
   offline: {
     stripMessage: 'Walang koneksyon — ipinapakita ang iyong huling update',
@@ -86,6 +88,7 @@ export const fil: Translations = {
     backAccessibilityLabel: 'Bumalik',
   },
   accountPages: {
+    changeProfilePhotoA11y: 'Palitan ang larawan ng profile',
     fareDiscountTitle: 'Diskwento sa Pamasahe',
     fareDiscountBannerSuffix: 'off sa bawat pamasahe',
     fareDiscountBannerSubtitle: 'Mga senior, PWD, at estudyante na may balidong ID',
@@ -103,6 +106,10 @@ export const fil: Translations = {
     idFrontEmptyTitle: 'Idagdag ang harap',
     idBackEmptyTitle: 'Idagdag ang likod',
     idEmptySubtitle: 'Ihiga ang ID nang pahalang para mapuno ang frame',
+    idFrontChangeA11y: 'Palitan ang larawan ng harap ng ID',
+    idFrontAddA11y: 'Magdagdag ng larawan ng harap ng ID',
+    idBackChangeA11y: 'Palitan ang larawan ng likod ng ID',
+    idBackAddA11y: 'Magdagdag ng larawan ng likod ng ID',
     submitApplication: 'Isumite ang Aplikasyon',
     discountDisclaimer: 'Makikita lamang ang larawan ng iyong ID sa iyo at sa PSO Supervisor / Admin reviewers.',
     photoRequiredError: 'Magdagdag ng larawan ng harap at likod ng iyong ID bago isumite.',
@@ -453,6 +460,8 @@ export const fil: Translations = {
     notNow: 'Huwag muna',
   },
   complaints: {
+    removePhotoA11y: 'Alisin ang larawan',
+    addEvidencePhotoA11y: 'Magdagdag ng larawang ebidensya',
     title: 'Mga Reklamo',
     tagline: 'Nandito kami para tumulong ayusin ang mga bagay-bagay.',
     relatedTrip: 'Kaugnay na Biyahe',
