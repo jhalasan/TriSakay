@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, TRICYCLE_SPEED_KMH, sortByNextStop } from '@trisakay/shared';
+import { useCallback, useMemo, useRef, useState } from 'react';
+import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, TRICYCLE_SPEED_KMH, features, sortByNextStop } from '@trisakay/shared';
 import { Ionicons } from '@expo/vector-icons';
-import { Redirect, useRouter } from 'expo-router';
+import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Avatar,
   Button,
   Card,
+  ChatPreviewBanner,
   ConfirmModal,
   HoldToConfirmButton,
   MapOverlaySheet,
@@ -19,6 +20,7 @@ import {
 } from '@trisakay/ui';
 import { inviteTransfer, listMessages, listTransferCandidates, type TransferCandidate } from '@trisakay/services';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
+import { useChatPreviewBanner } from '../../src/hooks/useChatPreviewBanner';
 import { useRequestCountdown } from '../../src/hooks/useRequestCountdown';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useActiveTripTutorialDemo } from '../../src/hooks/useTutorialDemoState';
@@ -134,29 +136,35 @@ export default function ActiveTripScreen() {
   const incoming = pending[0];
   const incomingSeconds = useRequestCountdown(incoming?.expiresAt ?? null);
 
-  // C1 — a one-shot per-passenger count for the chat badge, not a live
-  // subscription per thread: the full live experience only opens once the
-  // driver actually taps into a passenger's thread (trip/chat/[rideRequestId],
-  // which owns its own subscription via useChatStore). Re-runs whenever the
-  // passenger roster itself changes (join/drop/transfer), not on every GPS tick.
+  // C1 — a per-passenger count for the chat badge, not a live subscription
+  // per thread: the full live experience only opens once the driver
+  // actually taps into a passenger's thread (trip/chat/[rideRequestId],
+  // which owns its own subscription via useChatStore). Refetches whenever
+  // the passenger roster changes AND on every return to this screen's
+  // focus (README §4.2) — the latter is what clears a badge after the
+  // driver reads a thread and taps back.
   const [unreadByRideRequestId, setUnreadByRideRequestId] = useState<Record<string, number>>({});
   const passengerIds = (trip?.passengers ?? []).map((p) => p.id).join(',');
-  useEffect(() => {
-    if (!user || !passengerIds) return;
-    let cancelled = false;
-    Promise.all(
-      passengerIds.split(',').map(async (id) => {
-        const { data } = await listMessages(id);
-        return [id, data.filter((m) => m.senderId !== user.id && m.readAt === null).length] as const;
-      })
-    ).then((entries) => {
-      if (cancelled) return;
-      setUnreadByRideRequestId(Object.fromEntries(entries));
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [passengerIds, user]);
+  useFocusEffect(
+    useCallback(() => {
+      if (!user || !passengerIds) return;
+      let cancelled = false;
+      Promise.all(
+        passengerIds.split(',').map(async (id) => {
+          const { data } = await listMessages(id);
+          return [id, data.filter((m) => m.senderId !== user.id && m.readAt === null).length] as const;
+        })
+      ).then((entries) => {
+        if (cancelled) return;
+        setUnreadByRideRequestId(Object.fromEntries(entries));
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [passengerIds, user])
+  );
+
+  const { preview, dismiss: dismissPreview } = useChatPreviewBanner(trip?.passengers.map((p) => p.id) ?? [], user?.id);
 
   if (!trip) {
     return <Redirect href="/(tabs)/dashboard" />;
@@ -388,6 +396,34 @@ export default function ActiveTripScreen() {
         </View>
       </View>
 
+      {preview &&
+        (() => {
+          const previewPassenger = trip?.passengers.find((p) => p.id === preview.rideRequestId);
+          if (!previewPassenger) return null;
+          const name = firstNameOf(previewPassenger.passengerName, t.driver.tripActive.passengerFallback);
+          const stage = previewPassenger.status === 'ongoing' ? t.driver.chat.headerOnBoardPlain : t.driver.chat.headerPickupPlain;
+          const isPhoto = preview.kind === 'image';
+          const previewText = isPhoto
+            ? t.driver.chat.photo
+            : preview.kind === 'quick_reply'
+              ? ((t.driver.chat.quickReplies as Record<string, string>)[preview.body ?? ''] ?? preview.body ?? '')
+              : (preview.body ?? '');
+          return (
+            <ChatPreviewBanner
+              title={`${name} · ${stage}`}
+              avatarUrl={previewPassenger.passengerAvatarUrl}
+              previewText={previewText}
+              isPhoto={isPhoto}
+              replyLabel={t.driver.tripActive.messagePreviewReply}
+              topOffset={76}
+              onPress={() => {
+                dismissPreview();
+                router.push(`/trip/chat/${preview.rideRequestId}`);
+              }}
+            />
+          );
+        })()}
+
       <MapOverlaySheet bottomInset={insets.bottom} maxHeight={sheetMaxHeight} style={styles.content}>
         <ScrollView style={styles.passengerScroll} contentContainerStyle={styles.passengerScrollContent} showsVerticalScrollIndicator>
           {incoming && (
@@ -489,8 +525,12 @@ export default function ActiveTripScreen() {
                       </Text>
                     </View>
                     <Pressable style={styles.thenChatButton} accessibilityRole="button" onPress={() => router.push(`/trip/chat/${passenger.id}`)}>
-                      <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.inkSoft} />
-                      {(unreadByRideRequestId[passenger.id] ?? 0) > 0 && <View style={styles.thenUnreadDot} />}
+                      <Ionicons name="chatbubble-ellipses-outline" size={17} color={colors.accentBlue} />
+                      {(unreadByRideRequestId[passenger.id] ?? 0) > 0 && (
+                        <View style={styles.thenUnreadBadge}>
+                          <Text style={styles.thenUnreadBadgeText}>{Math.min(unreadByRideRequestId[passenger.id], 99)}</Text>
+                        </View>
+                      )}
                     </Pressable>
                     <Pressable style={styles.thenOptionsButton} accessibilityRole="button" onPress={() => setOptionsPassenger(passenger)}>
                       <Ionicons name="ellipsis-horizontal" size={16} color={colors.inkSoft} />
@@ -802,40 +842,64 @@ function NextStopCard({
         </View>
 
         <View style={styles.passengerStrip}>
-          <Avatar
-            name={passenger.passengerName ?? undefined}
-            source={passenger.passengerAvatarUrl ? { uri: passenger.passengerAvatarUrl } : undefined}
-            size="md"
-          />
-          <View style={styles.passengerInfo}>
-            <View style={styles.passengerNameRow}>
-              <Text style={styles.passengerName} numberOfLines={1}>
-                {passenger.passengerName || t.driver.tripActive.passengerFallback}
+          <View style={styles.passengerTopRow}>
+            <Avatar
+              name={passenger.passengerName ?? undefined}
+              source={passenger.passengerAvatarUrl ? { uri: passenger.passengerAvatarUrl } : undefined}
+              size="md"
+            />
+            <View style={styles.passengerInfo}>
+              <View style={styles.passengerNameRow}>
+                <Text style={styles.passengerName} numberOfLines={1}>
+                  {passenger.passengerName || t.driver.tripActive.passengerFallback}
+                </Text>
+                {passenger.status === 'ongoing' && (
+                  <View style={[styles.statusChip, styles.statusChipOngoing]}>
+                    <Text style={[styles.statusChipText, styles.statusChipTextOngoing]}>{t.driver.tripActive.ongoingStatus}</Text>
+                  </View>
+                )}
+                {isPickup && passenger.arrivedAt && (
+                  <View style={[styles.statusChip, styles.statusChipArrived]}>
+                    <Text style={[styles.statusChipText, styles.statusChipTextArrived]}>{t.driver.tripActive.arrivedStatus}</Text>
+                  </View>
+                )}
+              </View>
+              <Text style={styles.passengerSub} numberOfLines={1}>
+                {passenger.seats} {passenger.seats > 1 ? t.driver.tripActive.seatsPlural : t.driver.tripActive.seatsSingular} ·{' '}
+                {passenger.fare !== null ? formatCurrency(passenger.fare) : '—'} ·{' '}
+                {isCash ? (passenger.cashConfirmed ? t.driver.tripActive.cashConfirmedInline : t.driver.requestCard.paymentMethodCash) : t.driver.tripActive.gcashConfirmedInline}
               </Text>
-              {passenger.status === 'ongoing' && (
-                <View style={[styles.statusChip, styles.statusChipOngoing]}>
-                  <Text style={[styles.statusChipText, styles.statusChipTextOngoing]}>{t.driver.tripActive.ongoingStatus}</Text>
-                </View>
-              )}
-              {isPickup && passenger.arrivedAt && (
-                <View style={[styles.statusChip, styles.statusChipArrived]}>
-                  <Text style={[styles.statusChipText, styles.statusChipTextArrived]}>{t.driver.tripActive.arrivedStatus}</Text>
-                </View>
-              )}
             </View>
-            <Text style={styles.passengerSub} numberOfLines={1}>
-              {passenger.seats} {passenger.seats > 1 ? t.driver.tripActive.seatsPlural : t.driver.tripActive.seatsSingular} ·{' '}
-              {passenger.fare !== null ? formatCurrency(passenger.fare) : '—'} ·{' '}
-              {isCash ? (passenger.cashConfirmed ? t.driver.tripActive.cashConfirmedInline : t.driver.requestCard.paymentMethodCash) : t.driver.tripActive.gcashConfirmedInline}
-            </Text>
+            <Pressable style={styles.optionsButton} accessibilityRole="button" onPress={() => onOpenOptions(passenger)}>
+              <Ionicons name="ellipsis-horizontal" size={20} color={colors.ink} />
+            </Pressable>
           </View>
-          <Pressable style={styles.chatButton} accessibilityRole="button" onPress={() => onOpenChat(passenger.id)}>
-            <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.ink} />
-            {unreadCount > 0 && <View style={styles.unreadDot} />}
-          </Pressable>
-          <Pressable style={styles.optionsButton} accessibilityRole="button" onPress={() => onOpenOptions(passenger)}>
-            <Ionicons name="ellipsis-horizontal" size={20} color={colors.ink} />
-          </Pressable>
+
+          {/* README §4.1/§4.3 — Call is opt-in and off by default (no masked/proxy
+              number exists today); Message alone then takes the full row. */}
+          <View style={styles.contactRow}>
+            {features.rideCall && (
+              <Pressable style={styles.contactButton} accessibilityRole="button" onPress={() => {}}>
+                <Ionicons name="call-outline" size={17} color={colors.accentBlue} />
+                <Text style={styles.contactLabel}>{t.driver.tripActive.callButton}</Text>
+              </Pressable>
+            )}
+            <Pressable
+              style={[styles.contactButton, unreadCount > 0 && styles.contactButtonFilled]}
+              accessibilityRole="button"
+              onPress={() => onOpenChat(passenger.id)}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={17} color={unreadCount > 0 ? colors.white : colors.accentBlue} />
+              <Text style={[styles.contactLabel, unreadCount > 0 && styles.contactLabelFilled]}>
+                {unreadCount > 0 ? interpolate(t.driver.tripActive.messageButtonNamed, { name }) : t.driver.tripActive.messageButton}
+              </Text>
+              {unreadCount > 0 && (
+                <View style={styles.contactCountPill}>
+                  <Text style={styles.contactCountPillText}>{unreadCount > 99 ? '99+' : unreadCount}</Text>
+                </View>
+              )}
+            </Pressable>
+          </View>
         </View>
 
         {passenger.handoffLat !== null && (

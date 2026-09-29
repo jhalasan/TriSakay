@@ -1,0 +1,97 @@
+/* Same fade timing/easing as DataTable's own skeleton rows (README §12
+   "Loading") — every skeleton in the app pulses in lockstep visually even
+   though each component defines its own copy of the keyframe (CSS modules
+   don't share keyframes across files). */
+@keyframes skeleton-fade {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.45;
+  }
+}
+
+.bar {
+  display: inline-block;
+  border-radius: var(--r-sm);
+  background: var(--line-soft);
+  animation: skeleton-fade 1.4s ease-in-out infinite;
+}
+
+.block {
+  border-radius: var(--r-md);
+  background: var(--line-soft);
+  animation: skeleton-fade 1.4s ease-in-out infinite;
+}
+
+.avatar {
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--line-soft);
+  animation: skeleton-fade 1.4s ease-in-out infinite;
+}
+
+.chart {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--sp-sm);
+  padding: 0 var(--sp-md) 24px;
+}
+
+.chartBar {
+  flex: 1;
+  border-radius: var(--r-sm) var(--r-sm) 0 0;
+  background: var(--line-soft);
+  animation: skeleton-fade 1.4s ease-in-out infinite;
+}
+
+.donutRow {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-xl);
+  padding: var(--sp-md) 0;
+}
+
+.donutRing {
+  flex-shrink: 0;
+  width: 124px;
+  height: 124px;
+  border-radius: 50%;
+  border: 16px solid var(--line-soft);
+  animation: skeleton-fade 1.4s ease-in-out infinite;
+}
+
+.donutLegend {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+  flex: 1;
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}
+
+.row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--sp-sm) var(--sp-md);
+  border: 1px solid var(--line);
+  border-radius: var(--r-md);
+  background: var(--panel);
+}
+
+.pageBlock {
+  height: 120px;
+  border-radius: var(--r-md);
+  border: 1px solid var(--line);
+  background: var(--panel);
+  padding: var(--sp-lg);
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}

@@ -16,6 +16,7 @@ import { useVerificationStore } from '../store/useVerificationStore';
 import type { VerificationCase } from '../types/verification';
 import type { TricycleCluster } from '../types/driver';
 import { formatRelativeTime, titleCaseLabel } from '../lib/format';
+import { SkeletonRows } from '../components/Skeleton';
 import styles from './DriverVerification.module.css';
 
 const CLUSTER_OPTIONS: { label: string; value: TricycleCluster | '' }[] = [
@@ -313,7 +314,7 @@ export function DriverVerification() {
   return (
     <div className="page">
       <div className="review-page">
-        {loading && cases.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
+        {loading && cases.length === 0 && <SkeletonRows />}
         {!loading && cases.length === 0 && <EmptyState message="No verification cases yet." hint="New driver submissions appear here." />}
         {pendingCases.length > 0 && renderSection('Pending Review', pendingCases)}
         {decidedCases.length > 0 && renderSection('Decided', decidedCases)}

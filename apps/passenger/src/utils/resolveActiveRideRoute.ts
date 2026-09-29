@@ -64,6 +64,8 @@ export async function resolveActiveRideRoute(
       rating: driverInfo?.ratingAvg ?? null,
       etaMinutes: null,
       avatarUrl: driverInfo?.avatarUrl ?? null,
+      ratingCount: driverInfo?.ratingCount ?? 0,
+      psoVerified: driverInfo?.psoVerified ?? false,
     },
     tripStatus: 'matched',
   });

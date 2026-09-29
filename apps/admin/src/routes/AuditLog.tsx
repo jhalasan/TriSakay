@@ -8,6 +8,7 @@ import { useToast } from '../components/Toast';
 import { useAuditLogStore } from '../store/useAuditLogStore';
 import type { AccountActionRow, LoginEventRow, ReviewDecisionRow } from '../services/auditLog';
 import type { FareConfigHistoryRow } from '../services/settings';
+import type { RideMessageViewLogRow } from '../services/rideChat';
 import { formatCurrency, formatDateTime, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import styles from './AuditLog.module.css';
@@ -60,6 +61,25 @@ const loginEventColumns: DataTableColumn<LoginEventRow>[] = [
   { key: 'user', header: 'User', sortValue: (r) => r.userName ?? '', render: (r) => <span style={{ fontWeight: 600 }}>{r.userName ?? '—'}</span> },
 ];
 
+const rideMessageViewColumns: DataTableColumn<RideMessageViewLogRow>[] = [
+  { key: 'when', header: 'When', sortValue: (r) => r.createdAt, render: (r) => formatDateTime(r.createdAt) },
+  { key: 'viewedBy', header: 'Viewed By', sortValue: (r) => r.viewedByName ?? '', render: (r) => <span style={{ fontWeight: 600 }}>{r.viewedByName ?? '—'}</span> },
+  { key: 'ride', header: 'Ride', render: (r) => <span className="mono">{r.rideRequestId}</span> },
+  {
+    key: 'linked',
+    header: 'Linked To',
+    render: (r) =>
+      r.complaintId ? (
+        <span className="mono">Complaint {r.complaintId}</span>
+      ) : r.emergencyAlertId ? (
+        <span className="mono">Alert {r.emergencyAlertId}</span>
+      ) : (
+        '—'
+      ),
+  },
+  { key: 'reason', header: 'Reason', render: (r) => r.reason },
+];
+
 const fareHistoryColumns: DataTableColumn<FareConfigHistoryRow>[] = [
   { key: 'when', header: 'Effective', sortValue: (r) => r.effectiveFrom, render: (r) => formatDateTime(r.effectiveFrom) },
   { key: 'base', header: 'Base Fare', align: 'right', render: (r) => formatCurrency(r.baseFare) },
@@ -101,13 +121,14 @@ const DATE_RANGE_OPTIONS = [
   { label: 'All time', value: 'all' },
 ];
 
-type SectionTab = 'actions' | 'decisions' | 'login' | 'fare';
+type SectionTab = 'actions' | 'decisions' | 'login' | 'fare' | 'chatViews';
 
 const SECTION_TABS: { label: string; value: SectionTab }[] = [
   { label: 'Account Actions', value: 'actions' },
   { label: 'Verification & Discount Decisions', value: 'decisions' },
   { label: 'Login Activity', value: 'login' },
   { label: 'Fare Change History', value: 'fare' },
+  { label: 'PSO Chat-Thread Views', value: 'chatViews' },
 ];
 
 /**
@@ -140,6 +161,9 @@ export function AuditLog() {
     loginEventsTruncated,
     fareHistory,
     fareHistoryLoading,
+    rideMessageViews,
+    rideMessageViewsLoading,
+    rideMessageViewsTruncated,
     fetch,
   } = useAuditLogStore();
   const [section, setSection] = useState<SectionTab>('actions');
@@ -328,6 +352,37 @@ export function AuditLog() {
             emptyMessage="No fare changes recorded yet."
           />
         </div>
+      )}
+
+      {section === 'chatViews' && (
+        <>
+          <div className={`panel ${styles.filterStrip}`}>
+            <Select aria-label="Date range" value={dateRange} onChange={(e) => setDateRange(e.target.value)} options={DATE_RANGE_OPTIONS} />
+          </div>
+
+          <div className="panel">
+            <div className={styles.tableHeader}>
+              <h2 className="panel-title" style={{ marginBottom: 0 }}>
+                PSO Chat-Thread Views
+              </h2>
+              <div className={styles.tableHeaderRight}>
+                <span className={styles.recordCount}>{rideMessageViews.length} recorded · newest first</span>
+                {rideMessageViewsTruncated && (
+                  <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />
+                )}
+                <Badge label="Read-only · all PSO roles" tone="neutral" />
+              </div>
+            </div>
+            <DataTable
+              columns={rideMessageViewColumns}
+              rows={rideMessageViews}
+              getRowKey={(r) => r.id}
+              loading={rideMessageViewsLoading}
+              emptyMessage="No ride chat threads have been viewed yet."
+              emptyHint="Every time PSO opens a ride's chat thread from a complaint or emergency alert, the read and its reason appear here (S1)."
+            />
+          </div>
+        </>
       )}
     </div>
   );

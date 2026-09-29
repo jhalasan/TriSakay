@@ -1,35 +1,35 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '../../theme';
+import { colors, spacing, typography } from '../../theme';
 
 export const styles = StyleSheet.create({
-  row: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    gap: spacing.sm,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.sm,
-    paddingBottom: spacing.md,
-    backgroundColor: colors.panel,
+  wrap: {
+    backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.lineSoft,
+    paddingHorizontal: spacing.md,
+    paddingTop: spacing.sm,
+    paddingBottom: spacing.md,
   },
-  attachButton: { width: 40, height: 40, borderRadius: 20, alignItems: 'center', justifyContent: 'center' },
+  counter: { ...typography.labelSm, fontSize: 11, lineHeight: 14, color: colors.inkFaint, alignSelf: 'flex-end', marginBottom: 4 },
+  row: { flexDirection: 'row', alignItems: 'flex-end', gap: spacing.sm },
+  attachButton: { width: 44, height: 44, borderRadius: 22, alignItems: 'center', justifyContent: 'center', backgroundColor: colors.bg },
   inputWrap: {
     flex: 1,
-    minHeight: 40,
+    minHeight: 44,
     maxHeight: 120,
-    borderRadius: radius.pill,
+    borderRadius: 22,
     borderWidth: 1,
     borderColor: colors.line,
     backgroundColor: colors.bg,
-    paddingHorizontal: spacing.md,
+    paddingHorizontal: spacing.lg,
     justifyContent: 'center',
   },
-  input: { ...typography.body, fontSize: 15, color: colors.ink, paddingVertical: 8 },
+  inputWrapFocused: { borderWidth: 1.5, borderColor: colors.accentBlue, backgroundColor: colors.white },
+  input: { ...typography.body, fontSize: 15, lineHeight: 20, color: colors.ink, paddingVertical: 10 },
   sendButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.accentBlue,

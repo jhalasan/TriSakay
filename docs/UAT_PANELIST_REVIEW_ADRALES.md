@@ -9,6 +9,8 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 
 **Audit note (2026-09-27):** a full line-by-line pass checked every item's actual code/migration content (not filenames or commit messages) against this tracker. Corrections made: F2 was actually already done (missed earlier); X11 downgraded to PARTIAL (it's a hardened policy, not F6's RPC); Y7 turned out already fixed as a side effect of X4's migration; and a naming trap was flagged under PD1 (X9's `cancel_ride_request_as_passenger` RPC is a security fix, not PD1 progress). Everything else the tracker already called TODO/STRETCH/FUTURE was confirmed still untouched — no other silent progress or regressions found.
 
+**Audit note (2026-09-29):** re-checked every item again against current code/migrations, focused on what changed since the 09-27 pass. **C1 moved from STRETCH to DONE** — built well past the "text and quick replies only" scope-down this tracker had recorded: free text, quick replies, read receipts, a typing indicator, photo sharing (EXIF-stripped), phone-number masking (L11), rate limiting, and a push-notification trigger are all live (`supabase/migrations/20260929000001_c1_ride_chat.sql`), plus a matching UI rebuild across both apps (`docs/design_handoff_trisakay_ride_comms/`). **S1 moved from FUTURE to PARTIAL** — only its chat-thread case-view slice is built (`supabase/migrations/20260929030000_s1_pso_ride_chat_case_view.sql`), closing L16; the route trail, call log, timeline and map view are still not started. **L11 and L16 are now DONE.** Everything else on this pass matched the 09-27 audit's status exactly — no other silent progress or regressions found. Full detail on each of these is in their own rows/sections below, not repeated here.
+
 ---
 
 ## Tracker
@@ -29,9 +31,9 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 | PD2 | Don't allow cancelling at every stage | **DONE 2026-09-27** — the stage gate (pending free / assigned needs a reason+strike / ongoing blocked) is enforced inside PD1's `cancel_ride_request` RPC, not a separate piece. | Part of PD1 |
 | PD3 | Literature on how many cancellations to allow | TODO | Docs |
 | PD4 | Ask users how they feel about cancelling | TODO | Survey |
-| C1 | *(Team addition)* In-app chat between driver and passenger | STRETCH (text and quick replies only) | Code, medium |
-| C2 | *(Team addition)* In-app voice call with no phone numbers shared | FUTURE | Code, large |
-| S1 | *(Team addition)* Route trail, legal hold and PSO case view for safety and compliance | FUTURE | Code, large |
+| C1 | *(Team addition)* In-app chat between driver and passenger | **DONE 2026-09-29** — full spec (not just the text/quick-reply stretch scope): free text, quick replies, read receipts, typing indicator, photo sharing, phone masking, rate limiting, push. Two-device live test still not run — see the C1 section below. | Code, medium |
+| C2 | *(Team addition)* In-app voice call with no phone numbers shared | FUTURE — intentionally excluded from this pass, to be built later | Code, large |
+| S1 | *(Team addition)* Route trail, legal hold and PSO case view for safety and compliance | **PARTIAL 2026-09-29** — only the PSO chat-thread case-view slice is built (closes L16); route trail, call log, timeline and map view are still FUTURE. See the S1 section below. | Code, large |
 | N1 | *(Team addition)* Ride status push notifications (assigned, arriving, arrived, transferred, completed) | STRETCH | Code, small |
 | N2 | *(Team addition)* Cancellation and transfer charts for the PSO | STRETCH | Code, small |
 | N3 | *(Team addition)* Share my trip: a live link for a trusted contact | FUTURE | Code, medium |
@@ -59,12 +61,12 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 | L8 | **Invited driver no longer eligible at accept time:** now full, suspended, offline, or documents expired. | [D1] `respond_transfer` re-checks eligibility and free seats inside the locked transaction, not only when the list was shown. |
 | L9 | **Transfer during an active SOS** would move the passenger away from the emergency. | [D1] Transfers are blocked while the ride has an unresolved `emergency_alerts` row. |
 | L10 | **Rating a driver who never served the ride** by abusing the "rate both drivers" change. | [D1] `validate_rating` allows a second driver only if an accepted `ride_transfers` row links them to that ride. |
-| L11 | **Chat used to share phone numbers**, which defeats the privacy design, or used for harassment. | [C1] Detect PH phone number patterns (`09XXXXXXXXX`, `+639…`), mask them in the message with a warning, and log it. A "Report message" button creates a complaint. Limit to 20 messages per minute per sender (trigger). |
+| L11 | **DONE 2026-09-29.** **Chat used to share phone numbers**, which defeats the privacy design, or used for harassment. | [C1] `enforce_ride_message_insert_fields()` regex-masks `09\d{9}`/`\+639\d{9}` patterns in `body` and sets `contains_masked_phone` — ✅. `reportMessage()` in `packages/services/src/chat/index.ts` opens the existing complaints flow prefilled with the ride/message context, reusing `submitComplaint()` rather than new machinery — ✅. Rate limit: 20 messages/minute/sender, same count(*)-per-window trigger pattern as PD1 — ✅. No separate "log it" table beyond the masked-body flag itself, matching the doc's own preference for deriving rather than duplicating data. |
 | L12 | **Driver keeps the passenger's home location** because pickup and drop-off stay in the driver's trip history. | [F-new] Driver-side history shows only the barangay or area after completion. Exact coordinates stay visible to the PSO only. |
 | L13 | **Email spam** with the "Email me this receipt" button. | [P1] At most 3 sends per ride and 20 per day per user, enforced in `send-receipt`. Only the account's verified email is used. |
 | L14 | **Abuse of the Maps proxy:** a scripted client burns through the Google quota. | [G2] ✅ Done — `maps-proxy` requires a valid Supabase JWT (verify_jwt on; confirmed live it rejects missing/malformed tokens before reaching the handler), and enforces 60 searches / 20 routes per hour per user via `increment_maps_proxy_usage`. CORS is `*` like the repo's other JWT-authenticated functions — the caller is the mobile app via a real user session, not a browser, so the JWT check is the actual gate, not CORS. Google's own daily quota caps (set in Cloud Console) remain the hard ceiling. |
 | L15 | **Silent policy changes:** an admin changes strike or cooldown numbers and nobody can see who did it. | [PD1] Changes to `system_settings` and `fare_config` are written to the audit log (who, old value → new value, when). |
-| L16 | **PSO case access with a junk reason**, since the reason is only free text. | [S1] The reason is chosen from a list plus notes. An admin-only report shows every PSO case access. |
+| L16 | **DONE 2026-09-29, scoped to the chat-thread slice of S1 — the rest of S1's case view doesn't exist yet.** **PSO case access with a junk reason**, since the reason is only free text. | [S1] `admin_view_ride_messages(ride_request_id, reason)` rejects a blank reason and writes it to a new `ride_message_view_log` audit table before returning any messages — ✅. **Deviation from the original spec, deliberate:** the reason is free text, not chosen from a fixed list — matches how every other reason field in this app already works (complaint resolution notes, account-action reasons), and a list would need product input on what the options should be. **Also deviates on "admin-only":** the audit report (`AuditLog.tsx`'s new "PSO Chat-Thread Views" tab) is readable by any signed-in PSO role, not admin-only — this matches the existing `account_actions`/`login_events` convention (`is_pso()`, not `is_admin()`) rather than the doc's literal wording, on the reasoning that transparency across tiers is this app's established pattern; flagging here in case that's not what was intended. |
 | L17 | **Guessable Share-my-trip link.** | [N3] A random token of at least 128 bits, expiring when the ride ends. The page shows only first name, plate and live position. |
 | L18 | **Seats undercounted:** book 1 seat and board 3 people, paying 1 fare and overloading the tricycle. | [PD1/UI] The driver can adjust seats at pickup ("3 passengers boarded"). `start_ride_leg` accepts `p_seats`, recomputes the fare through `compute_fare`, and checks capacity. The passenger is shown the new fare. |
 
@@ -146,8 +148,8 @@ Sources: three read-only code audits (database access rules and functions, ride/
 Tiers:
 - **Required:** the panel's items, F1–F6, X1–X11, and R1, R2, R4, R5.
 - **Fill-in if time allows:** Y1–Y5, Y9, R6–R8.
-- **Stretch (only if everything above is done):** C1 chat (text + quick replies only), N1, N2.
-- **Future work** (designed below, not built this sprint — written up in the manuscript): C2 voice calls, S1, N3, chat photos/read receipts, optimal stop order, Y6/Y7/Y10, R9/R10.
+- **Stretch (only if everything above is done):** ~~C1 chat (text + quick replies only)~~ **DONE 2026-09-29, full spec** — see the C1 section below. N1, N2 still not built.
+- **Future work** (designed below, not built this sprint — written up in the manuscript): C2 voice calls, S1 (**partially started 2026-09-29** — see its own section), N3, ~~chat photos/read receipts~~ (built as part of C1), optimal stop order. ~~Y6/Y7/Y10~~ and R9 are done, R10 partially done — see their own rows, this line is stale as a "not built" list for those specifically.
 
 **Person 1 owns Maps + Domain end-to-end** (G2 and G1 are bundled on purpose: G2's admin key needs the domain to restrict it to, P1's email needs the domain verified, and G3's final screenshots need both done — one owner avoids two people blocking each other).
 
@@ -196,7 +198,7 @@ Tiers:
 | Week 2, if time allows | R2 | **DONE 2026-09-27.** Matching radius + staleness filter. |
 | Week 2, if time allows | R3 | **DONE 2026-09-27.** GPS trigger, reject mocked location (shares code with L3/F4). |
 | Week 2, if time allows | R1 | **DONE 2026-09-27.** Ghost-driver offline cron. |
-| Week 2, if C1 is reached | *(C1 backend)* | Quick add: the `ride_messages` table + RLS, same column-lock pattern as X1–X6. About an hour of work once the pattern exists — hand off to Person 3 for the UI. |
+| ~~Week 2, if C1 is reached~~ DONE 2026-09-29 | *(C1 backend)* | `ride_messages` table + RLS + rate-limit/masking trigger, `supabase/migrations/20260929000001_c1_ride_chat.sql`, applied and verified live. |
 
 ### Person 3 — App UX, reliability, docs & QA
 | When | Item | Notes |
@@ -213,8 +215,8 @@ Tiers:
 | Week 2, if time allows | R6 | **DONE 2026-09-27.** Driver gets a live update when the passenger cancels. |
 | Week 2, if time allows | R7 | **DONE 2026-09-27.** Sign out other sessions on password change. |
 | Week 2, if time allows | L12 | Driver's own trip history shows only the barangay/area, not exact coordinates. Small UI change to the driver history screen. |
-| Week 2, if C1 is reached | *(C1 UI)* | Chat screens in both apps + Realtime wiring, once Person 2's `ride_messages` table lands. Include L11's phone-number masking in the same pass. |
-| Week 2, if C1+time allow | N1 | Ride-status push notifications (assigned/arriving/arrived/transferred/completed) — natural next step after C1, reuses the same notification pattern as R4. |
+| ~~Week 2, if C1 is reached~~ DONE 2026-09-29 | *(C1 UI)* | Chat screens in both apps + Realtime wiring, `app/booking/chat.tsx` (passenger) / `app/trip/chat/[rideRequestId].tsx` (driver), plus a full ride-comms UI rebuild (`docs/design_handoff_trisakay_ride_comms/`) — driver Call/Message contact row, passenger matched-ride screen, restyled chat bubbles/composer/quick-replies in `packages/ui`. L11's masking included. |
+| Week 2, if C1+time allow | N1 | **Still not built.** Ride-status push notifications (assigned/arriving/arrived/transferred/completed) — natural next step after C1, reuses the same notification pattern as R4. Not started even though C1 itself landed. |
 | Week 2, last 3 days | Full regression | Real Android devices, all 3 people's work together. Hand G3 screenshots to Person 1. Final tracker update — mark every item DONE/STRETCH-not-reached/FUTURE. |
 
 ### Handoff: Person 3 → Person 1 (2026-09-27) — finish D2 and G4
@@ -310,6 +312,8 @@ The code for D2 and G4 is pushed and every test suite passes. What's left needs 
   - Update the cancellation section of `legalCopy.ts` in both apps to match what is enforced.
 
 ## C1 + C2: driver–passenger communication (privacy first)
+**C1 status: DONE 2026-09-29** — full spec built, not the reduced "text and quick replies only" stretch line this tracker originally carried: free text, quick-reply chips, read receipts, a typing indicator (Realtime broadcast), photo sharing (EXIF/GPS stripped client-side), phone-number masking + rate limiting (L11), and an Expo push on new messages. `supabase/migrations/20260929000001_c1_ride_chat.sql` + `20260929000002` (an advisor-flagged execute-revoke follow-up), both applied and verified live. Client: `packages/services/src/chat/index.ts`, `app/booking/chat.tsx` (passenger), `app/trip/chat/[rideRequestId].tsx` (driver), and a full UI rebuild across both apps per `docs/design_handoff_trisakay_ride_comms/` (driver Call/Message contact row, passenger matched-ride screen, restyled `ChatBubble`/`ChatComposer`/`QuickReplyRow` in `packages/ui`). Typecheck and the full test suite (347 in `packages/services` alone) are clean. **Confirmed on-device:** the driver contact row and the passenger matched-ride screen, via each app's tutorial demo state. **Not yet confirmed on-device:** the chat screens themselves, the preview banners, and — the two-device verification this doc's own Verification section calls for (live message/typing/read-receipt exchange, background push, a real photo's EXIF stripped) was never run; that needs a second physical device, which wasn't connected during this build. **The admin/PSO case-view of a thread is now partially built too — see S1 below, not "deferred with no plan" as this section originally said.** C2 (voice calling) is unaffected and still not started — see its own subsection.
+
 **Rule:** neither side ever sees the other's phone number, email or full name.
 - They see only first name, photo, and the tricycle plate (the plate only for the passenger, as a safety check).
 - Contact is possible only while the ride is `assigned` or `ongoing`. After that, the thread becomes read-only and the call button disappears.
@@ -330,7 +334,7 @@ The code for D2 and G4 is pushed and every test suite passes. What's left needs 
     - The photo is re-encoded with `expo-image-manipulator`, which strips GPS/EXIF data, and uploaded to a private Storage bucket `ride-chat`.
     - Storage RLS matches the message RLS, and photos are shown through short-lived signed URLs.
 - **Retention (confirmed, plus S1's legal hold):** the history is stored. Threads for rides under a complaint or SOS are kept until the case is closed. After the ride ends, both sides can read it but not send. "Typing…" is never stored. Keep message text for 30 days so PSO can use it for complaints or SOS; delete photos after 7 days (pg_cron). State this in the privacy policy (`legalCopy.ts`).
-- **Admin:** PSO can view a ride's thread only from a complaint or SOS alert that references that ride, and each view is written to the audit log.
+- **Admin:** ✅ **DONE 2026-09-29** — PSO can view a ride's thread only from a complaint or SOS alert that references that ride, and each view is written to the audit log. See S1 below for the actual build (this piece shipped as part of S1's case-view work, not alongside C1's own migration).
 - **UI:** a chat button with an unread badge on the passenger `booking/trip.tsx` and on each passenger card in driver `trip/active.tsx`. A shared chat screen in each app, with the bubble components in `packages/ui`.
 - **Transfer (D1):** the thread moves to the new driver. A system message is added ("Your ride was transferred to Juan"). The old driver loses access.
 
@@ -352,6 +356,8 @@ The code for D2 and G4 is pushed and every test suite passes. What's left needs 
 - **Deferred:** a full-screen incoming call on the lock screen (react-native-callkeep / ConnectionService). Revisit only if the push notification tap proves unreliable in testing.
 
 ### S1: safety and compliance trail plus the PSO case view (team addition)
+**Status: PARTIAL 2026-09-29 — only the chat-thread slice is built.** `supabase/migrations/20260929030000_s1_pso_ride_chat_case_view.sql` adds `admin_view_ride_messages(ride_request_id, reason)`, a SECURITY DEFINER RPC that lets a PSO account read a ride's `ride_messages` thread only once that ride has a linked complaint or emergency alert, requires a non-blank reason, and atomically logs the read to a new `ride_message_view_log` table (closes L16 — see that row). UI: `apps/admin/src/components/RideChatThread/`, embedded in both `Complaints.tsx` and `EmergencyAlerts.tsx`'s detail modals; a new "PSO Chat-Thread Views" tab on `AuditLog.tsx` surfaces the log itself. Applied and verified live (`migration list --linked` shows it recorded), admin app typecheck clean. **Everything else below — the route trail, the reliable/foreground-service tracking, the call log, the timeline, the map, "Print case report", and the retention/legal-hold cron — is still FUTURE, not started.** This slice only answers "can PSO read a linked ride's chat," not the full case-view this section describes.
+
 **Why:** only the driver's *current* position is stored today (`driver_locations`, overwritten about every 8 s). Once a ride ends, the PSO can't tell what route the tricycle took. S1 gives every ride a record the PSO can trust in an investigation.
 - **Route trail:** a new `ride_location_trail` table (ride_request_id, trip_id, lat, lng, accuracy, recorded_at set by the server).
   - Recorded from `assigned` until completed or cancelled. Nothing is recorded while the driver is idle or offline.
@@ -514,9 +520,9 @@ After everything is deployed, capture the hosted admin on the real domain with G
 - **P1:** turn the switch on, complete a ride, and the email arrives. The per-trip button works. No duplicate automatic sends.
 - **G2:** a dev build on Android shows Google tiles, search returns GenSan places, routes draw. The admin maps load on the domain.
 - **C1:**
-  - SQL/RLS tests: an unrelated user can't read the thread; nobody can post after the ride completes.
-  - Two devices: messages, "Seen", typing and photos arrive live; a push arrives when the app is in the background.
-  - A shared photo has no GPS data.
+  - SQL/RLS tests: an unrelated user can't read the thread; nobody can post after the ride completes. **Not run as an explicit test script** — the RLS/trigger logic was written and code-reviewed against the same patterns as X1–X6, but no exploit script exercised it live (same gap the doc's own "Verification (Person 3 writes these as a test script)" note flags for X/Y items).
+  - Two devices: messages, "Seen", typing and photos arrive live; a push arrives when the app is in the background. **Not run** — needs a second physical device, not connected during this build.
+  - A shared photo has no GPS data. **Not independently verified** — `expo-image-manipulator`'s strip step is wired in per the C1 migration's design, but no photo was actually sent and inspected.
 - **C2:**
   - Two Android dev builds: call, ring, answer, decline, missed; the audio works on mobile data.
   - The token is refused for a non-participant or a finished ride.

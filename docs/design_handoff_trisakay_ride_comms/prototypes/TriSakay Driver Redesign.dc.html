@@ -1,0 +1,862 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e9eaec;font-family:Poppins,system-ui,sans-serif}
+a{color:#002E60}a:hover{color:#002043}
+*::-webkit-scrollbar{display:none}
+@keyframes tsPulse{0%{transform:scale(.9);opacity:.55}70%{transform:scale(1.9);opacity:0}100%{transform:scale(1.9);opacity:0}}
+</style>
+</helmet>
+
+<svg style="display:none" aria-hidden="true"><defs>
+<symbol id="d-speed" viewBox="0 0 512 512"><path fill="currentColor" d="M425.7 118.25A240 240 0 0076.32 447l.18.2c.33.35.64.71 1 1.05.74.84 1.58 1.79 2.57 2.78a41.17 41.17 0 0060.36-.42 157.13 157.13 0 01231.26 0 41.18 41.18 0 0060.65.06l3.21-3.5.18-.2a239.93 239.93 0 00-10-328.76zM240 128a16 16 0 0132 0v32a16 16 0 01-32 0zM128 304H96a16 16 0 010-32h32a16 16 0 010 32zm48.8-95.2a16 16 0 01-22.62 0l-22.63-22.62a16 16 0 0122.63-22.63l22.62 22.63a16 16 0 010 22.62zm149.3 23.1l-47.5 75.5a31 31 0 01-7 7 30.11 30.11 0 01-35-49l75.5-47.5a10.23 10.23 0 0111.7 0 10.06 10.06 0 012.3 14zm31.72-23.1a16 16 0 01-22.62-22.62l22.62-22.63a16 16 0 0122.63 22.63zM416 304h-32a16 16 0 010-32h32a16 16 0 010 32z"></path></symbol>
+<symbol id="d-list" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="48" d="M160 144h288M160 256h288M160 368h288"></path><circle cx="80" cy="144" r="16" fill="none" stroke="currentColor" stroke-width="32"></circle><circle cx="80" cy="256" r="16" fill="none" stroke="currentColor" stroke-width="32"></circle><circle cx="80" cy="368" r="16" fill="none" stroke="currentColor" stroke-width="32"></circle></symbol>
+<symbol id="d-time" viewBox="0 0 512 512"><path fill="currentColor" d="M256 48C141.13 48 48 141.13 48 256s93.13 208 208 208 208-93.13 208-208S370.87 48 256 48zm96 240h-96a16 16 0 01-16-16V128a16 16 0 0132 0v128h80a16 16 0 010 32z"></path></symbol>
+<symbol id="d-wallet" viewBox="0 0 512 512"><rect x="48" y="128" width="416" height="288" rx="56" fill="none" stroke="currentColor" stroke-width="32"></rect><path fill="none" stroke="currentColor" stroke-width="32" stroke-linejoin="round" d="M96 128V96a48 48 0 0158-46l250 62"></path><circle cx="368" cy="272" r="24" fill="currentColor"></circle></symbol>
+<symbol id="d-person" viewBox="0 0 512 512"><path fill="currentColor" d="M332.64 64.58C313.18 43.57 286 32 256 32c-30.16 0-57.43 11.5-76.8 32.38-19.58 21.11-29.12 49.8-26.88 80.78C156.76 206.28 203.27 256 256 256s99.16-49.71 103.67-110.82c2.27-30.7-7.33-59.330-27.03-80.6zM432 480H80a31 31 0 01-24.2-11.130c-6.5-7.77-9.12-18.38-7.18-29.11C57.06 392.94 83.4 353.61 124.8 326c36.78-24.51 83.37-38 131.2-38s94.42 13.5 131.2 38c41.4 27.6 67.74 66.93 76.18 113.75 1.94 10.73-.68 21.34-7.18 29.11A31 31 0 01432 480z"></path></symbol>
+<symbol id="d-bell" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="32" stroke-linecap="round" stroke-linejoin="round" d="M427.68 351.43C402 320 383.87 304 383.87 217.35 383.87 138 343.35 109.73 310 96c-4.43-1.82-8.6-6-9.950-10.55C294.2 65.54 277.8 48 256 48s-38.21 17.55-44 37.47c-1.35 4.6-5.52 8.71-9.95 10.53-33.39 13.75-73.87 41.92-73.87 121.35C128.13 304 110 320 84.32 351.43 73.68 364.45 83 384 101.61 384h308.88c18.51 0 27.77-19.61 17.19-32.57zM320 384v16a64 64 0 01-128 0v-16"></path></symbol>
+<symbol id="d-star" viewBox="0 0 512 512"><path fill="currentColor" d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"></path></symbol>
+<symbol id="d-check" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" d="M416 128L192 384l-96-96"></path></symbol>
+<symbol id="d-chev" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" d="M184 112l144 144-144 144"></path></symbol>
+<symbol id="d-power" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round" d="M256 64v176"></path><path fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round" d="M362 132a176 176 0 11-212 0"></path></symbol>
+<symbol id="d-up" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" d="M112 328l144-144 144 144"></path></symbol>
+<symbol id="d-info" viewBox="0 0 512 512"><circle cx="256" cy="256" r="200" fill="none" stroke="currentColor" stroke-width="32"></circle><path fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="round" d="M256 232v128"></path><circle cx="256" cy="170" r="20" fill="currentColor"></circle></symbol>
+<symbol id="d-shield" viewBox="0 0 512 512"><path fill="currentColor" d="M479.07 111.36a16 16 0 00-13.15-14.74c-86.5-15.52-122.61-26.74-203.33-63.2a16 16 0 00-13.18 0C168.69 69.88 132.58 81.1 46.08 96.62a16 16 0 00-13.15 14.74c-3.85 61.11 4.36 118.05 24.43 169.24A349.47 349.47 0 00129 393.11c53.47 56.73 110.24 81.37 121.07 85.73a16 16 0 0012 0c10.83-4.36 67.6-29 121.07-85.730a349.47 349.47 0 0071.5-112.51c20.07-51.19 28.28-108.13 24.43-169.24zm-131 75.11l-110.8 128a16 16 0 01-11.41 5.53h-.66a16 16 0 01-11.2-4.57l-49.2-48.2a16 16 0 1122.4-22.86l37 36.29 99.7-115.13a16 16 0 0124.2 20.94z"></path></symbol>
+<symbol id="d-radio" viewBox="0 0 512 512"><circle cx="256" cy="256" r="36" fill="currentColor"></circle><path fill="none" stroke="currentColor" stroke-width="40" stroke-linecap="round" d="M190 334a118 118 0 010-156M322 178a118 118 0 010 156M139 386a190 190 0 010-260M373 126a190 190 0 010 260"></path></symbol>
+<symbol id="d-motif" viewBox="0 0 100 100"><path d="M 22 46 A 28 28 0 1 1 78 46" stroke="currentColor" stroke-width="9" stroke-linecap="round" fill="none"></path><path d="M 28 58 L 50 80 L 72 58" stroke="currentColor" stroke-width="9" stroke-linecap="round" stroke-linejoin="round" fill="none"></path></symbol>
+<symbol id="d-nav" viewBox="0 0 512 512"><path fill="currentColor" d="M448 64L64 240.14h200a8 8 0 018 8V448z"></path></symbol>
+<symbol id="d-alert" viewBox="0 0 512 512"><path fill="currentColor" d="M85 435h342c22 0 36-24 25-43L281 85c-11-19-39-19-50 0L60 392c-11 19 3 43 25 43zm171-56a22 22 0 110-44 22 22 0 010 44zm22-96a22 22 0 01-44 0V190a22 22 0 0144 0z"></path></symbol>
+<symbol id="d-more" viewBox="0 0 512 512"><circle cx="128" cy="256" r="36" fill="currentColor"></circle><circle cx="256" cy="256" r="36" fill="currentColor"></circle><circle cx="384" cy="256" r="36" fill="currentColor"></circle></symbol>
+<symbol id="d-swap" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" d="M112 160h288l-64-64M400 352H112l64 64"></path></symbol>
+<symbol id="d-exit" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" d="M304 336v40a40 40 0 01-40 40H104a40 40 0 01-40-40V136a40 40 0 0140-40h160a40 40 0 0140 40v40M368 336l80-80-80-80M176 256h256"></path></symbol>
+<symbol id="d-close" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="48" stroke-linecap="round" d="M368 368L144 144M368 144L144 368"></path></symbol>
+<symbol id="d-cash" viewBox="0 0 512 512"><rect x="32" y="112" width="448" height="256" rx="24" fill="none" stroke="currentColor" stroke-width="32"></rect><circle cx="256" cy="240" r="64" fill="none" stroke="currentColor" stroke-width="32"></circle></symbol>
+<symbol id="d-call" viewBox="0 0 512 512"><path fill="currentColor" d="M391 480c-19.52 0-46.94-7.06-88-30-49.93-28-88.55-53.85-138.21-103.38C116.91 298.77 93.61 267.79 61 208.45c-36.84-67-30.56-102.12-23.54-117.13C45.82 73.38 58.16 62.65 74.11 52a176.3 176.3 0 0128.64-15.2c1-.43 1.93-.84 2.76-1.21 4.95-2.23 12.45-5.6 21.95-2 6.34 2.38 12 7.25 20.86 16 18.17 17.92 43 57.83 52.16 77.43 6.15 13.21 10.22 21.93 10.23 31.71 0 11.45-5.76 20.28-12.75 29.81-1.31 1.79-2.61 3.5-3.87 5.16-7.61 10-9.28 12.89-8.18 18.05 2.23 10.37 18.86 41.24 46.19 68.51s57.31 42.85 67.72 45.07c5.38 1.15 8.33-.59 18.65-8.47 1.48-1.13 3-2.3 4.59-3.47 10.66-7.93 19.08-13.54 30.26-13.54h.06c9.73 0 18.06 4.22 31.86 11.18 18 9.08 59.11 33.59 77.14 51.78 8.77 8.84 13.66 14.48 16.05 20.81 3.6 9.53.21 17-2 22-.37.83-.78 1.74-1.21 2.75a176.49 176.49 0 01-15.29 28.58c-10.63 15.9-21.4 28.21-39.38 36.58A67.42 67.42 0 01391 480z"></path></symbol>
+<symbol id="d-chat" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="32" stroke-linejoin="round" d="M87.49 380c1.19-4.38-1.44-10.47-3.95-14.86a44.86 44.86 0 00-2.54-3.8 199.81 199.81 0 01-33-110C47.65 139.09 140.73 48 255.83 48 356.21 48 440 117.54 459.58 209.85a199 199 0 014.42 41.64c0 112.41-89.49 204.93-204.59 204.93-18.3 0-43-4.6-56.47-8.37s-26.92-8.77-30.39-10.11a31.09 31.09 0 00-11.12-2.07 30.71 30.71 0 00-12.09 2.43l-67.83 24.48a16 16 0 01-4.67 1.22 9.6 9.6 0 01-9.57-9.74 15.85 15.85 0 01.6-3.29z"></path></symbol>
+</defs></svg>
+
+<section data-screen-label="Driver redesign — active trip" style="padding:52px 56px 56px;display:flex;flex-direction:column;gap:26px;border-bottom:1px solid rgba(0,0,0,.08)">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:900px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="font:700 10px ui-monospace,Menlo,monospace;padding:4px 8px;background:#002E60;color:#fff;border-radius:5px;letter-spacing:.6px">REDESIGN</span>
+      <span style="font:700 22px/28px Poppins;color:#14191D;letter-spacing:-.3px">Driver — Accepted ride (trip/active)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#B3261E">What's hard today</div>
+        <div style="font:400 13px/20px Poppins;color:#5A646B;text-wrap:pretty">Each passenger card carries up to six controls at once (Arrived, cash toggle, Cancel, Start/Complete, Transfer, Release), so the next step is hard to spot while driving. Complete stays grey with no reason given until cash is toggled. The only navigation control is a small icon on the map, and it doesn't say where it goes. End trip always shows but is disabled while passengers are aboard. SOS takes a full-width slot in every state.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#3B602B">What changes</div>
+        <div style="font:400 13px/20px Poppins;color:#5A646B;text-wrap:pretty">The sheet leads with the next stop's address and a labelled Navigate button. Each passenger gets one big primary action that follows their status: I've arrived, then Start ride, then Collect cash, then Complete drop-off. The hint under it explains any disabled state. Transfer, Release and Cancel move behind a ⋯ menu. SOS becomes a fixed hold button on the map, and End trip only appears once everyone is dropped off. Call and Message sit on the passenger strip: Call opens the phone dialer, Message opens one-tap quick replies (<a href="#4d">4d</a>). Try it in <a href="#4a">4a</a>.</div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start">
+    <div id="4a" style="display:flex;flex-direction:column;gap:12px"><div data-screen-label="Active trip — single passenger flow" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#E7EBE4;flex:none">
+      <div style="position:absolute;inset:0;background:#E7EBE4">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.6) 0 3px,transparent 3px 46px),repeating-linear-gradient(0deg,rgba(255,255,255,.6) 0 3px,transparent 3px 52px)"></div>
+        <div style="position:absolute;left:-20px;top:110px;width:430px;height:26px;background:#fff;transform:rotate(-12deg)"></div>
+        <div style="position:absolute;left:-30px;top:240px;width:430px;height:30px;background:#fff;transform:rotate(6deg)"></div>
+        <div style="position:absolute;left:120px;top:0;width:22px;height:480px;background:#fff"></div>
+        <sc-if value="{{ at.showRoute }}" hint-placeholder-val="{{ true }}"><svg viewBox="0 0 390 480" style="position:absolute;left:0;top:0;width:390px;height:480px"><path d="M131 350 L131 256 L290 230 L290 142" fill="none" stroke="#002E60" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div style="position:absolute;left:117px;top:336px;width:28px;height:28px;border-radius:14px;background:#002E60;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,46,96,.35);box-sizing:border-box"></div>
+        <sc-if value="{{ at.isPickup }}" hint-placeholder-val="{{ true }}"><div style="position:absolute;left:276px;top:128px;width:28px;height:28px;border-radius:14px;background:#fff;border:6px solid #002E60;box-shadow:0 4px 12px rgba(0,46,96,.3);box-sizing:border-box"></div><div style="position:absolute;left:250px;top:96px;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/16px Poppins;color:#14191D;box-shadow:0 2px 8px rgba(0,0,0,.14)">Pickup</div></sc-if><sc-if value="{{ at.isDrop }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:277px;top:129px;width:26px;height:26px;border-radius:7px;background:#477434;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,46,96,.3);box-sizing:border-box"></div><div style="position:absolute;left:244px;top:96px;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/16px Poppins;color:#14191D;box-shadow:0 2px 8px rgba(0,0,0,.14)">Drop-off</div></sc-if></sc-if>
+      </div>
+      <div style="position:absolute;left:16px;top:60px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:9px 14px;box-shadow:0 4px 14px rgba(0,20,45,.18)"><div style="width:9px;height:9px;border-radius:5px;background:#002E60"></div><div style="font:700 13px/17px Poppins;color:#14191D;white-space:nowrap">{{ at.status }}</div></div>
+      <div style="position:absolute;right:16px;top:54px;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <div style="width:58px;height:58px;border-radius:29px;background:#B3261E;border:3px solid #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(179,38,30,.4);box-sizing:border-box;cursor:pointer"><svg style="width:18px;height:18px;color:#fff"><use href="#d-alert"></use></svg><div style="font:800 11px/13px Poppins;letter-spacing:.6px;color:#fff">SOS</div></div>
+        <div style="background:#fff;border-radius:999px;padding:2px 8px;font:600 10.5px/14px Poppins;color:#B3261E;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.12)">Hold 2s</div>
+      </div>
+      <sc-if value="{{ at.notDone }}" hint-placeholder-val="{{ true }}">
+      <div style="position:absolute;left:10px;right:10px;bottom:10px;max-height:520px;overflow-y:auto;scrollbar-width:none;background:#fff;border-radius:26px;box-shadow:0 -8px 34px rgba(0,20,45,.18);padding:10px 16px 18px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box">
+        <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6;flex:none"></div>
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <sc-if value="{{ at.isPickup }}" hint-placeholder-val="{{ true }}"><div style="width:44px;height:44px;border-radius:14px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><div style="width:14px;height:14px;border-radius:7px;border:3.5px solid #002E60;box-sizing:border-box"></div></div></sc-if>
+          <sc-if value="{{ at.isDrop }}" hint-placeholder-val="{{ false }}"><div style="width:44px;height:44px;border-radius:14px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><div style="width:13px;height:13px;border-radius:3px;background:#477434"></div></div></sc-if>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 11.5px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#5A646B">{{ at.eyebrow }}</div>
+            <div style="font:700 18px/24px Poppins;color:#14191D;text-wrap:pretty">{{ at.addr }}</div>
+            <div style="font:400 13px/18px Poppins;color:#5A646B">{{ at.meta }}</div>
+          </div>
+          <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer"><div style="width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(0,46,96,.28)"><svg style="width:20px;height:20px;color:#fff"><use href="#d-nav"></use></svg></div><div style="font:600 11px/14px Poppins;color:#002E60">Navigate</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;background:#F6F7F9;border-radius:16px;padding:10px 10px 10px 12px"><div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:20px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 14px Poppins;color:#002043;flex:none">MR</div>
+          <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px"><div style="font:600 15px/20px Poppins;color:#14191D">Maria Reyes</div><sc-if value="{{ at.hasChip }}" hint-placeholder-val="{{ false }}"><div style="font:700 10.5px/14px Poppins;letter-spacing:.5px;text-transform:uppercase;color:#3B602B;background:#E9F7E3;border-radius:999px;padding:2px 8px">{{ at.chip }}</div></sc-if></div><div style="font:400 12.5px/17px Poppins;color:#5A646B">2 seats · ₱45.00 · Cash</div></div>
+          <div style="width:44px;height:44px;border-radius:13px;background:#fff;border:1px solid #DCE2E6;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;box-sizing:border-box"><svg style="width:20px;height:20px;color:#14191D"><use href="#d-more"></use></svg></div>
+          </div>
+          <div style="display:flex;gap:8px"><div style="flex:1;min-height:44px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg style="width:17px;height:17px;color:#002E60"><use href="#d-call"></use></svg><span style="font:600 14px/18px Poppins;color:#002E60">Call</span></div><div onClick="{{ openMsg }}" style="flex:1;min-height:44px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg style="width:17px;height:17px;color:#002E60"><use href="#d-chat"></use></svg><span style="font:600 14px/18px Poppins;color:#002E60">Message</span></div></div>
+        </div>
+        <sc-if value="{{ at.cashPending }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:12px;border:1.5px dashed #838B91;border-radius:16px;padding:10px 10px 10px 14px">
+            <svg style="width:22px;height:22px;color:#5A646B;flex:none"><use href="#d-cash"></use></svg>
+            <div style="flex:1;min-width:0"><div style="font:600 14px/19px Poppins;color:#14191D">Collect ₱45.00 cash</div><div style="font:400 12px/16px Poppins;color:#5A646B">Confirm before completing</div></div>
+            <div onClick="{{ confirmCash }}" style="min-height:44px;padding:0 16px;border-radius:12px;background:#477434;display:flex;align-items:center;gap:6px;font:700 14px/18px Poppins;color:#fff;cursor:pointer;flex:none"><svg style="width:15px;height:15px;color:#fff"><use href="#d-check"></use></svg>Received</div>
+          </div>
+        </sc-if>
+        <sc-if value="{{ at.cashDone }}" hint-placeholder-val="{{ false }}">
+          <div style="display:flex;align-items:center;gap:10px;background:#E9F7E3;border-radius:16px;padding:12px 14px">
+            <svg style="width:18px;height:18px;color:#3B602B;flex:none"><use href="#d-check"></use></svg>
+            <div style="font:600 14px/19px Poppins;color:#3B602B">Cash received · ₱45.00</div>
+          </div>
+        </sc-if>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <sc-if value="{{ at.primaryOn }}" hint-placeholder-val="{{ true }}"><div onClick="{{ advance }}" style="min-height:56px;border-radius:16px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 16.5px/22px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.28);cursor:pointer">{{ at.primary }}</div></sc-if>
+          <sc-if value="{{ at.primaryOff }}" hint-placeholder-val="{{ false }}"><div style="min-height:56px;border-radius:16px;background:#EDF1F4;display:flex;align-items:center;justify-content:center;font:700 16.5px/22px Poppins;color:#666F75">{{ at.primary }}</div></sc-if>
+          <div style="font:400 12.5px/17px Poppins;color:#5A646B;text-align:center;text-wrap:pretty">{{ at.hint }}</div>
+        </div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ at.done }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute;left:10px;right:10px;bottom:10px;max-height:520px;overflow-y:auto;scrollbar-width:none;background:#fff;border-radius:26px;box-shadow:0 -8px 34px rgba(0,20,45,.18);padding:10px 16px 18px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box">
+        <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6;flex:none"></div>
+        <div style="display:flex;flex-direction:column;align-items:center;gap:6px;padding:6px 0 2px;text-align:center">
+          <div style="width:60px;height:60px;border-radius:30px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;margin-bottom:4px"><svg style="width:28px;height:28px;color:#3B602B"><use href="#d-check"></use></svg></div>
+          <div style="font:800 21px/27px Poppins;letter-spacing:-.4px;color:#14191D">All passengers dropped off</div>
+          <div style="font:400 14px/20px Poppins;color:#5A646B">₱45.00 added to today · 1 passenger</div>
+        </div>
+        <div style="display:flex;gap:8px;background:#F6F7F9;border-radius:12px;padding:10px 12px">
+          <svg style="width:16px;height:16px;color:#5A646B;flex:none;margin-top:1px"><use href="#d-info"></use></svg>
+          <div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">You're still online. New requests near you will show up here until you end the trip.</div>
+        </div>
+        <div onClick="{{ resetTrip }}" style="min-height:56px;border-radius:16px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 16.5px/22px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.28);cursor:pointer">End trip</div>
+      </div>
+      </sc-if>
+      <sc-if value="{{ msgOpen }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;inset:0;background:rgba(10,14,17,.58)" onClick="{{ closeMsg }}"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 18px 26px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">
+        <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6"></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:22px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 15px Poppins;color:#002043;flex:none">MR</div>
+          <div style="flex:1;min-width:0"><div style="font:700 17px/22px Poppins;color:#14191D">Message Maria</div><div style="font:400 12.5px/17px Poppins;color:#5A646B">Tap a reply to send it right away</div></div>
+          <div style="width:44px;height:44px;border-radius:13px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg style="width:19px;height:19px;color:#002E60"><use href="#d-call"></use></svg></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div onClick="{{ sendMsg }}" style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">I'm here at the pickup point</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg></div><div onClick="{{ sendMsg }}" style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">On my way, about 2 minutes</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg></div><div onClick="{{ sendMsg }}" style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">Where exactly are you?</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg></div><div onClick="{{ sendMsg }}" style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">Running a bit late, traffic</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg></div>
+        </div>
+        <div style="display:flex;gap:8px;background:#F6F7F9;border-radius:12px;padding:10px 12px">
+          <svg style="width:16px;height:16px;color:#5A646B;flex:none;margin-top:1px"><use href="#d-info"></use></svg>
+          <div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">Maria gets these as app notifications. For anything longer, stop safely and call.</div>
+        </div>
+        <div onClick="{{ closeMsg }}" style="min-height:52px;border-radius:14px;border:1.5px solid #838B91;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#14191D;cursor:pointer">Close</div>
+      </div></sc-if>
+      <sc-if value="{{ msgSent }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;top:124px;display:flex;align-items:center;gap:10px;background:#14191D;border-radius:14px;padding:12px 14px;box-shadow:0 8px 20px rgba(0,20,45,.25)"><svg style="width:16px;height:16px;color:#E9F7E3;flex:none"><use href="#d-check"></use></svg><div style="font:600 13.5px/18px Poppins;color:#fff">Message sent to Maria</div></div></sc-if>
+      <sc-if value="{{ at.confirming }}" hint-placeholder-val="{{ false }}">
+        <div style="position:absolute;inset:0;background:rgba(10,14,17,.58);display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box">
+          <div style="width:100%;background:#fff;border-radius:24px;padding:22px 20px 18px;display:flex;flex-direction:column;gap:16px;box-sizing:border-box">
+            <div><div style="font:800 20px/26px Poppins;color:#14191D">Drop off Maria?</div><div style="font:400 14px/21px Poppins;color:#5A646B;margin-top:4px;text-wrap:pretty">This ends her ride and records ₱45.00 in your earnings.</div></div>
+            <div style="display:flex;gap:10px">
+              <div onClick="{{ backStep }}" style="flex:1;min-height:52px;border-radius:14px;border:1.5px solid #838B91;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#14191D;cursor:pointer">Not yet</div>
+              <div onClick="{{ advance }}" style="flex:1;min-height:52px;border-radius:14px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 15px/20px Poppins;color:#fff;cursor:pointer">Complete</div>
+            </div>
+          </div>
+        </div>
+      </sc-if></div><div style="display:flex;align-items:center;justify-content:space-between;width:390px"><div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">4a · One passenger — tap through</div><div onClick="{{ resetTrip }}" style="font:600 12px/16px Poppins;color:#002E60;cursor:pointer">Restart</div></div></div>
+    <div id="4b" style="display:flex;flex-direction:column;gap:12px"><div data-screen-label="Active trip — two passengers + new request" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#E7EBE4;flex:none">
+      <div style="position:absolute;inset:0;background:#E7EBE4">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.6) 0 3px,transparent 3px 46px),repeating-linear-gradient(0deg,rgba(255,255,255,.6) 0 3px,transparent 3px 52px)"></div>
+        <div style="position:absolute;left:-20px;top:110px;width:430px;height:26px;background:#fff;transform:rotate(-12deg)"></div>
+        <div style="position:absolute;left:-30px;top:240px;width:430px;height:30px;background:#fff;transform:rotate(6deg)"></div>
+        <div style="position:absolute;left:120px;top:0;width:22px;height:480px;background:#fff"></div>
+        <svg viewBox="0 0 390 480" style="position:absolute;left:0;top:0;width:390px;height:480px"><path d="M131 350 L131 256 L290 230 L290 142" fill="none" stroke="#002E60" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div style="position:absolute;left:117px;top:336px;width:28px;height:28px;border-radius:14px;background:#002E60;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,46,96,.35);box-sizing:border-box"></div>
+        <div style="position:absolute;left:277px;top:129px;width:26px;height:26px;border-radius:7px;background:#477434;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,46,96,.3);box-sizing:border-box"></div><div style="position:absolute;left:244px;top:96px;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/16px Poppins;color:#14191D;box-shadow:0 2px 8px rgba(0,0,0,.14)">Drop-off</div>
+      </div>
+      <div style="position:absolute;left:16px;top:60px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:9px 14px;box-shadow:0 4px 14px rgba(0,20,45,.18)"><div style="width:9px;height:9px;border-radius:5px;background:#002E60"></div><div style="font:700 13px/17px Poppins;color:#14191D;white-space:nowrap">On the way · 2 passengers</div></div>
+      <div style="position:absolute;right:16px;top:54px;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <div style="width:58px;height:58px;border-radius:29px;background:#B3261E;border:3px solid #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(179,38,30,.4);box-sizing:border-box;cursor:pointer"><svg style="width:18px;height:18px;color:#fff"><use href="#d-alert"></use></svg><div style="font:800 11px/13px Poppins;letter-spacing:.6px;color:#fff">SOS</div></div>
+        <div style="background:#fff;border-radius:999px;padding:2px 8px;font:600 10.5px/14px Poppins;color:#B3261E;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.12)">Hold 2s</div>
+      </div>
+      <div style="position:absolute;left:10px;right:10px;bottom:10px;max-height:520px;overflow-y:auto;scrollbar-width:none;background:#fff;border-radius:26px;box-shadow:0 -8px 34px rgba(0,20,45,.18);padding:10px 16px 18px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box">
+        <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6;flex:none"></div>
+        <div style="display:flex;align-items:center;gap:12px;background:#E3EDF7;border-radius:16px;padding:10px 10px 10px 14px">
+          <div style="flex:1;min-width:0"><div style="font:600 11px/15px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#002043">New request on your route · 14s</div><div style="font:600 14px/19px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">₱30 · Rizal Ave. → Public Market</div></div>
+          <div style="width:44px;height:44px;border-radius:12px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg style="width:16px;height:16px;color:#5A646B"><use href="#d-close"></use></svg></div>
+          <div style="min-height:44px;padding:0 14px;border-radius:12px;background:#002E60;display:flex;align-items:center;font:700 14px/18px Poppins;color:#fff;flex:none;cursor:pointer">Accept</div>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:12px">
+          <div style="width:44px;height:44px;border-radius:14px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><div style="width:13px;height:13px;border-radius:3px;background:#477434"></div></div>
+          <div style="flex:1;min-width:0">
+            <div style="font:600 11.5px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#5A646B">Stop 1 of 2 · Drop-off</div>
+            <div style="font:700 18px/24px Poppins;color:#14191D">Public Market, Stall 14</div>
+            <div style="font:400 13px/18px Poppins;color:#5A646B">0.6 km · about 3 min</div>
+          </div>
+          <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer"><div style="width:48px;height:48px;border-radius:15px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(0,46,96,.28)"><svg style="width:20px;height:20px;color:#fff"><use href="#d-nav"></use></svg></div><div style="font:600 11px/14px Poppins;color:#002E60">Navigate</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:10px;background:#F6F7F9;border-radius:16px;padding:10px 10px 10px 12px"><div style="display:flex;align-items:center;gap:12px">
+          <div style="width:40px;height:40px;border-radius:20px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 14px Poppins;color:#002043;flex:none">MR</div>
+          <div style="flex:1;min-width:0"><div style="display:flex;align-items:center;gap:8px"><div style="font:600 15px/20px Poppins;color:#14191D">Maria Reyes</div><div style="font:700 10.5px/14px Poppins;letter-spacing:.5px;text-transform:uppercase;color:#3B602B;background:#E9F7E3;border-radius:999px;padding:2px 8px">On board</div></div><div style="font:400 12.5px/17px Poppins;color:#5A646B">2 seats · ₱45.00 · Cash received</div></div>
+          <div style="width:44px;height:44px;border-radius:13px;background:#fff;border:1px solid #DCE2E6;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;box-sizing:border-box"><svg style="width:20px;height:20px;color:#14191D"><use href="#d-more"></use></svg></div>
+          </div>
+          <div style="display:flex;gap:8px"><div style="flex:1;min-height:44px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg style="width:17px;height:17px;color:#002E60"><use href="#d-call"></use></svg><span style="font:600 14px/18px Poppins;color:#002E60">Call</span></div><div style="flex:1;min-height:44px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg style="width:17px;height:17px;color:#002E60"><use href="#d-chat"></use></svg><span style="font:600 14px/18px Poppins;color:#002E60">Message</span></div></div>
+        </div>
+        <div style="min-height:56px;border-radius:16px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 16.5px/22px Poppins;color:#fff;box-shadow:0 8px 18px rgba(0,46,96,.28)">Complete drop-off</div>
+        <div style="display:flex;flex-direction:column;gap:8px;padding-top:12px;border-top:1px solid #EBEFF2">
+          <div style="font:700 11.5px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#5A646B">Then</div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:26px;height:26px;border-radius:13px;background:#EDF1F4;display:flex;align-items:center;justify-content:center;font:700 12px Poppins;color:#5A646B;flex:none">2</div>
+            <div style="flex:1;min-width:0"><div style="font:600 14.5px/20px Poppins;color:#14191D">Pick up Ana Lim</div><div style="font:400 12.5px/17px Poppins;color:#5A646B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Town Hall · 1.4 km · 1 seat · GCash paid</div></div>
+            <div style="width:44px;height:44px;border-radius:13px;background:#fff;border:1px solid #DCE2E6;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer;box-sizing:border-box"><svg style="width:20px;height:20px;color:#14191D"><use href="#d-more"></use></svg></div>
+          </div>
+        </div>
+      </div></div><div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">4b · Two passengers + request on route</div></div>
+    <div id="4c" style="display:flex;flex-direction:column;gap:12px"><div data-screen-label="Active trip — passenger options" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#E7EBE4;flex:none">
+      <div style="position:absolute;inset:0;background:#E7EBE4">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.6) 0 3px,transparent 3px 46px),repeating-linear-gradient(0deg,rgba(255,255,255,.6) 0 3px,transparent 3px 52px)"></div>
+        <div style="position:absolute;left:-20px;top:110px;width:430px;height:26px;background:#fff;transform:rotate(-12deg)"></div>
+        <div style="position:absolute;left:-30px;top:240px;width:430px;height:30px;background:#fff;transform:rotate(6deg)"></div>
+        <div style="position:absolute;left:120px;top:0;width:22px;height:480px;background:#fff"></div>
+        <svg viewBox="0 0 390 480" style="position:absolute;left:0;top:0;width:390px;height:480px"><path d="M131 350 L131 256 L290 230 L290 142" fill="none" stroke="#002E60" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div style="position:absolute;left:117px;top:336px;width:28px;height:28px;border-radius:14px;background:#002E60;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,46,96,.35);box-sizing:border-box"></div>
+        <div style="position:absolute;left:276px;top:128px;width:28px;height:28px;border-radius:14px;background:#fff;border:6px solid #002E60;box-shadow:0 4px 12px rgba(0,46,96,.3);box-sizing:border-box"></div><div style="position:absolute;left:250px;top:96px;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/16px Poppins;color:#14191D;box-shadow:0 2px 8px rgba(0,0,0,.14)">Pickup</div>
+      </div>
+      <div style="position:absolute;left:16px;top:60px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:9px 14px;box-shadow:0 4px 14px rgba(0,20,45,.18)"><div style="width:9px;height:9px;border-radius:5px;background:#002E60"></div><div style="font:700 13px/17px Poppins;color:#14191D;white-space:nowrap">Heading to pickup</div></div>
+      <div style="position:absolute;right:16px;top:54px;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <div style="width:58px;height:58px;border-radius:29px;background:#B3261E;border:3px solid #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(179,38,30,.4);box-sizing:border-box;cursor:pointer"><svg style="width:18px;height:18px;color:#fff"><use href="#d-alert"></use></svg><div style="font:800 11px/13px Poppins;letter-spacing:.6px;color:#fff">SOS</div></div>
+        <div style="background:#fff;border-radius:999px;padding:2px 8px;font:600 10.5px/14px Poppins;color:#B3261E;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.12)">Hold 2s</div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(10,14,17,.58)"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 18px 26px;display:flex;flex-direction:column;gap:6px;box-sizing:border-box">
+        <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6;margin-bottom:8px"></div>
+        <div style="display:flex;align-items:center;gap:12px;padding-bottom:10px">
+          <div style="width:44px;height:44px;border-radius:22px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 15px Poppins;color:#002043;flex:none">MR</div>
+          <div style="flex:1"><div style="font:700 17px/22px Poppins;color:#14191D">Maria Reyes</div><div style="font:400 12.5px/17px Poppins;color:#5A646B">2 seats · ₱45.00 · Cash</div></div>
+        </div>
+        <div style="display:flex;flex-direction:column;border-top:1px solid #EBEFF2">
+          <div style="display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 4px;border-bottom:1px solid #EBEFF2;cursor:pointer">
+            <div style="width:42px;height:42px;border-radius:13px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:20px;height:20px;color:#002E60"><use href="#d-swap"></use></svg></div>
+            <div style="flex:1;min-width:0"><div style="font:600 15px/20px Poppins;color:#14191D">Transfer to another driver</div><div style="font:400 12.5px/17px Poppins;color:#5A646B;text-wrap:pretty">Invite nearby drivers with free seats to take this ride</div></div>
+            <svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 4px;border-bottom:1px solid #EBEFF2;cursor:pointer">
+            <div style="width:42px;height:42px;border-radius:13px;background:#EDF1F4;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:20px;height:20px;color:#14191D"><use href="#d-exit"></use></svg></div>
+            <div style="flex:1;min-width:0"><div style="font:600 15px/20px Poppins;color:#14191D">Release passenger</div><div style="font:400 12.5px/17px Poppins;color:#5A646B;text-wrap:pretty">Hand this ride back so another driver can pick it up</div></div>
+            <svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg>
+          </div>
+          <div style="display:flex;align-items:center;gap:14px;min-height:64px;padding:10px 4px;border-bottom:1px solid #EBEFF2;cursor:pointer">
+            <div style="width:42px;height:42px;border-radius:13px;background:#FBEAE8;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:20px;height:20px;color:#B3261E"><use href="#d-close"></use></svg></div>
+            <div style="flex:1;min-width:0"><div style="font:600 15px/20px Poppins;color:#B3261E">Cancel ride</div><div style="font:400 12.5px/17px Poppins;color:#5A646B;text-wrap:pretty">Passenger didn’t show up or asked to cancel</div></div>
+            <svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg>
+          </div>
+        </div>
+        <div style="min-height:52px;margin-top:12px;border-radius:14px;border:1.5px solid #838B91;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#14191D">Close</div>
+      </div></div><div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">4c · ⋯ passenger options</div></div>
+    <div id="4d" style="display:flex;flex-direction:column;gap:12px"><div data-screen-label="Active trip — quick messages" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#E7EBE4;flex:none">
+      <div style="position:absolute;inset:0;background:#E7EBE4">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.6) 0 3px,transparent 3px 46px),repeating-linear-gradient(0deg,rgba(255,255,255,.6) 0 3px,transparent 3px 52px)"></div>
+        <div style="position:absolute;left:-20px;top:110px;width:430px;height:26px;background:#fff;transform:rotate(-12deg)"></div>
+        <div style="position:absolute;left:-30px;top:240px;width:430px;height:30px;background:#fff;transform:rotate(6deg)"></div>
+        <div style="position:absolute;left:120px;top:0;width:22px;height:480px;background:#fff"></div>
+        <svg viewBox="0 0 390 480" style="position:absolute;left:0;top:0;width:390px;height:480px"><path d="M131 350 L131 256 L290 230 L290 142" fill="none" stroke="#002E60" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"></path></svg>
+        <div style="position:absolute;left:117px;top:336px;width:28px;height:28px;border-radius:14px;background:#002E60;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,46,96,.35);box-sizing:border-box"></div>
+        <div style="position:absolute;left:276px;top:128px;width:28px;height:28px;border-radius:14px;background:#fff;border:6px solid #002E60;box-shadow:0 4px 12px rgba(0,46,96,.3);box-sizing:border-box"></div><div style="position:absolute;left:250px;top:96px;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/16px Poppins;color:#14191D;box-shadow:0 2px 8px rgba(0,0,0,.14)">Pickup</div>
+      </div>
+      <div style="position:absolute;left:16px;top:60px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:9px 14px;box-shadow:0 4px 14px rgba(0,20,45,.18)"><div style="width:9px;height:9px;border-radius:5px;background:#002E60"></div><div style="font:700 13px/17px Poppins;color:#14191D;white-space:nowrap">Heading to pickup</div></div>
+      <div style="position:absolute;right:16px;top:54px;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <div style="width:58px;height:58px;border-radius:29px;background:#B3261E;border:3px solid #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(179,38,30,.4);box-sizing:border-box;cursor:pointer"><svg style="width:18px;height:18px;color:#fff"><use href="#d-alert"></use></svg><div style="font:800 11px/13px Poppins;letter-spacing:.6px;color:#fff">SOS</div></div>
+        <div style="background:#fff;border-radius:999px;padding:2px 8px;font:600 10.5px/14px Poppins;color:#B3261E;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.12)">Hold 2s</div>
+      </div>
+      <div style="position:absolute;inset:0;background:rgba(10,14,17,.58)"></div>
+      <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 18px 26px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">
+        <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6"></div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <div style="width:44px;height:44px;border-radius:22px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 15px Poppins;color:#002043;flex:none">MR</div>
+          <div style="flex:1;min-width:0"><div style="font:700 17px/22px Poppins;color:#14191D">Message Maria</div><div style="font:400 12.5px/17px Poppins;color:#5A646B">Tap a reply to send it right away</div></div>
+          <div style="width:44px;height:44px;border-radius:13px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg style="width:19px;height:19px;color:#002E60"><use href="#d-call"></use></svg></div>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:8px">
+          <div style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">I'm here at the pickup point</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg></div><div style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">On my way, about 2 minutes</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg></div><div style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">Where exactly are you?</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg></div><div style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">Running a bit late, traffic</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-chev"></use></svg></div>
+        </div>
+        <div style="display:flex;gap:8px;background:#F6F7F9;border-radius:12px;padding:10px 12px">
+          <svg style="width:16px;height:16px;color:#5A646B;flex:none;margin-top:1px"><use href="#d-info"></use></svg>
+          <div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">Maria gets these as app notifications. For anything longer, stop safely and call.</div>
+        </div>
+        <div style="min-height:52px;border-radius:14px;border:1.5px solid #838B91;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#14191D;cursor:pointer">Close</div>
+      </div>
+    </div><div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">4d · Message — quick replies</div></div>
+  </div>
+</section>
+
+<section data-screen-label="Driver redesign — home, history, earnings" style="padding:52px 56px 56px;display:flex;flex-direction:column;gap:26px">
+  <div style="display:flex;flex-direction:column;gap:8px;max-width:900px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="font:700 10px ui-monospace,Menlo,monospace;padding:4px 8px;background:#002E60;color:#fff;border-radius:5px;letter-spacing:.6px">REDESIGN</span>
+      <span style="font:700 22px/28px Poppins;color:#14191D;letter-spacing:-.3px">Driver — Dashboard, Trip history &amp; Earnings</span>
+    </div>
+    <p style="margin:0;font:400 13.5px/21px Poppins;color:#5A646B;text-wrap:pretty">Built for one-handed use between rides: bigger targets, one number per screen, and money always at the right edge. Dashboard makes going online/offline a full-width button instead of a small toggle and adds a daily goal. History groups trips by day with the route on every card. Earnings switches between Today, Week and Month; tap any bar to read that day. Everything below is clickable.</p>
+  </div>
+
+  <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start">
+
+    <!-- ============ HOME · ONLINE + REQUEST ============ -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+    <div data-screen-label="Dashboard — incoming request" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9;flex:none">
+      <div style="position:absolute;inset:0 0 64px 0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none">
+        <div style="height:52px"></div>
+        <div style="padding:6px 16px 20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;border-radius:22px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 15px Poppins;color:#002043;flex:none">JS</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:400 12px/16px Poppins;color:#5A646B">Magandang hapon,</div>
+              <div style="font:700 17px/22px Poppins;color:#14191D">Jomar</div>
+            </div>
+            <div style="position:relative;width:44px;height:44px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,46,96,.09);flex:none"><svg style="width:21px;height:21px;color:#14191D"><use href="#d-bell"></use></svg><div style="position:absolute;top:9px;right:9px;width:9px;height:9px;border-radius:5px;background:#B3261E;border:2px solid #fff"></div></div>
+          </div>
+
+          <div style="position:relative;overflow:hidden;border-radius:24px;background:linear-gradient(150deg,#002E60 0%,#001A38 100%);box-shadow:0 12px 28px rgba(0,46,96,.3)">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+            <div style="position:absolute;top:-50px;right:-50px;opacity:.1"><svg style="width:200px;height:200px;color:#fff"><use href="#d-motif"></use></svg></div>
+            <div style="position:relative;padding:16px 16px 16px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="position:relative;width:10px;height:10px;flex:none">{{ pulseDot }}<div style="position:absolute;inset:0;border-radius:5px;background:#E9F7E3"></div></div>
+                  <div><div style="font:700 13px/17px Poppins;color:#fff">You're online</div><div style="font:400 11.5px/15px Poppins;color:rgba(255,255,255,.72);white-space:nowrap">Poblacion zone · 2h 40m</div></div>
+                </div>
+                <div style="min-height:40px;padding:0 14px;border-radius:12px;white-space:nowrap;flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.26);display:flex;align-items:center;gap:7px;font:600 13px/17px Poppins;color:#fff;cursor:pointer"><svg style="width:15px;height:15px;color:#fff"><use href="#d-power"></use></svg>Go offline</div>
+              </div>
+              <div>
+                <div style="font:600 11px/15px Poppins;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.72)">Earned today</div>
+                <div style="font:800 40px/46px Poppins;letter-spacing:-1.2px;color:#fff">₱845.00</div>
+              </div>
+              <sc-if value="{{ showGoal }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.16);overflow:hidden"><div style="height:8px;border-radius:4px;background:#E9F7E3;width:{{ goalPct }}"></div></div>
+                  <div style="display:flex;justify-content:space-between;font:500 12px/16px Poppins;color:#E3EDF7"><span>{{ goalLeft }}</span><span>Goal {{ goalText }}</span></div>
+                </div>
+              </sc-if>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                <div style="background:rgba(255,255,255,.09);border-radius:14px;padding:10px 12px"><div style="font:700 18px/22px Poppins;color:#fff">12</div><div style="font:400 11.5px/15px Poppins;color:rgba(255,255,255,.72)">Trips</div></div>
+                <div style="background:rgba(255,255,255,.09);border-radius:14px;padding:10px 12px"><div style="display:flex;align-items:center;gap:4px;font:700 18px/22px Poppins;color:#fff">4.8<svg style="width:13px;height:13px;color:#E9F7E3"><use href="#d-star"></use></svg></div><div style="font:400 11.5px/15px Poppins;color:rgba(255,255,255,.72)">Rating</div></div>
+                <div style="background:rgba(255,255,255,.09);border-radius:14px;padding:10px 12px"><div style="font:700 18px/22px Poppins;color:#fff">92%</div><div style="font:400 11.5px/15px Poppins;color:rgba(255,255,255,.72)">Accepted</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">New ride request</div>
+              <div style="display:flex;align-items:center;gap:6px;font:700 12px/16px Poppins;color:#B3261E;background:#FBEAE8;border-radius:999px;padding:4px 10px"><svg style="width:12px;height:12px;color:#B3261E"><use href="#d-time"></use></svg>18s left</div>
+            </div>
+            <div style="background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 8px 24px rgba(0,46,96,.14)">
+              <div style="height:4px;background:#EDF1F4"><div style="height:4px;width:60%;background:#B3261E"></div></div>
+              <div style="padding:16px;display:flex;flex-direction:column;gap:14px">
+                <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+                  <div>
+                    <div style="font:800 30px/34px Poppins;letter-spacing:-.8px;color:#14191D">₱45.00</div>
+                    <div style="font:500 13px/18px Poppins;color:#5A646B">Cash · 2 seats · 1.8 km</div>
+                  </div>
+                  
+                </div>
+                <div style="display:flex;gap:12px">
+                  <div style="display:flex;flex-direction:column;align-items:center;padding-top:6px">
+                    <div style="width:10px;height:10px;border-radius:5px;border:2.5px solid #002E60;box-sizing:border-box"></div>
+                    <div style="width:2px;flex:1;min-height:22px;background:#DCE2E6;margin:3px 0"></div>
+                    <div style="width:10px;height:10px;border-radius:2px;background:#477434"></div>
+                  </div>
+                  <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:10px">
+                    <div><div style="font:500 11.5px/15px Poppins;color:#666F75">Pickup · 400 m away</div><div style="font:600 15px/20px Poppins;color:#14191D">Poblacion Plaza, waiting shed</div></div>
+                    <div><div style="font:500 11.5px/15px Poppins;color:#666F75">Drop-off</div><div style="font:600 15px/20px Poppins;color:#14191D">Public Market, Stall 14</div></div>
+                  </div>
+                </div>
+                <div style="display:flex;gap:10px">
+                  <div style="flex:none;width:104px;min-height:54px;border-radius:16px;border:1.5px solid #838B91;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#14191D;cursor:pointer">Decline</div>
+                  <div style="flex:1;min-height:54px;border-radius:16px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 6px 14px rgba(0,46,96,.28);cursor:pointer"><svg style="width:20px;height:20px;color:#fff"><use href="#d-check"></use></svg><span style="font:700 16px/20px Poppins;color:#fff">Accept ride</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0 8px;box-sizing:border-box">
+        <div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px/15px Poppins;color:#002E60"><div style="position:absolute;top:-4px;width:22px;height:3px;border-radius:2px;background:#002E60"></div><svg style="width:24px;height:24px;color:#002E60"><use href="#d-speed"></use></svg>Dashboard</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-list"></use></svg>Requests</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-time"></use></svg>History</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-wallet"></use></svg>Earnings</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-person"></use></svg>Profile</div>
+      </div>
+    </div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">1a · Dashboard — incoming request</div>
+    </div>
+
+    <!-- ============ HOME · ONLINE LISTENING ============ -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+    <div data-screen-label="Dashboard — listening" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9;flex:none">
+      <div style="position:absolute;inset:0 0 64px 0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none">
+        <div style="height:52px"></div>
+        <div style="padding:6px 16px 20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;border-radius:22px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 15px Poppins;color:#002043;flex:none">JS</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:400 12px/16px Poppins;color:#5A646B">Magandang hapon,</div>
+              <div style="font:700 17px/22px Poppins;color:#14191D">Jomar</div>
+            </div>
+            <div style="position:relative;width:44px;height:44px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,46,96,.09);flex:none"><svg style="width:21px;height:21px;color:#14191D"><use href="#d-bell"></use></svg></div>
+          </div>
+
+          <div style="position:relative;overflow:hidden;border-radius:24px;background:linear-gradient(150deg,#002E60 0%,#001A38 100%);box-shadow:0 12px 28px rgba(0,46,96,.3)">
+            <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+            <div style="position:absolute;top:-50px;right:-50px;opacity:.1"><svg style="width:200px;height:200px;color:#fff"><use href="#d-motif"></use></svg></div>
+            <div style="position:relative;padding:16px;display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                <div style="display:flex;align-items:center;gap:10px">
+                  <div style="position:relative;width:10px;height:10px;flex:none">{{ pulseDot }}<div style="position:absolute;inset:0;border-radius:5px;background:#E9F7E3"></div></div>
+                  <div><div style="font:700 13px/17px Poppins;color:#fff">You're online</div><div style="font:400 11.5px/15px Poppins;color:rgba(255,255,255,.72);white-space:nowrap">Poblacion zone · 2h 40m</div></div>
+                </div>
+                <div style="min-height:40px;padding:0 14px;border-radius:12px;white-space:nowrap;flex:none;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.26);display:flex;align-items:center;gap:7px;font:600 13px/17px Poppins;color:#fff"><svg style="width:15px;height:15px;color:#fff"><use href="#d-power"></use></svg>Go offline</div>
+              </div>
+              <div>
+                <div style="font:600 11px/15px Poppins;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.72)">Earned today</div>
+                <div style="font:800 40px/46px Poppins;letter-spacing:-1.2px;color:#fff">₱845.00</div>
+              </div>
+              <sc-if value="{{ showGoal }}" hint-placeholder-val="{{ true }}">
+                <div style="display:flex;flex-direction:column;gap:7px">
+                  <div style="height:8px;border-radius:4px;background:rgba(255,255,255,.16);overflow:hidden"><div style="height:8px;border-radius:4px;background:#E9F7E3;width:{{ goalPct }}"></div></div>
+                  <div style="display:flex;justify-content:space-between;font:500 12px/16px Poppins;color:#E3EDF7"><span>{{ goalLeft }}</span><span>Goal {{ goalText }}</span></div>
+                </div>
+              </sc-if>
+              <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px">
+                <div style="background:rgba(255,255,255,.09);border-radius:14px;padding:10px 12px"><div style="font:700 18px/22px Poppins;color:#fff">12</div><div style="font:400 11.5px/15px Poppins;color:rgba(255,255,255,.72)">Trips</div></div>
+                <div style="background:rgba(255,255,255,.09);border-radius:14px;padding:10px 12px"><div style="display:flex;align-items:center;gap:4px;font:700 18px/22px Poppins;color:#fff">4.8<svg style="width:13px;height:13px;color:#E9F7E3"><use href="#d-star"></use></svg></div><div style="font:400 11.5px/15px Poppins;color:rgba(255,255,255,.72)">Rating</div></div>
+                <div style="background:rgba(255,255,255,.09);border-radius:14px;padding:10px 12px"><div style="font:700 18px/22px Poppins;color:#fff">92%</div><div style="font:400 11.5px/15px Poppins;color:rgba(255,255,255,.72)">Accepted</div></div>
+              </div>
+            </div>
+          </div>
+
+          <div style="background:#fff;border-radius:22px;padding:18px;display:flex;align-items:center;gap:16px;box-shadow:0 6px 20px rgba(0,46,96,.1)">
+            <div style="position:relative;width:60px;height:60px;flex:none;display:flex;align-items:center;justify-content:center">{{ pulseRing }}<div style="position:relative;width:60px;height:60px;border-radius:30px;background:#E3EDF7;display:flex;align-items:center;justify-content:center"><svg style="width:28px;height:28px;color:#002E60"><use href="#d-radio"></use></svg></div></div>
+            <div style="flex:1;min-width:0">
+              <div style="font:700 16px/21px Poppins;color:#14191D">Looking for passengers</div>
+              <div style="font:400 13px/19px Poppins;color:#5A646B;text-wrap:pretty">New requests pop up here. Keep the app open.</div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Recent trips</div>
+              <div style="display:flex;align-items:center;gap:2px;font:600 13px/18px Poppins;color:#002E60;min-height:32px">See all<svg style="width:14px;height:14px;color:#002E60"><use href="#d-chev"></use></svg></div>
+            </div>
+            <div style="background:#fff;border-radius:20px;padding:4px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07)">
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 0;border-bottom:1px solid #EBEFF2">
+                <div style="width:40px;height:40px;border-radius:12px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:18px;height:18px;color:#3B602B"><use href="#d-check"></use></svg></div>
+                <div style="flex:1;min-width:0"><div style="font:600 14.5px/20px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Town Hall → St. Jude Parish</div><div style="font:400 12px/16px Poppins;color:#5A646B">3:10 PM · Ana Lim</div></div>
+                <div style="font:700 15px/20px Poppins;color:#14191D">₱25.00</div>
+              </div>
+              <div style="display:flex;align-items:center;gap:12px;padding:13px 0">
+                <div style="width:40px;height:40px;border-radius:12px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:18px;height:18px;color:#3B602B"><use href="#d-check"></use></svg></div>
+                <div style="flex:1;min-width:0"><div style="font:600 14.5px/20px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Bayside Terminal → Mabini St.</div><div style="font:400 12px/16px Poppins;color:#5A646B">12:24 PM · Leo Cruz</div></div>
+                <div style="font:700 15px/20px Poppins;color:#14191D">₱35.00</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0 8px;box-sizing:border-box">
+        <div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px/15px Poppins;color:#002E60"><div style="position:absolute;top:-4px;width:22px;height:3px;border-radius:2px;background:#002E60"></div><svg style="width:24px;height:24px;color:#002E60"><use href="#d-speed"></use></svg>Dashboard</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-list"></use></svg>Requests</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-time"></use></svg>History</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-wallet"></use></svg>Earnings</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-person"></use></svg>Profile</div>
+      </div>
+    </div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">1b · Dashboard — online, waiting</div>
+    </div>
+
+    <!-- ============ HOME · OFFLINE ============ -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+    <div data-screen-label="Dashboard — offline" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9;flex:none">
+      <div style="position:absolute;inset:0 0 64px 0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none">
+        <div style="height:52px"></div>
+        <div style="padding:6px 16px 20px;display:flex;flex-direction:column;gap:16px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;border-radius:22px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 15px Poppins;color:#002043;flex:none">JS</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:400 12px/16px Poppins;color:#5A646B">Magandang umaga,</div>
+              <div style="font:700 17px/22px Poppins;color:#14191D">Jomar</div>
+            </div>
+            <div style="position:relative;width:44px;height:44px;border-radius:14px;background:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 2px 8px rgba(0,46,96,.09);flex:none"><svg style="width:21px;height:21px;color:#14191D"><use href="#d-bell"></use></svg></div>
+          </div>
+
+          <div style="position:relative;overflow:hidden;background:#fff;border-radius:24px;padding:20px 18px 18px;box-shadow:0 6px 20px rgba(0,46,96,.1);display:flex;flex-direction:column;gap:16px">
+            <div style="position:absolute;top:-40px;right:-44px;opacity:.05"><svg style="width:190px;height:190px;color:#002E60"><use href="#d-motif"></use></svg></div>
+            <div style="position:relative;display:flex;align-items:center;gap:10px">
+              <div style="width:10px;height:10px;border-radius:5px;background:#838B91;flex:none"></div>
+              <div style="font:700 13px/17px Poppins;letter-spacing:.2px;color:#5A646B">You're offline</div>
+            </div>
+            <div style="position:relative">
+              <div style="font:800 26px/32px Poppins;letter-spacing:-.6px;color:#14191D;text-wrap:pretty">Ready to drive?</div>
+              <div style="font:400 14px/21px Poppins;color:#5A646B;margin-top:4px;text-wrap:pretty">Go online to start getting ride requests around Poblacion.</div>
+            </div>
+            <div style="position:relative;min-height:58px;border-radius:18px;background:#477434;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 8px 18px rgba(71,116,52,.3);cursor:pointer"><svg style="width:20px;height:20px;color:#fff"><use href="#d-power"></use></svg><span style="font:700 17px/22px Poppins;color:#fff">Go online</span></div>
+            <div style="position:relative;display:flex;align-items:center;gap:8px;padding-top:14px;border-top:1px solid #EBEFF2">
+              <svg style="width:15px;height:15px;color:#477434;flex:none"><use href="#d-shield"></use></svg>
+              <div style="font:400 12.5px/17px Poppins;color:#5A646B">PSO verified · Body no. 042 · Franchise valid to Mar 2027</div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">This week so far</div>
+            <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px">
+              <div style="background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07)"><div style="font:400 12px/16px Poppins;color:#5A646B">Earned</div><div style="font:800 22px/28px Poppins;letter-spacing:-.5px;color:#14191D">₱3,475</div><div style="display:flex;align-items:center;gap:3px;font:600 11.5px/15px Poppins;color:#3B602B"><svg style="width:12px;height:12px;color:#477434"><use href="#d-up"></use></svg>9% vs last week</div></div>
+              <div style="background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07)"><div style="font:400 12px/16px Poppins;color:#5A646B">Trips</div><div style="font:800 22px/28px Poppins;letter-spacing:-.5px;color:#14191D">47</div><div style="font:500 11.5px/15px Poppins;color:#5A646B">6 days online</div></div>
+            </div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:center;justify-content:space-between">
+              <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Last trip</div>
+              <div style="display:flex;align-items:center;gap:2px;font:600 13px/18px Poppins;color:#002E60;min-height:32px">History<svg style="width:14px;height:14px;color:#002E60"><use href="#d-chev"></use></svg></div>
+            </div>
+            <div style="background:#fff;border-radius:20px;padding:13px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;align-items:center;gap:12px">
+              <div style="width:40px;height:40px;border-radius:12px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:18px;height:18px;color:#3B602B"><use href="#d-check"></use></svg></div>
+              <div style="flex:1;min-width:0"><div style="font:600 14.5px/20px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Rizal Ave. → Poblacion Plaza</div><div style="font:400 12px/16px Poppins;color:#5A646B">Yesterday, 7:48 PM · Rico Bautista</div></div>
+              <div style="font:700 15px/20px Poppins;color:#14191D">₱65.00</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0 8px;box-sizing:border-box">
+        <div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px/15px Poppins;color:#002E60"><div style="position:absolute;top:-4px;width:22px;height:3px;border-radius:2px;background:#002E60"></div><svg style="width:24px;height:24px;color:#002E60"><use href="#d-speed"></use></svg>Dashboard</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-list"></use></svg>Requests</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-time"></use></svg>History</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-wallet"></use></svg>Earnings</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-person"></use></svg>Profile</div>
+      </div>
+    </div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">1c · Dashboard — offline</div>
+    </div>
+
+    <!-- ============ TRIP HISTORY ============ -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+    <div data-screen-label="Trip history" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9;flex:none">
+      <div style="position:absolute;inset:0 0 64px 0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none">
+        <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+          <div style="position:absolute;top:-40px;right:-46px;opacity:.12"><svg style="width:200px;height:200px;color:#fff"><use href="#d-motif"></use></svg></div>
+          <div style="height:52px"></div>
+          <div style="position:relative;padding:6px 18px 20px;display:flex;flex-direction:column;gap:16px">
+            <div>
+              <div style="font:600 11px/16px Poppins;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.72)">Your trips</div>
+              <div style="font:800 28px/32px Poppins;letter-spacing:-.7px;color:#fff;margin-top:2px">Trip history</div>
+            </div>
+            <div style="display:flex;gap:8px">
+              <sc-for list="{{ hFilters }}" as="f" hint-placeholder-count="3">
+                <sc-if value="{{ f.active }}" hint-placeholder-val="{{ false }}">
+                  <div style="min-height:38px;display:flex;align-items:center;gap:6px;background:#fff;border-radius:999px;padding:0 14px;font:600 13px/18px Poppins;color:#002E60;cursor:pointer">{{ f.label }}<span style="font:700 11px/15px Poppins;background:#E3EDF7;border-radius:999px;padding:1px 7px">{{ f.count }}</span></div>
+                </sc-if>
+                <sc-if value="{{ f.inactive }}" hint-placeholder-val="{{ true }}">
+                  <div onClick="{{ f.onClick }}" style="min-height:38px;display:flex;align-items:center;gap:6px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.26);border-radius:999px;padding:0 14px;font:600 13px/18px Poppins;color:#fff;cursor:pointer;box-sizing:border-box">{{ f.label }}<span style="font:700 11px/15px Poppins;background:rgba(255,255,255,.16);border-radius:999px;padding:1px 7px">{{ f.count }}</span></div>
+                </sc-if>
+              </sc-for>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:6px 16px 20px;display:flex;flex-direction:column">
+          <sc-for list="{{ groups }}" as="g" hint-placeholder-count="2">
+            <div style="display:flex;flex-direction:column;gap:10px;padding-top:16px">
+              <div style="display:flex;align-items:baseline;justify-content:space-between;padding:0 2px">
+                <div style="font:700 13px/18px Poppins;color:#14191D;white-space:nowrap">{{ g.day }} <span style="font-weight:400;color:#5A646B">{{ g.date }}</span></div>
+                <div style="font:600 12.5px/17px Poppins;color:#5A646B;white-space:nowrap">{{ g.summary }}</div>
+              </div>
+              <sc-for list="{{ g.trips }}" as="t" hint-placeholder-count="2">
+                <sc-if value="{{ t.done }}" hint-placeholder-val="{{ true }}">
+                  <div style="background:#fff;border-radius:18px;padding:14px 16px;box-shadow:0 2px 8px rgba(0,46,96,.07);display:flex;flex-direction:column;gap:12px;cursor:pointer">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                      <div style="font:600 12.5px/17px Poppins;color:#5A646B">{{ t.time }} · {{ t.meta }}</div>
+                      <div style="font:800 17px/22px Poppins;letter-spacing:-.3px;color:#14191D">{{ t.fare }}</div>
+                    </div>
+                    <div style="display:flex;gap:11px">
+                      <div style="display:flex;flex-direction:column;align-items:center;padding-top:6px">
+                        <div style="width:9px;height:9px;border-radius:5px;border:2.5px solid #002E60;box-sizing:border-box"></div>
+                        <div style="width:2px;flex:1;min-height:12px;background:#DCE2E6;margin:3px 0"></div>
+                        <div style="width:9px;height:9px;border-radius:2px;background:#477434"></div>
+                      </div>
+                      <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:6px">
+                        <div style="font:600 14.5px/20px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.from }}</div>
+                        <div style="font:600 14.5px/20px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.to }}</div>
+                      </div>
+                    </div>
+                    <div style="display:flex;align-items:center;gap:10px;padding-top:11px;border-top:1px solid #EBEFF2">
+                      <div style="width:28px;height:28px;border-radius:14px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 11px Poppins;color:#002043;flex:none">{{ t.initials }}</div>
+                      <div style="flex:1;font:500 13px/18px Poppins;color:#14191D">{{ t.name }}</div>
+                      <div style="display:flex;align-items:center;gap:4px;font:700 11px/15px Poppins;letter-spacing:.5px;text-transform:uppercase;color:#3B602B;background:#E9F7E3;border-radius:999px;padding:3px 9px"><svg style="width:11px;height:11px;color:#3B602B"><use href="#d-check"></use></svg>Done</div>
+                      <svg style="width:14px;height:14px;color:#838B91"><use href="#d-chev"></use></svg>
+                    </div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ t.cancelled }}" hint-placeholder-val="{{ false }}">
+                  <div style="background:#fff;border-radius:18px;padding:14px 16px;border:1px dashed #DCE2E6;display:flex;flex-direction:column;gap:10px">
+                    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+                      <div style="font:600 12.5px/17px Poppins;color:#5A646B">{{ t.time }}</div>
+                      <div style="font:700 11px/15px Poppins;letter-spacing:.5px;text-transform:uppercase;color:#B3261E;background:#FBEAE8;border-radius:999px;padding:3px 9px">Cancelled</div>
+                    </div>
+                    <div style="font:600 14.5px/20px Poppins;color:#5A646B;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">{{ t.from }} → {{ t.to }}</div>
+                    <div style="display:flex;align-items:center;gap:6px;font:400 12.5px/17px Poppins;color:#5A646B"><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#d-info"></use></svg>{{ t.reason }}</div>
+                  </div>
+                </sc-if>
+              </sc-for>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0 8px;box-sizing:border-box">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-speed"></use></svg>Dashboard</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-list"></use></svg>Requests</div>
+        <div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px/15px Poppins;color:#002E60"><div style="position:absolute;top:-4px;width:22px;height:3px;border-radius:2px;background:#002E60"></div><svg style="width:24px;height:24px;color:#002E60"><use href="#d-time"></use></svg>History</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-wallet"></use></svg>Earnings</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-person"></use></svg>Profile</div>
+      </div>
+    </div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">2a · Trip history — tap the filters</div>
+    </div>
+
+    <!-- ============ EARNINGS ============ -->
+    <div style="display:flex;flex-direction:column;gap:12px">
+    <div data-screen-label="Earnings" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#F6F7F9;flex:none">
+      <div style="position:absolute;inset:0 0 64px 0;overflow-y:auto;overflow-x:hidden;scrollbar-width:none">
+        <div style="position:relative;overflow:hidden;background:linear-gradient(135deg,#002E60 0%,#001A38 100%);border-radius:0 0 30px 30px;box-shadow:0 12px 30px rgba(0,46,96,.22)">
+          <div style="position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.05) 0 2px,transparent 2px 14px)"></div>
+          <div style="position:absolute;top:-40px;right:-46px;opacity:.12"><svg style="width:200px;height:200px;color:#fff"><use href="#d-motif"></use></svg></div>
+          <div style="height:52px"></div>
+          <div style="position:relative;padding:6px 18px 22px;display:flex;flex-direction:column;gap:16px">
+            <div style="display:flex;padding:4px;border-radius:14px;background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2)">
+              <sc-for list="{{ periods }}" as="p" hint-placeholder-count="3">
+                <sc-if value="{{ p.active }}" hint-placeholder-val="{{ false }}">
+                  <div style="flex:1;min-height:38px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font:700 13.5px/18px Poppins;color:#002E60">{{ p.label }}</div>
+                </sc-if>
+                <sc-if value="{{ p.inactive }}" hint-placeholder-val="{{ true }}">
+                  <div onClick="{{ p.onClick }}" style="flex:1;min-height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font:600 13.5px/18px Poppins;color:#fff;cursor:pointer">{{ p.label }}</div>
+                </sc-if>
+              </sc-for>
+            </div>
+            <div>
+              <div style="font:600 11px/16px Poppins;letter-spacing:.8px;text-transform:uppercase;color:rgba(255,255,255,.72)">{{ pRange }}</div>
+              <div style="font:800 40px/46px Poppins;letter-spacing:-1.2px;color:#fff;margin-top:2px">{{ pTotal }}</div>
+              <div style="display:flex;align-items:center;gap:8px;margin-top:8px;flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:4px;font:600 12.5px/17px Poppins;color:#E9F7E3;background:rgba(233,247,227,.16);border-radius:999px;padding:3px 10px"><svg style="width:12px;height:12px;color:#E9F7E3"><use href="#d-up"></use></svg>{{ pDelta }}</div>
+                <div style="font:500 12.5px/17px Poppins;color:#E3EDF7">{{ pTrips }} trips</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div style="padding:16px 16px 20px;display:flex;flex-direction:column;gap:16px">
+          <div style="background:#fff;border-radius:22px;padding:16px;box-shadow:0 2px 10px rgba(0,46,96,.08);display:flex;flex-direction:column;gap:14px">
+            <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:10px">
+              <div>
+                <div style="font:500 12.5px/17px Poppins;color:#5A646B">{{ selLabel }}</div>
+                <div style="font:800 22px/28px Poppins;letter-spacing:-.5px;color:#14191D">{{ selValue }}</div>
+              </div>
+              <div style="font:600 12px/16px Poppins;color:#002E60;background:#E3EDF7;border-radius:999px;padding:4px 10px">{{ selTrips }}</div>
+            </div>
+            <div style="display:flex;align-items:flex-end;gap:8px;height:140px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+                <div onClick="{{ b.onClick }}" style="flex:1;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:6px;cursor:pointer">
+                  <sc-if value="{{ b.sel }}" hint-placeholder-val="{{ false }}"><div style="width:100%;border-radius:9px 9px 4px 4px;background:#002E60;height:{{ b.h }}"></div></sc-if>
+                  <sc-if value="{{ b.unsel }}" hint-placeholder-val="{{ true }}"><div style="width:100%;border-radius:9px 9px 4px 4px;background:#E3EDF7;height:{{ b.h }}"></div></sc-if>
+                </div>
+              </sc-for>
+            </div>
+            <div style="display:flex;gap:8px;margin-top:-6px">
+              <sc-for list="{{ bars }}" as="b" hint-placeholder-count="7">
+                <div style="flex:1;text-align:center;font:500 11.5px/15px Poppins;color:#5A646B">{{ b.label }}</div>
+              </sc-for>
+            </div>
+            <sc-if value="{{ showGoal }}" hint-placeholder-val="{{ true }}">
+              <div style="display:flex;align-items:center;gap:8px;padding-top:12px;border-top:1px solid #EBEFF2;font:500 12.5px/17px Poppins;color:#5A646B"><div style="width:14px;height:0;border-top:2px dashed #477434"></div>{{ goalHit }}</div>
+            </sc-if>
+          </div>
+
+          <div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px">
+            <div style="background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07)"><div style="font:400 12px/16px Poppins;color:#5A646B">Avg fare</div><div style="font:700 17px/23px Poppins;color:#14191D">{{ pAvg }}</div></div>
+            <div style="background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07)"><div style="font:400 12px/16px Poppins;color:#5A646B">Best</div><div style="font:700 17px/23px Poppins;color:#14191D">{{ pBest }}</div></div>
+            <div style="background:#fff;border-radius:16px;padding:12px 14px;box-shadow:0 2px 8px rgba(0,46,96,.07)"><div style="font:400 12px/16px Poppins;color:#5A646B">Cash</div><div style="font:700 17px/23px Poppins;color:#14191D">100%</div></div>
+          </div>
+
+          <div style="display:flex;flex-direction:column;gap:10px">
+            <div style="display:flex;align-items:baseline;justify-content:space-between">
+              <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">Peak hours</div>
+              <div style="font:400 12px/16px Poppins;color:#5A646B">{{ peakScope }}</div>
+            </div>
+            <div style="background:#fff;border-radius:22px;padding:16px;box-shadow:0 2px 10px rgba(0,46,96,.08);display:flex;flex-direction:column;gap:14px">
+              <div style="display:flex;align-items:center;gap:12px">
+                <div style="width:48px;height:48px;border-radius:16px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:22px;height:22px;color:#3B602B"><use href="#d-time"></use></svg></div>
+                <div style="flex:1;min-width:0">
+                  <div style="font:500 12.5px/17px Poppins;color:#5A646B">Best time to be online</div>
+                  <div style="font:800 20px/26px Poppins;letter-spacing:-.4px;color:#14191D">5 – 7 PM</div>
+                </div>
+                <div style="font:600 12px/16px Poppins;color:#3B602B;background:#E9F7E3;border-radius:999px;padding:4px 10px;white-space:nowrap">₱96 / hr</div>
+              </div>
+              <div style="display:flex;flex-direction:column;gap:6px">
+                <div style="display:flex;align-items:flex-end;gap:3px;height:72px">
+                  <sc-for list="{{ peakBars }}" as="pb" hint-placeholder-count="16">
+                    <div style="flex:1;height:100%;display:flex;align-items:flex-end">
+                      <sc-if value="{{ pb.peak }}" hint-placeholder-val="{{ false }}"><div style="width:100%;border-radius:4px 4px 2px 2px;background:#477434;height:{{ pb.h }}"></div></sc-if>
+                      <sc-if value="{{ pb.norm }}" hint-placeholder-val="{{ true }}"><div style="width:100%;border-radius:4px 4px 2px 2px;background:#E3EDF7;height:{{ pb.h }}"></div></sc-if>
+                    </div>
+                  </sc-for>
+                </div>
+                <div style="display:flex;justify-content:space-between;font:500 11px/15px Poppins;color:#5A646B"><span>6 AM</span><span>9 AM</span><span>12 NN</span><span>3 PM</span><span>6 PM</span><span>9 PM</span></div>
+              </div>
+              <div style="display:flex;flex-direction:column;border-top:1px solid #EBEFF2">
+                <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #EBEFF2">
+                  <div style="width:10px;height:10px;border-radius:3px;background:#477434;flex:none"></div>
+                  <div style="flex:1;font:500 13px/18px Poppins;color:#14191D">Morning rush · 6 – 8 AM</div>
+                  <div style="font:600 13px/18px Poppins;color:#14191D">₱88 / hr</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #EBEFF2">
+                  <div style="width:10px;height:10px;border-radius:3px;background:#477434;flex:none"></div>
+                  <div style="flex:1;font:500 13px/18px Poppins;color:#14191D">Evening rush · 5 – 7 PM</div>
+                  <div style="font:600 13px/18px Poppins;color:#14191D">₱96 / hr</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;padding:11px 0 0">
+                  <div style="width:10px;height:10px;border-radius:3px;background:#E3EDF7;flex:none"></div>
+                  <div style="flex:1;font:500 13px/18px Poppins;color:#5A646B">Quietest · 1 – 3 PM</div>
+                  <div style="font:600 13px/18px Poppins;color:#5A646B">₱34 / hr</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:8px;background:#F6F7F9;border-radius:12px;padding:10px 12px">
+                <svg style="width:16px;height:16px;color:#5A646B;flex:none;margin-top:1px"><use href="#d-info"></use></svg>
+                <div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">Based on your completed trips. Earnings per hour online.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div style="position:absolute;left:0;right:0;bottom:0;height:64px;background:#fff;border-top:1px solid #EBEFF2;display:flex;padding:4px 0 8px;box-sizing:border-box">
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-speed"></use></svg>Dashboard</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-list"></use></svg>Requests</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-time"></use></svg>History</div>
+        <div style="flex:1;position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:700 11px/15px Poppins;color:#002E60"><div style="position:absolute;top:-4px;width:22px;height:3px;border-radius:2px;background:#002E60"></div><svg style="width:24px;height:24px;color:#002E60"><use href="#d-wallet"></use></svg>Earnings</div>
+        <div style="flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;font:400 11px/15px Poppins;color:#666F75"><svg style="width:24px;height:24px;color:#666F75"><use href="#d-person"></use></svg>Profile</div>
+      </div>
+    </div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">3a · Earnings — switch period, tap a bar</div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;showGoal&quot;:{&quot;editor&quot;:&quot;boolean&quot;,&quot;default&quot;:true,&quot;tsType&quot;:&quot;boolean&quot;,&quot;section&quot;:&quot;Goal&quot;},&quot;dailyGoal&quot;:{&quot;editor&quot;:&quot;int&quot;,&quot;default&quot;:1000,&quot;min&quot;:300,&quot;max&quot;:3000,&quot;step&quot;:50,&quot;unit&quot;:&quot;₱&quot;,&quot;tsType&quot;:&quot;number&quot;,&quot;section&quot;:&quot;Goal&quot;}}">
+const PERIODS = {
+  today: { label: 'Today', range: 'Today · Mon, Sep 28', delta: '12 trips so far', avg: '₱70', best: '3–6 PM',
+    labels: ['6a','9a','12n','3p','6p'], full: ['6–9 AM','9 AM–12 NN','12–3 PM','3–6 PM','6–9 PM'],
+    vals: [180,210,120,245,90], trips: [3,3,2,3,1] },
+  week: { label: 'Week', range: 'Sep 22 – 28', delta: '12% vs last week', avg: '₱73', best: 'Today',
+    labels: ['Tue','Wed','Thu','Fri','Sat','Sun','Today'], full: ['Tue, Sep 22','Wed, Sep 23','Thu, Sep 24','Fri, Sep 25','Sat, Sep 26','Sun, Sep 27','Today, Sep 28'],
+    vals: [420,610,355,720,830,540,845], trips: [6,8,5,10,11,7,12] },
+  month: { label: 'Month', range: 'September 2026', delta: '9% vs August', avg: '₱73', best: 'Week 4',
+    labels: ['Wk 1','Wk 2','Wk 3','Wk 4'], full: ['Sep 1 – 7','Sep 8 – 14','Sep 15 – 21','Sep 22 – 28'],
+    vals: [2980,3410,3860,4320], trips: [41,47,52,59] }
+};
+const GROUPS = [
+  { day: 'Today', date: 'Sep 28', trips: [
+    { time: '5:42 PM', meta: 'Cash · 2 seats', fare: 45, from: 'Poblacion Plaza, waiting shed', to: 'Public Market, Stall 14', name: 'Maria Reyes', initials: 'MR' },
+    { time: '3:10 PM', meta: 'Cash · 1 seat', fare: 25, from: 'Town Hall', to: 'St. Jude Parish', name: 'Ana Lim', initials: 'AL' },
+    { time: '1:55 PM', from: 'Bayside Terminal', to: 'Mabini St.', reason: 'Passenger cancelled before pickup' }
+  ]},
+  { day: 'Yesterday', date: 'Sep 27', trips: [
+    { time: '7:48 PM', meta: 'Cash · 3 seats', fare: 65, from: 'Rizal Ave. corner Luna', to: 'Poblacion Plaza', name: 'Rico Bautista', initials: 'RB' },
+    { time: '4:05 PM', meta: 'Cash · 1 seat', fare: 25, from: 'Public Market', to: 'Sampaguita Homes, Ph. 2', name: 'Josefa Dizon', initials: 'JD' },
+    { time: '11:20 AM', from: 'National High School', to: 'Rural Health Unit', reason: 'Passenger not at pickup after 5 min' }
+  ]},
+  { day: 'Saturday', date: 'Sep 26', trips: [
+    { time: '6:30 PM', meta: 'Cash · 2 seats', fare: 40, from: 'Barangay Hall, San Isidro', to: 'Poblacion Plaza', name: 'Carla Mendoza', initials: 'CM' }
+  ]}
+];
+const peso = n => '₱' + n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+
+class Component extends DCLogic {
+  tripStage() {
+    const s = this.state.stage;
+    const pick = { eyebrow: 'Next stop · Pickup', addr: 'Poblacion Plaza, waiting shed', isPickup: true, isDrop: false };
+    const drop = { eyebrow: 'Next stop · Drop-off', addr: 'Public Market, Stall 14', isPickup: false, isDrop: true };
+    const S = [
+      { ...pick, status: 'Heading to pickup', meta: '0.4 km · about 2 min', primary: "I've arrived", hint: 'Lets Maria know you’re at the pickup point.' },
+      { ...pick, status: 'Waiting at pickup', meta: 'You arrived 1 min ago', chip: 'Arrived', primary: 'Start ride', hint: 'Tap once Maria is on board.' },
+      { ...drop, status: 'On the way to drop-off', meta: '1.8 km · about 7 min', chip: 'On board', cashPending: true, off: true, primary: 'Complete drop-off', hint: 'Confirm the cash first, then complete.' },
+      { ...drop, status: 'On the way to drop-off', meta: '1.8 km · about 7 min', chip: 'On board', cashDone: true, primary: 'Complete drop-off', hint: 'Tap when Maria has been dropped off.' },
+      { ...drop, status: 'On the way to drop-off', meta: '1.8 km · about 7 min', chip: 'On board', cashDone: true, primary: 'Complete drop-off', hint: 'Tap when Maria has been dropped off.', confirming: true },
+      { ...pick, status: 'Trip open · no passengers', done: true, showRoute: false }
+    ][s];
+    return { showRoute: true, chip: '', cashPending: false, cashDone: false, confirming: false, done: false, ...S,
+      notDone: !S.done, hasChip: !!S.chip, primaryOn: !S.off, primaryOff: !!S.off };
+  }
+  state = { period: 'week', sel: 6, hFilter: 'all', stage: 0, msg: false, sent: false };
+  renderVals() {
+    const showGoal = this.props.showGoal ?? true;
+    const goal = this.props.dailyGoal ?? 1000;
+    const today = 845;
+    const P = PERIODS[this.state.period];
+    const sel = Math.min(this.state.sel, P.vals.length - 1);
+    const max = Math.max(...P.vals);
+    const bars = P.vals.map((v, i) => ({
+      label: P.labels[i], h: Math.max(8, Math.round(v / max * 100)) + '%', sel: i === sel, unsel: i !== sel,
+      onClick: () => this.setState({ sel: i })
+    }));
+    const periods = Object.keys(PERIODS).map(k => ({
+      label: PERIODS[k].label, active: k === this.state.period, inactive: k !== this.state.period,
+      onClick: () => this.setState({ period: k, sel: PERIODS[k].vals.length - 1 })
+    }));
+    const total = P.vals.reduce((a, b) => a + b, 0);
+    const trips = P.trips.reduce((a, b) => a + b, 0);
+    const hitDays = PERIODS.week.vals.filter(v => v >= goal).length;
+
+    const f = this.state.hFilter;
+    const all = GROUPS.flatMap(g => g.trips);
+    const doneN = all.filter(t => t.fare).length;
+    const hFilters = [['all', 'All', all.length], ['done', 'Done', doneN], ['cancelled', 'Cancelled', all.length - doneN]].map(([k, label, count]) => ({
+      label, count, active: k === f, inactive: k !== f, onClick: () => this.setState({ hFilter: k })
+    }));
+    const groups = GROUPS.map(g => {
+      const ts = g.trips.filter(t => f === 'all' || (f === 'done' ? !!t.fare : !t.fare));
+      const d = g.trips.filter(t => t.fare);
+      const sum = d.reduce((a, t) => a + t.fare, 0);
+      return {
+        day: g.day, date: g.date,
+        summary: d.length + (d.length === 1 ? ' trip · ' : ' trips · ') + '₱' + sum,
+        trips: ts.map(t => ({ ...t, fare: t.fare ? peso(t.fare) : '', done: !!t.fare, cancelled: !t.fare }))
+      };
+    }).filter(g => g.trips.length);
+
+    return {
+      showGoal,
+      goalPct: Math.min(100, Math.round(today / goal * 100)) + '%',
+      goalText: '₱' + goal.toLocaleString('en-PH'),
+      goalLeft: today >= goal ? 'Goal reached — nice work!' : '₱' + (goal - today).toLocaleString('en-PH') + ' to go',
+      goalHit: this.state.period === 'week' ? `Hit your ₱${goal.toLocaleString('en-PH')} daily goal on ${hitDays} of 7 days` : `Daily goal: ₱${goal.toLocaleString('en-PH')}`,
+      pulseDot: React.createElement('div', { style: { position: 'absolute', inset: 0, borderRadius: 5, background: '#E9F7E3', animation: 'tsPulse 2s ease-out infinite' } }),
+      pulseRing: React.createElement('div', { style: { position: 'absolute', inset: 0, borderRadius: '50%', background: '#E3EDF7', animation: 'tsPulse 2.4s ease-out infinite' } }),
+      periods, bars,
+      pRange: P.range, pTotal: peso(total), pDelta: P.delta, pTrips: trips, pAvg: P.avg, pBest: P.best,
+      selLabel: P.full[sel], selValue: peso(P.vals[sel]), selTrips: P.trips[sel] + ' trips',
+      hFilters, groups,
+      at: this.tripStage(),
+      advance: () => this.setState(s => ({ stage: s.stage === 2 ? 2 : Math.min(5, s.stage + 1) })),
+      confirmCash: () => this.setState({ stage: 3 }),
+      backStep: () => this.setState({ stage: 3 }),
+      resetTrip: () => this.setState({ stage: 0, msg: false, sent: false }),
+      msgOpen: this.state.msg, msgSent: this.state.sent,
+      openMsg: () => this.setState({ msg: true }),
+      closeMsg: () => this.setState({ msg: false }),
+      sendMsg: () => { this.setState({ msg: false, sent: true }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ sent: false }), 1800); },
+      peakScope: this.state.period === 'today' ? 'Last 7 days' : P.range,
+      peakBars: [64,88,58,40,44,52,46,30,26,34,48,70,96,90,56,32].map((v,i) => ({ h: Math.round(v/96*100) + '%', peak: v >= 64, norm: v < 64 }))
+    };
+  }
+}
+</script>
+</body>
+</html>

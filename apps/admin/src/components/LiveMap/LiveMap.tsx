@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { AdvancedMarker, InfoWindow, Map } from '@vis.gl/react-google-maps';
 import type { ActiveTricycleLocationCell } from '../../services/monitoring';
+import { SkeletonBlock } from '../Skeleton';
 import styles from './LiveMap.module.css';
 
 export interface LiveMapProps {
@@ -47,7 +48,7 @@ export function LiveMap({ cells, loading = false }: LiveMapProps) {
   const [openKey, setOpenKey] = useState<string | null>(null);
 
   if (loading) {
-    return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
+    return <SkeletonBlock height={640} />;
   }
 
   const openCell = cells.find((cell) => `${cell.lat},${cell.lng}` === openKey) ?? null;

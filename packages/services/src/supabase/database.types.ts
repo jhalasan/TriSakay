@@ -1189,6 +1189,79 @@ export type Database = {
           },
         ]
       }
+      ride_message_view_log: {
+        Row: {
+          complaint_id: string | null
+          created_at: string
+          emergency_alert_id: string | null
+          id: string
+          reason: string
+          ride_request_id: string
+          viewed_by: string
+        }
+        Insert: {
+          complaint_id?: string | null
+          created_at?: string
+          emergency_alert_id?: string | null
+          id?: string
+          reason: string
+          ride_request_id: string
+          viewed_by: string
+        }
+        Update: {
+          complaint_id?: string | null
+          created_at?: string
+          emergency_alert_id?: string | null
+          id?: string
+          reason?: string
+          ride_request_id?: string
+          viewed_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_message_view_log_complaint_id_fkey"
+            columns: ["complaint_id"]
+            isOneToOne: false
+            referencedRelation: "complaints"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_message_view_log_emergency_alert_id_fkey"
+            columns: ["emergency_alert_id"]
+            isOneToOne: false
+            referencedRelation: "emergency_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_message_view_log_ride_request_id_fkey"
+            columns: ["ride_request_id"]
+            isOneToOne: false
+            referencedRelation: "ride_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_message_view_log_viewed_by_fkey"
+            columns: ["viewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_driver_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_message_view_log_viewed_by_fkey"
+            columns: ["viewed_by"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_message_view_log_viewed_by_fkey"
+            columns: ["viewed_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_request_declines: {
         Row: {
           declined_at: string
@@ -1231,6 +1304,7 @@ export type Database = {
       }
       ride_requests: {
         Row: {
+          arrived_at: string | null
           assigned_at: string | null
           cancel_reason: string | null
           cancel_reason_code: string | null
@@ -1263,6 +1337,7 @@ export type Database = {
           trip_id: string | null
         }
         Insert: {
+          arrived_at?: string | null
           assigned_at?: string | null
           cancel_reason?: string | null
           cancel_reason_code?: string | null
@@ -1295,6 +1370,7 @@ export type Database = {
           trip_id?: string | null
         }
         Update: {
+          arrived_at?: string | null
           assigned_at?: string | null
           cancel_reason?: string | null
           cancel_reason_code?: string | null
@@ -2102,6 +2178,20 @@ export type Database = {
         Args: { p_session_id: string }
         Returns: undefined
       }
+      admin_view_ride_messages: {
+        Args: { p_reason: string; p_ride_request_id: string }
+        Returns: {
+          body: string | null
+          contains_masked_phone: boolean
+          created_at: string
+          id: string
+          image_path: string | null
+          kind: string
+          read_at: string | null
+          ride_request_id: string
+          sender_id: string
+        }[]
+      }
       app_current_role: {
         Args: never
         Returns: Database["public"]["Enums"]["user_role"]
@@ -2262,6 +2352,7 @@ export type Database = {
           driver_id: string
           driver_name: string
           plate_no: string
+          pso_verified: boolean
           rating_avg: number
           rating_count: number
         }[]

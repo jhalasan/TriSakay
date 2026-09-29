@@ -1,3 +1,9 @@
+/* flex-end only stays correct while every filters/actions child is the same
+   natural height (an unlabeled/hint-less TextField or Select via aria-label,
+   or a bare Button) — every current call site is. If a caller ever adds a
+   TextField/Select with a visible `hint` or `error` next to one without,
+   flex-end will misalign them exactly like it did in PsoUsers.tsx before
+   that form switched to flex-start with a label-height spacer. */
 .bar {
   display: flex;
   align-items: flex-end;

@@ -292,7 +292,14 @@ export function Dashboard() {
           }
         />
         <ErrorBanner message={activityError} />
-        <DataTable columns={activityColumns} rows={activity} getRowKey={(r) => r.id} loading={loading} />
+        <DataTable
+          columns={activityColumns}
+          rows={activity}
+          getRowKey={(r) => r.id}
+          loading={loading}
+          emptyMessage="No recent trip activity."
+          emptyHint="Completed and cancelled trips appear here as they happen."
+        />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Image, KeyboardAvoidingView, Platform, Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
@@ -46,6 +46,7 @@ const CATEGORY_OPTIONS: ComplaintCategory[] = ['fare', 'conduct', 'safety', 'low
 
 export default function ComplaintsScreen() {
   const router = useRouter();
+  const { rideRequestId: prefillRideRequestId } = useLocalSearchParams<{ rideRequestId?: string }>();
   const t = useTranslation();
   const STATUS_LABEL: Record<ComplaintStatus, string> = {
     open: t.driver.complaints.statusOpen,
@@ -77,10 +78,21 @@ export default function ComplaintsScreen() {
   const [evidenceUris, setEvidenceUris] = useState<string[]>([]);
   const [submitting, setSubmitting] = useState(false);
   const [submittedWarning, setSubmittedWarning] = useState<string | null>(null);
+  const appliedPrefillRef = useRef(false);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Part C §C10 — "Report a problem with this ride" from the read-only chat
+  // bar opens straight into the compose form with the ride pre-selected,
+  // instead of leaving the driver to find it again in the trip picker.
+  useEffect(() => {
+    if (!prefillRideRequestId || appliedPrefillRef.current) return;
+    appliedPrefillRef.current = true;
+    setRelatedTripId(prefillRideRequestId);
+    setComposing(true);
+  }, [prefillRideRequestId]);
 
   useFocusEffect(
     useCallback(() => {

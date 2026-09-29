@@ -8,6 +8,7 @@ import { EmptyState } from '../components/EmptyState';
 import { ConfirmModal } from '../components/ConfirmModal';
 import { useSettingsStore } from '../store/useSettingsStore';
 import { formatCurrency, formatDate } from '../lib/format';
+import { SkeletonPage } from '../components/Skeleton';
 import styles from './SystemSettings.module.css';
 
 const WORKED_EXAMPLE_KM = 4.2;
@@ -44,7 +45,7 @@ export function SystemSettings() {
   }, [fareConfig]);
 
   if (loading) {
-    return <div className="page">Loading…</div>;
+    return <SkeletonPage blocks={3} />;
   }
 
   // P1-16 (2026-09-15 launch audit): a fetch failure used to hold this
@@ -68,7 +69,7 @@ export function SystemSettings() {
   }
 
   if (!fareConfig || !featureToggles || !systemSettings) {
-    return <div className="page">Loading…</div>;
+    return <SkeletonPage blocks={3} />;
   }
 
   const parsedBaseFare = Number(baseFare);

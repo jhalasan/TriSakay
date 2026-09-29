@@ -9,6 +9,7 @@ import { getActiveTricycleLocations, listActiveTricycles, type ActiveTricycleLoc
 import { useAutoRefresh } from '../lib/useAutoRefresh';
 import type { ActiveTricycleRow } from '../types/ride';
 import { titleCaseLabel } from '../lib/format';
+import { SkeletonAvatar, SkeletonBar } from '../components/Skeleton';
 import styles from './RideMonitoring.module.css';
 
 const REFRESH_MS = 15_000;
@@ -86,7 +87,7 @@ export function RideMonitoring() {
               <Badge label={refreshing ? 'Updating…' : `Live · ${onTripCount} on trip`} tone={listError || mapError ? 'danger' : 'success'} />
             </div>
             <div className={styles.mapHeaderRight}>
-              <Select value={cluster} onChange={(e) => setCluster(e.target.value)} options={CLUSTER_OPTIONS} />
+              <Select aria-label="Filter by cluster" value={cluster} onChange={(e) => setCluster(e.target.value)} options={CLUSTER_OPTIONS} />
               <Button variant="outline" tone="neutral" onClick={refresh} disabled={refreshing}>
                 Refresh
               </Button>
@@ -108,7 +109,17 @@ export function RideMonitoring() {
             <Badge label={String(visibleTricycles.length)} tone="neutral" />
           </div>
           {listError && <div className="form-error">{listError}</div>}
-          {initialLoading && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
+          {initialLoading &&
+            [0, 1, 2].map((i) => (
+              <div key={i} className={styles.row}>
+                <SkeletonAvatar size={28} />
+                <div className={styles.rowInfo}>
+                  <SkeletonBar width="60%" height={12} />
+                  <div style={{ height: 4 }} />
+                  <SkeletonBar width="40%" height={10} />
+                </div>
+              </div>
+            ))}
           {!initialLoading && visibleTricycles.length === 0 && <EmptyState message="No tricycles on the clock right now." />}
           {visibleTricycles.map((t) => (
             <div key={t.driverId} className={styles.row}>

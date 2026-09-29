@@ -47,9 +47,13 @@ export async function getReportSummary(range: ReportDateRange): Promise<ServiceR
   };
 }
 
-export async function listTransactions(range: ReportDateRange): Promise<ServiceResult<TransactionRow[]>> {
-  const { data, error } = await listTransactionsForAdmin(dateRangeSinceIso(range));
-  return { data, error };
+export interface ListTransactionsResult extends ServiceResult<TransactionRow[]> {
+  truncated: boolean;
+}
+
+export async function listTransactions(range: ReportDateRange): Promise<ListTransactionsResult> {
+  const { data, error, truncated } = await listTransactionsForAdmin(dateRangeSinceIso(range));
+  return { data, error, truncated };
 }
 
 export async function getRidesRevenueOverTime(range: ReportDateRange): Promise<ServiceResult<RidesRevenuePoint[]>> {

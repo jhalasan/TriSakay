@@ -52,6 +52,8 @@ const DEMO_DRIVER: Driver = {
   rating: 4.9,
   etaMinutes: 4,
   avatarUrl: null,
+  ratingCount: 128,
+  psoVerified: true,
 };
 
 export interface TripTutorialDemo {

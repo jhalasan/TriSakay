@@ -10,3 +10,18 @@
   font-size: 11.5px;
   color: var(--ink-faint);
 }
+
+.tableHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--sp-sm);
+  flex-wrap: wrap;
+  margin-bottom: var(--sp-md);
+}
+
+.tableHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: var(--sp-sm);
+}

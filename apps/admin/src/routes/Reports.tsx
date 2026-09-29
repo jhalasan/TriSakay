@@ -42,6 +42,7 @@ export function Reports() {
   const [summaryError, setSummaryError] = useState<string | null>(null);
   const [transactions, setTransactions] = useState<TransactionRow[]>([]);
   const [transactionsError, setTransactionsError] = useState<string | null>(null);
+  const [transactionsTruncated, setTransactionsTruncated] = useState(false);
   const [ridesRevenue, setRidesRevenue] = useState<RidesRevenuePoint[]>([]);
   const [ridesRevenueError, setRidesRevenueError] = useState<string | null>(null);
   const [peakHours, setPeakHours] = useState<PeakHourBucket[]>([]);
@@ -75,6 +76,7 @@ export function Reports() {
         setSummaryError(s.error);
         setTransactions(t.data);
         setTransactionsError(t.error);
+        setTransactionsTruncated(t.truncated);
         setRidesRevenue(rr.data);
         setRidesRevenueError(rr.error);
         setPeakHours(ph.data);
@@ -205,9 +207,29 @@ export function Reports() {
       </div>
 
       <div className="panel">
-        <h2 className="panel-title">Transactions</h2>
+        <div className={styles.tableHeader}>
+          <h2 className="panel-title" style={{ marginBottom: 0 }}>
+            Transactions
+          </h2>
+          {/* Same fix shape as AuditLog's account_actions/login_events rows —
+              this query had no row cap at all before, so a busy quarter could
+              pull an unbounded result through the 3-hop passenger/driver
+              name-resolution chain. The cap is now visible instead of silent. */}
+          {transactionsTruncated && (
+            <div className={styles.tableHeaderRight}>
+              <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />
+            </div>
+          )}
+        </div>
         <ErrorBanner message={transactionsError} />
-        <DataTable columns={columns} rows={transactions} getRowKey={(t) => t.id} loading={loading} />
+        <DataTable
+          columns={columns}
+          rows={transactions}
+          getRowKey={(t) => t.id}
+          loading={loading}
+          emptyMessage="No transactions in this date range."
+          emptyHint="Try a wider range above."
+        />
       </div>
     </div>
   );

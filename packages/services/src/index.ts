@@ -33,6 +33,7 @@ export * from './admin/passengers.ts';
 export * from './admin/psoUsers.ts';
 export * from './admin/ratings.ts';
 export * from './admin/reports.ts';
+export * from './admin/rideChat.ts';
 export * from './admin/rides.ts';
 export * from './admin/settings.ts';
 export * from './admin/tricycles.ts';

@@ -397,7 +397,7 @@ test('subscribeToRideRequestStatus reconciles once the channel reports SUBSCRIBE
   await Promise.resolve();
 
   assert.equal(capturedTable, 'ride_requests');
-  assert.equal(capturedSelect, 'id, status, cancel_reason, cancelled_by, discount_applied, trip_id');
+  assert.equal(capturedSelect, 'id, status, cancel_reason, cancelled_by, discount_applied, trip_id, arrived_at, assigned_at, completed_at, cancelled_at');
   assert.deepEqual(capturedEqArgs, ['id', 'rr1']);
   assert.deepEqual(received, [{ id: 'rr1', status: 'assigned' }]);
 });
@@ -1487,6 +1487,7 @@ test('getTripDriverInfo maps the RPC row into TripDriverInfo', async () => {
             plate_no: 'ABC-123',
             rating_avg: 4.8,
             rating_count: 12,
+            pso_verified: true,
           }],
           error: null,
         };
@@ -1506,6 +1507,7 @@ test('getTripDriverInfo maps the RPC row into TripDriverInfo', async () => {
     plateNo: 'ABC-123',
     ratingAvg: 4.8,
     ratingCount: 12,
+    psoVerified: true,
   });
 });
 

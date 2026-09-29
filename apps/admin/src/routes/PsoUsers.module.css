@@ -32,12 +32,32 @@
 .inviteForm {
   display: flex;
   gap: var(--sp-md);
-  align-items: flex-end;
+  /* flex-start, not flex-end: the Role select has no hint line below it and
+     the Add button has no label above it, so bottom-aligning the row (their
+     mismatched total heights) pushed both up and out of line with the text
+     fields' actual input boxes. Top-aligning works because every field's
+     label is the same height — see .addUserField's spacer, which stands in
+     for the label the button doesn't have. */
+  align-items: flex-start;
   flex-wrap: wrap;
 }
 
 .formErrorRow {
   flex-basis: 100%;
+}
+
+.addUserField {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Invisible stand-in for TextField/Select's label row, so the button below
+   it lines up with the other fields' inputs instead of their labels. */
+.addUserLabelSpacer {
+  font-family: var(--mono);
+  font-size: 10px;
+  visibility: hidden;
 }
 
 .policyNote {

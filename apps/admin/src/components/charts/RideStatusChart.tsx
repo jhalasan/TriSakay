@@ -2,6 +2,7 @@ import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
 import type { TripStatusCount } from '../../services/dashboard';
 import { titleCaseLabel } from '../../lib/format';
 import { STATUS_COLORS, TOOLTIP_BG, TOOLTIP_BORDER } from './chartTheme';
+import { SkeletonDonut } from '../Skeleton';
 import styles from './charts.module.css';
 
 export interface RideStatusChartProps {
@@ -20,7 +21,7 @@ const STATUS_ORDER: TripStatusCount['status'][] = ['completed', 'active', 'formi
  */
 export function RideStatusChart({ data, loading = false }: RideStatusChartProps) {
   if (loading) {
-    return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
+    return <SkeletonDonut />;
   }
 
   const total = data.reduce((sum, d) => sum + d.count, 0);

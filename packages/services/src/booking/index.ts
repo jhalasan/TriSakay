@@ -233,7 +233,16 @@ export async function declineRideRequest(driverId: string, rideRequestId: string
 
 export type RideRequestStatusUpdate = Pick<
   RideRequestRow,
-  'id' | 'status' | 'cancel_reason' | 'cancelled_by' | 'discount_applied' | 'trip_id'
+  | 'id'
+  | 'status'
+  | 'cancel_reason'
+  | 'cancelled_by'
+  | 'discount_applied'
+  | 'trip_id'
+  | 'arrived_at'
+  | 'assigned_at'
+  | 'completed_at'
+  | 'cancelled_at'
 >;
 
 /**
@@ -264,7 +273,7 @@ export function subscribeToRideRequestStatus(
       if (status === 'SUBSCRIBED') {
         client
           .from('ride_requests')
-          .select('id, status, cancel_reason, cancelled_by, discount_applied, trip_id')
+          .select('id, status, cancel_reason, cancelled_by, discount_applied, trip_id, arrived_at, assigned_at, completed_at, cancelled_at')
           .eq('id', rideRequestId)
           .maybeSingle()
           .then(({ data }: { data: RideRequestStatusUpdate | null }) => {
@@ -629,6 +638,8 @@ export interface TripDriverInfo {
   plateNo: string | null;
   ratingAvg: number | null;
   ratingCount: number;
+  /** Ride comms redesign (Part B §B4.2) — hides the "PSO verified" badge when false. Undefined on a live DB that hasn't picked up the `pso_verified` column yet; treated the same as false. */
+  psoVerified: boolean;
 }
 
 export interface GetTripDriverInfoResult {
@@ -661,6 +672,7 @@ export async function getTripDriverInfo(rideRequestId: string): Promise<GetTripD
       plateNo: row.plate_no,
       ratingAvg: row.rating_avg,
       ratingCount: row.rating_count,
+      psoVerified: Boolean(row.pso_verified),
     },
     error: null,
   };

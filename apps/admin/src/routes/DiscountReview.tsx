@@ -15,6 +15,7 @@ import { useDiscountsStore } from '../store/useDiscountsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import type { DiscountRow } from '../types/discount';
 import { formatDate, formatRelativeTime } from '../lib/format';
+import { SkeletonRows } from '../components/Skeleton';
 import styles from './DiscountReview.module.css';
 
 /** UAT A11 — an approved row whose 1-year validity has passed. Status stays 'approved' in the DB (no scheduler exists to flip it); this is the lazy, read-time check. */
@@ -289,7 +290,7 @@ export function DiscountReview() {
   return (
     <div className="page">
       <div className="review-page">
-        {loading && items.length === 0 && <div style={{ color: 'var(--ink-faint)', fontSize: 12 }}>Loading…</div>}
+        {loading && items.length === 0 && <SkeletonRows />}
         {!loading && items.length === 0 && (
           <EmptyState message="No discount applications to review." hint="New senior, PWD, and student applications appear here." />
         )}

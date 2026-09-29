@@ -1,6 +1,7 @@
 import { CartesianGrid, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { RidesPerDayPoint } from '../../services/dashboard';
 import { AXIS_COLOR, GRID_COLOR, LINE_COLOR, MONO_FONT, TOOLTIP_BG, TOOLTIP_BORDER } from './chartTheme';
+import { SkeletonChart } from '../Skeleton';
 import styles from './charts.module.css';
 
 export interface RidesOverTimeChartProps {
@@ -13,7 +14,7 @@ const AXIS_TICK = { fill: AXIS_COLOR, fontFamily: MONO_FONT, fontSize: 10 };
 /** "Rides Over Time (Week)" dashboard panel — completed rides per day, oldest to newest. */
 export function RidesOverTimeChart({ data, loading = false }: RidesOverTimeChartProps) {
   if (loading) {
-    return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
+    return <SkeletonChart height={220} />;
   }
   if (data.length === 0) {
     return <div className={`ph-box ${styles.loading}`}>No rides recorded yet.</div>;

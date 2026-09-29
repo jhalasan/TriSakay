@@ -5,7 +5,10 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  /* Same fix as Modal.module.css — must beat TopBar's z-index: 1100, or the
+     top bar paints over this overlay's own header instead of sitting
+     beneath it. */
+  z-index: 1200;
 }
 
 .card {

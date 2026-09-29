@@ -14,6 +14,7 @@ import type { PsoUserRow } from '../types/psoUser';
 import { ROLE_LABELS } from '../lib/rbac';
 import type { AdminRole } from '../types/role';
 import { formatDateTime } from '../lib/format';
+import { SkeletonBar } from '../components/Skeleton';
 import styles from './PsoUsers.module.css';
 
 /** P2 (2026-09-15 launch audit): the invite form accepted any non-empty
@@ -250,9 +251,14 @@ export function PsoUsers() {
             { label: 'Administrator', value: 'admin' },
           ]}
         />
-        <Button onClick={handleAdd} loading={creating} disabled={!firstName.trim() || !lastName.trim() || !email.trim()}>
-          {creating ? 'Adding…' : 'Add PSO user'}
-        </Button>
+        <div className={styles.addUserField}>
+          <span className={styles.addUserLabelSpacer} aria-hidden="true">
+            &nbsp;
+          </span>
+          <Button onClick={handleAdd} loading={creating} disabled={!firstName.trim() || !lastName.trim() || !email.trim()}>
+            {creating ? 'Adding…' : 'Add PSO user'}
+          </Button>
+        </div>
         {formError && (
           <div className={styles.formErrorRow}>
             <ErrorBanner message={formError} />
@@ -287,7 +293,7 @@ export function PsoUsers() {
           subtitle="A password change or Disable doesn't sign an active session out — revoke a session here to do that immediately."
           onClose={() => setSessionsUser(null)}
         >
-          {sessionsLoading && <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Loading…</span>}
+          {sessionsLoading && <SkeletonBar width={160} height={12} />}
           {!sessionsLoading && sessions.length === 0 && (
             <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No active sessions.</span>
           )}

@@ -72,6 +72,8 @@ export default function FindingDriverScreen() {
         // line ETA once its tracking subscription delivers a position.
         etaMinutes: null,
         avatarUrl: data?.avatarUrl ?? null,
+        ratingCount: data?.ratingCount ?? 0,
+        psoVerified: data?.psoVerified ?? false,
       });
       setTripStatus('matched');
       router.replace('/booking/trip');

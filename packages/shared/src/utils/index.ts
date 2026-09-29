@@ -5,5 +5,6 @@ export function getAppName(app: AppType) {
   return APP_NAMES[app];
 }
 
+export * from './chat.ts';
 export * from './geo.ts';
 export * from './nextStop.ts';

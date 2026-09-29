@@ -13,6 +13,8 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { Pagination } from '../components/Pagination';
 import { EmptyState } from '../components/EmptyState';
 import { DocumentImage } from '../components/DocumentImage';
+import { RideChatThread } from '../components/RideChatThread';
+import { SkeletonBar } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useComplaintsStore } from '../store/useComplaintsStore';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
@@ -405,7 +407,7 @@ export function Complaints() {
 
               <div className={styles.subsection}>
                 <div className={styles.subsectionTitle}>Evidence</div>
-                {attachmentsLoading && <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Loading…</span>}
+                {attachmentsLoading && <SkeletonBar width={140} height={12} />}
                 {!attachmentsLoading && attachments.length === 0 && (
                   <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No evidence attached to this complaint.</span>
                 )}
@@ -420,7 +422,7 @@ export function Complaints() {
 
               <div className={styles.subsection}>
                 <div className={styles.subsectionTitle}>Status History</div>
-                {statusHistoryLoading && <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>Loading…</span>}
+                {statusHistoryLoading && <SkeletonBar width={140} height={12} />}
                 {!statusHistoryLoading && statusHistory.length === 0 && (
                   <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No status changes recorded yet.</span>
                 )}
@@ -547,6 +549,8 @@ export function Complaints() {
                   <span style={{ fontSize: 13 }}>{selected.resolutionNotes}</span>
                 </div>
               )}
+
+              {selected.rideRequestId && <RideChatThread rideRequestId={selected.rideRequestId} />}
         </Modal>
       )}
 

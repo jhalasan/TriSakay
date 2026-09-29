@@ -2,6 +2,7 @@ import { Bar, CartesianGrid, ComposedChart, Line, ResponsiveContainer, Tooltip, 
 import type { RidesRevenuePoint } from '../../types/report';
 import { formatCurrency } from '../../lib/format';
 import { AXIS_COLOR, GRID_COLOR, LINE_COLOR, MONO_FONT, REVENUE_COLOR, TOOLTIP_BG, TOOLTIP_BORDER } from './chartTheme';
+import { SkeletonChart } from '../Skeleton';
 import styles from './charts.module.css';
 
 export interface RidesRevenueChartProps {
@@ -14,7 +15,7 @@ const AXIS_TICK = { fill: AXIS_COLOR, fontFamily: MONO_FONT, fontSize: 10 };
 /** "Rides / Revenue" report panel — completed rides (bars) and paid revenue (line) per day in the selected range. */
 export function RidesRevenueChart({ data, loading = false }: RidesRevenueChartProps) {
   if (loading) {
-    return <div className={`ph-box ${styles.loading}`}>Loading…</div>;
+    return <SkeletonChart height={220} />;
   }
   if (data.length === 0) {
     return <div className={`ph-box ${styles.loading}`}>No rides in this range.</div>;

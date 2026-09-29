@@ -76,6 +76,8 @@ export default function NoDriversNearbyScreen() {
         rating: data?.ratingAvg ?? null,
         etaMinutes: null,
         avatarUrl: data?.avatarUrl ?? null,
+        ratingCount: data?.ratingCount ?? 0,
+        psoVerified: data?.psoVerified ?? false,
       });
       setTripStatus('matched');
       router.replace('/booking/trip');

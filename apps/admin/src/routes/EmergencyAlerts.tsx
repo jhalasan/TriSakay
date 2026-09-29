@@ -9,6 +9,7 @@ import { Modal } from '../components/Modal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
+import { RideChatThread } from '../components/RideChatThread';
 import { useEmergencyAlertsStore } from '../store/useEmergencyAlertsStore';
 import type { EmergencyAlertRow, EmergencyStatus } from '../types/emergency';
 import { formatDateTime, formatRelativeTime, titleCaseLabel } from '../lib/format';
@@ -200,7 +201,7 @@ export function EmergencyAlerts() {
             min="supervisor"
             fallback={<div className="read-only-note">Mark Reviewed / Close — PSO Supervisor &amp; Administrator only.</div>}
           >
-            <div style={{ display: 'flex', gap: 8 }}>
+            <div className="row-actions">
               <Button
                 variant="solid"
                 tone="primary"
@@ -225,6 +226,8 @@ export function EmergencyAlerts() {
               </Button>
             </div>
           </RoleGate>
+
+          {selected.rideRequestId && <RideChatThread rideRequestId={selected.rideRequestId} />}
         </Modal>
       )}
     </div>

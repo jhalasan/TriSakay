@@ -5,7 +5,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 100;
+  /* Must beat TopBar's z-index: 1100 (raised there to clear Leaflet's own
+     controls) — this overlay covers the whole viewport including behind
+     the top bar, so anything lower left the top bar painting over the
+     modal's own header instead of the modal sitting above everything. */
+  z-index: 1200;
   padding: var(--sp-xl) var(--sp-md);
 }
 

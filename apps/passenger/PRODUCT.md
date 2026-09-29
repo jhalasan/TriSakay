@@ -14,7 +14,7 @@ Filipino commuters booking short local tricycle trips — mobile-primary, variab
 
 ## Product Purpose
 
-Let a passenger book, track, pay for, and rate a tricycle ride quickly and unambiguously, mirroring the trust and simplicity of established Southeast Asian ride-hailing apps but tailored to informal/local tricycle dispatch. No in-app call or chat is a deliberate trust/simplicity constraint — coordination between passenger and driver happens in person once matched — not a missing feature.
+Let a passenger book, track, pay for, and rate a tricycle ride quickly and unambiguously, mirroring the trust and simplicity of established Southeast Asian ride-hailing apps but tailored to informal/local tricycle dispatch. Once matched, the passenger and driver coordinate through in-app chat rather than exchanging phone numbers — voice calling exists as an opt-in feature flag, off by default.
 
 ## Positioning
 
@@ -28,7 +28,7 @@ Primarily outdoor, on-the-go use; one-handed thumb reach on booking screens; bri
 
 - **Partial backend integration, and no sample content either.** Auth, ToS/privacy consent, and location permission are real, wired to Supabase (`packages/services`). Booking, matching, and payment are still local state (Zustand), and every data module in that remaining scope starts empty — no invented drivers, destinations, ride history, notifications or fares. Screens render their empty states, and values the backend owns show a placeholder rather than a plausible-looking default. Wiring the rest to Supabase (the backend choice is settled — PocketBase was removed from the repo) is tracked step by step in `docs/PASSENGER_TODO.MD`; `src/mocks/` is kept as the named seam to wire it into.
 - **The flows still run end to end** so the UI stays reviewable: login accepts what you type, and the ride sequence advances through to Payment and Rate driver with an unpopulated driver record.
-- **No in-app call or chat.** Product constraint carried directly from the wireframe spec, not a gap: once matched, passenger and driver coordinate in person.
+- **In-app chat, no shared phone numbers.** Once a driver is matched, the passenger and driver message each other in-app — free text, fixed quick-reply chips, photos, read receipts, a typing indicator, and a long-press "Report message" action. Phone numbers are stripped from message text server-side. The thread becomes read-only once the ride ends. Voice calling exists behind a `features.rideCall` flag, off by default until a masked/proxy number is available.
 - **Real OpenStreetMap basemap.** All six map surfaces render live OSM tiles via Leaflet inside a WebView, centred on General Santos City. Markers, route lines, driver movement, and device GPS are a deliberate next step — the current maps show the correct area but do not yet plot the trip. `MapPlaceholder` is retained as the loading/offline skeleton.
 - **All six maps pan and zoom** — drag, pinch, and double-tap, with a recenter button that appears once the rider has moved off the home view. Home pins its map above a scrolling list so the map gesture and the page gesture never compete.
 - **Tiles come from OSMF's free community service**, which permits development and low-volume use only. Production requires a commercial or self-hosted tile provider. Interactive maps are bounded to roughly 27 km around the city with a zoom floor, so panning cannot turn into bulk tile fetching.

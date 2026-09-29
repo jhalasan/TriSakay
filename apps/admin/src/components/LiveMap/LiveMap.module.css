@@ -5,15 +5,6 @@
   border: 1px solid var(--line);
 }
 
-.loading {
-  height: 640px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--ink-soft);
-  font-size: 12px;
-}
-
 .markerBadge {
   position: relative;
   display: flex;

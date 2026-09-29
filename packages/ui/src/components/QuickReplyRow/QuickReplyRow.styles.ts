@@ -2,15 +2,19 @@ import { StyleSheet } from 'react-native';
 import { colors, radius, spacing, typography } from '../../theme';
 
 export const styles = StyleSheet.create({
-  content: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingVertical: spacing.sm },
+  content: { flexDirection: 'row', gap: spacing.sm, paddingHorizontal: spacing.lg, paddingTop: spacing.tight6, paddingBottom: spacing.sm },
   chip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
     borderRadius: radius.pill,
-    paddingHorizontal: spacing.md,
-    paddingVertical: spacing.sm,
-    backgroundColor: colors.panel,
+    backgroundColor: colors.white,
     borderWidth: 1,
     borderColor: colors.line,
   },
+  chipMd: { minHeight: 36, paddingHorizontal: spacing.tight14 },
+  chipLg: { minHeight: 44, paddingHorizontal: 15 },
   chipDisabled: { opacity: 0.5 },
-  chipText: { ...typography.caption, fontSize: 13, fontFamily: typography.bodyStrong.fontFamily, color: colors.ink },
+  chipText: { ...typography.bodyStrong, fontSize: 13.5, lineHeight: 18, color: colors.ink },
+  chipTextLg: { fontSize: 14.5, lineHeight: 19 },
 });

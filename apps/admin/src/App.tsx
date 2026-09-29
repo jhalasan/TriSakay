@@ -2,6 +2,7 @@ import { lazy, Suspense, type ReactNode } from 'react';
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/AppShell';
 import { ToastProvider } from './components/Toast';
+import { SkeletonPage } from './components/Skeleton';
 import { useSessionStore } from './store/useSessionStore';
 import { isAdmin } from './lib/rbac';
 
@@ -77,7 +78,7 @@ export default function App() {
   return (
     <ToastProvider>
       <BrowserRouter>
-        <Suspense fallback={<div className="page">Loading…</div>}>
+        <Suspense fallback={<SkeletonPage />}>
           <Routes>
             <Route
               path="/login"

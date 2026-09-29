@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<meta name="design_doc_mode" content="canvas">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0;background:#e9eaec;font-family:Poppins,system-ui,sans-serif}
+a{color:#002E60}a:hover{color:#002043}
+*::-webkit-scrollbar{display:none}
+</style>
+</helmet>
+
+<svg style="display:none" aria-hidden="true"><defs>
+<symbol id="p-alert" viewBox="0 0 512 512"><path fill="currentColor" d="M85 435h342c22 0 36-24 25-43L281 85c-11-19-39-19-50 0L60 392c-11 19 3 43 25 43zm171-56a22 22 0 110-44 22 22 0 010 44zm22-96a22 22 0 01-44 0V190a22 22 0 0144 0z"></path></symbol>
+<symbol id="p-call" viewBox="0 0 512 512"><path fill="currentColor" d="M391 480c-19.52 0-46.94-7.06-88-30-49.93-28-88.55-53.85-138.21-103.38C116.91 298.77 93.61 267.790 61 208.45c-36.84-67-30.56-102.12-23.54-117.13C45.82 73.38 58.16 62.65 74.11 52a176.3 176.3 0 0128.64-15.2c1-.43 1.930-.84 2.76-1.21 4.95-2.23 12.45-5.6 21.95-2 6.34 2.38 12 7.25 20.86 16 18.17 17.92 43 57.83 52.16 77.43 6.15 13.21 10.22 21.93 10.23 31.71 0 11.45-5.76 20.28-12.75 29.81-1.31 1.79-2.61 3.5-3.87 5.16-7.61 10-9.28 12.89-8.18 18.05 2.23 10.37 18.86 41.24 46.19 68.51s57.31 42.85 67.72 45.07c5.38 1.15 8.33-.59 18.65-8.47 1.48-1.13 3-2.3 4.59-3.47 10.66-7.93 19.08-13.54 30.26-13.54h.06c9.73 0 18.06 4.22 31.86 11.18 18 9.08 59.11 33.59 77.14 51.78 8.77 8.84 13.66 14.48 16.05 20.81 3.6 9.53.21 17-2 22-.37.83-.78 1.74-1.21 2.75a176.49 176.49 0 01-15.29 28.58c-10.63 15.9-21.4 28.21-39.38 36.58A67.42 67.42 0 01391 480z"></path></symbol>
+<symbol id="p-chat" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="32" stroke-linejoin="round" d="M87.49 380c1.19-4.38-1.44-10.47-3.95-14.86a44.86 44.86 0 00-2.54-3.8 199.81 199.81 0 01-33-110C47.65 139.09 140.73 48 255.83 48 356.21 48 440 117.54 459.58 209.85a199 199 0 014.42 41.64c0 112.41-89.49 204.93-204.59 204.93-18.3 0-43-4.6-56.47-8.37s-26.92-8.77-30.39-10.11a31.09 31.09 0 00-11.12-2.07 30.71 30.71 0 00-12.09 2.43l-67.83 24.48a16 16 0 01-4.67 1.22 9.6 9.6 0 01-9.57-9.74 15.85 15.85 0 01.6-3.29z"></path></symbol>
+<symbol id="p-star" viewBox="0 0 512 512"><path fill="currentColor" d="M394 480a16 16 0 01-9.39-3L256 383.76 127.39 477a16 16 0 01-24.55-18.08L153 310.35 23 221.2a16 16 0 019-29.2h160.38l48.4-148.95a16 16 0 0130.44 0l48.4 149H480a16 16 0 019.05 29.2L359 310.35l50.13 148.53A16 16 0 01394 480z"></path></symbol>
+<symbol id="p-shield" viewBox="0 0 512 512"><path fill="currentColor" d="M479.07 111.36a16 16 0 00-13.15-14.74c-86.5-15.52-122.61-26.74-203.33-63.2a16 16 0 00-13.18 0C168.69 69.88 132.58 81.1 46.08 96.62a16 16 0 00-13.15 14.74c-3.85 61.11 4.36 118.05 24.43 169.24A349.47 349.47 0 00129 393.11c53.47 56.73 110.24 81.37 121.07 85.73a16 16 0 0012 0c10.830-4.36 67.6-29 121.07-85.73a349.47 349.47 0 0071.5-112.51c20.07-51.19 28.28-108.13 24.43-169.24zm-131 75.11l-110.8 128a16 16 0 01-11.41 5.53h-.66a16 16 0 01-11.2-4.57l-49.2-48.2a16 16 0 1122.4-22.86l37 36.29 99.7-115.13a16 16 0 0124.2 20.94z"></path></symbol>
+<symbol id="p-check" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" d="M416 128L192 384l-96-96"></path></symbol>
+<symbol id="p-chev" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="46" stroke-linecap="round" stroke-linejoin="round" d="M184 112l144 144-144 144"></path></symbol>
+<symbol id="p-info" viewBox="0 0 512 512"><circle cx="256" cy="256" r="200" fill="none" stroke="currentColor" stroke-width="32"></circle><path fill="none" stroke="currentColor" stroke-width="34" stroke-linecap="round" d="M256 232v128"></path><circle cx="256" cy="170" r="20" fill="currentColor"></circle></symbol>
+<symbol id="p-close" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="48" stroke-linecap="round" d="M368 368L144 144M368 144L144 368"></path></symbol>
+<symbol id="p-cash" viewBox="0 0 512 512"><rect x="32" y="112" width="448" height="256" rx="24" fill="none" stroke="currentColor" stroke-width="32"></rect><circle cx="256" cy="240" r="64" fill="none" stroke="currentColor" stroke-width="32"></circle></symbol>
+<symbol id="p-swap" viewBox="0 0 512 512"><path fill="none" stroke="currentColor" stroke-width="36" stroke-linecap="round" stroke-linejoin="round" d="M112 160h288l-64-64M400 352H112l64 64"></path></symbol>
+</defs></svg>
+
+<section data-screen-label="Passenger redesign — matched ride" style="padding:52px 56px 56px;display:flex;flex-direction:column;gap:26px">
+  <div style="display:flex;flex-direction:column;gap:10px;max-width:900px">
+    <div style="display:flex;align-items:baseline;gap:12px">
+      <span style="font:700 10px ui-monospace,Menlo,monospace;padding:4px 8px;background:#002E60;color:#fff;border-radius:5px;letter-spacing:.6px">REDESIGN</span>
+      <span style="font:700 22px/28px Poppins;color:#14191D;letter-spacing:-.3px">Passenger — Matched ride (booking/trip)</span>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px">
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#B3261E">What's hard today</div>
+        <div style="font:400 13px/20px Poppins;color:#5A646B;text-wrap:pretty">The whole navy sheet looks the same whether the driver is 4 minutes away, already waiting, or driving. ETA, plate, seats and fare all have the same weight, so the plate (the thing you need to find the trike) doesn't stand out. A full-width red SOS bar is the biggest thing on screen. Cancel is a small underlined link. There's no way to reach the driver, and the screen says so.</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px">
+        <div style="font:700 12px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#3B602B">What changes</div>
+        <div style="font:400 13px/20px Poppins;color:#5A646B;text-wrap:pretty">This mirrors the driver's accepted-ride screen. A white floating sheet leads with one big status: the ETA, "Your driver is here", or time to drop-off. A three-step progress bar sits under it. The driver strip gives the plate its own tag and has Call and Message buttons. The route and fare stay visible. SOS moves to the same hold button on the map, and Cancel becomes a proper button that only shows before pickup. Use the switcher under <a href="#5a">5a</a> to step through.</div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;gap:22px;flex-wrap:wrap;align-items:flex-start">
+
+    <div id="5a" style="display:flex;flex-direction:column;gap:12px">
+    <div data-screen-label="Matched ride — interactive" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#E7EBE4;flex:none">
+      <div style="position:absolute;inset:0;background:#E7EBE4">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.6) 0 3px,transparent 3px 46px),repeating-linear-gradient(0deg,rgba(255,255,255,.6) 0 3px,transparent 3px 52px)"></div>
+        <div style="position:absolute;left:-20px;top:110px;width:430px;height:26px;background:#fff;transform:rotate(-12deg)"></div>
+        <div style="position:absolute;left:-30px;top:240px;width:430px;height:30px;background:#fff;transform:rotate(6deg)"></div>
+        <div style="position:absolute;left:120px;top:0;width:22px;height:480px;background:#fff"></div>
+        <svg viewBox="0 0 390 480" style="position:absolute;left:0;top:0;width:390px;height:480px"><path d="M131 330 L131 256 L240 238 L240 184" fill="none" stroke="#002E60" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" stroke-dasharray="{{ routeDash }}"></path></svg>
+        <sc-if value="{{ notRiding }}" hint-placeholder-val="{{ true }}">
+          <div style="position:absolute;left:226px;top:170px;width:28px;height:28px;border-radius:14px;background:#fff;border:6px solid #477434;box-shadow:0 4px 12px rgba(0,46,96,.3);box-sizing:border-box"></div>
+          <div style="position:absolute;left:193px;top:138px;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/16px Poppins;color:#14191D;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.14)">You · Pickup</div>
+        </sc-if>
+        <sc-if value="{{ riding }}" hint-placeholder-val="{{ false }}">
+          <div style="position:absolute;left:227px;top:171px;width:26px;height:26px;border-radius:7px;background:#002E60;border:4px solid #fff;box-shadow:0 4px 12px rgba(0,46,96,.3);box-sizing:border-box"></div>
+          <div style="position:absolute;left:204px;top:138px;background:#fff;border-radius:999px;padding:4px 10px;font:600 12px/16px Poppins;color:#14191D;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.14)">Drop-off</div>
+        </sc-if>
+        <div style="position:absolute;left:{{ trikeX }};top:{{ trikeY }};width:38px;height:38px;border-radius:12px;background:#477434;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 16px rgba(0,26,56,.3);box-sizing:border-box"><img src="assets/trike-white.png" alt="" style="width:20px;height:auto"></div>
+      </div>
+
+      <div style="position:absolute;left:16px;top:60px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:9px 14px;box-shadow:0 4px 14px rgba(0,20,45,.18)">
+        <sc-if value="{{ isHere }}" hint-placeholder-val="{{ false }}"><div style="width:9px;height:9px;border-radius:5px;background:#477434"></div></sc-if>
+        <sc-if value="{{ notHere }}" hint-placeholder-val="{{ true }}"><div style="width:9px;height:9px;border-radius:5px;background:#002E60"></div></sc-if>
+        <div style="font:700 13px/17px Poppins;color:#14191D;white-space:nowrap">{{ pill }}</div>
+      </div>
+      <div style="position:absolute;right:16px;top:54px;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <div style="width:58px;height:58px;border-radius:29px;background:#B3261E;border:3px solid #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(179,38,30,.4);box-sizing:border-box;cursor:pointer"><svg style="width:18px;height:18px;color:#fff"><use href="#p-alert"></use></svg><div style="font:800 11px/13px Poppins;letter-spacing:.6px;color:#fff">SOS</div></div>
+        <div style="background:#fff;border-radius:999px;padding:2px 8px;font:600 10.5px/14px Poppins;color:#B3261E;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.12)">Hold 3s</div>
+      </div>
+
+      <div style="position:absolute;left:10px;right:10px;bottom:10px;max-height:560px;overflow-y:auto;scrollbar-width:none;background:#fff;border-radius:26px;box-shadow:0 -8px 34px rgba(0,20,45,.18);padding:10px 16px 16px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box">
+        <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6;flex:none"></div>
+
+        <div style="display:flex;align-items:flex-end;justify-content:space-between;gap:12px">
+          <div style="flex:1;min-width:0">
+            <div style="font:600 11.5px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#5A646B">{{ eyebrow }}</div>
+            <div style="font:800 26px/32px Poppins;letter-spacing:-.6px;color:#14191D;text-wrap:pretty">{{ headline }}</div>
+            <div style="font:400 13px/18px Poppins;color:#5A646B;text-wrap:pretty">{{ sub }}</div>
+          </div>
+          <sc-if value="{{ isHere }}" hint-placeholder-val="{{ false }}"><div style="width:48px;height:48px;border-radius:16px;background:#E9F7E3;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:22px;height:22px;color:#3B602B"><use href="#p-check"></use></svg></div></sc-if>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:6px">
+          <div style="display:flex;gap:4px">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+              <sc-if value="{{ s.on }}" hint-placeholder-val="{{ false }}"><div style="flex:1;height:5px;border-radius:3px;background:#002E60"></div></sc-if>
+              <sc-if value="{{ s.off }}" hint-placeholder-val="{{ true }}"><div style="flex:1;height:5px;border-radius:3px;background:#E3EDF7"></div></sc-if>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:4px">
+            <sc-for list="{{ steps }}" as="s" hint-placeholder-count="3">
+              <sc-if value="{{ s.cur }}" hint-placeholder-val="{{ false }}"><div style="flex:1;font:700 11px/15px Poppins;color:#002E60">{{ s.label }}</div></sc-if>
+              <sc-if value="{{ s.notCur }}" hint-placeholder-val="{{ true }}"><div style="flex:1;font:500 11px/15px Poppins;color:#666F75">{{ s.label }}</div></sc-if>
+            </sc-for>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:10px;background:#F6F7F9;border-radius:16px;padding:12px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:48px;height:48px;border-radius:24px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 16px Poppins;color:#002043;flex:none">JS</div>
+            <div style="flex:1;min-width:0">
+              <div style="font:600 15.5px/21px Poppins;color:#14191D;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">Jomar Santos</div>
+              <div style="display:flex;align-items:center;gap:6px;font:400 12.5px/17px Poppins;color:#5A646B;white-space:nowrap"><svg style="width:12px;height:12px;color:#477434;flex:none"><use href="#p-star"></use></svg>4.8<span>·</span><svg style="width:12px;height:12px;color:#477434;flex:none"><use href="#p-shield"></use></svg>PSO verified</div>
+            </div>
+            <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:1.5px solid #14191D;border-radius:9px;padding:4px 10px">
+              <div style="font:600 9.5px/12px Poppins;letter-spacing:.8px;text-transform:uppercase;color:#5A646B">Plate</div>
+              <div style="font:800 15px/19px Poppins;letter-spacing:.6px;color:#14191D;white-space:nowrap">TRK 4821</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;min-height:44px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg style="width:17px;height:17px;color:#002E60"><use href="#p-call"></use></svg><span style="font:600 14px/18px Poppins;color:#002E60">Call</span></div>
+            <div onClick="{{ openMsg }}" style="flex:1;min-height:44px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;gap:8px;cursor:pointer"><svg style="width:17px;height:17px;color:#002E60"><use href="#p-chat"></use></svg><span style="font:600 14px/18px Poppins;color:#002E60">Message</span></div>
+          </div>
+        </div>
+
+        <div style="display:flex;gap:12px;padding:0 2px">
+          <div style="display:flex;flex-direction:column;align-items:center;padding-top:6px">
+            <div style="width:10px;height:10px;border-radius:5px;border:2.5px solid #477434;box-sizing:border-box"></div>
+            <div style="width:2px;flex:1;min-height:16px;background:#DCE2E6;margin:3px 0"></div>
+            <div style="width:10px;height:10px;border-radius:2px;background:#002E60"></div>
+          </div>
+          <div style="flex:1;min-width:0;display:flex;flex-direction:column;gap:8px">
+            <div><div style="font:500 11.5px/15px Poppins;color:#666F75">Pickup</div><div style="font:600 14.5px/20px Poppins;color:#14191D">Poblacion Plaza, waiting shed</div></div>
+            <div><div style="font:500 11.5px/15px Poppins;color:#666F75">Drop-off</div><div style="font:600 14.5px/20px Poppins;color:#14191D">Public Market, Stall 14</div></div>
+          </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid #EBEFF2">
+          <svg style="width:20px;height:20px;color:#5A646B;flex:none"><use href="#p-cash"></use></svg>
+          <div style="flex:1;min-width:0;font:500 13px/18px Poppins;color:#5A646B">{{ payLine }}</div>
+          <div style="font:800 18px/24px Poppins;letter-spacing:-.3px;color:#14191D">₱45.00</div>
+        </div>
+
+        <sc-if value="{{ notRiding }}" hint-placeholder-val="{{ true }}">
+          <div onClick="{{ openCancel }}" style="min-height:50px;border-radius:14px;border:1.5px solid #DCE2E6;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#B3261E;cursor:pointer">Cancel ride</div>
+        </sc-if>
+      </div>
+
+      <sc-if value="{{ msgOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeAll }}" style="position:absolute;inset:0;background:rgba(10,14,17,.58)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 18px 26px;display:flex;flex-direction:column;gap:12px;box-sizing:border-box">
+          <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6"></div>
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:44px;height:44px;border-radius:22px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 15px Poppins;color:#002043;flex:none">JS</div>
+            <div style="flex:1;min-width:0"><div style="font:700 17px/22px Poppins;color:#14191D">Message Jomar</div><div style="font:400 12.5px/17px Poppins;color:#5A646B">Tap a reply to send it right away</div></div>
+            <div style="width:44px;height:44px;border-radius:13px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;flex:none;cursor:pointer"><svg style="width:19px;height:19px;color:#002E60"><use href="#p-call"></use></svg></div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ replies }}" as="r" hint-placeholder-count="4">
+              <div onClick="{{ sendMsg }}" style="min-height:52px;border-radius:14px;background:#F6F7F9;display:flex;align-items:center;justify-content:space-between;gap:10px;padding:0 16px;cursor:pointer"><span style="font:600 15px/20px Poppins;color:#14191D">{{ r }}</span><svg style="width:14px;height:14px;color:#838B91;flex:none"><use href="#p-chev"></use></svg></div>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:8px;background:#F6F7F9;border-radius:12px;padding:10px 12px">
+            <svg style="width:16px;height:16px;color:#5A646B;flex:none;margin-top:1px"><use href="#p-info"></use></svg>
+            <div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">Jomar sees these as notifications while driving. For anything urgent, call or hold SOS.</div>
+          </div>
+          <div onClick="{{ closeAll }}" style="min-height:52px;border-radius:14px;border:1.5px solid #838B91;display:flex;align-items:center;justify-content:center;font:600 15px/20px Poppins;color:#14191D;cursor:pointer">Close</div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ cancelOpen }}" hint-placeholder-val="{{ false }}">
+        <div onClick="{{ closeAll }}" style="position:absolute;inset:0;background:rgba(10,14,17,.58)"></div>
+        <div style="position:absolute;left:0;right:0;bottom:0;background:#fff;border-radius:28px 28px 0 0;padding:10px 18px 26px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box">
+          <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6"></div>
+          <div><div style="font:800 21px/27px Poppins;letter-spacing:-.4px;color:#14191D">Cancel this ride?</div><div style="font:400 14px/21px Poppins;color:#5A646B;margin-top:4px;text-wrap:pretty">Jomar is already on the way. Tell us why so we can improve matching.</div></div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <sc-for list="{{ reasons }}" as="rs" hint-placeholder-count="4">
+              <sc-if value="{{ rs.sel }}" hint-placeholder-val="{{ false }}">
+                <div style="min-height:52px;border-radius:14px;border:1.5px solid #002E60;background:#E3EDF7;display:flex;align-items:center;gap:12px;padding:0 14px;box-sizing:border-box"><div style="width:20px;height:20px;border-radius:10px;border:6px solid #002E60;background:#fff;box-sizing:border-box;flex:none"></div><span style="font:600 14.5px/20px Poppins;color:#14191D">{{ rs.label }}</span></div>
+              </sc-if>
+              <sc-if value="{{ rs.unsel }}" hint-placeholder-val="{{ true }}">
+                <div onClick="{{ rs.onClick }}" style="min-height:52px;border-radius:14px;border:1.5px solid #DCE2E6;display:flex;align-items:center;gap:12px;padding:0 14px;box-sizing:border-box;cursor:pointer"><div style="width:20px;height:20px;border-radius:10px;border:2px solid #838B91;box-sizing:border-box;flex:none"></div><span style="font:500 14.5px/20px Poppins;color:#14191D">{{ rs.label }}</span></div>
+              </sc-if>
+            </sc-for>
+          </div>
+          <div style="display:flex;gap:10px">
+            <div onClick="{{ closeAll }}" style="flex:1;min-height:54px;border-radius:16px;background:linear-gradient(135deg,#002E60,#002043);display:flex;align-items:center;justify-content:center;font:700 15.5px/20px Poppins;color:#fff;cursor:pointer">Keep my ride</div>
+            <sc-if value="{{ canCancel }}" hint-placeholder-val="{{ false }}"><div onClick="{{ closeAll }}" style="flex:1;min-height:54px;border-radius:16px;border:1.5px solid #B3261E;display:flex;align-items:center;justify-content:center;font:700 15.5px/20px Poppins;color:#B3261E;cursor:pointer">Cancel ride</div></sc-if>
+            <sc-if value="{{ cantCancel }}" hint-placeholder-val="{{ true }}"><div style="flex:1;min-height:54px;border-radius:16px;background:#EDF1F4;display:flex;align-items:center;justify-content:center;font:700 15.5px/20px Poppins;color:#666F75">Cancel ride</div></sc-if>
+          </div>
+        </div>
+      </sc-if>
+
+      <sc-if value="{{ msgSent }}" hint-placeholder-val="{{ false }}"><div style="position:absolute;left:16px;right:16px;top:124px;display:flex;align-items:center;gap:10px;background:#14191D;border-radius:14px;padding:12px 14px;box-shadow:0 8px 20px rgba(0,20,45,.25)"><svg style="width:16px;height:16px;color:#E9F7E3;flex:none"><use href="#p-check"></use></svg><div style="font:600 13.5px/18px Poppins;color:#fff">Message sent to Jomar</div></div></sc-if>
+    </div>
+    <div style="width:390px;display:flex;flex-direction:column;gap:10px">
+      <div style="display:flex;padding:4px;border-radius:12px;background:#fff;box-shadow:0 2px 8px rgba(0,46,96,.08)">
+        <sc-for list="{{ stageTabs }}" as="st" hint-placeholder-count="3">
+          <sc-if value="{{ st.active }}" hint-placeholder-val="{{ false }}"><div style="flex:1;min-height:34px;border-radius:9px;background:#002E60;display:flex;align-items:center;justify-content:center;font:700 12.5px/16px Poppins;color:#fff">{{ st.label }}</div></sc-if>
+          <sc-if value="{{ st.inactive }}" hint-placeholder-val="{{ true }}"><div onClick="{{ st.onClick }}" style="flex:1;min-height:34px;border-radius:9px;display:flex;align-items:center;justify-content:center;font:600 12.5px/16px Poppins;color:#5A646B;cursor:pointer">{{ st.label }}</div></sc-if>
+        </sc-for>
+      </div>
+      <div style="font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">5a · Matched ride — switch stage, tap Message / Cancel</div>
+    </div>
+    </div>
+
+    <div id="5b" style="display:flex;flex-direction:column;gap:12px">
+    <div data-screen-label="Matched ride — driver changed" style="width:390px;height:844px;border-radius:38px;overflow:hidden;position:relative;box-shadow:0 18px 48px rgba(0,46,96,.18);background:#E7EBE4;flex:none">
+      <div style="position:absolute;inset:0;background:#E7EBE4">
+        <div style="position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(255,255,255,.6) 0 3px,transparent 3px 46px),repeating-linear-gradient(0deg,rgba(255,255,255,.6) 0 3px,transparent 3px 52px)"></div>
+        <div style="position:absolute;left:-20px;top:110px;width:430px;height:26px;background:#fff;transform:rotate(-12deg)"></div>
+        <div style="position:absolute;left:120px;top:0;width:22px;height:480px;background:#fff"></div>
+        <div style="position:absolute;left:226px;top:170px;width:28px;height:28px;border-radius:14px;background:#fff;border:6px solid #477434;box-shadow:0 4px 12px rgba(0,46,96,.3);box-sizing:border-box"></div>
+        <div style="position:absolute;left:112px;top:250px;width:38px;height:38px;border-radius:12px;background:#477434;border:3px solid #fff;display:flex;align-items:center;justify-content:center;box-shadow:0 8px 16px rgba(0,26,56,.3);box-sizing:border-box"><img src="assets/trike-white.png" alt="" style="width:20px;height:auto"></div>
+      </div>
+      <div style="position:absolute;left:16px;top:60px;display:flex;align-items:center;gap:8px;background:#fff;border-radius:999px;padding:9px 14px;box-shadow:0 4px 14px rgba(0,20,45,.18)"><div style="width:9px;height:9px;border-radius:5px;background:#002E60"></div><div style="font:700 13px/17px Poppins;color:#14191D;white-space:nowrap">Driver on the way</div></div>
+      <div style="position:absolute;right:16px;top:54px;display:flex;flex-direction:column;align-items:center;gap:5px">
+        <div style="width:58px;height:58px;border-radius:29px;background:#B3261E;border:3px solid #fff;display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 8px 20px rgba(179,38,30,.4);box-sizing:border-box"><svg style="width:18px;height:18px;color:#fff"><use href="#p-alert"></use></svg><div style="font:800 11px/13px Poppins;letter-spacing:.6px;color:#fff">SOS</div></div>
+        <div style="background:#fff;border-radius:999px;padding:2px 8px;font:600 10.5px/14px Poppins;color:#B3261E;white-space:nowrap;box-shadow:0 2px 6px rgba(0,0,0,.12)">Hold 3s</div>
+      </div>
+      <div style="position:absolute;left:10px;right:10px;bottom:10px;background:#fff;border-radius:26px;box-shadow:0 -8px 34px rgba(0,20,45,.18);padding:10px 16px 16px;display:flex;flex-direction:column;gap:14px;box-sizing:border-box">
+        <div style="align-self:center;width:40px;height:4px;border-radius:2px;background:#DCE2E6"></div>
+        <div style="display:flex;align-items:flex-start;gap:12px;background:#E3EDF7;border-radius:16px;padding:12px 10px 12px 14px">
+          <svg style="width:20px;height:20px;color:#002E60;flex:none;margin-top:2px"><use href="#p-swap"></use></svg>
+          <div style="flex:1;min-width:0"><div style="font:700 14px/19px Poppins;color:#14191D">You have a new driver</div><div style="font:400 12.5px/18px Poppins;color:#5A646B;text-wrap:pretty">Your ride moved to Rey Dizon. Same pickup, same fare.</div></div>
+          <div style="width:32px;height:32px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex:none"><svg style="width:14px;height:14px;color:#5A646B"><use href="#p-close"></use></svg></div>
+        </div>
+        <div>
+          <div style="font:600 11.5px/16px Poppins;letter-spacing:.6px;text-transform:uppercase;color:#5A646B">Arriving in</div>
+          <div style="font:800 26px/32px Poppins;letter-spacing:-.6px;color:#14191D">6 min</div>
+          <div style="font:400 13px/18px Poppins;color:#5A646B">Rey is 1.8 km away</div>
+        </div>
+        <div style="display:flex;gap:4px"><div style="flex:1;height:5px;border-radius:3px;background:#002E60"></div><div style="flex:1;height:5px;border-radius:3px;background:#E3EDF7"></div><div style="flex:1;height:5px;border-radius:3px;background:#E3EDF7"></div></div>
+        <div style="display:flex;flex-direction:column;gap:10px;background:#F6F7F9;border-radius:16px;padding:12px">
+          <div style="display:flex;align-items:center;gap:12px">
+            <div style="width:48px;height:48px;border-radius:24px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;font:700 16px Poppins;color:#002043;flex:none">RD</div>
+            <div style="flex:1;min-width:0">
+              <div style="display:flex;align-items:center;gap:8px"><div style="font:600 15.5px/21px Poppins;color:#14191D;white-space:nowrap">Rey Dizon</div><div style="font:700 10.5px/14px Poppins;letter-spacing:.5px;text-transform:uppercase;color:#002043;background:#E3EDF7;border-radius:999px;padding:2px 8px">New</div></div>
+              <div style="display:flex;align-items:center;gap:6px;font:400 12.5px/17px Poppins;color:#5A646B;white-space:nowrap"><svg style="width:12px;height:12px;color:#477434;flex:none"><use href="#p-star"></use></svg>4.9<span>·</span><svg style="width:12px;height:12px;color:#477434;flex:none"><use href="#p-shield"></use></svg>PSO verified</div>
+            </div>
+            <div style="flex:none;display:flex;flex-direction:column;align-items:center;gap:2px;background:#fff;border:1.5px solid #14191D;border-radius:9px;padding:4px 10px">
+              <div style="font:600 9.5px/12px Poppins;letter-spacing:.8px;text-transform:uppercase;color:#5A646B">Plate</div>
+              <div style="font:800 15px/19px Poppins;letter-spacing:.6px;color:#14191D;white-space:nowrap">TRK 3307</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <div style="flex:1;min-height:44px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;gap:8px"><svg style="width:17px;height:17px;color:#002E60"><use href="#p-call"></use></svg><span style="font:600 14px/18px Poppins;color:#002E60">Call</span></div>
+            <div style="flex:1;min-height:44px;border-radius:12px;background:#E3EDF7;display:flex;align-items:center;justify-content:center;gap:8px"><svg style="width:17px;height:17px;color:#002E60"><use href="#p-chat"></use></svg><span style="font:600 14px/18px Poppins;color:#002E60">Message</span></div>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;padding-top:12px;border-top:1px solid #EBEFF2">
+          <svg style="width:20px;height:20px;color:#5A646B;flex:none"><use href="#p-cash"></use></svg>
+          <div style="flex:1;min-width:0;font:500 13px/18px Poppins;color:#5A646B">2 seats · Pay cash to driver</div>
+          <div style="font:800 18px/24px Poppins;letter-spacing:-.3px;color:#14191D">₱45.00</div>
+        </div>
+      </div>
+    </div>
+    <div style="width:390px;font:600 11px/16px Poppins;letter-spacing:.7px;text-transform:uppercase;color:#5A646B">5b · Driver changed (transfer)</div>
+    </div>
+
+  </div>
+</section>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+const STAGES = [
+  { tab: 'On the way', pill: 'Driver on the way', eyebrow: 'Arriving in', headline: '4 min', sub: 'Jomar is 1.2 km away · Wait at Poblacion Plaza', step: 0, trike: ['112px', '262px'], pay: '2 seats · Pay cash to driver' },
+  { tab: 'Driver here', pill: 'Driver is here', eyebrow: 'At your pickup', headline: 'Your driver is here', sub: 'Look for plate TRK 4821 at the waiting shed', step: 1, here: true, trike: ['214px', '208px'], pay: '2 seats · Pay cash to driver' },
+  { tab: 'Riding', pill: 'On the way to drop-off', eyebrow: 'Arriving at drop-off in', headline: '7 min', sub: 'Public Market, Stall 14 · 1.8 km', step: 2, riding: true, trike: ['166px', '236px'], pay: 'Pay cash when you arrive' }
+];
+const REASONS = ['Driver is taking too long', 'I found another ride', 'I changed my plans', 'Booked by mistake'];
+
+class Component extends DCLogic {
+  state = { stage: 0, msg: false, cancel: false, sent: false, reason: -1 };
+  renderVals() {
+    const S = STAGES[this.state.stage];
+    return {
+      pill: S.pill, eyebrow: S.eyebrow, headline: S.headline, sub: S.sub, payLine: S.pay,
+      isHere: !!S.here, notHere: !S.here, riding: !!S.riding, notRiding: !S.riding,
+      trikeX: S.trike[0], trikeY: S.trike[1],
+      routeDash: S.riding ? '0' : '2 12',
+      steps: ['Driver coming', 'Pickup', 'Drop-off'].map((label, i) => ({
+        label, on: i <= S.step, off: i > S.step, cur: i === S.step, notCur: i !== S.step
+      })),
+      stageTabs: STAGES.map((s, i) => ({
+        label: s.tab, active: i === this.state.stage, inactive: i !== this.state.stage,
+        onClick: () => this.setState({ stage: i, msg: false, cancel: false })
+      })),
+      replies: S.riding
+        ? ['Please drop me at the corner', 'Can you slow down a bit?', 'I need to stop quickly', 'Thank you!']
+        : ["I'm at the pickup point", 'Coming, 2 minutes', 'Where are you exactly?', 'Please wait for me'],
+      reasons: REASONS.map((label, i) => ({ label, sel: i === this.state.reason, unsel: i !== this.state.reason, onClick: () => this.setState({ reason: i }) })),
+      canCancel: this.state.reason >= 0, cantCancel: this.state.reason < 0,
+      msgOpen: this.state.msg, cancelOpen: this.state.cancel, msgSent: this.state.sent,
+      openMsg: () => this.setState({ msg: true }),
+      openCancel: () => this.setState({ cancel: true, reason: -1 }),
+      closeAll: () => this.setState({ msg: false, cancel: false }),
+      sendMsg: () => { this.setState({ msg: false, sent: true }); clearTimeout(this._t); this._t = setTimeout(() => this.setState({ sent: false }), 1800); }
+    };
+  }
+}
+</script>
+</body>
+</html>

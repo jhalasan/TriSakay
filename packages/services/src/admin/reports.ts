@@ -116,16 +116,28 @@ export interface AdminTransactionRow {
 export interface ListTransactionsForAdminResult {
   data: AdminTransactionRow[];
   error: string | null;
+  /**
+   * True when the row cap below was hit for the current date range, meaning
+   * older transactions within the window exist but weren't returned. Same
+   * gap/fix shape as P1-22 (listAccountActions/listLoginEvents): this query
+   * had no `.limit()` at all before, so "This quarter" on a busy project
+   * could pull an unbounded number of rows through the 3-hop name-resolution
+   * chain below. An explicit, visible cap replaces that silent risk.
+   */
+  truncated: boolean;
 }
 
+const TRANSACTIONS_ROW_CAP = 2000;
+
 /**
- * FR-9.7 — every transaction in the window, newest first. `transactions`
- * has no passenger/driver columns of its own; resolving names is a 3-hop
- * chain (transactions -> ride_requests -> trips -> users), done as
- * sequential follow-up queries rather than a nested embed, same convention
- * as every other admin/*.ts module. A transaction whose ride was cancelled
- * before a driver was ever assigned has no trip row, so driverName degrades
- * to '—' rather than dropping the transaction.
+ * FR-9.7 — every transaction in the window, newest first (capped — see
+ * `truncated` above). `transactions` has no passenger/driver columns of its
+ * own; resolving names is a 3-hop chain (transactions -> ride_requests ->
+ * trips -> users), done as sequential follow-up queries rather than a
+ * nested embed, same convention as every other admin/*.ts module. A
+ * transaction whose ride was cancelled before a driver was ever assigned
+ * has no trip row, so driverName degrades to '—' rather than dropping the
+ * transaction.
  */
 export async function listTransactionsForAdmin(sinceIso: string): Promise<ListTransactionsForAdminResult> {
   const client = getSupabaseClient();
@@ -134,10 +146,12 @@ export async function listTransactionsForAdmin(sinceIso: string): Promise<ListTr
     .from('transactions')
     .select('id, ride_request_id, amount, method, status, created_at')
     .gte('created_at', sinceIso)
-    .order('created_at', { ascending: false });
+    .order('created_at', { ascending: false })
+    .limit(TRANSACTIONS_ROW_CAP);
 
-  if (txnsError) return { data: [], error: txnsError.message };
-  if (!txns || txns.length === 0) return { data: [], error: null };
+  if (txnsError) return { data: [], error: txnsError.message, truncated: false };
+  if (!txns || txns.length === 0) return { data: [], error: null, truncated: false };
+  const truncated = txns.length >= TRANSACTIONS_ROW_CAP;
 
   const rideRequestIds = [...new Set(txns.map((t) => t.ride_request_id))];
   const { data: rideRequests, error: rideRequestsError } = await client
@@ -145,14 +159,14 @@ export async function listTransactionsForAdmin(sinceIso: string): Promise<ListTr
     .select('id, passenger_id, trip_id')
     .in('id', rideRequestIds);
 
-  if (rideRequestsError) return { data: [], error: rideRequestsError.message };
+  if (rideRequestsError) return { data: [], error: rideRequestsError.message, truncated: false };
 
   const tripIds = [...new Set((rideRequests ?? []).map((r) => r.trip_id).filter((id): id is string => !!id))];
   const { data: trips, error: tripsError } = tripIds.length
     ? await client.from('trips').select('id, driver_id').in('id', tripIds)
     : { data: [] as { id: string; driver_id: string }[], error: null };
 
-  if (tripsError) return { data: [], error: tripsError.message };
+  if (tripsError) return { data: [], error: tripsError.message, truncated: false };
 
   const driverIdByTripId = new Map((trips ?? []).map((t) => [t.id, t.driver_id]));
   const rideRequestById = new Map((rideRequests ?? []).map((r) => [r.id, r]));
@@ -166,7 +180,7 @@ export async function listTransactionsForAdmin(sinceIso: string): Promise<ListTr
     ),
   ];
   const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', userIds);
-  if (usersError) return { data: [], error: usersError.message };
+  if (usersError) return { data: [], error: usersError.message, truncated: false };
 
   const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name]));
 
@@ -185,7 +199,7 @@ export async function listTransactionsForAdmin(sinceIso: string): Promise<ListTr
     };
   });
 
-  return { data: rows, error: null };
+  return { data: rows, error: null, truncated };
 }
 
 export interface PeakHourBucket {

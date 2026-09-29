@@ -136,9 +136,11 @@ test('listTransactionsForAdmin resolves passenger + driver names through the rid
         return {
           select: () => ({
             gte: () => ({
-              order: async () => ({
-                data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'paid', created_at: '2026-08-05T07:40:00.000Z' }],
-                error: null,
+              order: () => ({
+                limit: async () => ({
+                  data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'paid', created_at: '2026-08-05T07:40:00.000Z' }],
+                  error: null,
+                }),
               }),
             }),
           }),
@@ -167,8 +169,9 @@ test('listTransactionsForAdmin resolves passenger + driver names through the rid
     },
   } as any);
 
-  const { data, error } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
+  const { data, error, truncated } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
   assert.equal(error, null);
+  assert.equal(truncated, false);
   assert.deepEqual(data, [
     {
       id: 'txn1',
@@ -190,9 +193,11 @@ test('listTransactionsForAdmin degrades driverName to "—" for a ride cancelled
         return {
           select: () => ({
             gte: () => ({
-              order: async () => ({
-                data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'refunded', created_at: '2026-08-05T07:40:00.000Z' }],
-                error: null,
+              order: () => ({
+                limit: async () => ({
+                  data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'refunded', created_at: '2026-08-05T07:40:00.000Z' }],
+                  error: null,
+                }),
               }),
             }),
           }),
@@ -216,14 +221,40 @@ test('listTransactionsForAdmin degrades driverName to "—" for a ride cancelled
 test('listTransactionsForAdmin returns an empty list without further queries when there are no transactions in range', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'transactions') return { select: () => ({ gte: () => ({ order: async () => ({ data: [], error: null }) }) }) };
+      if (table === 'transactions') return { select: () => ({ gte: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) }) };
       throw new Error(`unexpected table ${table}`);
     },
   } as any);
 
-  const { data, error } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
+  const { data, error, truncated } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
   assert.deepEqual(data, []);
   assert.equal(error, null);
+  assert.equal(truncated, false);
+});
+
+test('listTransactionsForAdmin reports truncated when the row cap is hit', async () => {
+  const cappedRow = { id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash' as const, status: 'paid' as const, created_at: '2026-08-05T07:40:00.000Z' };
+  const capped = Array.from({ length: 2000 }, (_, i) => ({ ...cappedRow, id: `txn${i}` }));
+
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      if (table === 'transactions') {
+        return { select: () => ({ gte: () => ({ order: () => ({ limit: async () => ({ data: capped, error: null }) }) }) }) };
+      }
+      if (table === 'ride_requests') {
+        return { select: () => ({ in: async () => ({ data: [{ id: 'rr1', passenger_id: 'p1', trip_id: null }], error: null }) }) };
+      }
+      if (table === 'users') {
+        return { select: () => ({ in: async () => ({ data: [{ id: 'p1', full_name: 'Maria Fe Santos' }], error: null }) }) };
+      }
+      throw new Error(`unexpected table ${table}`);
+    },
+  } as any);
+
+  const { data, error, truncated } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
+  assert.equal(error, null);
+  assert.equal(data.length, 2000);
+  assert.equal(truncated, true);
 });
 
 test('getPeakHourHistogram returns 12 two-hour buckets and labels each one', async () => {
