@@ -143,31 +143,33 @@ export default function ProfileScreen() {
         : null;
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <ScrollView contentContainerStyle={styles.scrollContent}>
         <View style={styles.heroShadow}>
           <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
             <BrandMotif size={230} color={colors.white} opacity={0.12} style={styles.motif} />
-            <View style={styles.heroTopRow}>
-              <View>
-                <Text style={styles.heroEyebrow}>{t.driver.profile.accountEyebrow}</Text>
-                <Text style={styles.heroTitle}>{t.driver.profile.title}</Text>
+            <SafeAreaView edges={['top']}>
+              <View style={styles.heroTopRow}>
+                <View>
+                  <Text style={styles.heroEyebrow}>{t.driver.profile.accountEyebrow}</Text>
+                  <Text style={styles.heroTitle}>{t.driver.profile.title}</Text>
+                </View>
+                <Pressable
+                  accessibilityRole="button"
+                  accessibilityLabel={isEditing ? t.driver.profile.saveChanges : t.driver.profile.editProfile}
+                  style={styles.editButton}
+                  disabled={saving}
+                  onPress={handleToggleEdit}
+                >
+                  {saving ? (
+                    <ActivityIndicator size="small" color={colors.white} />
+                  ) : (
+                    <Ionicons name={isEditing ? 'checkmark' : 'pencil'} size={14} color={colors.white} />
+                  )}
+                  <Text style={styles.editButtonText}>{isEditing ? t.driver.profile.saveChanges : t.driver.profile.edit}</Text>
+                </Pressable>
               </View>
-              <Pressable
-                accessibilityRole="button"
-                accessibilityLabel={isEditing ? t.driver.profile.saveChanges : t.driver.profile.editProfile}
-                style={styles.editButton}
-                disabled={saving}
-                onPress={handleToggleEdit}
-              >
-                {saving ? (
-                  <ActivityIndicator size="small" color={colors.white} />
-                ) : (
-                  <Ionicons name={isEditing ? 'checkmark' : 'pencil'} size={14} color={colors.white} />
-                )}
-                <Text style={styles.editButtonText}>{isEditing ? t.driver.profile.saveChanges : t.driver.profile.edit}</Text>
-              </Pressable>
-            </View>
+            </SafeAreaView>
           </GradientSurface>
         </View>
 

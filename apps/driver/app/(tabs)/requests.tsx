@@ -44,29 +44,31 @@ export default function RequestsScreen() {
   }, [pending, t]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <View style={styles.heroShadow}>
         <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
           <BrandMotif size={200} color={colors.white} opacity={0.12} style={styles.motif} />
-          <Text style={styles.heroEyebrow}>{t.driver.requests.eyebrow}</Text>
-          <Text style={styles.heroTitle}>{t.driver.requests.title}</Text>
+          <SafeAreaView edges={['top']} style={styles.heroBandInner}>
+            <Text style={styles.heroEyebrow}>{t.driver.requests.eyebrow}</Text>
+            <Text style={styles.heroTitle}>{t.driver.requests.title}</Text>
 
-          {/* P1-20 (2026-09-15 launch audit): the along-route/nearby/all filter
-              pills that used to sit here were decorative — matchFilter was set
-              by them and read by nothing else; the list was always the full
-              unfiltered `pending` set. Removed rather than shipped fake, per
-              docs/RIDE_REQUEST_FLOW_AUDIT.MD's own note that per-request
-              distance is the only signal currently available (no per-request
-              "along route" classification exists to filter by). The offline
-              indicator below is a real state, not a filter, and stays. */}
-          {!isAvailable && (
-            <View style={styles.filterRow}>
-              <View style={[styles.filterPill, styles.filterPillActive, styles.offlinePill]}>
-                <View style={styles.offlineDot} />
-                <Text style={[styles.filterPillLabel, styles.filterPillLabelActive]}>{t.driver.requests.offline.toUpperCase()}</Text>
+            {/* P1-20 (2026-09-15 launch audit): the along-route/nearby/all filter
+                pills that used to sit here were decorative — matchFilter was set
+                by them and read by nothing else; the list was always the full
+                unfiltered `pending` set. Removed rather than shipped fake, per
+                docs/RIDE_REQUEST_FLOW_AUDIT.MD's own note that per-request
+                distance is the only signal currently available (no per-request
+                "along route" classification exists to filter by). The offline
+                indicator below is a real state, not a filter, and stays. */}
+            {!isAvailable && (
+              <View style={styles.filterRow}>
+                <View style={[styles.filterPill, styles.filterPillActive, styles.offlinePill]}>
+                  <View style={styles.offlineDot} />
+                  <Text style={[styles.filterPillLabel, styles.filterPillLabelActive]}>{t.driver.requests.offline.toUpperCase()}</Text>
+                </View>
               </View>
-            </View>
-          )}
+            )}
+          </SafeAreaView>
         </GradientSurface>
       </View>
 

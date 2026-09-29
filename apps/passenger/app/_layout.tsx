@@ -18,6 +18,7 @@ import { PASSENGER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { usePassengerTutorialNavigation } from '../src/hooks/usePassengerTutorialNavigation';
 import { usePassengerTutorialTrigger } from '../src/hooks/usePassengerTutorialTrigger';
+import { useChatNotifications } from '../src/hooks/useChatNotifications';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useBookingStore } from '../src/store/useBookingStore';
@@ -402,6 +403,7 @@ function RootLayoutNav() {
   useNotificationsSync(sessionUserId);
   useConnectivitySync();
   usePushNotificationsSync(sessionUserId);
+  useChatNotifications();
   useProtectedRoute(isAuthenticated, consentStatus, accountBlocked, hasActiveTrip);
   useForegroundActiveRideSync(sessionUserId, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);

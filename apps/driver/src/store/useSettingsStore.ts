@@ -10,11 +10,14 @@ interface SettingsState {
   language: SettingsLanguage;
   smsReceipts: boolean;
   emailReceipts: boolean;
+  /** Driver redesign v2 (Dashboard/Earnings goal bar) — local-only, no backend column. Null means "not set", which hides the goal UI everywhere. */
+  dailyGoal: number | null;
   togglePushNotifications: () => void;
   toggleLocationTracking: () => void;
   setLanguage: (language: SettingsLanguage) => void;
   toggleSmsReceipts: () => void;
   toggleEmailReceipts: () => void;
+  setDailyGoal: (value: number | null) => void;
 }
 
 // P1-20 (2026-09-15 launch audit) flagged smsReceipts/emailReceipts as dead
@@ -30,11 +33,13 @@ export const useSettingsStore = create<SettingsState>()(
       language: 'en',
       smsReceipts: false,
       emailReceipts: true,
+      dailyGoal: null,
       togglePushNotifications: () => set((state) => ({ pushNotificationsEnabled: !state.pushNotificationsEnabled })),
       toggleLocationTracking: () => set((state) => ({ locationTrackingEnabled: !state.locationTrackingEnabled })),
       setLanguage: (language) => set({ language }),
       toggleSmsReceipts: () => set((state) => ({ smsReceipts: !state.smsReceipts })),
       toggleEmailReceipts: () => set((state) => ({ emailReceipts: !state.emailReceipts })),
+      setDailyGoal: (value) => set({ dailyGoal: value }),
     }),
     {
       name: 'trisakay-driver-settings',

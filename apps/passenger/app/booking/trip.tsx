@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   cancelRideRequest,
   getTripDriverInfo,
+  listMessages,
   subscribeToDriverLocation,
   subscribeToRideRequestStatus,
   type DriverLocation,
@@ -23,8 +24,10 @@ import {
   spacing,
   useTutorialTarget,
 } from '@trisakay/ui';
+import { Ionicons } from '@expo/vector-icons';
 import { DriverInfoCard } from '../../src/components/DriverInfoCard';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { useAuthStore } from '../../src/store/useAuthStore';
 import { useTripTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { fetchRouteEstimate, type RouteEstimate } from '../../src/utils/route';
@@ -55,8 +58,27 @@ export default function TripScreen() {
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
   const setDriver = useBookingStore((state) => state.setDriver);
   const reset = useBookingStore((state) => state.reset);
+  const user = useAuthStore((state) => state.user);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [newDriverNotice, setNewDriverNotice] = useState<string | null>(null);
+  // C1 — a one-shot count, not a live subscription: the full live thread
+  // only opens once the passenger actually taps into booking/chat, which
+  // owns its own subscription lifecycle (useChatStore.connect/disconnect).
+  // Refetched whenever this screen regains focus isn't built here — this is
+  // enough to surface "you have unread messages" without a second
+  // long-lived Realtime channel duplicating chat.tsx's own.
+  const [unreadMessageCount, setUnreadMessageCount] = useState(0);
+  useEffect(() => {
+    if (!rideRequestId || !user || tutorialDemo.active) return;
+    let cancelled = false;
+    listMessages(rideRequestId).then(({ data }) => {
+      if (cancelled) return;
+      setUnreadMessageCount(data.filter((m) => m.senderId !== user.id && m.readAt === null).length);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [rideRequestId, user, tutorialDemo.active]);
   // D1 (UAT audit): tracks the trip_id this screen last saw so a transfer —
   // which changes trip_id without changing status — can be detected. null
   // means "not seen yet"; the very first status event seeds it without
@@ -310,7 +332,16 @@ export default function TripScreen() {
             <DriverInfoCard driver={driverForCard} seats={seats} fare={fare} />
             {subscriptionError && <Text style={styles.error}>{subscriptionError}</Text>}
             {newDriverNotice && <Text style={styles.caption}>{newDriverNotice}</Text>}
-            <Text style={styles.caption}>{t.trip.noInAppCallNotice}</Text>
+            <Pressable
+              style={styles.messageDriverRow}
+              accessibilityRole="button"
+              accessibilityLabel={t.trip.messageDriver}
+              onPress={() => (tutorialDemo.active ? undefined : router.push('/booking/chat'))}
+            >
+              <Ionicons name="chatbubble-ellipses-outline" size={18} color={colors.white} />
+              <Text style={styles.messageDriverText}>{t.trip.messageDriver}</Text>
+              {unreadMessageCount > 0 && <View style={styles.messageDriverDot} />}
+            </Pressable>
 
             <View style={styles.sosBlock}>
               <HoldToConfirmButton

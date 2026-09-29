@@ -41,6 +41,8 @@ export const useHistoryStore = create<HistoryState>()((set) => ({
         paymentMethod: item.paymentMethod,
         paymentStatus: item.paymentStatus,
         cancelReason: item.cancelReason,
+        cancelledBy: item.cancelledBy,
+        cancelReasonCode: item.cancelReasonCode,
       })),
     });
   },

@@ -1,27 +1,25 @@
-import { useMemo, useRef, useState } from 'react';
-import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, sortByNextStop } from '@trisakay/shared';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, TRICYCLE_SPEED_KMH, sortByNextStop } from '@trisakay/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
-import { Linking, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Avatar,
   Button,
   Card,
   ConfirmModal,
-  EmptyState,
   HoldToConfirmButton,
   MapOverlaySheet,
   OsmMap,
   ReasonPickerModal,
-  RequestCard,
-  Toggle,
   TransferCandidatesModal,
   colors,
   useTutorialTarget,
 } from '@trisakay/ui';
-import { inviteTransfer, listTransferCandidates, type TransferCandidate } from '@trisakay/services';
+import { inviteTransfer, listMessages, listTransferCandidates, type TransferCandidate } from '@trisakay/services';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
+import { useRequestCountdown } from '../../src/hooks/useRequestCountdown';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useActiveTripTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { useAuthStore } from '../../src/store/useAuthStore';
@@ -29,8 +27,15 @@ import { useDriverStore } from '../../src/store/useDriverStore';
 import { useRequestsStore } from '../../src/store/useRequestsStore';
 import { useTripStore } from '../../src/store/useTripStore';
 import { formatCurrency } from '../../src/utils/currency';
+import { interpolate } from '../../src/utils/interpolate';
+import type { PendingRequest } from '../../src/types/request';
 import type { ActivePassenger } from '../../src/types/trip';
 import { styles } from '../../src/styles/trip/active.styles';
+
+function firstNameOf(name: string | null, fallback: string): string {
+  if (!name) return fallback;
+  return name.trim().split(/\s+/)[0] ?? fallback;
+}
 
 export default function ActiveTripScreen() {
   const router = useRouter();
@@ -82,6 +87,9 @@ export default function ActiveTripScreen() {
   // D8 (UAT audit): a single tap used to complete a leg immediately — this
   // mirrors the Cancel/End Trip confirm pattern already on this screen.
   const [completingPassenger, setCompletingPassenger] = useState<ActivePassenger | null>(null);
+  // §6.7 — "All passengers dropped off" needs a running total for this trip;
+  // once `trip.passengers` empties there's nothing left to sum from.
+  const [droppedOffThisTrip, setDroppedOffThisTrip] = useState<{ count: number; total: number }>({ count: 0, total: 0 });
 
   // D1 (UAT audit): outgoing transfer flow — reason picker, then candidates.
   const [transferringPassenger, setTransferringPassenger] = useState<ActivePassenger | null>(null);
@@ -94,6 +102,10 @@ export default function ActiveTripScreen() {
   const [releasingPassenger, setReleasingPassenger] = useState<ActivePassenger | null>(null);
   const [releasing, setReleasing] = useState(false);
   const [completingHandoffIds, setCompletingHandoffIds] = useState<Set<string>>(new Set());
+
+  // Redesign v2 §6.6 — the ⋯ button opens this sheet instead of exposing
+  // Transfer/Release/Cancel directly on the card.
+  const [optionsPassenger, setOptionsPassenger] = useState<ActivePassenger | null>(null);
 
   const { height: windowHeight } = useWindowDimensions();
   // Bounds the sheet so it can never grow past the viewport — with it
@@ -119,21 +131,56 @@ export default function ActiveTripScreen() {
     return sorted;
   }, [passengers, driverLat, driverLng]);
 
+  const incoming = pending[0];
+  const incomingSeconds = useRequestCountdown(incoming?.expiresAt ?? null);
+
+  // C1 — a one-shot per-passenger count for the chat badge, not a live
+  // subscription per thread: the full live experience only opens once the
+  // driver actually taps into a passenger's thread (trip/chat/[rideRequestId],
+  // which owns its own subscription via useChatStore). Re-runs whenever the
+  // passenger roster itself changes (join/drop/transfer), not on every GPS tick.
+  const [unreadByRideRequestId, setUnreadByRideRequestId] = useState<Record<string, number>>({});
+  const passengerIds = (trip?.passengers ?? []).map((p) => p.id).join(',');
+  useEffect(() => {
+    if (!user || !passengerIds) return;
+    let cancelled = false;
+    Promise.all(
+      passengerIds.split(',').map(async (id) => {
+        const { data } = await listMessages(id);
+        return [id, data.filter((m) => m.senderId !== user.id && m.readAt === null).length] as const;
+      })
+    ).then((entries) => {
+      if (cancelled) return;
+      setUnreadByRideRequestId(Object.fromEntries(entries));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [passengerIds, user]);
+
   if (!trip) {
     return <Redirect href="/(tabs)/dashboard" />;
   }
 
-  const incoming = pending[0];
   const hasPassengers = trip.passengers.length > 0;
+  const top = sortedStops[0];
 
   // P1-14 (2026-09-15 launch audit) + D2: the map's routing target and the
   // Navigate button follow the top ("Next stop") card — its pickup while
   // waiting, its destination once on board.
-  const routingPassenger = sortedStops[0]?.passenger;
-  const targetLat = sortedStops[0]?.stopLat ?? null;
-  const targetLng = sortedStops[0]?.stopLng ?? null;
+  const routingPassenger = top?.passenger;
+  const targetLat = top?.stopLat ?? null;
+  const targetLng = top?.stopLng ?? null;
   const hasTarget = targetLat !== null && targetLng !== null;
   const hasDriverPosition = driverLat !== null && driverLng !== null;
+
+  const statusLabel = !hasPassengers
+    ? t.driver.tripActive.tripOpenEmpty
+    : routingPassenger?.status === 'ongoing'
+      ? t.driver.tripActive.toDropoff
+      : routingPassenger?.arrivedAt
+        ? t.driver.tripActive.waitingAtPickup
+        : t.driver.tripActive.headingToPickup;
 
   function handleNavigate() {
     if (!hasTarget) return;
@@ -196,7 +243,10 @@ export default function ActiveTripScreen() {
     setCompletingPassenger(null);
     // Trip history/earnings both read fresh from the backend on their own
     // tabs — recordCompletedTrip is only Dashboard's local today-stat tally.
-    if (closed) recordCompletedTrip(closed.fare ?? 0);
+    if (closed) {
+      recordCompletedTrip(closed.fare ?? 0);
+      setDroppedOffThisTrip((prev) => ({ count: prev.count + 1, total: prev.total + (closed.fare ?? 0) }));
+    }
   }
 
   async function handleConfirmCancel(reasonCode: string) {
@@ -224,6 +274,7 @@ export default function ActiveTripScreen() {
   }
 
   function handleOpenTransfer(passenger: ActivePassenger) {
+    setOptionsPassenger(null);
     setTransferringPassenger(passenger);
     setTransferReasonPickerVisible(true);
   }
@@ -258,6 +309,11 @@ export default function ActiveTripScreen() {
     pollTripAfterTransfer(passenger.id);
   }
 
+  function handleOpenRelease(passenger: ActivePassenger) {
+    setOptionsPassenger(null);
+    setReleasingPassenger(passenger);
+  }
+
   async function handleConfirmRelease(reasonCode: string) {
     const passenger = releasingPassenger;
     if (!passenger || releasing) return;
@@ -266,6 +322,11 @@ export default function ActiveTripScreen() {
     await releasePassenger(passenger.id, reasonLabel);
     setReleasing(false);
     setReleasingPassenger(null);
+  }
+
+  function handleOpenCancel(passenger: ActivePassenger) {
+    setOptionsPassenger(null);
+    setCancellingId(passenger.id);
   }
 
   async function handleCompleteHandoff(rideRequestId: string) {
@@ -288,6 +349,8 @@ export default function ActiveTripScreen() {
     if (ok) router.replace('/(tabs)/dashboard');
   }
 
+  const optionsBusy = !!optionsPassenger && (completingIds.has(optionsPassenger.id) || startingIds.has(optionsPassenger.id));
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <View style={styles.mapFill}>
@@ -305,235 +368,250 @@ export default function ActiveTripScreen() {
           bottomInset={260}
         />
       </View>
+
       <View style={styles.statusBadgeWrap}>
         <View style={styles.statusPill}>
           <View style={styles.statusDot} />
-          <Text style={styles.statusLabel}>
-            {hasPassengers ? t.driver.tripActive.inProgress : t.driver.tripActive.onlineNoPassengers}
-          </Text>
+          <Text style={styles.statusLabel}>{statusLabel}</Text>
         </View>
       </View>
 
-      {hasTarget && (
-        <Pressable
-          style={styles.navigateButton}
-          accessibilityRole="button"
-          accessibilityLabel={t.driver.tripActive.navigate}
-          onPress={handleNavigate}
-        >
-          <Ionicons name="navigate" size={20} color={colors.ink} />
-        </Pressable>
-      )}
+      <View style={styles.sosWrap} {...sosTarget}>
+        <HoldToConfirmButton
+          variant="fab"
+          label={t.trip.sosShortLabel}
+          icon={<Ionicons name="warning" size={18} color={colors.white} />}
+          onConfirm={() => (tutorialDemo.active ? undefined : router.push('/trip/emergency'))}
+        />
+        <View style={styles.sosChip}>
+          <Text style={styles.sosChipText}>{t.trip.sosHold}</Text>
+        </View>
+      </View>
 
       <MapOverlaySheet bottomInset={insets.bottom} maxHeight={sheetMaxHeight} style={styles.content}>
         <ScrollView style={styles.passengerScroll} contentContainerStyle={styles.passengerScrollContent} showsVerticalScrollIndicator>
-        {!hasPassengers && (
-          <EmptyState title={t.driver.tripActive.onlineNoPassengers} message={t.driver.tripActive.noPassengersNote} />
-        )}
-
-        {hasPassengers && (
-          <View style={styles.aboardRow}>
-            <Text style={styles.aboardLabel}>
-              {t.driver.tripActive.aboard} · {trip.passengers.length}{' '}
-              {trip.passengers.length > 1 ? t.driver.tripActive.passengerPlural : t.driver.tripActive.passengerSingular}
-            </Text>
-          </View>
-        )}
-
-        {sortedStops.map(({ passenger, distanceKm }, index) => {
-          const isCash = passenger.paymentMethod === 'cash';
-          const isCompleting = completingIds.has(passenger.id);
-          const isStarting = startingIds.has(passenger.id);
-          const canComplete = tutorialDemo.active
-            ? true
-            : passenger.status === 'ongoing' && (!isCash || passenger.cashConfirmed) && !isCompleting;
-
-          // Card doesn't forward refs, so the tutorial target (which needs a
-          // real native-view ref for measureInWindow) wraps it in a plain
-          // View instead of spreading onto Card directly.
-          const passengerCard = (
-            <Card key={passenger.id} variant="flat" style={styles.passengerCard}>
-              <View style={styles.passengerRow}>
-                <Avatar
-                  name={passenger.passengerName ?? undefined}
-                  source={passenger.passengerAvatarUrl ? { uri: passenger.passengerAvatarUrl } : undefined}
-                  size="lg"
-                />
-                <View style={styles.passengerInfo}>
-                  <Text style={styles.passengerName}>{passenger.passengerName || t.driver.tripActive.passengerFallback}</Text>
-                  <Text style={styles.seatsLabel}>
-                    {passenger.seats} {passenger.seats > 1 ? t.driver.tripActive.seatsPlural : t.driver.tripActive.seatsSingular} ·{' '}
-                    {passenger.fare !== null ? formatCurrency(passenger.fare) : '—'}
-                    {!isCash ? ` · ${t.driver.tripActive.gcashConfirmedInline}` : ''}
-                  </Text>
-                  {(index === 0 || distanceKm !== null) && (
-                    <Text style={index === 0 ? styles.nextStopLabel : styles.seatsLabel}>
-                      {[index === 0 ? t.driver.tripActive.nextStop : null, distanceKm !== null ? `${distanceKm.toFixed(1)} km` : null]
-                        .filter(Boolean)
-                        .join(' · ')}
-                    </Text>
-                  )}
-                </View>
-                {passenger.status === 'ongoing' && (
-                  <View style={styles.ongoingChip}>
-                    <Text style={styles.ongoingChipText}>{t.driver.tripActive.ongoingStatus}</Text>
-                  </View>
-                )}
-                {passenger.status === 'assigned' && passenger.arrivedAt && (
-                  <View style={styles.arrivedChip}>
-                    <Text style={styles.arrivedChipText}>{t.driver.tripActive.arrivedStatus}</Text>
-                  </View>
-                )}
-              </View>
-
-              {passenger.handoffLat !== null && (
-                <>
-                  <Text style={styles.seatsLabel}>{t.driver.tripActive.handoffNotice}</Text>
-                  <Button
-                    label={t.driver.tripActive.completeHandoffButton}
-                    variant="outline"
-                    fullWidth
-                    loading={completingHandoffIds.has(passenger.id)}
-                    disabled={completingHandoffIds.has(passenger.id)}
-                    onPress={() => (tutorialDemo.active ? undefined : handleCompleteHandoff(passenger.id))}
-                  />
-                </>
-              )}
-
-              {isCash && (
-                <View style={styles.cashRow}>
-                  <Text style={styles.cashLabel}>{t.driver.tripActive.confirmCashReceived}</Text>
-                  <Toggle
-                    value={passenger.cashConfirmed}
-                    onValueChange={() => (tutorialDemo.active ? undefined : handleConfirmCash(passenger.id))}
-                    disabled={passenger.cashConfirmed || confirmingCashId === passenger.id}
-                  />
-                </View>
-              )}
-
-              {passenger.status === 'assigned' && !passenger.arrivedAt && (
-                <Button
-                  label={t.driver.tripActive.arrived}
-                  variant="outline"
-                  fullWidth
-                  loading={arrivingIds.has(passenger.id)}
-                  disabled={arrivingIds.has(passenger.id)}
-                  onPress={() => (tutorialDemo.active ? undefined : handleMarkArrived(passenger.id))}
-                />
-              )}
-
-              <View style={styles.actions}>
-                <View style={styles.actionButton}>
-                  <Button
-                    label={t.common.cancel}
-                    variant="outline"
-                    tone="danger"
-                    fullWidth
-                    disabled={isCompleting || isStarting}
-                    onPress={() => (tutorialDemo.active ? undefined : setCancellingId(passenger.id))}
-                  />
-                </View>
-                {passenger.status === 'assigned' ? (
-                  <View style={styles.actionButton}>
-                    <Button
-                      label={t.driver.tripActive.start}
-                      fullWidth
-                      loading={isStarting}
-                      onPress={() => (tutorialDemo.active ? undefined : handleStart(passenger.id))}
-                    />
-                  </View>
-                ) : (
-                  <View style={styles.actionButton}>
-                    <Button
-                      label={t.driver.tripActive.complete}
-                      fullWidth
-                      disabled={!canComplete}
-                      loading={isCompleting}
-                      onPress={() => (tutorialDemo.active ? undefined : setCompletingPassenger(passenger))}
-                    />
-                  </View>
-                )}
-              </View>
-
-              <View style={styles.actions}>
-                <View style={styles.actionButton}>
-                  <Button
-                    label={t.driver.tripActive.transferButton}
-                    variant="outline"
-                    fullWidth
-                    disabled={isCompleting || isStarting}
-                    onPress={() => (tutorialDemo.active ? undefined : handleOpenTransfer(passenger))}
-                  />
-                </View>
-                <View style={styles.actionButton}>
-                  <Button
-                    label={t.driver.tripActive.releaseButton}
-                    variant="outline"
-                    tone="danger"
-                    fullWidth
-                    disabled={isCompleting || isStarting}
-                    onPress={() => (tutorialDemo.active ? undefined : setReleasingPassenger(passenger))}
-                  />
-                </View>
-              </View>
-            </Card>
-          );
-
-          return index === 0 ? (
-            <View key={passenger.id} {...passengerCardTarget}>
-              {passengerCard}
-            </View>
-          ) : (
-            passengerCard
-          );
-        })}
-
-        {incoming && (
-          <View>
-            <Text style={styles.sectionLabel}>{t.driver.tripActive.compatibleRequest}</Text>
-            <RequestCard
+          {incoming && (
+            <RequestBanner
               request={incoming}
+              seconds={incomingSeconds}
               accepting={acceptingId === incoming.id}
               onAccept={() => (tutorialDemo.active ? undefined : acceptRideRequest(incoming.id))}
               onDecline={() => (tutorialDemo.active ? undefined : user && decline(incoming.id, user.id))}
-              copy={{
-                decline: t.driver.requestCard.decline,
-                accept: t.driver.requestCard.accept,
-                newRideRequest: t.driver.requestCard.newRideRequest,
-                seatsSingular: t.driver.requestCard.seatsSingular,
-                seatsPlural: t.driver.requestCard.seatsPlural,
-                pickupLabel: t.driver.requestCard.pickupLabel,
-                dropoffLabel: t.driver.requestCard.dropoffLabel,
-                pickupAwaySuffix: t.driver.requestCard.pickupAwaySuffix,
-                paymentMethodCash: t.driver.requestCard.paymentMethodCash,
-                paymentMethodGcash: t.driver.requestCard.paymentMethodGcash,
-              }}
+              t={t}
             />
-          </View>
-        )}
+          )}
+
+          {!hasPassengers && (
+            <View style={styles.doneWrap}>
+              <View style={styles.doneCircle}>
+                <Ionicons name="checkmark" size={28} color={colors.accentGreenPressed} />
+              </View>
+              {droppedOffThisTrip.count > 0 ? (
+                <>
+                  <Text style={styles.doneTitle}>{t.driver.tripActive.allDroppedTitle}</Text>
+                  <Text style={styles.doneBody}>
+                    {interpolate(t.driver.tripActive.allDroppedBody, { amount: droppedOffThisTrip.total.toFixed(2), n: droppedOffThisTrip.count })}
+                  </Text>
+                </>
+              ) : (
+                <>
+                  <Text style={styles.doneTitle}>{t.driver.tripActive.onlineNoPassengers}</Text>
+                  <Text style={styles.doneBody}>{t.driver.tripActive.noPassengersNote}</Text>
+                </>
+              )}
+            </View>
+          )}
+
+          {hasPassengers && (
+            <View style={styles.aboardRow}>
+              <Text style={styles.aboardLabel}>
+                {t.driver.tripActive.aboard} · {trip.passengers.length}{' '}
+                {trip.passengers.length > 1 ? t.driver.tripActive.passengerPlural : t.driver.tripActive.passengerSingular}
+              </Text>
+            </View>
+          )}
+
+          {top && (
+            <NextStopCard
+              key={top.passenger.id}
+              stop={top}
+              index={0}
+              total={sortedStops.length}
+              t={t}
+              tutorialActive={tutorialDemo.active}
+              hasTarget={hasTarget}
+              onNavigate={handleNavigate}
+              isCompleting={completingIds.has(top.passenger.id)}
+              isStarting={startingIds.has(top.passenger.id)}
+              isArriving={arrivingIds.has(top.passenger.id)}
+              confirmingCashId={confirmingCashId}
+              completingHandoffIds={completingHandoffIds}
+              onMarkArrived={handleMarkArrived}
+              onStart={handleStart}
+              onConfirmCash={handleConfirmCash}
+              onOpenComplete={setCompletingPassenger}
+              onCompleteHandoff={handleCompleteHandoff}
+              onOpenOptions={setOptionsPassenger}
+              onOpenChat={(id) => router.push(`/trip/chat/${id}`)}
+              unreadCount={unreadByRideRequestId[top.passenger.id] ?? 0}
+              cardRef={passengerCardTarget}
+            />
+          )}
+
+          {sortedStops.length > 1 && (
+            <View style={styles.thenSection}>
+              <Text style={styles.thenEyebrow}>{t.driver.tripActive.then}</Text>
+              {sortedStops.slice(1).map(({ passenger, distanceKm }, i) => {
+                const isPickup = passenger.status === 'assigned';
+                const name = passenger.passengerName || t.driver.tripActive.passengerFallback;
+                return (
+                  <Pressable
+                    key={passenger.id}
+                    style={styles.thenRow}
+                    accessibilityRole="button"
+                    onPress={() => setOptionsPassenger(passenger)}
+                  >
+                    <View style={styles.thenNumber}>
+                      <Text style={styles.thenNumberText}>{i + 2}</Text>
+                    </View>
+                    <View style={styles.thenTextCol}>
+                      <Text style={styles.thenTitle} numberOfLines={1}>
+                        {interpolate(isPickup ? t.driver.tripActive.pickUpName : t.driver.tripActive.dropOffName, { name })}
+                      </Text>
+                      <Text style={styles.thenMeta} numberOfLines={1}>
+                        {[
+                          distanceKm !== null ? `${distanceKm.toFixed(1)} km` : null,
+                          `${passenger.seats} ${passenger.seats > 1 ? t.driver.tripActive.seatsPlural : t.driver.tripActive.seatsSingular}`,
+                          passenger.paymentMethod === 'gcash' ? t.driver.requestCard.paymentMethodGcash : t.driver.requestCard.paymentMethodCash,
+                        ]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </Text>
+                    </View>
+                    <Pressable style={styles.thenChatButton} accessibilityRole="button" onPress={() => router.push(`/trip/chat/${passenger.id}`)}>
+                      <Ionicons name="chatbubble-ellipses-outline" size={15} color={colors.inkSoft} />
+                      {(unreadByRideRequestId[passenger.id] ?? 0) > 0 && <View style={styles.thenUnreadDot} />}
+                    </Pressable>
+                    <Pressable style={styles.thenOptionsButton} accessibilityRole="button" onPress={() => setOptionsPassenger(passenger)}>
+                      <Ionicons name="ellipsis-horizontal" size={16} color={colors.inkSoft} />
+                    </Pressable>
+                  </Pressable>
+                );
+              })}
+            </View>
+          )}
         </ScrollView>
 
         {(tripError || requestError) && <Text style={styles.error}>{tripError ?? requestError}</Text>}
 
-        <View style={styles.sosBlock} {...sosTarget}>
-          <HoldToConfirmButton
-            label={t.trip.sosButton}
-            icon={<Ionicons name="warning" size={19} color={colors.white} />}
-            fullWidth
-            onConfirm={() => (tutorialDemo.active ? undefined : router.push('/trip/emergency'))}
-          />
-          <Text style={styles.sosCaption}>{t.trip.sosCaption}</Text>
-        </View>
+        {hasPassengers && !tutorialDemo.active && (
+          <View style={styles.doneInfoNote}>
+            <Ionicons name="information-circle-outline" size={16} color={colors.inkSoft} />
+            <Text style={styles.doneInfoNoteText}>{t.driver.tripActive.stillOnlineNote}</Text>
+          </View>
+        )}
 
-        <Button
-          label={t.driver.tripActive.endTrip}
-          variant="outline"
-          tone="neutral"
-          fullWidth
-          disabled={tutorialDemo.active || hasPassengers}
-          onPress={() => (tutorialDemo.active ? undefined : setConfirmingEndTrip(true))}
-        />
+        {!hasPassengers && (
+          <>
+            <View style={styles.doneInfoNote}>
+              <Ionicons name="information-circle-outline" size={16} color={colors.inkSoft} />
+              <Text style={styles.doneInfoNoteText}>{t.driver.tripActive.stillOnlineNote}</Text>
+            </View>
+            <Button
+              label={t.driver.tripActive.endTrip}
+              variant="outline"
+              tone="neutral"
+              fullWidth
+              disabled={tutorialDemo.active}
+              onPress={() => (tutorialDemo.active ? undefined : setConfirmingEndTrip(true))}
+            />
+          </>
+        )}
       </MapOverlaySheet>
+
+      {/* §6.6 — the ⋯ button's options sheet, shared by the next-stop card and the "then" list. */}
+      <Modal visible={!!optionsPassenger} transparent animationType="slide" onRequestClose={() => setOptionsPassenger(null)}>
+        <Pressable style={styles.optionsBackdrop} onPress={() => setOptionsPassenger(null)}>
+          <Pressable style={styles.optionsSheet} onPress={() => {}}>
+            <View style={styles.optionsHandle} />
+            {optionsPassenger && (
+              <>
+                <View style={styles.optionsHeader}>
+                  <Avatar
+                    name={optionsPassenger.passengerName ?? undefined}
+                    source={optionsPassenger.passengerAvatarUrl ? { uri: optionsPassenger.passengerAvatarUrl } : undefined}
+                    size="lg"
+                  />
+                  <View style={styles.optionsHeaderTextCol}>
+                    <Text style={styles.optionsHeaderName} numberOfLines={1}>
+                      {optionsPassenger.passengerName || t.driver.tripActive.passengerFallback}
+                    </Text>
+                    <Text style={styles.optionsHeaderMeta}>
+                      {interpolate(t.driver.tripActive.optionsMeta, {
+                        seats: optionsPassenger.seats,
+                        fare: optionsPassenger.fare !== null ? optionsPassenger.fare.toFixed(2) : '—',
+                        payment: optionsPassenger.paymentMethod === 'gcash' ? t.driver.requestCard.paymentMethodGcash : t.driver.requestCard.paymentMethodCash,
+                      })}
+                    </Text>
+                  </View>
+                </View>
+
+                <Pressable
+                  style={[styles.optionsRow, styles.optionsRowFirst, optionsBusy && styles.optionsRowDisabled]}
+                  accessibilityRole="button"
+                  disabled={optionsBusy}
+                  onPress={() => handleOpenTransfer(optionsPassenger)}
+                >
+                  <View style={[styles.optionsTile, styles.optionsTileBlue]}>
+                    <Ionicons name="swap-horizontal" size={20} color={colors.accentBlue} />
+                  </View>
+                  <View style={styles.optionsRowTextCol}>
+                    <Text style={styles.optionsRowTitle}>{t.driver.tripActive.optionsTransferTitle}</Text>
+                    <Text style={styles.optionsRowDesc}>{t.driver.tripActive.optionsTransferDesc}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.lineStrong} />
+                </Pressable>
+
+                <Pressable
+                  style={[styles.optionsRow, optionsBusy && styles.optionsRowDisabled]}
+                  accessibilityRole="button"
+                  disabled={optionsBusy}
+                  onPress={() => handleOpenRelease(optionsPassenger)}
+                >
+                  <View style={[styles.optionsTile, styles.optionsTileFill]}>
+                    <Ionicons name="exit-outline" size={20} color={colors.ink} />
+                  </View>
+                  <View style={styles.optionsRowTextCol}>
+                    <Text style={styles.optionsRowTitle}>{t.driver.tripActive.optionsReleaseTitle}</Text>
+                    <Text style={styles.optionsRowDesc}>{t.driver.tripActive.optionsReleaseDesc}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.lineStrong} />
+                </Pressable>
+
+                <Pressable
+                  style={[styles.optionsRow, optionsBusy && styles.optionsRowDisabled]}
+                  accessibilityRole="button"
+                  disabled={optionsBusy}
+                  onPress={() => handleOpenCancel(optionsPassenger)}
+                >
+                  <View style={[styles.optionsTile, styles.optionsTileDanger]}>
+                    <Ionicons name="close" size={20} color={colors.danger} />
+                  </View>
+                  <View style={styles.optionsRowTextCol}>
+                    <Text style={[styles.optionsRowTitle, styles.optionsRowTitleDanger]}>{t.driver.tripActive.optionsCancelTitle}</Text>
+                    <Text style={styles.optionsRowDesc}>{t.driver.tripActive.optionsCancelDesc}</Text>
+                  </View>
+                  <Ionicons name="chevron-forward" size={18} color={colors.lineStrong} />
+                </Pressable>
+
+                <View style={styles.optionsCloseButton}>
+                  <Button label={t.driver.tripActive.close} variant="outline" tone="neutral" fullWidth onPress={() => setOptionsPassenger(null)} />
+                </View>
+              </>
+            )}
+          </Pressable>
+        </Pressable>
+      </Modal>
 
       <ReasonPickerModal
         visible={!!cancellingId}
@@ -549,8 +627,8 @@ export default function ActiveTripScreen() {
 
       <ConfirmModal
         visible={!!completingPassenger}
-        title={t.driver.tripActive.completePassengerTitle}
-        message={t.driver.tripActive.completePassengerMessage}
+        title={interpolate(t.driver.tripActive.dropoffConfirmTitle, { name: firstNameOf(completingPassenger?.passengerName ?? null, t.driver.tripActive.passengerFallback) })}
+        message={interpolate(t.driver.tripActive.dropoffConfirmBody, { fare: completingPassenger?.fare !== null && completingPassenger?.fare !== undefined ? completingPassenger.fare.toFixed(2) : '0.00' })}
         cancelLabel={t.common.cancel}
         confirmLabel={t.driver.tripActive.complete}
         confirmLoading={!!completingPassenger && completingIds.has(completingPassenger.id)}
@@ -613,5 +691,245 @@ export default function ActiveTripScreen() {
         onConfirm={handleConfirmRelease}
       />
     </SafeAreaView>
+  );
+}
+
+type Translations = ReturnType<typeof useTranslation>;
+
+interface NextStopCardProps {
+  stop: { passenger: ActivePassenger; distanceKm: number | null };
+  index: number;
+  total: number;
+  t: Translations;
+  tutorialActive: boolean;
+  hasTarget: boolean;
+  onNavigate: () => void;
+  isCompleting: boolean;
+  isStarting: boolean;
+  isArriving: boolean;
+  confirmingCashId: string | null;
+  completingHandoffIds: Set<string>;
+  onMarkArrived: (id: string) => void;
+  onStart: (id: string) => void;
+  onConfirmCash: (id: string) => void;
+  onOpenComplete: (passenger: ActivePassenger) => void;
+  onCompleteHandoff: (id: string) => void;
+  onOpenOptions: (passenger: ActivePassenger) => void;
+  onOpenChat: (rideRequestId: string) => void;
+  unreadCount: number;
+  cardRef: ReturnType<typeof useTutorialTarget>;
+}
+
+/** The top ("next stop") card — §6.3/6.4. One primary action follows the passenger's own stage. */
+function NextStopCard({
+  stop,
+  index,
+  total,
+  t,
+  tutorialActive,
+  hasTarget,
+  onNavigate,
+  isCompleting,
+  isStarting,
+  isArriving,
+  confirmingCashId,
+  completingHandoffIds,
+  onMarkArrived,
+  onStart,
+  onConfirmCash,
+  onOpenComplete,
+  onCompleteHandoff,
+  onOpenOptions,
+  onOpenChat,
+  unreadCount,
+  cardRef,
+}: NextStopCardProps) {
+  const { passenger, distanceKm } = stop;
+  const isPickup = passenger.status === 'assigned';
+  const isCash = passenger.paymentMethod === 'cash';
+  const name = firstNameOf(passenger.passengerName, t.driver.tripActive.passengerFallback);
+  const etaMin = distanceKm !== null ? Math.max(1, Math.round((distanceKm / TRICYCLE_SPEED_KMH) * 60)) : null;
+
+  let eyebrow: string;
+  if (total === 1) {
+    eyebrow = isPickup ? t.driver.tripActive.nextStopPickup : t.driver.tripActive.nextStopDropoff;
+  } else {
+    eyebrow = interpolate(isPickup ? t.driver.tripActive.stopOfPickup : t.driver.tripActive.stopOfDropoff, { n: index + 1, total });
+  }
+
+  let metaLine: string;
+  if (isPickup && passenger.arrivedAt) {
+    const minsAgo = Math.max(0, Math.round((Date.now() - Date.parse(passenger.arrivedAt)) / 60000));
+    metaLine = interpolate(t.driver.tripActive.arrivedAgo, { n: minsAgo });
+  } else if (distanceKm !== null && etaMin !== null) {
+    metaLine = interpolate(t.driver.tripActive.etaLine, { km: distanceKm.toFixed(1), min: etaMin });
+  } else {
+    metaLine = '';
+  }
+
+  const canComplete = tutorialActive ? true : passenger.status === 'ongoing' && (!isCash || passenger.cashConfirmed) && !isCompleting;
+  const hint =
+    passenger.handoffLat !== null
+      ? t.driver.tripActive.handoffNotice
+      : isPickup && !passenger.arrivedAt
+        ? interpolate(t.driver.tripActive.hintArrive, { name })
+        : isPickup && passenger.arrivedAt
+          ? interpolate(t.driver.tripActive.hintStart, { name })
+          : isCash && !passenger.cashConfirmed
+            ? t.driver.tripActive.hintCashFirst
+            : interpolate(t.driver.tripActive.hintComplete, { name });
+
+  return (
+    <View {...cardRef}>
+      <Card variant="flat" style={styles.passengerCard}>
+        <View style={styles.nextStopRow}>
+          <View style={[styles.nextStopTile, isPickup ? styles.nextStopTilePickup : styles.nextStopTileDropoff]}>
+            {isPickup ? <View style={styles.pickupRing} /> : <View style={styles.dropoffSquare} />}
+          </View>
+          <View style={styles.nextStopTextCol}>
+            <Text style={styles.nextStopEyebrow}>{eyebrow}</Text>
+            <Text style={styles.nextStopAddress}>{isPickup ? t.driver.requestCard.pickupLabel : t.driver.requestCard.dropoffLabel}</Text>
+            {!!metaLine && <Text style={styles.nextStopMeta}>{metaLine}</Text>}
+          </View>
+          {hasTarget && (
+            <Pressable style={styles.navigateCol} accessibilityRole="button" onPress={onNavigate}>
+              <View style={styles.navigateTile}>
+                <Ionicons name="navigate" size={20} color={colors.white} />
+              </View>
+              <Text style={styles.navigateLabel}>{t.driver.tripActive.navigate}</Text>
+            </Pressable>
+          )}
+        </View>
+
+        <View style={styles.passengerStrip}>
+          <Avatar
+            name={passenger.passengerName ?? undefined}
+            source={passenger.passengerAvatarUrl ? { uri: passenger.passengerAvatarUrl } : undefined}
+            size="md"
+          />
+          <View style={styles.passengerInfo}>
+            <View style={styles.passengerNameRow}>
+              <Text style={styles.passengerName} numberOfLines={1}>
+                {passenger.passengerName || t.driver.tripActive.passengerFallback}
+              </Text>
+              {passenger.status === 'ongoing' && (
+                <View style={[styles.statusChip, styles.statusChipOngoing]}>
+                  <Text style={[styles.statusChipText, styles.statusChipTextOngoing]}>{t.driver.tripActive.ongoingStatus}</Text>
+                </View>
+              )}
+              {isPickup && passenger.arrivedAt && (
+                <View style={[styles.statusChip, styles.statusChipArrived]}>
+                  <Text style={[styles.statusChipText, styles.statusChipTextArrived]}>{t.driver.tripActive.arrivedStatus}</Text>
+                </View>
+              )}
+            </View>
+            <Text style={styles.passengerSub} numberOfLines={1}>
+              {passenger.seats} {passenger.seats > 1 ? t.driver.tripActive.seatsPlural : t.driver.tripActive.seatsSingular} ·{' '}
+              {passenger.fare !== null ? formatCurrency(passenger.fare) : '—'} ·{' '}
+              {isCash ? (passenger.cashConfirmed ? t.driver.tripActive.cashConfirmedInline : t.driver.requestCard.paymentMethodCash) : t.driver.tripActive.gcashConfirmedInline}
+            </Text>
+          </View>
+          <Pressable style={styles.chatButton} accessibilityRole="button" onPress={() => onOpenChat(passenger.id)}>
+            <Ionicons name="chatbubble-ellipses-outline" size={20} color={colors.ink} />
+            {unreadCount > 0 && <View style={styles.unreadDot} />}
+          </Pressable>
+          <Pressable style={styles.optionsButton} accessibilityRole="button" onPress={() => onOpenOptions(passenger)}>
+            <Ionicons name="ellipsis-horizontal" size={20} color={colors.ink} />
+          </Pressable>
+        </View>
+
+        {passenger.handoffLat !== null && (
+          <Button
+            label={t.driver.tripActive.completeHandoffButton}
+            variant="outline"
+            fullWidth
+            loading={completingHandoffIds.has(passenger.id)}
+            disabled={completingHandoffIds.has(passenger.id)}
+            onPress={() => (tutorialActive ? undefined : onCompleteHandoff(passenger.id))}
+          />
+        )}
+
+        {isCash &&
+          passenger.status === 'ongoing' &&
+          (passenger.cashConfirmed ? (
+            <View style={styles.cashRowDone}>
+              <Ionicons name="checkmark-circle" size={18} color={colors.accentGreenPressed} />
+              <Text style={styles.cashRowDoneText}>{interpolate(t.driver.tripActive.cashReceived, { fare: passenger.fare !== null ? passenger.fare.toFixed(2) : '0.00' })}</Text>
+            </View>
+          ) : (
+            <View style={styles.cashRowPending}>
+              <Ionicons name="cash-outline" size={22} color={colors.inkSoft} />
+              <View style={styles.cashRowTextCol}>
+                <Text style={styles.cashRowTitle}>{interpolate(t.driver.tripActive.collectCash, { fare: passenger.fare !== null ? passenger.fare.toFixed(2) : '0.00' })}</Text>
+                <Text style={styles.cashRowSub}>{t.driver.tripActive.collectCashSub}</Text>
+              </View>
+              <Pressable
+                style={styles.cashReceivedButton}
+                accessibilityRole="button"
+                disabled={confirmingCashId === passenger.id}
+                onPress={() => (tutorialActive ? undefined : onConfirmCash(passenger.id))}
+              >
+                <Ionicons name="checkmark" size={15} color={colors.white} />
+                <Text style={styles.cashReceivedButtonText}>{t.driver.tripActive.received}</Text>
+              </Pressable>
+            </View>
+          ))}
+
+        {isPickup && !passenger.arrivedAt && (
+          <Button
+            label={t.driver.tripActive.arrived}
+            fullWidth
+            loading={isArriving}
+            disabled={isArriving}
+            onPress={() => (tutorialActive ? undefined : onMarkArrived(passenger.id))}
+          />
+        )}
+
+        {isPickup && passenger.arrivedAt && (
+          <Button label={t.driver.tripActive.startRide} fullWidth loading={isStarting} onPress={() => (tutorialActive ? undefined : onStart(passenger.id))} />
+        )}
+
+        {!isPickup && (
+          <Button
+            label={t.driver.tripActive.completeDropoff}
+            fullWidth
+            disabled={!canComplete}
+            loading={isCompleting}
+            onPress={() => (tutorialActive ? undefined : onOpenComplete(passenger))}
+          />
+        )}
+
+        <Text style={styles.primaryHint}>{hint}</Text>
+      </Card>
+    </View>
+  );
+}
+
+interface RequestBannerProps {
+  request: PendingRequest;
+  seconds: number | null;
+  accepting: boolean;
+  onAccept: () => void;
+  onDecline: () => void;
+  t: Translations;
+}
+
+/** §6.5 — the mid-trip compatible-request banner, a slim top-of-sheet strip rather than a full RequestCard. */
+function RequestBanner({ request, seconds, accepting, onAccept, onDecline, t }: RequestBannerProps) {
+  return (
+    <View style={styles.requestBanner}>
+      <Text style={styles.requestBannerEyebrow}>{interpolate(t.driver.tripActive.requestOnRoute, { n: seconds ?? 0 })}</Text>
+      <Text style={styles.requestBannerFare} numberOfLines={1}>
+        {request.fare !== null ? formatCurrency(request.fare) : '—'} · {request.pickupLabel ?? '—'} → {request.dropoffLabel ?? '—'}
+      </Text>
+      <View style={styles.requestBannerRow}>
+        <Pressable style={styles.requestBannerDecline} accessibilityRole="button" accessibilityLabel={t.driver.requestCard.decline} onPress={onDecline}>
+          <Ionicons name="close" size={18} color={colors.ink} />
+        </Pressable>
+        <Pressable style={styles.requestBannerAccept} accessibilityRole="button" disabled={accepting} onPress={onAccept}>
+          <Text style={styles.requestBannerAcceptText}>{accepting ? '…' : t.driver.requestCard.accept}</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }

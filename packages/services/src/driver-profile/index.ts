@@ -1,5 +1,6 @@
 import { getSupabaseClient } from '../supabase/client.ts';
 import type { Database } from '../supabase/database.types.ts';
+import type { TricycleCluster } from '../admin/barangays.ts';
 
 export type VerificationStatus = Database['public']['Enums']['verification_status'];
 
@@ -56,30 +57,33 @@ export interface DriverUnitResult {
   plateNo: string | null;
   mtopExpiryDate: string | null;
   verificationStatus: VerificationStatus | null;
+  /** The driver's assigned franchise cluster (registration-time color code) — Dashboard's redesign uses this as the "{zone} zone" line. */
+  cluster: TricycleCluster | null;
   error: string | null;
 }
 
 /**
  * Backs the Dashboard identity row's "PSO verified · Body no. {n}" line and
- * Profile's Tricycle row / franchise card — body_no/plate_no/mtop_expiry_date
- * all live on `tricycles`, keyed by driver_id, not on driver_profiles.
+ * Profile's Tricycle row / franchise card — body_no/plate_no/mtop_expiry_date/
+ * cluster all live on `tricycles`, keyed by driver_id, not on driver_profiles.
  */
 export async function getDriverUnit(): Promise<DriverUnitResult> {
   const userId = await getSignedInUserId();
-  if (!userId) return { bodyNo: null, plateNo: null, mtopExpiryDate: null, verificationStatus: null, error: 'Not signed in' };
+  if (!userId) return { bodyNo: null, plateNo: null, mtopExpiryDate: null, verificationStatus: null, cluster: null, error: 'Not signed in' };
 
   const { data, error } = await getSupabaseClient()
     .from('tricycles')
-    .select('body_no, plate_no, mtop_expiry_date, verification_status')
+    .select('body_no, plate_no, mtop_expiry_date, verification_status, cluster')
     .eq('driver_id', userId)
     .maybeSingle();
 
-  if (error) return { bodyNo: null, plateNo: null, mtopExpiryDate: null, verificationStatus: null, error: error.message };
+  if (error) return { bodyNo: null, plateNo: null, mtopExpiryDate: null, verificationStatus: null, cluster: null, error: error.message };
   return {
     bodyNo: data?.body_no ?? null,
     plateNo: data?.plate_no ?? null,
     mtopExpiryDate: data?.mtop_expiry_date ?? null,
     verificationStatus: data?.verification_status ?? null,
+    cluster: data?.cluster ?? null,
     error: null,
   };
 }

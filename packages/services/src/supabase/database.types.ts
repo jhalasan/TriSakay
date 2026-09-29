@@ -1124,6 +1124,71 @@ export type Database = {
           },
         ]
       }
+      ride_messages: {
+        Row: {
+          body: string | null
+          contains_masked_phone: boolean
+          created_at: string
+          id: string
+          image_path: string | null
+          kind: string
+          read_at: string | null
+          ride_request_id: string
+          sender_id: string
+        }
+        Insert: {
+          body?: string | null
+          contains_masked_phone?: boolean
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          kind: string
+          read_at?: string | null
+          ride_request_id: string
+          sender_id: string
+        }
+        Update: {
+          body?: string | null
+          contains_masked_phone?: boolean
+          created_at?: string
+          id?: string
+          image_path?: string | null
+          kind?: string
+          read_at?: string | null
+          ride_request_id?: string
+          sender_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ride_messages_ride_request_id_fkey"
+            columns: ["ride_request_id"]
+            isOneToOne: false
+            referencedRelation: "ride_requests"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "admin_driver_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "admin_passenger_directory"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "ride_messages_sender_id_fkey"
+            columns: ["sender_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       ride_request_declines: {
         Row: {
           declined_at: string
@@ -2130,7 +2195,9 @@ export type Database = {
         Args: { p_limit?: number }
         Returns: {
           cancel_reason: string
+          cancel_reason_code: string
           cancelled_at: string
+          cancelled_by: string
           completed_at: string
           dest_label: string
           distance_km: number

@@ -1,7 +1,27 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '../../theme';
+import { colors, fontFamily, radius, spacing, typography } from '../../theme';
 
 export const styles = StyleSheet.create({
+  // --- fab variant (README §6.2 — active-trip screen's floating SOS) ---
+  fab: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    borderWidth: 3,
+    borderColor: colors.white,
+    backgroundColor: colors.danger,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: colors.ink,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 10,
+    elevation: 6,
+  },
+  fabRing: { position: 'absolute', top: -3, left: -3 },
+  fabContent: { alignItems: 'center', justifyContent: 'center', gap: 2 },
+  fabLabel: { fontSize: 11, lineHeight: 13, letterSpacing: 0.6, fontFamily: fontFamily.extrabold, color: colors.white },
+
   base: {
     flexDirection: 'row',
     alignItems: 'center',

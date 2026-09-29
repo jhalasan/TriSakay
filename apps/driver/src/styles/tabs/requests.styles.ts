@@ -14,10 +14,12 @@ export const styles = StyleSheet.create({
   heroBand: {
     borderBottomLeftRadius: radius.heroBottom,
     borderBottomRightRadius: radius.heroBottom,
-    paddingHorizontal: spacing.lg,
-    paddingTop: spacing.xxl,
     paddingBottom: spacing.xl,
   },
+  // Applied to the inner `<SafeAreaView edges={['top']}>` (not heroBand
+  // itself) so the gradient still bleeds edge-to-edge behind the status bar
+  // while its content gets both the safe-area inset and this breathing room.
+  heroBandInner: { paddingHorizontal: spacing.lg, paddingTop: spacing.xxl },
   motif: { position: 'absolute', top: -46, right: -52 },
   heroEyebrow: { ...typography.eyebrow, color: colors.white, opacity: 0.75 },
   heroTitle: { ...typography.h1b, color: colors.white, marginTop: 2 },

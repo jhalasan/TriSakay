@@ -13,4 +13,6 @@ export interface TripHistoryItem {
   paymentMethod: 'cash' | 'gcash' | null;
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | null;
   cancelReason: string | null;
+  cancelledBy: 'passenger' | 'driver' | 'system' | null;
+  cancelReasonCode: string | null;
 }

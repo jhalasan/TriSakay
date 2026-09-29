@@ -681,6 +681,10 @@ export interface DriverTripHistoryItem {
   paymentMethod: 'cash' | 'gcash' | null;
   paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded' | null;
   cancelReason: string | null;
+  /** Who cancelled — PD1 (20260927000005). Null for pre-PD1 rows. */
+  cancelledBy: 'passenger' | 'driver' | 'system' | null;
+  /** A DRIVER_CANCEL_REASON_CODES/PASSENGER_CANCEL_REASON_CODES value, or 'expired' for a system cancel. Null for pre-PD1 rows — fall back to the free-text cancelReason. */
+  cancelReasonCode: string | null;
 }
 
 export interface ListDriverTripHistoryResult {
@@ -720,6 +724,8 @@ export async function listDriverTripHistory(limit = 50): Promise<ListDriverTripH
     paymentMethod: row.payment_method,
     paymentStatus: row.payment_status,
     cancelReason: row.cancel_reason,
+    cancelledBy: row.cancelled_by as 'passenger' | 'driver' | 'system' | null,
+    cancelReasonCode: row.cancel_reason_code,
   }));
 
   return { data: rows, error: null };

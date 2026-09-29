@@ -1,6 +1,7 @@
 export * from './supabase/index.ts';
 export * from './auth/index.ts';
 export * from './booking/index.ts';
+export * from './chat/index.ts';
 export * from './complaints/index.ts';
 export * from './consents/index.ts';
 export * from './discount/index.ts';

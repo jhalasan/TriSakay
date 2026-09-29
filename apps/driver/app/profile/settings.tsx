@@ -1,11 +1,14 @@
+import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Button, Toggle, colors, useTutorial } from '@trisakay/ui';
+import { DailyGoalModal } from '../../src/components/DailyGoalModal';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useSettingsStore, type SettingsLanguage } from '../../src/store/useSettingsStore';
+import { formatCurrency } from '../../src/utils/currency';
 import { interpolate } from '../../src/utils/interpolate';
 import { styles } from '../../src/styles/profile/settings.styles';
 
@@ -67,12 +70,15 @@ export default function SettingsScreen() {
     language,
     smsReceipts,
     emailReceipts,
+    dailyGoal,
     togglePushNotifications,
     toggleLocationTracking,
     setLanguage,
     toggleSmsReceipts,
     toggleEmailReceipts,
+    setDailyGoal,
   } = useSettingsStore();
+  const [goalModalVisible, setGoalModalVisible] = useState(false);
 
   const languageLabels: Record<SettingsLanguage, string> = {
     en: t.settings.languageEnglish,
@@ -150,7 +156,7 @@ export default function SettingsScreen() {
         <View>
           <SectionLabel label={t.settings.sectionPreferences} />
           <View style={styles.card}>
-            <Pressable style={styles.row} onPress={cycleLanguage} accessibilityRole="button">
+            <Pressable style={[styles.row, styles.rowDivider]} onPress={cycleLanguage} accessibilityRole="button">
               <View style={styles.rowLeading}>
                 <IconBadge name="language-outline" />
                 <Text style={styles.rowLabel}>{t.settings.language}</Text>
@@ -159,6 +165,20 @@ export default function SettingsScreen() {
                 <Text style={styles.rowValue}>{languageLabels[language]}</Text>
                 <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
               </View>
+            </Pressable>
+            <Pressable style={styles.row} onPress={() => setGoalModalVisible(true)} accessibilityRole="button">
+              <View style={styles.rowLeading}>
+                <IconBadge name="trophy-outline" />
+                <View style={styles.rowTextSlot}>
+                  <Text style={styles.rowLabel}>{t.driver.settings.dailyGoalLabel}</Text>
+                  <Text style={styles.rowSublabel} numberOfLines={1}>
+                    {dailyGoal !== null
+                      ? interpolate(t.driver.settings.dailyGoalSubtitleSet, { amount: formatCurrency(dailyGoal) })
+                      : t.driver.settings.dailyGoalSubtitleUnset}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
             </Pressable>
           </View>
         </View>
@@ -204,6 +224,22 @@ export default function SettingsScreen() {
           <Text style={styles.versionLine}>{t.driver.settings.versionLine}</Text>
         </View>
       </ScrollView>
+
+      <DailyGoalModal
+        visible={goalModalVisible}
+        currentValue={dailyGoal}
+        title={t.driver.settings.dailyGoalModalTitle}
+        body={t.driver.settings.dailyGoalModalBody}
+        placeholder={t.driver.settings.dailyGoalPlaceholder}
+        saveLabel={t.driver.settings.dailyGoalSave}
+        clearLabel={t.driver.settings.dailyGoalClear}
+        cancelLabel={t.common.cancel}
+        onSave={(value) => {
+          setDailyGoal(value);
+          setGoalModalVisible(false);
+        }}
+        onCancel={() => setGoalModalVisible(false)}
+      />
     </View>
   );
 }

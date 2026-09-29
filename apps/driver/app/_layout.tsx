@@ -16,6 +16,7 @@ import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
 import { ConfirmModal, colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
+import { useChatNotifications } from '../src/hooks/useChatNotifications';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useDriverTutorialNavigation } from '../src/hooks/useDriverTutorialNavigation';
 import { useDriverTutorialTrigger } from '../src/hooks/useDriverTutorialTrigger';
@@ -480,6 +481,7 @@ function RootLayoutNav() {
   useTripCancellationSync(activeTripId);
   useNotificationsSync(sessionUserId);
   usePushNotificationsSync(sessionUserId);
+  useChatNotifications();
   useProtectedRoute(isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip);
   useLocationPrompt(isAuthenticated, consentStatus);
 

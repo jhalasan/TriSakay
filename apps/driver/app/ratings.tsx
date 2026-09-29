@@ -62,37 +62,39 @@ export default function RatingsScreen() {
   }, [ratings, filter]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    <SafeAreaView style={styles.container} edges={['left', 'right']}>
       <View style={styles.heroShadow}>
         <GradientSurface token="hero" direction="diagonal" style={styles.heroBand}>
           <BrandMotif size={200} color={colors.white} opacity={0.12} style={styles.motif} />
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Go back"
-            hitSlop={8}
-            onPress={() => router.back()}
-            style={styles.backButton}
-          >
-            <Ionicons name="chevron-back" size={22} color={colors.white} />
-          </Pressable>
-          <Text style={styles.heroEyebrow}>{t.driver.ratings.eyebrow}</Text>
-          <Text style={styles.heroTitle}>{t.driver.ratings.title}</Text>
-          <View style={styles.filterRow}>
-            {filterOptions.map((option) => {
-              const active = option.value === filter;
-              return (
-                <Pressable
-                  key={option.value}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: active }}
-                  onPress={() => setFilter(option.value)}
-                  style={[styles.filterPill, active && styles.filterPillActive]}
-                >
-                  <Text style={[styles.filterPillLabel, active && styles.filterPillLabelActive]}>{option.label}</Text>
-                </Pressable>
-              );
-            })}
-          </View>
+          <SafeAreaView edges={['top']} style={styles.heroBandInner}>
+            <Pressable
+              accessibilityRole="button"
+              accessibilityLabel="Go back"
+              hitSlop={8}
+              onPress={() => router.back()}
+              style={styles.backButton}
+            >
+              <Ionicons name="chevron-back" size={22} color={colors.white} />
+            </Pressable>
+            <Text style={styles.heroEyebrow}>{t.driver.ratings.eyebrow}</Text>
+            <Text style={styles.heroTitle}>{t.driver.ratings.title}</Text>
+            <View style={styles.filterRow}>
+              {filterOptions.map((option) => {
+                const active = option.value === filter;
+                return (
+                  <Pressable
+                    key={option.value}
+                    accessibilityRole="button"
+                    accessibilityState={{ selected: active }}
+                    onPress={() => setFilter(option.value)}
+                    style={[styles.filterPill, active && styles.filterPillActive]}
+                  >
+                    <Text style={[styles.filterPillLabel, active && styles.filterPillLabelActive]}>{option.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+          </SafeAreaView>
         </GradientSurface>
       </View>
 
