@@ -1,38 +1,55 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { colors, fontFamily, radius } from '@trisakay/ui';
 
-// P1-25 (2026-09-15 launch audit): mirrors apps/driver/src/styles/account-suspended.styles.ts verbatim.
+// P1-25 (2026-09-15 launch audit): passenger counterpart to the driver's account-suspended gate.
+// Redesigned per the trip-records handoff §2c.
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
-  scrollContent: {
-    flexGrow: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  iconBadge: {
-    width: 64,
-    height: 64,
-    borderRadius: radius.pill,
-    backgroundColor: colors.dangerSoft,
+  motif: { position: 'absolute', top: -40, right: -50 },
+  scrollContent: { flexGrow: 1, alignItems: 'center', paddingTop: 60, paddingHorizontal: 22, paddingBottom: 24, gap: 10 },
+  haloOuter: {
+    width: 92,
+    height: 92,
+    borderRadius: 46,
+    backgroundColor: 'rgba(251, 234, 232, 0.5)',
     alignItems: 'center',
     justifyContent: 'center',
   },
-  title: { fontSize: 22, lineHeight: 29, fontFamily: typography.h2.fontFamily, letterSpacing: -0.4, color: colors.ink, textAlign: 'center' },
-  body: { fontSize: 14, lineHeight: 21, fontFamily: typography.body.fontFamily, color: colors.inkSoft, textAlign: 'center' },
-  error: { ...typography.caption, color: colors.danger, textAlign: 'center' },
+  haloInner: { width: 72, height: 72, borderRadius: 36, backgroundColor: colors.dangerSoft, alignItems: 'center', justifyContent: 'center' },
+  title: {
+    marginTop: 14,
+    fontFamily: fontFamily.extrabold,
+    fontSize: 25,
+    lineHeight: 31,
+    letterSpacing: -0.5,
+    color: colors.ink,
+    textAlign: 'center',
+  },
+  body: { fontFamily: fontFamily.regular, fontSize: 14, lineHeight: 21, color: colors.inkSoft, textAlign: 'center' },
   officeCard: {
-    width: '100%',
+    alignSelf: 'stretch',
+    marginTop: 22,
     backgroundColor: colors.white,
-    borderRadius: radius.md3,
-    padding: spacing.lg,
-    gap: 4,
-    marginTop: spacing.lg,
-    ...elevation.card,
+    borderRadius: radius.lg,
+    padding: 16,
+    gap: 12,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 14,
+    elevation: 4,
   },
-  officeLabel: { ...typography.label, color: colors.inkSoft },
-  officeAddress: { ...typography.bodyStrong, fontSize: 14, lineHeight: 20, color: colors.ink },
-  officeHours: { ...typography.caption, fontSize: 12.5, lineHeight: 18, color: colors.inkSoft },
-  actions: { width: '100%', gap: spacing.sm, marginTop: spacing.xl },
+  officeLabel: {
+    fontFamily: fontFamily.bold,
+    fontSize: 11,
+    lineHeight: 15,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    color: colors.inkSoft,
+  },
+  officeRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+  officeText: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 14, lineHeight: 20, color: colors.ink },
+  bottom: { paddingHorizontal: 22, gap: 6, backgroundColor: colors.bg },
+  caption: { fontFamily: fontFamily.regular, fontSize: 12, lineHeight: 17, color: colors.inkFaint, textAlign: 'center' },
+  actions: { gap: 6 },
 });

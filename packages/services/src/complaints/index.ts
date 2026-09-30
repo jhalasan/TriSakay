@@ -128,6 +128,8 @@ export interface MyComplaintRow {
   category: ComplaintCategory;
   createdAt: string;
   resolvedAt: string | null;
+  /** The ride the complaint was filed against, if any (driver Complaints list shows the linked trip). */
+  rideRequestId: string | null;
 }
 
 export interface ListMyComplaintsResult {
@@ -142,7 +144,7 @@ export async function listMyComplaints(): Promise<ListMyComplaintsResult> {
 
   const { data, error } = await getSupabaseClient()
     .from('complaints')
-    .select('id, subject, status, category, created_at, resolved_at')
+    .select('id, subject, status, category, created_at, resolved_at, ride_request_id')
     .eq('submitted_by', userId)
     .order('created_at', { ascending: false });
 
@@ -155,6 +157,7 @@ export async function listMyComplaints(): Promise<ListMyComplaintsResult> {
       category: row.category,
       createdAt: row.created_at,
       resolvedAt: row.resolved_at,
+      rideRequestId: row.ride_request_id,
     })),
     error: null,
   };
@@ -162,8 +165,8 @@ export async function listMyComplaints(): Promise<ListMyComplaintsResult> {
 
 export interface ComplaintDetailRow extends MyComplaintRow {
   resolutionNotes: string | null;
-  /** For the tracker's Details card trip row — feed to getPassengerRideReceipt (trip-history/index.ts) for the driver/route/fare summary. */
-  rideRequestId: string | null;
+  /** The complaint text the submitter wrote (driver case page's "Your report"). */
+  message: string;
   mediationMeetingAt: string | null;
   mediationLocation: string | null;
   /** Evidence row count — a separate query since `complaint_attachments` isn't embedded in this select. */
@@ -182,7 +185,7 @@ export async function getMyComplaint(id: string): Promise<GetMyComplaintResult> 
 
   const { data, error } = await getSupabaseClient()
     .from('complaints')
-    .select('id, subject, status, category, created_at, resolved_at, resolution_notes, ride_request_id, mediation_meeting_at, mediation_location')
+    .select('id, subject, message, status, category, created_at, resolved_at, resolution_notes, ride_request_id, mediation_meeting_at, mediation_location')
     .eq('id', id)
     .eq('submitted_by', userId)
     .maybeSingle();
@@ -199,6 +202,7 @@ export async function getMyComplaint(id: string): Promise<GetMyComplaintResult> 
     data: {
       id: data.id,
       subject: data.subject,
+      message: data.message,
       status: data.status,
       category: data.category,
       createdAt: data.created_at,

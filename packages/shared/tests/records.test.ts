@@ -87,3 +87,12 @@ test('complaintStepIndex maps the six statuses onto the three-step bar', () => {
   assert.equal(complaintStepIndex('resolved'), 2);
   assert.equal(complaintStepIndex('dismissed'), 2);
 });
+
+test('passwordRuleResults checks length, mixed case, and a number or symbol', async () => {
+  const { passwordRuleResults } = await import('../src/utils/records.ts');
+  assert.deepEqual(passwordRuleResults(''), [false, false, false]);
+  assert.deepEqual(passwordRuleResults('abcdefghij'), [true, false, false]);
+  assert.deepEqual(passwordRuleResults('Abcdefghij'), [true, true, false]);
+  assert.deepEqual(passwordRuleResults('Abcdefghi1'), [true, true, true]);
+  assert.deepEqual(passwordRuleResults('Abcdef!'), [false, true, true]);
+});

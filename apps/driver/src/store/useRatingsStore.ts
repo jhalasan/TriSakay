@@ -30,6 +30,8 @@ export const useRatingsStore = create<RatingsState>()((set) => ({
         id: item.id,
         stars: item.stars,
         comment: item.comment,
+        rideRequestId: item.rideRequestId,
+        tags: item.tags,
         createdAt: item.createdAt,
       })),
     });

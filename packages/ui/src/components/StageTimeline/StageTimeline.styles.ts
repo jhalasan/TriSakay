@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, fontFamily, spacing } from '@trisakay/ui';
+import { colors, fontFamily, spacing } from '../../theme';
 
 export const styles = StyleSheet.create({
   row: {

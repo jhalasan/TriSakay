@@ -13,6 +13,11 @@ export interface ComplaintRow {
   id: string;
   subject: string;
   status: ComplaintStatus;
+  /** The raw DB status, for the 3-step bar (`complaintStepIndex`). */
+  dbStatus: ComplaintDbStatus;
+  category: ComplaintCategory;
+  createdAt: string;
+  rideRequestId: string | null;
 }
 
 /** Collapses the six DB statuses into the three the UI distinguishes. */
@@ -33,7 +38,7 @@ interface ComplaintsState {
     category?: ComplaintCategory,
     rideRequestId?: string,
     attachments?: ComplaintAttachmentInput[]
-  ) => Promise<{ ok: boolean; attachmentError: string | null }>;
+  ) => Promise<{ ok: boolean; attachmentError: string | null; id: string | null }>;
   reset: () => void;
 }
 
@@ -53,14 +58,22 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
 
     set({
       loading: false,
-      complaints: data.map((row) => ({ id: row.id, subject: row.subject, status: toUiStatus(row.status) })),
+      complaints: data.map((row) => ({
+        id: row.id,
+        subject: row.subject,
+        status: toUiStatus(row.status),
+        dbStatus: row.status,
+        category: row.category,
+        createdAt: row.createdAt,
+        rideRequestId: row.rideRequestId,
+      })),
     });
   },
 
   submit: async (subject, message, category, rideRequestId, attachments) => {
     set({ error: null });
 
-    const { error, attachmentError } = await submitComplaint({
+    const { error, attachmentError, id } = await submitComplaint({
       subject,
       message,
       category,
@@ -69,7 +82,7 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     });
     if (error) {
       set({ error });
-      return { ok: false, attachmentError: null };
+      return { ok: false, attachmentError: null, id: null };
     }
 
     // Re-fetch rather than optimistically prepending a local guess at the
@@ -77,7 +90,7 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     // mirrors: a fabricated local entry can drift from or duplicate what a
     // subsequent real load() returns.
     await get().load();
-    return { ok: true, attachmentError };
+    return { ok: true, attachmentError, id: id ?? null };
   },
 
   reset: () => set({ complaints: [], loading: false, error: null }),

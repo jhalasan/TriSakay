@@ -150,3 +150,37 @@ export function complaintStepIndex(status: string): ComplaintStep {
       return 1;
   }
 }
+
+// --- Trip details formatting (SPEC_1 §1a) -----------------------------------
+
+/** "Thu, Aug 28, 2026" (or "Fri, Sep 12" with `includeYear: false`) — the hero date line, minus the time. */
+export function formatDetailDate(iso: string, includeYear = true): string {
+  return new Date(iso).toLocaleDateString('en-PH', {
+    weekday: 'short',
+    month: 'short',
+    day: 'numeric',
+    ...(includeYear ? { year: 'numeric' } : {}),
+  });
+}
+
+/** "4:12 PM" */
+export function formatClockTime(date: Date | string): string {
+  const value = typeof date === 'string' ? new Date(date) : date;
+  return value.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
+}
+
+/** A copy of `iso` shifted `minutes` earlier — the derived pickup time (history `date` is the ride's end). */
+export function minutesBefore(iso: string, minutes: number): Date {
+  return new Date(new Date(iso).getTime() - minutes * 60 * 1000);
+}
+
+// --- Change password (SPEC_2 §2b) --------------------------------------------
+
+/** The three rules the Change password checklist shows, in display order. */
+export function passwordRuleResults(password: string): [boolean, boolean, boolean] {
+  return [
+    password.length >= 10,
+    /[a-z]/.test(password) && /[A-Z]/.test(password),
+    /[0-9]/.test(password) || /[^A-Za-z0-9\s]/.test(password),
+  ];
+}

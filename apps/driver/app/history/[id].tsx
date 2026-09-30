@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useLocalSearchParams } from 'expo-router';
-import { ScrollView, Text, View } from 'react-native';
-import { Avatar, Badge, BrandMotif, Card, EmptyState, GradientSurface, colors } from '@trisakay/ui';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Avatar, EmptyState, IconTile, NavyBandHeader, RouteRail, StatCells, StatusPill, colors } from '@trisakay/ui';
+import { formatClockTime, formatDetailDate, minutesBefore } from '@trisakay/shared';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -9,145 +11,198 @@ import { formatCurrency } from '../../src/utils/currency';
 import { getReferenceCode } from '../../src/utils/reference';
 import { styles } from '../../src/styles/history/detail.styles';
 
-function formatDateTime(iso: string) {
-  const date = new Date(iso);
-  const day = date.toLocaleDateString('en-PH', { month: 'long', day: 'numeric', year: 'numeric' });
-  const time = date.toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
-  return `${day} · ${time}`;
-}
-
 export default function TripDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
   const t = useTranslation();
+  const h = t.driver.history;
   const item = useHistoryStore((state) => state.trips.find((trip) => trip.id === id));
 
   if (!item) {
     return (
       <View style={styles.container}>
-        <ScreenHeader title={t.driver.history.detailTitle} />
-        <EmptyState title={t.driver.history.notFoundTitle} message={t.driver.history.notFoundMessage} />
+        <ScreenHeader title={h.detailTitle} />
+        <EmptyState title={h.notFoundTitle} message={h.notFoundMessage} />
       </View>
     );
   }
 
   const isDone = item.status === 'done';
+  const hasRoute = !!item.pickup && !!item.dropoff;
   const reference = getReferenceCode(item.id);
-  const hasRoute = item.pickup && item.dropoff;
+  const passengerName = item.passengerName || h.passengerFallback;
+
+  // `item.date` is the trip's end, so the pickup time is that minus the
+  // duration; both times are hidden when the duration is unknown.
+  const hasTimes = isDone && item.durationMinutes != null;
+  const dropoffTime = hasTimes ? formatClockTime(item.date) : undefined;
+  const pickupTime = hasTimes ? formatClockTime(minutesBefore(item.date, item.durationMinutes!)) : undefined;
+
+  const statCells = isDone
+    ? [
+        ...(item.distanceKm != null ? [{ value: `${item.distanceKm.toFixed(1)} km`, caption: h.distance }] : []),
+        ...(item.durationMinutes != null ? [{ value: `${Math.round(item.durationMinutes)} ${h.minutesSuffix}`, caption: h.duration }] : []),
+      ]
+    : [];
+
+  const seatChip =
+    item.seats != null ? (
+      <View style={styles.seatChip}>
+        <Ionicons name="person" size={13} color={colors.ink} />
+        <Text style={styles.seatChipText}>{`${item.seats} ${item.seats === 1 ? h.seatSingular : h.seatPlural}`}</Text>
+      </View>
+    ) : null;
+
+  const passengerRow = (
+    <View style={styles.passengerRow}>
+      <Avatar name={item.passengerName ?? undefined} source={item.passengerAvatarUrl ? { uri: item.passengerAvatarUrl } : undefined} size="md" />
+      <View style={styles.passengerBody}>
+        <Text style={styles.passengerLabel}>{h.passenger}</Text>
+        <Text style={styles.passengerName} numberOfLines={1}>
+          {passengerName}
+        </Text>
+      </View>
+      {seatChip}
+    </View>
+  );
+
+  const paymentName = item.paymentMethod === 'gcash' ? t.common.gcash : item.paymentMethod === 'cash' ? t.common.cash : null;
+  const paymentTone = item.paymentStatus === 'paid' ? 'green' : item.paymentStatus === 'failed' ? 'red' : 'navy';
+  const paymentLabel =
+    item.paymentStatus === 'paid'
+      ? h.paidStatus
+      : item.paymentStatus
+        ? item.paymentStatus.charAt(0).toUpperCase() + item.paymentStatus.slice(1)
+        : null;
+
+  // Deep-links into the existing complaints screen, which already reads `rideRequestId`.
+  function handleReport() {
+    router.push({ pathname: '/complaints', params: { rideRequestId: item!.id } });
+  }
+
+  const reportRow = (
+    <View style={styles.card}>
+      <Pressable accessibilityRole="button" onPress={handleReport} style={styles.reportRow}>
+        <IconTile icon="flag" tone="red" size={34} />
+        <View style={styles.listBody}>
+          <Text style={styles.reportTitle}>{h.reportProblem}</Text>
+          <Text style={styles.reportHint}>{h.reportProblemHint}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={18} color={colors.inkSoft} />
+      </Pressable>
+    </View>
+  );
+
+  const referenceLine = reference ? (
+    <View style={styles.refRow}>
+      <Text style={styles.refLabel}>{h.tripReferenceFull}</Text>
+      <Text style={styles.refValue}>#{reference}</Text>
+    </View>
+  ) : null;
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title={t.driver.history.detailTitle} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.summaryShadowWrap}>
-          <GradientSurface token="hero" direction="diagonal" style={styles.summaryCard}>
-            <BrandMotif size={160} color={colors.white} opacity={0.12} style={styles.summaryMotif} />
-            <View style={styles.summaryTopRow}>
-              <Badge label={isDone ? t.driver.history.done : t.driver.history.filterCancelled} tone={isDone ? 'green' : 'danger'} />
-              <Text style={styles.dateTimeText}>{formatDateTime(item.date)}</Text>
+      <ScrollView style={styles.scroll} contentContainerStyle={{ paddingBottom: 100 + insets.bottom }} showsVerticalScrollIndicator={false}>
+        <NavyBandHeader
+          title={h.detailTitle}
+          onBack={() => router.back()}
+          backAccessibilityLabel={t.common.goBackA11y}
+          topInset={insets.top}
+          overlapBottom
+          right={<StatusPill label={isDone ? h.done : h.filterCancelled} tone={isDone ? 'green' : 'red'} />}
+        >
+          <View style={styles.hero}>
+            {isDone ? (
+              <>
+                <Text style={styles.heroEyebrow}>{h.youEarned}</Text>
+                <Text style={styles.heroAmount}>{item.fare !== null ? formatCurrency(item.fare) : '—'}</Text>
+                <View style={styles.heroMetaRow}>
+                  {paymentName && (
+                    <View style={styles.heroMetaItem}>
+                      <Ionicons name={item.paymentMethod === 'gcash' ? 'wallet-outline' : 'cash-outline'} size={15} color={colors.white} />
+                      <Text style={styles.heroMeta}>{item.paymentMethod === 'gcash' ? h.gcashReceived : h.cashCollected}</Text>
+                    </View>
+                  )}
+                  {paymentName && <View style={styles.heroDot} />}
+                  <Text style={styles.heroMetaDate}>{`${formatDetailDate(item.date, false)} · ${formatClockTime(item.date)}`}</Text>
+                </View>
+              </>
+            ) : (
+              <>
+                <Text style={styles.heroDate}>{`${formatDetailDate(item.date)} · ${formatClockTime(item.date)}`}</Text>
+                <Text style={styles.heroCancelled}>{h.tripCancelledTitle}</Text>
+                <Text style={styles.heroSub}>{h.noEarningsNote}</Text>
+              </>
+            )}
+          </View>
+        </NavyBandHeader>
+
+        <View style={styles.body}>
+          {isDone ? (
+            <View style={[styles.overlapSlot, styles.heroShadow]}>
+              <View style={styles.cardHero}>
+                {passengerRow}
+                {hasRoute && (
+                  <View style={styles.routePad}>
+                    <RouteRail
+                      pickup={{ name: item.pickup!, label: h.pickedUp, time: pickupTime }}
+                      dropoff={{ name: item.dropoff!, label: h.droppedOff, time: dropoffTime }}
+                    />
+                  </View>
+                )}
+                {statCells.length > 0 && <StatCells cells={statCells} />}
+              </View>
             </View>
-            <Text style={styles.fareEyebrow}>{t.driver.history.totalFare}</Text>
-            <Text style={styles.fareText}>{item.fare !== null ? formatCurrency(item.fare) : '—'}</Text>
-          </GradientSurface>
+          ) : (
+            <>
+              <View style={[styles.overlapSlot, styles.heroShadow]}>
+                <View style={[styles.cardHero, styles.reasonCard]}>
+                  <IconTile icon="information-circle" tone="red" size={38} />
+                  <View style={styles.reasonText}>
+                    <Text style={styles.reasonEyebrow}>{h.whyCancelled}</Text>
+                    <Text style={styles.reasonValue}>{item.cancelReason || h.noReasonGiven}</Text>
+                  </View>
+                </View>
+              </View>
+              <View style={styles.card}>
+                {passengerRow}
+                {hasRoute && (
+                  <View style={styles.routePad}>
+                    <RouteRail pickup={{ name: item.pickup!, label: h.pickup }} dropoff={{ name: item.dropoff!, label: h.dropoff }} />
+                  </View>
+                )}
+              </View>
+            </>
+          )}
+
+          {isDone && (
+            <View style={[styles.card, styles.listCard]}>
+              {paymentName && (
+                <View style={styles.listRow}>
+                  <IconTile icon={item.paymentMethod === 'gcash' ? 'wallet' : 'cash'} tone="green" size={34} />
+                  <View style={styles.listBody}>
+                    <Text style={styles.listTitle}>{paymentName}</Text>
+                    <Text style={styles.listSub}>{h.paymentMethod}</Text>
+                  </View>
+                  {paymentLabel && <StatusPill label={paymentLabel} tone={paymentTone} />}
+                </View>
+              )}
+              {reference && (
+                <View style={[styles.listRow, paymentName ? styles.listRowDivider : null]}>
+                  <IconTile icon="keypad" tone="neutral" size={34} />
+                  <View style={styles.listBody}>
+                    <Text style={styles.listTitleMono}>{reference}</Text>
+                    <Text style={styles.listSub}>{h.tripReferenceFull}</Text>
+                  </View>
+                </View>
+              )}
+            </View>
+          )}
+
+          {!isDone && referenceLine}
+          {reportRow}
         </View>
-
-        <Card variant="raised" style={styles.section}>
-          <Text style={styles.sectionLabel}>{t.driver.history.passenger}</Text>
-          <View style={styles.passengerRow}>
-            <Avatar
-              name={item.passengerName ?? undefined}
-              source={item.passengerAvatarUrl ? { uri: item.passengerAvatarUrl } : undefined}
-              size="md"
-            />
-            <Text style={styles.passengerName}>{item.passengerName || t.driver.history.passengerFallback}</Text>
-          </View>
-        </Card>
-
-        {hasRoute && (
-          <Card variant="raised" style={styles.section}>
-            <Text style={styles.sectionLabel}>{t.driver.history.route}</Text>
-            <View style={styles.routeBlock}>
-              <View style={styles.routeMarkerCol}>
-                <View style={styles.routeDotPickup} />
-                <View style={styles.routeLine} />
-                <View style={styles.routeDotDropoff} />
-              </View>
-              <View style={styles.routeTextCol}>
-                <View>
-                  <Text style={styles.routeLabel}>{t.driver.history.pickup}</Text>
-                  <Text style={styles.routeAddress}>{item.pickup}</Text>
-                </View>
-                <View>
-                  <Text style={styles.routeLabel}>{t.driver.history.dropoff}</Text>
-                  <Text style={styles.routeAddress}>{item.dropoff}</Text>
-                </View>
-              </View>
-            </View>
-            {(item.distanceKm != null || item.durationMinutes != null || item.seats != null) && (
-              <View style={styles.distanceRow}>
-                {item.distanceKm != null && (
-                  <View style={styles.distanceItem}>
-                    <Ionicons name="navigate-outline" size={14} color={colors.inkSoft} />
-                    <Text style={styles.distanceText}>{item.distanceKm.toFixed(1)} km</Text>
-                  </View>
-                )}
-                {item.durationMinutes != null && (
-                  <View style={styles.distanceItem}>
-                    <Ionicons name="time-outline" size={14} color={colors.inkSoft} />
-                    <Text style={styles.distanceText}>
-                      {Math.round(item.durationMinutes)} {t.driver.history.minutesSuffix}
-                    </Text>
-                  </View>
-                )}
-                {item.seats != null && (
-                  <View style={styles.distanceItem}>
-                    <Ionicons name="person-outline" size={14} color={colors.inkSoft} />
-                    <Text style={styles.distanceText}>
-                      {item.seats} {t.driver.history.seatsSuffix}
-                    </Text>
-                  </View>
-                )}
-              </View>
-            )}
-          </Card>
-        )}
-
-        <Card variant="raised" style={styles.section}>
-          <Text style={styles.sectionLabel}>{t.driver.history.payment}</Text>
-          <View style={styles.paymentRow}>
-            <View style={styles.paymentMethodLabel}>
-              <Ionicons
-                name={item.paymentMethod === 'gcash' ? 'wallet-outline' : 'cash-outline'}
-                size={16}
-                color={colors.inkSoft}
-              />
-              <Text style={styles.paymentMethodText}>
-                {item.paymentMethod === 'gcash' ? 'GCash' : item.paymentMethod === 'cash' ? 'Cash' : 'No payment'}
-              </Text>
-            </View>
-            {item.paymentStatus && (
-              <Badge
-                label={item.paymentStatus.charAt(0).toUpperCase() + item.paymentStatus.slice(1)}
-                tone={item.paymentStatus === 'paid' ? 'green' : item.paymentStatus === 'failed' ? 'danger' : 'blue'}
-              />
-            )}
-          </View>
-        </Card>
-
-        {item.status === 'cancelled' && item.cancelReason && (
-          <Card variant="raised" style={styles.section}>
-            <Text style={styles.sectionLabel}>{t.driver.history.cancellationReason}</Text>
-            <Text style={styles.cancelReasonText}>{item.cancelReason}</Text>
-          </Card>
-        )}
-
-        {reference && (
-          <Card variant="raised" style={styles.section}>
-            <View style={styles.referenceRow}>
-              <Text style={styles.referenceLabel}>{t.driver.history.tripReference}</Text>
-              <Text style={styles.referenceValue}>#{reference}</Text>
-            </View>
-          </Card>
-        )}
       </ScrollView>
     </View>
   );

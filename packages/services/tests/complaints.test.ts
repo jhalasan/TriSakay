@@ -238,6 +238,7 @@ test('listMyComplaints scopes to the signed-in user and returns rows newest firs
                         category: 'fare',
                         created_at: '2026-09-12T00:00:00.000Z',
                         resolved_at: null,
+                        ride_request_id: 'r1',
                       },
                     ],
                     error: null,
@@ -264,6 +265,7 @@ test('listMyComplaints scopes to the signed-in user and returns rows newest firs
       category: 'fare',
       createdAt: '2026-09-12T00:00:00.000Z',
       resolvedAt: null,
+      rideRequestId: 'r1',
     },
   ]);
 });
@@ -282,6 +284,7 @@ test('getMyComplaint returns the ride/mediation fields and a separately-queried 
                     data: {
                       id: 'c1',
                       subject: 'Overcharged',
+                      message: 'Charged twice.',
                       status: 'under_review',
                       category: 'fare',
                       created_at: '2026-09-12T00:00:00.000Z',
@@ -310,6 +313,7 @@ test('getMyComplaint returns the ride/mediation fields and a separately-queried 
   assert.deepEqual(data, {
     id: 'c1',
     subject: 'Overcharged',
+    message: 'Charged twice.',
     status: 'under_review',
     category: 'fare',
     createdAt: '2026-09-12T00:00:00.000Z',

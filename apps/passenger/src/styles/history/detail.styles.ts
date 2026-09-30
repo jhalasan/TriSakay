@@ -1,214 +1,148 @@
 import { StyleSheet } from 'react-native';
-import { colors, radius, spacing, typography } from '@trisakay/ui';
+import { colors, fontFamily, radius, recordsPalette } from '@trisakay/ui';
+
+const cardShadow = {
+  shadowColor: colors.accentBlue,
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.07,
+  shadowRadius: 8,
+  elevation: 2,
+} as const;
 
 export const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: colors.bg,
-  },
-  content: {
-    paddingHorizontal: spacing.lg,
-    paddingBottom: spacing.xxxl,
-    gap: spacing.md,
-  },
+  container: { flex: 1, backgroundColor: colors.bg },
+  scroll: { flexGrow: 1 },
 
-  // Summary is a floating inset card (radius 22), not the edge-to-edge
-  // header band — shadow lives on the outer wrap per the Android caveat.
-  summaryShadowWrap: {
+  // --- Hero (inside the navy band) ---
+  hero: { paddingHorizontal: 4, gap: 2 },
+  heroDate: { fontFamily: fontFamily.regular, fontSize: 13, lineHeight: 18, color: 'rgba(255, 255, 255, 0.78)' },
+  heroFare: { fontFamily: fontFamily.extrabold, fontSize: 44, lineHeight: 52, letterSpacing: -1.4, color: colors.white },
+  heroCancelled: { fontFamily: fontFamily.extrabold, fontSize: 32, lineHeight: 40, letterSpacing: -1, color: colors.white },
+  heroMetaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', gap: 8 },
+  heroMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  heroMeta: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 18, color: colors.white },
+  heroDiscount: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 18, color: recordsPalette.onDarkGreenLight },
+  heroDot: { width: 3, height: 3, borderRadius: 1.5, backgroundColor: 'rgba(255, 255, 255, 0.5)' },
+  heroSub: { fontFamily: fontFamily.semibold, fontSize: 12.5, lineHeight: 18, color: 'rgba(255, 255, 255, 0.86)' },
+
+  // --- Body ---
+  body: { paddingHorizontal: 16, gap: 12 },
+  overlapSlot: { marginTop: -42 },
+  heroShadow: {
     shadowColor: colors.accentBlue,
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.24,
-    shadowRadius: 26,
-    elevation: 8,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.12,
+    shadowRadius: 24,
+    elevation: 6,
   },
-  summaryCard: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderRadius: radius.lg2,
-    padding: spacing.lg,
-    gap: spacing.xs,
-  },
-  summaryMotif: {
-    position: 'absolute',
-    top: -34,
-    right: -30,
-  },
-  summaryTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  dateTimeText: {
-    ...typography.caption,
-    color: colors.white,
-    opacity: 0.72,
-  },
-  fareEyebrow: {
-    ...typography.eyebrow,
-    color: colors.white,
-    opacity: 0.6,
-    marginTop: spacing.md,
-  },
-  fareText: {
-    ...typography.amount,
-    color: colors.white,
-  },
-  discountRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-    marginTop: 2,
-  },
-  discountText: {
-    ...typography.bodyStrong,
-    fontSize: 12,
-    color: colors.accentGreenSoft,
-  },
+  card: { backgroundColor: colors.white, borderRadius: radius.lg, ...cardShadow },
+  cardHero: { backgroundColor: colors.white, borderRadius: radius.lg2 },
+  routePad: { paddingTop: 16, paddingHorizontal: 16, paddingBottom: 14 },
 
-  section: {
-    gap: spacing.sm,
-    borderRadius: radius.md3,
+  // --- Cancelled reason ---
+  reasonCard: { flexDirection: 'row', alignItems: 'flex-start', gap: 12, padding: 16 },
+  reasonText: { flex: 1, gap: 2 },
+  reasonEyebrow: {
+    fontFamily: fontFamily.bold,
+    fontSize: 11,
+    lineHeight: 15,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
+    color: colors.dangerPressed,
   },
+  reasonValue: { fontFamily: fontFamily.semibold, fontSize: 15, lineHeight: 21, color: colors.ink },
+
+  // --- Driver card ---
+  driverRow: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 14 },
+  driverRowCompact: { flexDirection: 'row', alignItems: 'center', gap: 12, padding: 12 },
+  driverBody: { flex: 1, gap: 4 },
+  driverNameRow: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  driverName: { flexShrink: 1, fontFamily: fontFamily.bold, fontSize: 15, lineHeight: 20, color: colors.ink },
+  driverNameCompact: { fontFamily: fontFamily.bold, fontSize: 14.5, lineHeight: 20, color: colors.ink },
+  driverSub: { fontFamily: fontFamily.regular, fontSize: 12, lineHeight: 17, color: colors.inkSoft },
+  ratingText: { fontFamily: fontFamily.bold, fontSize: 12.5, lineHeight: 18, color: colors.ink },
+  tagRow: { flexDirection: 'row', alignItems: 'center', gap: 6, flexWrap: 'wrap' },
+  tag: {
+    borderWidth: 1.5,
+    borderColor: colors.ink,
+    borderRadius: 6,
+    paddingVertical: 1,
+    paddingHorizontal: 7,
+  },
+  tagText: { fontFamily: 'monospace', fontSize: 11.5, lineHeight: 16, letterSpacing: 0.6, color: colors.ink },
+
+  // --- Receipt ---
+  receipt: { padding: 16, gap: 10 },
   sectionLabel: {
-    ...typography.label,
+    fontFamily: fontFamily.bold,
+    fontSize: 11,
+    lineHeight: 15,
+    letterSpacing: 0.7,
+    textTransform: 'uppercase',
     color: colors.inkSoft,
   },
+  receiptRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 },
+  receiptLabel: { fontFamily: fontFamily.regular, fontSize: 14, lineHeight: 20, color: colors.ink },
+  receiptValue: { fontFamily: fontFamily.regular, fontSize: 14, lineHeight: 20, color: colors.ink },
+  receiptDiscount: { fontFamily: fontFamily.semibold, fontSize: 14, lineHeight: 20, color: colors.accentGreenPressed },
+  receiptDivider: { height: 1, backgroundColor: colors.lineSoft },
+  totalLabel: { fontFamily: fontFamily.bold, fontSize: 15, lineHeight: 21, color: colors.ink },
+  totalValue: { fontFamily: fontFamily.extrabold, fontSize: 18, lineHeight: 24, color: colors.ink },
+  paymentInner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: colors.bg,
+    borderRadius: radius.sm2,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+  },
+  paymentName: { flex: 1, fontFamily: fontFamily.semibold, fontSize: 13.5, lineHeight: 19, color: colors.ink },
 
-  routeBlock: {
+  // --- Trip reference ---
+  refRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12, minHeight: 44 },
+  refRowPad: { paddingVertical: 4, paddingHorizontal: 6 },
+  refLabel: { fontFamily: fontFamily.regular, fontSize: 13, lineHeight: 18, color: colors.inkSoft },
+  refValue: { fontFamily: 'monospace', fontSize: 13, lineHeight: 18, color: colors.ink },
+  copyLink: { flexDirection: 'row', alignItems: 'center', gap: 5, minHeight: 44, paddingHorizontal: 4 },
+  copyText: { fontFamily: fontFamily.semibold, fontSize: 13, lineHeight: 18, color: colors.accentBlue },
+
+  // --- Bottom bar ---
+  bottomBar: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
     flexDirection: 'row',
-    gap: spacing.md,
-  },
-  routeMarkerCol: {
-    alignItems: 'center',
-    width: 10,
-    paddingTop: 3,
-  },
-  routeDotPickup: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    borderWidth: 2.5,
-    borderColor: colors.accentGreen,
-  },
-  routeDotDropoff: {
-    width: 10,
-    height: 10,
-    borderRadius: 2,
-    backgroundColor: colors.accentBlue,
-  },
-  routeLine: {
-    flex: 1,
-    minHeight: spacing.xl,
-    width: 2,
-    backgroundColor: colors.line,
-    marginVertical: 3,
-  },
-  routeTextCol: {
-    flex: 1,
-    gap: spacing.md,
-  },
-  routeLabel: {
-    ...typography.label,
-    fontSize: 10,
-    color: colors.inkFaint,
-  },
-  routeAddress: {
-    ...typography.bodyStrong,
-    color: colors.ink,
-  },
-  distanceRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-    marginTop: spacing.md,
-    paddingTop: spacing.md,
+    gap: 10,
+    paddingTop: 12,
+    paddingHorizontal: 16,
+    backgroundColor: colors.white,
     borderTopWidth: 1,
     borderTopColor: colors.lineSoft,
   },
-  distanceItem: {
+  helpButton: {
+    minHeight: 52,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: spacing.xs,
+    justifyContent: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    borderWidth: 1.5,
+    borderColor: colors.line,
+    backgroundColor: colors.white,
   },
-  distanceText: {
-    ...typography.bodyStrong,
-    fontSize: 13,
-    color: colors.inkSoft,
+  helpText: { fontFamily: fontFamily.semibold, fontSize: 15, lineHeight: 20, color: colors.ink },
+  primarySlot: { flex: 1 },
+  primaryShadow: {
+    borderRadius: 14,
+    shadowColor: colors.accentBlue,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.26,
+    shadowRadius: 18,
+    elevation: 6,
   },
-
-  driverRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  driverTextSlot: {
-    flex: 1,
-    gap: 2,
-  },
-  driverName: {
-    ...typography.bodyStrong,
-    color: colors.ink,
-  },
-  driverPlateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.xs,
-  },
-  driverPlateText: {
-    ...typography.caption,
-    color: colors.inkSoft,
-  },
-  driverRatingBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  driverRatingText: {
-    ...typography.bodySm,
-    color: colors.ink,
-  },
-
-  paymentRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  paymentMethodLabel: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.sm,
-  },
-  paymentMethodText: {
-    ...typography.body,
-    color: colors.inkSoft,
-  },
-  paymentDivider: {
-    height: 1,
-    backgroundColor: colors.lineSoft,
-  },
-  paymentBreakdownLabel: {
-    ...typography.body,
-    color: colors.inkSoft,
-  },
-  paymentBreakdownValue: {
-    ...typography.bodySm,
-    color: colors.ink,
-  },
-  paymentDiscountValue: {
-    ...typography.bodySm,
-    color: colors.accentGreenPressed,
-  },
-  totalLabel: {
-    ...typography.bodyStrong,
-    color: colors.ink,
-  },
-  totalValue: {
-    ...typography.h3,
-    color: colors.ink,
-  },
-
-  cancelReasonText: {
-    ...typography.body,
-    color: colors.ink,
-  },
+  primary: { minHeight: 52, borderRadius: 14, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingHorizontal: 12 },
+  primaryText: { fontFamily: fontFamily.bold, fontSize: 17, lineHeight: 21, color: colors.white },
 });

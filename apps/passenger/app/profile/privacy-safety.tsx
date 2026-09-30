@@ -2,44 +2,51 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { Alert, Linking, Pressable, ScrollView, Text, View } from 'react-native';
-import { BrandMotif, Button, Card, GradientSurface, ListRow, Spinner, colors } from '@trisakay/ui';
+import { Linking, Pressable, ScrollView, Text, View } from 'react-native';
+import { CollapsibleRow, IconTile, SosCard, colors, type SosCardState } from '@trisakay/ui';
 import { triggerEmergencyAlert } from '@trisakay/services';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useLocationPermission } from '../../src/hooks/useLocationPermission';
 import { useTranslation } from '../../src/hooks/useTranslation';
+import { interpolate } from '../../src/utils/interpolate';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../../src/utils/withTimeout';
 import { styles } from '../../src/styles/profile/privacy-safety.styles';
 
-type SosState = 'idle' | 'sending' | 'sent' | 'failed';
+type LearnRow = 'sos' | 'tips' | 'data';
 
 /**
- * The safety half of what used to be a single combined screen: an SOS you
- * can send to PSO any time, not only while `booking/emergency.tsx`'s
- * in-trip hold-button is reachable, plus account security. Location
- * tracking and the Legal Policy link moved back out to Settings on request
- * (2026-09-16) — they're settings/documents, not safety actions, and having
- * them here meant scrolling past this screen's own reading material to
- * reach a toggle that lives just as naturally in Settings.
+ * The safety half of what used to be a combined screen: an SOS you can send
+ * to PSO any time, not only while the in-trip hold-button is reachable, plus
+ * account security. Redesigned per the trip-records handoff §2b: one
+ * press-and-hold SOS (the old confirm Alert only remains as the screen-reader
+ * fallback), a separate quiet 911 row, and the reading material collapsed.
  * `emergency_alerts.ride_request_id` has always been nullable and
  * `emergency_insert_own`'s RLS never required a ride, so the anytime SOS
- * needed no backend change beyond correcting the PSO-facing notification
- * wording (see the 2026-09-16 migration) to stop assuming a ride is
- * attached.
+ * needs no backend change.
  */
 export default function PrivacySafetyScreen() {
   const router = useRouter();
   const t = useTranslation();
+  const p = t.privacySafety;
   const { isGranted, request } = useLocationPermission();
 
-  const [sosState, setSosState] = useState<SosState>('idle');
-  const [sosError, setSosError] = useState<string | null>(null);
+  const [sosState, setSosState] = useState<SosCardState>('idle');
+  const [sentAt, setSentAt] = useState<Date | null>(null);
+  const [openRows, setOpenRows] = useState<Set<LearnRow>>(new Set());
 
   const tips = [t.safety.tip1, t.safety.tip2, t.safety.tip3];
 
+  function toggleRow(row: LearnRow) {
+    setOpenRows((prev) => {
+      const next = new Set(prev);
+      if (next.has(row)) next.delete(row);
+      else next.add(row);
+      return next;
+    });
+  }
+
   async function sendSos() {
     setSosState('sending');
-    setSosError(null);
     try {
       let granted = isGranted;
       if (!granted) {
@@ -47,7 +54,6 @@ export default function PrivacySafetyScreen() {
       }
       if (!granted) {
         setSosState('failed');
-        setSosError(t.privacySafety.sosLocationRequired);
         return;
       }
 
@@ -66,123 +72,113 @@ export default function PrivacySafetyScreen() {
 
       if (error) {
         setSosState('failed');
-        setSosError(error);
       } else {
+        setSentAt(new Date());
         setSosState('sent');
       }
     } catch {
       setSosState('failed');
-      setSosError(t.privacySafety.sosFailed);
     }
   }
 
-  function confirmSos() {
-    Alert.alert(t.privacySafety.sosConfirmTitle, t.privacySafety.sosConfirmMessage, [
-      { text: t.common.cancel, style: 'cancel' },
-      { text: t.privacySafety.sosConfirmButton, style: 'destructive', onPress: () => void sendSos() },
-    ]);
-  }
+  const sentTime = (sentAt ?? new Date()).toLocaleTimeString('en-PH', { hour: 'numeric', minute: '2-digit' });
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title={t.privacySafety.title} />
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.heroShadowWrap}>
-          <GradientSurface token="sos" direction="diagonal" style={styles.hero}>
-            <BrandMotif size={150} color={colors.white} opacity={0.14} style={styles.heroMotif} />
-            <View style={styles.heroIconTile}>
-              <Ionicons name="shield-checkmark" size={22} color={colors.white} />
-            </View>
-            <Text style={styles.heroEyebrow}>{t.privacySafety.eyebrow}</Text>
-            <Text style={styles.heroTitle}>{t.privacySafety.title}</Text>
-            <Text style={styles.heroSubtitle}>{t.privacySafety.subtitle}</Text>
-          </GradientSurface>
-        </View>
+      <ScreenHeader title={p.title} />
+      <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <SosCard
+          state={sosState}
+          onSend={() => void sendSos()}
+          onCall911={() => Linking.openURL('tel:911')}
+          copy={{
+            holdLabel: p.holdLabel,
+            holdSub: p.holdSub,
+            title: p.sosButton,
+            sendingTitle: p.sendingTitle,
+            body: p.holdBody,
+            call911Title: t.safety.callButton,
+            call911Sub: p.call911Sub,
+            sentTitle: p.sentTitle,
+            sentBody: interpolate(p.sentBody, { time: sentTime }),
+            failedMessage: p.sosFailed,
+            retry: p.retry,
+            a11yLabel: p.sosButton,
+            a11yHint: p.sosA11yHint,
+            confirmTitle: p.sosConfirmTitle,
+            confirmMessage: p.sosConfirmMessage,
+            confirmButton: p.sosConfirmButton,
+            cancel: t.common.cancel,
+          }}
+        />
 
-        <View style={styles.sosGroup}>
-          <Button
-            label={t.privacySafety.sosButton}
-            tone="danger"
-            fullWidth
-            loading={sosState === 'sending'}
-            onPress={confirmSos}
-          />
-          <Button label={t.safety.callButton} variant="outline" tone="danger" fullWidth onPress={() => Linking.openURL('tel:911')} />
-
-          {sosState === 'sending' && (
-            <View style={[styles.statusRow, styles.statusRowSending]}>
-              <Spinner size="small" />
-              <Text style={styles.statusText}>{t.privacySafety.sosSending}</Text>
-            </View>
-          )}
-          {sosState === 'sent' && (
-            <View style={[styles.statusRow, styles.statusRowSent]}>
-              <Ionicons name="checkmark-circle" size={16} color={colors.accentGreenPressed} />
-              <Text style={styles.statusText}>{t.privacySafety.sosSent}</Text>
-            </View>
-          )}
-          {sosState === 'failed' && (
-            <View style={[styles.statusRow, styles.statusRowFailed]}>
-              <Text style={styles.statusTextFailed}>{sosError ?? t.privacySafety.sosFailed}</Text>
-              <Pressable onPress={confirmSos} hitSlop={8}>
-                <Text style={styles.retryLink}>{t.privacySafety.retry}</Text>
-              </Pressable>
-            </View>
-          )}
-        </View>
-
-        {/* Moved up, right under the primary SOS action and ahead of the
-            longer "How SOS works"/tips reading material: account security
-            is a setting a user comes here to tap, not to read, so it
-            shouldn't need a scroll past informational copy to reach. */}
         <View>
-          <Text style={styles.sectionLabel}>{t.privacySafety.sectionAccountSecurity}</Text>
-          <Card variant="raised" style={styles.navGroup}>
-            <ListRow
-              title={t.privacySafety.changePasswordRow}
-              subtitle={t.privacySafety.changePasswordRowSubtitle}
-              leading={
-                <View style={styles.navIconTile}>
-                  <Ionicons name="key-outline" size={18} color={colors.accentBluePressed} />
+          <Text style={styles.sectionLabel}>{p.sectionAccountSecurity}</Text>
+          <View style={styles.card}>
+            <Pressable accessibilityRole="button" onPress={() => router.push('/profile/change-password')} style={styles.navRow}>
+              <IconTile icon="key" tone="navy" size={38} />
+              <View style={styles.navBody}>
+                <Text style={styles.navTitle}>{p.changePasswordRow}</Text>
+                <Text style={styles.navSub}>{p.changePasswordRowSubtitle}</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.inkSoft} />
+            </Pressable>
+          </View>
+        </View>
+
+        <View>
+          <Text style={styles.sectionLabel}>{p.learnMore}</Text>
+          <View style={styles.learnCard}>
+            <CollapsibleRow
+              title={t.safety.howSosWorksTitle}
+              leading={<IconTile icon="hand-left" tone="navy" size={34} />}
+              open={openRows.has('sos')}
+              onToggle={() => toggleRow('sos')}
+              bodyIndent={44}
+            >
+              <Text style={styles.learnBody}>{t.safety.howSosWorksBody}</Text>
+            </CollapsibleRow>
+            <View style={styles.learnDivider}>
+              <CollapsibleRow
+                title={t.safety.tipsTitle}
+                leading={<IconTile icon="shield-checkmark" tone="green" size={34} />}
+                trailing={
+                  <View style={styles.countPill}>
+                    <Text style={styles.countText}>{tips.length}</Text>
+                  </View>
+                }
+                open={openRows.has('tips')}
+                onToggle={() => toggleRow('tips')}
+                bodyIndent={44}
+              >
+                <View style={styles.tipList}>
+                  {tips.map((tip) => (
+                    <View key={tip} style={styles.tipRow}>
+                      <View style={styles.tipBullet} />
+                      <Text style={styles.tipText}>{tip}</Text>
+                    </View>
+                  ))}
                 </View>
-              }
-              onPress={() => router.push('/profile/change-password')}
-              chevron
-              divider={false}
-            />
-          </Card>
-        </View>
-
-        <View style={styles.card}>
-          <View style={styles.cardTitleRow}>
-            <View style={styles.cardIconTile}>
-              <Ionicons name="hand-left-outline" size={16} color={colors.accentBluePressed} />
+              </CollapsibleRow>
             </View>
-            <Text style={styles.cardTitle}>{t.safety.howSosWorksTitle}</Text>
-          </View>
-          <Text style={styles.cardBody}>{t.safety.howSosWorksBody}</Text>
-        </View>
-
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>{t.safety.tipsTitle}</Text>
-          {tips.map((tip) => (
-            <View key={tip} style={styles.tipRow}>
-              <View style={styles.tipBullet} />
-              <Text style={styles.tipText}>{tip}</Text>
+            <View style={styles.learnDivider}>
+              <CollapsibleRow
+                title={p.yourDataTitle}
+                leading={<IconTile icon="eye" tone="neutral" size={34} />}
+                open={openRows.has('data')}
+                onToggle={() => toggleRow('data')}
+                bodyIndent={44}
+              >
+                <Text style={styles.learnBody}>{p.yourDataBody}</Text>
+              </CollapsibleRow>
             </View>
-          ))}
-          <Pressable accessibilityRole="button" style={styles.linkRow} onPress={() => router.push('/(tabs)/complaints')}>
-            <Text style={styles.link}>{t.safety.reportIssueLink}</Text>
-          </Pressable>
-        </View>
-
-        <View style={styles.noticeBox}>
-          <Ionicons name="information-circle-outline" size={16} color={colors.inkSoft} style={styles.noticeIcon} />
-          <View style={styles.noticeTextSlot}>
-            <Text style={styles.cardTitle}>{t.privacySafety.yourDataTitle}</Text>
-            <Text style={styles.noticeText}>{t.privacySafety.yourDataBody}</Text>
           </View>
         </View>
+
+        <Pressable accessibilityRole="button" onPress={() => router.push('/(tabs)/complaints')} style={styles.footerLink}>
+          <Ionicons name="flag-outline" size={14} color={colors.accentBlue} />
+          <Text style={styles.footerLinkText}>{t.safety.reportIssueLink}</Text>
+        </Pressable>
       </ScrollView>
     </View>
   );

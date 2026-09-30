@@ -435,7 +435,7 @@ function RootLayoutNav() {
             />
             <Stack.Screen
               name="deactivate-account"
-              options={{ presentation: 'transparentModal', animation: 'fade' }}
+              options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
             />
           </Stack>
           <PassengerTutorialMount />

@@ -11,6 +11,8 @@ export interface NavyBandHeaderProps {
   backAccessibilityLabel?: string;
   /** Right-aligned slot in the title row (a status pill, a "Skip" link). */
   right?: React.ReactNode;
+  /** md: 17/24 bold (trip details) · lg: 22/28 extrabold (ratings, legal) · xl: 28/34 extrabold (complaints home). */
+  titleSize?: 'md' | 'lg' | 'xl';
   /** Safe-area top inset — this component takes no dependency on `react-native-safe-area-context`; the screen supplies it. */
   topInset?: number;
   /** Extra bottom padding so the first card can pull up into the band (`marginTop: -40…-42`). Sets padding-bottom 58. */
@@ -36,6 +38,7 @@ export function NavyBandHeader({
   onBack,
   backAccessibilityLabel = 'Go back',
   right,
+  titleSize = 'md',
   topInset = 0,
   overlapBottom = false,
   paddingBottom = 20,
@@ -67,7 +70,7 @@ export function NavyBandHeader({
                 </Pressable>
               ) : null}
               {title ? (
-                <Text style={styles.title} numberOfLines={1} accessibilityRole="header">
+                <Text style={[styles.title, titleSize === 'lg' && styles.titleLg, titleSize === 'xl' && styles.titleXl]} numberOfLines={1} accessibilityRole="header">
                   {title}
                 </Text>
               ) : (
@@ -106,5 +109,7 @@ const styles = StyleSheet.create({
   },
   backTilePressed: { backgroundColor: 'rgba(255, 255, 255, 0.24)' },
   title: { flex: 1, fontFamily: fontFamily.bold, fontSize: 17, lineHeight: 24, color: colors.white },
+  titleLg: { fontFamily: fontFamily.extrabold, fontSize: 22, lineHeight: 28 },
+  titleXl: { fontFamily: fontFamily.extrabold, fontSize: 28, lineHeight: 34, letterSpacing: -0.7 },
   spacer: { flex: 1 },
 });
