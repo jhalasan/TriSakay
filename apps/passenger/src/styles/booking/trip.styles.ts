@@ -58,7 +58,8 @@ export const styles = StyleSheet.create({
   },
   // A taller touch target around the visible 4px handle, so it is easy to grab and drag.
   handleTouch: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 8 },
-  handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.line, alignSelf: 'center' },
+  // Same grip as the driver's ride card: a slightly larger, higher-contrast pill.
+  handle: { width: 48, height: 5, borderRadius: 3, backgroundColor: colors.lineStrong, alignSelf: 'center' },
   sheetScrollContent: { gap: spacing.md },
 
   // --- transfer banner (Part B §B6) ---

@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, TRICYCLE_SPEED_KMH, features, sortByNextStop } from '@trisakay/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
@@ -179,6 +179,23 @@ export default function ActiveTripScreen() {
   );
 
   const { preview, dismiss: dismissPreview } = useChatPreviewBanner(trip?.passengers.map((p) => p.id) ?? [], user?.id);
+
+  // The focus refetch above only runs when the screen comes back into view, so a
+  // message arriving while it is open would leave that passenger's Message button
+  // unlit. The preview banner is live; recount that passenger's thread on each new message.
+  useEffect(() => {
+    if (!preview || !user) return;
+    let cancelled = false;
+    const id = preview.rideRequestId;
+    listMessages(id).then(({ data }) => {
+      if (cancelled) return;
+      const count = data.filter((m) => m.senderId !== user.id && m.readAt === null).length;
+      setUnreadByRideRequestId((previous) => ({ ...previous, [id]: count }));
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [preview, user]);
 
   if (!trip) {
     return <Redirect href="/(tabs)/dashboard" />;

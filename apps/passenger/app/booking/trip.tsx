@@ -3,7 +3,7 @@ import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { Animated, Pressable, ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
-import ReAnimated, { useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
+import ReAnimated, { Easing, interpolateColor, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   cancelRideRequest,
@@ -31,6 +31,12 @@ async function fetchRouteForNavigation(origin: { latitude: number; longitude: nu
   const { geometry, source } = await fetchRouteEstimate(origin, destination);
   return { geometry, source };
 }
+
+// Hoisted so the worklet below captures plain strings, not the whole `colors` object.
+const HANDLE_COLOR = colors.lineStrong;
+const HANDLE_COLOR_PRESSED = colors.inkSoft;
+// Reanimated's own Easing (the shared motion.easing token isn't worklet-safe); same curve as motion.easing.out.
+const HANDLE_EASING = Easing.bezier(0.16, 1, 0.3, 1);
 
 /** How much of the ride card stays showing when collapsed: just the drag handle. */
 const SHEET_PEEK_HEIGHT = 28;
@@ -102,6 +108,21 @@ export default function TripScreen() {
 
   const { preview, dismiss: dismissPreview } = useChatPreviewBanner(tutorialDemo.active ? null : rideRequestId, user?.id);
 
+  // The focus refetch above only runs when the screen comes back into view, so a
+  // message arriving while it is open would leave the Message button unlit. The
+  // preview banner is live; recount on each new message so the button lights up at once.
+  useEffect(() => {
+    if (!preview || !rideRequestId || !user) return;
+    let cancelled = false;
+    listMessages(rideRequestId).then(({ data }) => {
+      if (cancelled) return;
+      setUnreadMessageCount(data.filter((m) => m.senderId !== user.id && m.readAt === null).length);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [preview, rideRequestId, user]);
+
   // D1 (UAT audit): tracks the trip_id this screen last saw so a transfer —
   // which changes trip_id without changing status — can be detected. null
   // means "not seen yet"; the very first status event seeds it without
@@ -135,11 +156,21 @@ export default function TripScreen() {
   const sheetHeight = useSharedValue(SHEET_EXPANDED_GUESS);
   const sheetOffset = useSharedValue(0);
   const dragStartOffset = useSharedValue(0);
+  /** 0 = resting, 1 = the handle is under a finger. */
+  const handlePressed = useSharedValue(0);
   const sheetAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: sheetOffset.value }] }));
   // What the map's recenter button sits above: the card's visible height.
   const mapInset = useDerivedValue(() => Math.max(SHEET_PEEK_HEIGHT, sheetHeight.value - sheetOffset.value) + 10);
   const sheetGesture = Gesture.Exclusive(
     Gesture.Pan()
+      // onBegin/onFinalize fire on touch down and release, even for a tap that never becomes a drag,
+      // so the handle lights up as soon as it is touched (same as the driver's ride card).
+      .onBegin(() => {
+        handlePressed.value = withTiming(1, { duration: motion.duration.instant, easing: HANDLE_EASING });
+      })
+      .onFinalize(() => {
+        handlePressed.value = withTiming(0, { duration: motion.duration.quick, easing: HANDLE_EASING });
+      })
       .onStart(() => {
         dragStartOffset.value = sheetOffset.value;
       })
@@ -157,6 +188,11 @@ export default function TripScreen() {
       sheetOffset.value = withTiming(sheetOffset.value > 0 ? 0 : max, { duration: 250 });
     }),
   );
+  // Darkens and widens the grip while held.
+  const animatedHandleStyle = useAnimatedStyle(() => ({
+    backgroundColor: interpolateColor(handlePressed.value, [0, 1], [HANDLE_COLOR, HANDLE_COLOR_PRESSED]),
+    transform: [{ scaleX: 1 + handlePressed.value * 0.15 }],
+  }));
   const handleSheetLayout = (event: LayoutChangeEvent) => {
     sheetHeight.value = event.nativeEvent.layout.height;
   };
@@ -515,8 +551,13 @@ export default function TripScreen() {
         <ReAnimated.View style={sheetAnimatedStyle}>
         <View style={styles.sheet} onLayout={handleSheetLayout}>
           <GestureDetector gesture={sheetGesture}>
-            <View style={styles.handleTouch} accessibilityRole="button" accessibilityLabel={t.trip.sheetToggleA11y}>
-              <View style={styles.handle} />
+            <View
+              style={styles.handleTouch}
+              hitSlop={{ top: 8, bottom: 8, left: 32, right: 32 }}
+              accessibilityRole="button"
+              accessibilityLabel={t.trip.sheetToggleA11y}
+            >
+              <ReAnimated.View style={[styles.handle, animatedHandleStyle]} />
             </View>
           </GestureDetector>
           <ScrollView contentContainerStyle={styles.sheetScrollContent} showsVerticalScrollIndicator={false}>

@@ -1,6 +1,6 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
-import { useRouter } from 'expo-router';
+import { usePathname, useRouter } from 'expo-router';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
 
 /**
@@ -17,6 +17,12 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
  */
 export function useChatNotifications() {
   const router = useRouter();
+  // Read by the notification handler below, which is registered once: while the
+  // user is on the chat or the ride screen the app already shows the message
+  // itself (live thread / preview banner), so a system banner would only duplicate it.
+  const pathname = usePathname();
+  const pathnameRef = useRef(pathname);
+  pathnameRef.current = pathname;
 
   useEffect(() => {
     if (Platform.OS === 'web') return;
@@ -39,12 +45,17 @@ export function useChatNotifications() {
         }
 
         Notifications.setNotificationHandler({
-          handleNotification: async () => ({
-            shouldShowBanner: true,
-            shouldShowList: true,
-            shouldPlaySound: true,
-            shouldSetBadge: false,
-          }),
+          handleNotification: async (notification) => {
+            const data = notification.request.content.data as Record<string, unknown> | undefined;
+            const path = pathnameRef.current ?? '';
+            const alreadyVisible = data?.type === 'chat_message' && (path.startsWith('/trip/chat') || path.startsWith('/trip/active'));
+            return {
+              shouldShowBanner: !alreadyVisible,
+              shouldShowList: !alreadyVisible,
+              shouldPlaySound: !alreadyVisible,
+              shouldSetBadge: false,
+            };
+          },
         });
 
         function routeFromData(data: Record<string, unknown> | undefined) {
