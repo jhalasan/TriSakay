@@ -20,8 +20,11 @@ const corsHeaders = {
 };
 
 const PAYMONGO_API_BASE = 'https://api.paymongo.com/v1';
-const CHECKOUT_SUCCESS_URL = 'https://trisakay.app/payment-complete';
-const CHECKOUT_CANCEL_URL = 'https://trisakay.app/payment-cancelled';
+// Static pages served from the admin site's public folder (apps/admin/public). They must be
+// .html: the site rewrites every other path to the admin app. Shown in the in-app browser
+// after paying or cancelling; the app itself confirms the payment, not this page.
+const CHECKOUT_SUCCESS_URL = 'https://trisakaygsc.vercel.app/payment-complete.html';
+const CHECKOUT_CANCEL_URL = 'https://trisakaygsc.vercel.app/payment-cancelled.html';
 
 interface PaymongoCheckoutSession {
   id: string;
