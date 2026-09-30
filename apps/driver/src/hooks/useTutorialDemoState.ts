@@ -60,6 +60,7 @@ const DEMO_TRIP: ActiveTrip = {
       arrivedAt: null,
       handoffLat: null,
       handoffLng: null,
+      paymentRequestedAt: null,
     },
   ],
 };

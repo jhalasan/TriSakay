@@ -30,6 +30,7 @@ function passenger(id, overrides = {}) {
     arrivedAt: null,
     handoffLat: null,
     handoffLng: null,
+    paymentRequestedAt: null,
     ...overrides,
   };
 }
@@ -542,6 +543,117 @@ test('reset() clears current and error', async () => {
 // mid-trip — subscribeToCancellations wires subscribeToTripRideRequests to
 // hydrate(), so any change to this trip's ride_requests re-pulls the whole
 // trip from the backend instead of leaving the driver's screen stale.
+// Kept ahead of the tests that stub useTripStore.hydrate (the store is a singleton, so a stub would leak into these).
+function rpcClient(handlers, calls) {
+  return {
+    channel: () => { throw new Error('channel not needed for this test'); },
+    removeChannel: () => {},
+    rpc: async (fn, args) => {
+      calls.push({ fn, args });
+      if (!handlers[fn]) throw new Error(`unexpected rpc ${fn}`);
+      return handlers[fn](args);
+    },
+  };
+}
+
+const HYDRATE_HANDLERS = (paymentRequestedAt) => ({
+  get_active_trip_for_driver: () => ({ data: [{ trip_id: 'trip-9', started_at: 'now' }], error: null }),
+  get_active_trip_passengers: () => ({
+    data: [
+      {
+        ride_request_id: 'req-9',
+        seats_requested: 1,
+        preferred_method: 'gcash',
+        estimated_fare: 45,
+        passenger_id: 'p1',
+        passenger_name: 'Ana',
+        avatar_url: null,
+        cash_confirmed: false,
+        status: 'ongoing',
+        pickup_lat: null,
+        pickup_lng: null,
+        dest_lat: null,
+        dest_lng: null,
+        payment_requested_at: paymentRequestedAt,
+      },
+    ],
+    error: null,
+  }),
+});
+
+test('requestPayment() asks the RPC, then re-hydrates so the card shows the request', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  const calls = [];
+  __setSupabaseClientForTests(
+    rpcClient({ request_gcash_payment: () => ({ data: '2026-09-30T10:00:00.000Z', error: null }), ...HYDRATE_HANDLERS('2026-09-30T10:00:00.000Z') }, calls)
+  );
+  useTripStore.setState({
+    current: { tripId: 'trip-9', startedAt: 'now', passengers: [passenger('req-9', { paymentMethod: 'gcash', status: 'ongoing' })] },
+    error: null,
+  });
+
+  const ok = await useTripStore.getState().requestPayment('req-9');
+
+  assert.equal(ok, true);
+  assert.deepEqual(calls[0], { fn: 'request_gcash_payment', args: { p_ride_request_id: 'req-9' } });
+  assert.equal(useTripStore.getState().current.passengers[0].paymentRequestedAt, '2026-09-30T10:00:00.000Z');
+  assert.equal(useTripStore.getState().error, null);
+});
+
+test('requestPayment() sets an error and returns false when the RPC refuses', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests(rpcClient({ request_gcash_payment: () => ({ data: null, error: { message: 'This ride is paying by cash' } }) }, []));
+  useTripStore.setState({
+    current: { tripId: 'trip-9', startedAt: 'now', passengers: [passenger('req-9', { paymentMethod: 'gcash', status: 'ongoing' })] },
+    error: null,
+  });
+
+  const ok = await useTripStore.getState().requestPayment('req-9');
+
+  assert.equal(ok, false);
+  assert.ok(useTripStore.getState().error);
+});
+
+test('switchToCash() passes the reason code, then re-hydrates', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  const calls = [];
+  __setSupabaseClientForTests(
+    rpcClient({ switch_payment_to_cash: () => ({ data: null, error: null }), ...HYDRATE_HANDLERS(null) }, calls)
+  );
+  useTripStore.setState({
+    current: { tripId: 'trip-9', startedAt: 'now', passengers: [passenger('req-9', { paymentMethod: 'gcash', status: 'ongoing' })] },
+    error: null,
+  });
+
+  const ok = await useTripStore.getState().switchToCash('req-9', 'no_signal');
+
+  assert.equal(ok, true);
+  assert.deepEqual(calls[0], { fn: 'switch_payment_to_cash', args: { p_ride_request_id: 'req-9', p_reason_code: 'no_signal' } });
+  assert.ok(calls.some((c) => c.fn === 'get_active_trip_for_driver'));
+});
+
+test('switchToCash() sets an error and returns false when the server refuses (already paid)', async () => {
+  const { useTripStore } = await import('../src/store/useTripStore.ts');
+  const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');
+
+  __setSupabaseClientForTests(rpcClient({ switch_payment_to_cash: () => ({ data: null, error: { message: 'This ride is already paid by GCash' } }) }, []));
+  useTripStore.setState({
+    current: { tripId: 'trip-9', startedAt: 'now', passengers: [passenger('req-9', { paymentMethod: 'gcash', status: 'ongoing' })] },
+    error: null,
+  });
+
+  const ok = await useTripStore.getState().switchToCash('req-9', 'other');
+
+  assert.equal(ok, false);
+  assert.equal(useTripStore.getState().error, 'This ride is already paid by GCash');
+});
+
 test('subscribeToCancellations calls hydrate() on every change and unsubscribeFromCancellations tears the channel down', async () => {
   const { useTripStore } = await import('../src/store/useTripStore.ts');
   const { __setSupabaseClientForTests } = await import('@trisakay/services/src/supabase/client.ts');

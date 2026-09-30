@@ -8,7 +8,7 @@ import {
   markArrived as markArrivedRpc,
   subscribeToTripRideRequests,
 } from '@trisakay/services/src/booking/index.ts';
-import { confirmCashPayment } from '@trisakay/services/src/payments/index.ts';
+import { confirmCashPayment, requestGcashPayment, switchPaymentToCash, type SwitchToCashReasonCode } from '@trisakay/services/src/payments/index.ts';
 import { completeHandoff as completeHandoffRpc, releaseToPool } from '@trisakay/services/src/transfers/index.ts';
 import { getTranslations } from '../utils/getTranslations.ts';
 import { REQUEST_TIMEOUT_MS, withTimeout } from '../utils/withTimeout.ts';
@@ -36,6 +36,7 @@ function passengerFromRequest(request: PendingRequest): ActivePassenger {
     arrivedAt: null,
     handoffLat: null,
     handoffLng: null,
+    paymentRequestedAt: null,
   };
 }
 
@@ -58,6 +59,10 @@ interface TripState {
   startPassenger: (rideRequestId: string) => Promise<boolean>;
   /** F4 (UAT audit): the driver's "I've arrived" tap. Idempotent, and rejected by the RPC beyond ~100m of the pickup point. */
   markArrived: (rideRequestId: string) => Promise<boolean>;
+  /** Payment settlement: asks a GCash passenger to pay now (the ride must be ongoing). Re-hydrates so the card shows the request. */
+  requestPayment: (rideRequestId: string) => Promise<boolean>;
+  /** Payment settlement: converts a GCash ride to cash when GCash cannot work. The server refuses if it is already paid. */
+  switchToCash: (rideRequestId: string, reasonCode: SwitchToCashReasonCode) => Promise<boolean>;
   /** FR-2.5c — completes ONE passenger's leg; the trip and any other passenger aboard stay untouched. */
   completePassenger: (rideRequestId: string) => Promise<ActivePassenger | null>;
   /** FR-2.5c — cancels ONE passenger's leg; the trip and any other passenger aboard stay untouched. PD1: reasonCode is required by the RPC. */
@@ -133,6 +138,40 @@ export const useTripStore = create<TripState>()((set, get) => {
             }
           : state
       ),
+
+    requestPayment: async (rideRequestId) => {
+      const fallbackMessage = getTranslations().driver.tripActive.paymentRequestFailed;
+      try {
+        const { error } = await withTimeout(requestGcashPayment(rideRequestId), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return false;
+        }
+        await get().hydrate();
+        set({ error: null });
+        return true;
+      } catch {
+        set({ error: fallbackMessage });
+        return false;
+      }
+    },
+
+    switchToCash: async (rideRequestId, reasonCode) => {
+      const fallbackMessage = getTranslations().driver.tripActive.switchFailed;
+      try {
+        const { error } = await withTimeout(switchPaymentToCash(rideRequestId, reasonCode), REQUEST_TIMEOUT_MS, fallbackMessage);
+        if (error) {
+          set({ error });
+          return false;
+        }
+        await get().hydrate();
+        set({ error: null });
+        return true;
+      } catch {
+        set({ error: fallbackMessage });
+        return false;
+      }
+    },
 
     confirmCash: async (rideRequestId, driverId) => {
       const passenger = get().current?.passengers.find((p) => p.id === rideRequestId);
@@ -393,6 +432,7 @@ export const useTripStore = create<TripState>()((set, get) => {
               arrivedAt: p.arrivedAt,
               handoffLat: p.handoffLat,
               handoffLng: p.handoffLng,
+              paymentRequestedAt: p.paymentRequestedAt,
             })),
           },
           error: null,

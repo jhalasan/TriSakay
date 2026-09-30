@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, TRICYCLE_SPEED_KMH, features, sortByNextStop } from '@trisakay/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
-import { Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -20,7 +20,7 @@ import {
   useNavigationRoute,
   useTutorialTarget,
 } from '@trisakay/ui';
-import { inviteTransfer, listMessages, listTransferCandidates, type TransferCandidate } from '@trisakay/services';
+import { SWITCH_TO_CASH_REASON_CODES, inviteTransfer, listMessages, listTransferCandidates, type SwitchToCashReasonCode, type TransferCandidate } from '@trisakay/services';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useChatPreviewBanner } from '../../src/hooks/useChatPreviewBanner';
 import { useRequestCountdown } from '../../src/hooks/useRequestCountdown';
@@ -57,6 +57,8 @@ export default function ActiveTripScreen() {
   const driverLng = useDriverStore((state) => state.currentLng);
   const driverHeading = useDriverStore((state) => state.currentHeading);
   const confirmCash = useTripStore((state) => state.confirmCash);
+  const requestPayment = useTripStore((state) => state.requestPayment);
+  const switchToCash = useTripStore((state) => state.switchToCash);
   const startPassenger = useTripStore((state) => state.startPassenger);
   const markArrived = useTripStore((state) => state.markArrived);
   const completePassenger = useTripStore((state) => state.completePassenger);
@@ -80,6 +82,10 @@ export default function ActiveTripScreen() {
   const [cancellingId, setCancellingId] = useState<string | null>(null);
   const [confirmingCancel, setConfirmingCancel] = useState(false);
   const [confirmingCashId, setConfirmingCashId] = useState<string | null>(null);
+  // Payment settlement: asking a GCash passenger to pay, and the switch-to-cash reason picker.
+  const [requestingPaymentIds, setRequestingPaymentIds] = useState<Set<string>>(new Set());
+  const [switchingPassenger, setSwitchingPassenger] = useState<ActivePassenger | null>(null);
+  const [confirmingSwitch, setConfirmingSwitch] = useState(false);
   // A Set, not a single id — completing one passenger must not block
   // completing a DIFFERENT passenger on the same trip at the same time
   // (FR-2.5c passengers are independently completable). The single-id
@@ -245,6 +251,25 @@ export default function ActiveTripScreen() {
     setConfirmingCashId(passengerId);
     await confirmCash(passengerId, user.id);
     setConfirmingCashId(null);
+  }
+
+  async function handleRequestPayment(passengerId: string) {
+    if (requestingPaymentIds.has(passengerId)) return;
+    setRequestingPaymentIds((prev) => new Set(prev).add(passengerId));
+    await requestPayment(passengerId);
+    setRequestingPaymentIds((prev) => {
+      const next = new Set(prev);
+      next.delete(passengerId);
+      return next;
+    });
+  }
+
+  async function handleConfirmSwitchToCash(reasonCode: string) {
+    if (!switchingPassenger || confirmingSwitch) return;
+    setConfirmingSwitch(true);
+    await switchToCash(switchingPassenger.id, reasonCode as SwitchToCashReasonCode);
+    setConfirmingSwitch(false);
+    setSwitchingPassenger(null);
   }
 
   async function handleStart(passengerId: string) {
@@ -518,6 +543,9 @@ export default function ActiveTripScreen() {
               onMarkArrived={handleMarkArrived}
               onStart={handleStart}
               onConfirmCash={handleConfirmCash}
+              requestingPayment={requestingPaymentIds.has(top.passenger.id)}
+              onRequestPayment={handleRequestPayment}
+              onOpenSwitchToCash={setSwitchingPassenger}
               onOpenComplete={setCompletingPassenger}
               onCompleteHandoff={handleCompleteHandoff}
               onOpenOptions={setOptionsPassenger}
@@ -698,6 +726,25 @@ export default function ActiveTripScreen() {
         onConfirm={handleConfirmCancel}
       />
 
+      <ReasonPickerModal
+        visible={!!switchingPassenger}
+        title={t.driver.tripActive.switchReasonTitle}
+        options={SWITCH_TO_CASH_REASON_CODES.map((code) => ({
+          code,
+          label: {
+            no_signal: t.driver.tripActive.reasonNoSignal,
+            payment_failed: t.driver.tripActive.reasonPaymentFailed,
+            passenger_request: t.driver.tripActive.reasonPassengerRequest,
+            other: t.driver.tripActive.reasonOther,
+          }[code],
+        }))}
+        cancelLabel={t.common.cancel}
+        confirmLabel={t.driver.tripActive.switchToCash}
+        confirmLoading={confirmingSwitch}
+        onCancel={() => setSwitchingPassenger(null)}
+        onConfirm={handleConfirmSwitchToCash}
+      />
+
       <ConfirmModal
         visible={!!completingPassenger}
         title={interpolate(t.driver.tripActive.dropoffConfirmTitle, { name: firstNameOf(completingPassenger?.passengerName ?? null, t.driver.tripActive.passengerFallback) })}
@@ -785,6 +832,9 @@ interface NextStopCardProps {
   onMarkArrived: (id: string) => void;
   onStart: (id: string) => void;
   onConfirmCash: (id: string) => void;
+  requestingPayment: boolean;
+  onRequestPayment: (id: string) => void;
+  onOpenSwitchToCash: (passenger: ActivePassenger) => void;
   onOpenComplete: (passenger: ActivePassenger) => void;
   onCompleteHandoff: (id: string) => void;
   onOpenOptions: (passenger: ActivePassenger) => void;
@@ -810,6 +860,9 @@ function NextStopCard({
   onMarkArrived,
   onStart,
   onConfirmCash,
+  requestingPayment,
+  onRequestPayment,
+  onOpenSwitchToCash,
   onOpenComplete,
   onCompleteHandoff,
   onOpenOptions,
@@ -822,6 +875,15 @@ function NextStopCard({
   const isCash = passenger.paymentMethod === 'cash';
   const name = firstNameOf(passenger.passengerName, t.driver.tripActive.passengerFallback);
   const etaMin = distanceKm !== null ? Math.max(1, Math.round((distanceKm / TRICYCLE_SPEED_KMH) * 60)) : null;
+
+  // After about a minute of waiting for a GCash payment, nudge the driver toward the fallbacks.
+  const [now, setNow] = useState(() => Date.now());
+  useEffect(() => {
+    if (!passenger.paymentRequestedAt) return;
+    const timer = setInterval(() => setNow(Date.now()), 5000);
+    return () => clearInterval(timer);
+  }, [passenger.paymentRequestedAt]);
+  const waitingLong = !!passenger.paymentRequestedAt && now - Date.parse(passenger.paymentRequestedAt) > 60_000;
 
   let eyebrow: string;
   if (total === 1) {
@@ -840,7 +902,7 @@ function NextStopCard({
     metaLine = '';
   }
 
-  const canComplete = tutorialActive ? true : passenger.status === 'ongoing' && (!isCash || passenger.cashConfirmed) && !isCompleting;
+  const canComplete = tutorialActive ? true : passenger.status === 'ongoing' && passenger.cashConfirmed && !isCompleting;
   const hint =
     passenger.handoffLat !== null
       ? t.driver.tripActive.handoffNotice
@@ -850,7 +912,11 @@ function NextStopCard({
           ? interpolate(t.driver.tripActive.hintStart, { name })
           : isCash && !passenger.cashConfirmed
             ? t.driver.tripActive.hintCashFirst
-            : interpolate(t.driver.tripActive.hintComplete, { name });
+            : !isCash && !passenger.cashConfirmed
+              ? passenger.paymentRequestedAt
+                ? t.driver.tripActive.gcashRequestedWaiting
+                : t.driver.tripActive.requestGcash
+              : interpolate(t.driver.tripActive.hintComplete, { name });
 
   return (
     <View {...cardRef}>
@@ -900,7 +966,15 @@ function NextStopCard({
               <Text style={styles.passengerSub} numberOfLines={1}>
                 {passenger.seats} {passenger.seats > 1 ? t.driver.tripActive.seatsPlural : t.driver.tripActive.seatsSingular} ·{' '}
                 {passenger.fare !== null ? formatCurrency(passenger.fare) : '—'} ·{' '}
-                {isCash ? (passenger.cashConfirmed ? t.driver.tripActive.cashConfirmedInline : t.driver.requestCard.paymentMethodCash) : t.driver.tripActive.gcashConfirmedInline}
+                {isCash
+                  ? passenger.cashConfirmed
+                    ? t.driver.tripActive.cashConfirmedInline
+                    : t.driver.requestCard.paymentMethodCash
+                  : passenger.cashConfirmed
+                    ? t.driver.tripActive.gcashPaid
+                    : passenger.paymentRequestedAt
+                      ? t.driver.tripActive.gcashRequestedWaiting
+                      : t.driver.requestCard.paymentMethodGcash}
               </Text>
             </View>
             <Pressable style={styles.optionsButton} accessibilityRole="button" onPress={() => onOpenOptions(passenger)}>
@@ -971,6 +1045,43 @@ function NextStopCard({
               </Pressable>
             </View>
           ))}
+
+        {!isCash && passenger.status === 'ongoing' && (
+          <>
+            {passenger.cashConfirmed ? (
+              <View style={styles.cashRowDone}>
+                <Ionicons name="checkmark-circle" size={18} color={colors.accentGreenPressed} />
+                <Text style={styles.cashRowDoneText}>{t.driver.tripActive.gcashPaid}</Text>
+              </View>
+            ) : (
+              <>
+                {passenger.paymentRequestedAt ? (
+                  <View style={styles.cashRowPending}>
+                    <ActivityIndicator size="small" color={colors.inkSoft} />
+                    <View style={styles.cashRowTextCol}>
+                      <Text style={styles.cashRowTitle}>{t.driver.tripActive.gcashRequestedWaiting}</Text>
+                      {waitingLong && <Text style={styles.cashRowSub}>{t.driver.tripActive.gcashWaitHint}</Text>}
+                    </View>
+                  </View>
+                ) : (
+                  <Button
+                    label={t.driver.tripActive.requestGcash}
+                    fullWidth
+                    loading={requestingPayment}
+                    disabled={requestingPayment}
+                    onPress={() => (tutorialActive ? undefined : onRequestPayment(passenger.id))}
+                  />
+                )}
+                <Button
+                  label={t.driver.tripActive.switchToCash}
+                  variant="outline"
+                  fullWidth
+                  onPress={() => (tutorialActive ? undefined : onOpenSwitchToCash(passenger))}
+                />
+              </>
+            )}
+          </>
+        )}
 
         {isPickup && !passenger.arrivedAt && (
           <Button

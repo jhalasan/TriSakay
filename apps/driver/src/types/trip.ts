@@ -34,6 +34,8 @@ export interface ActivePassenger {
   /** D1: set only while an after-pickup transfer TO this driver is accepted but not yet handoff-confirmed — where to meet the previous driver. */
   handoffLat: number | null;
   handoffLng: number | null;
+  /** Set once the driver has asked this passenger to pay by GCash; the passenger's app then opens its payment screen. */
+  paymentRequestedAt: string | null;
 }
 
 /**

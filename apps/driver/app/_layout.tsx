@@ -13,6 +13,7 @@ import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
+import { subscribeToTripTransactions } from '@trisakay/services/src/payments/index.ts';
 import { ConfirmModal, ConnectionBanner, colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
@@ -304,6 +305,24 @@ function useTripSync(sessionUserId: string | null) {
  * since it only makes sense while a trip is actually active, and needs to
  * re-subscribe if the driver ends one trip and starts another.
  */
+/**
+ * A GCash payment is marked paid by the PayMongo webhook, which writes the
+ * transactions table, not ride_requests, so the trip's own realtime signal
+ * never fires for it. While a trip is active, refresh it on any change to a
+ * transaction the driver can read (RLS limits that to their own rides), so the
+ * card flips from "Waiting for GCash payment" to "GCash paid" on its own.
+ */
+function useTripPaymentSync(tripId: string | null) {
+  const hydrate = useTripStore((state) => state.hydrate);
+
+  useEffect(() => {
+    if (tripId === null) return;
+    return subscribeToTripTransactions(() => {
+      void hydrate();
+    });
+  }, [tripId, hydrate]);
+}
+
 function useTripCancellationSync(tripId: string | null) {
   const subscribe = useTripStore((state) => state.subscribeToCancellations);
   const unsubscribe = useTripStore((state) => state.unsubscribeFromCancellations);
@@ -494,6 +513,7 @@ function RootLayoutNav() {
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);
   useTripCancellationSync(activeTripId);
+  useTripPaymentSync(activeTripId);
   useNotificationsSync(sessionUserId);
   usePushNotificationsSync(sessionUserId);
   useChatNotifications();
