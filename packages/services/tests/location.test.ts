@@ -230,7 +230,7 @@ test('subscribeToDriverLocation filters on the given driver id and maps coordina
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       channel: (name: string) => {
-        assert.equal(name, 'driver_location_d1');
+        assert.ok(name.startsWith('driver_location_d1'), `unexpected channel name ${name}`);
         return fakeChannel;
       },
       removeChannel: (channel: unknown) => {

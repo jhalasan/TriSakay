@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../supabase/client.ts';
+import { uniqueChannelName } from '../supabase/channelName.ts';
 import type { Database } from '../supabase/database.types.ts';
 import { submitComplaint } from '../complaints/index.ts';
 
@@ -175,7 +176,7 @@ export function subscribeToRideMessages(
   }
 
   const channel = client
-    .channel(`ride_messages_${rideRequestId}`)
+    .channel(uniqueChannelName(`ride_messages_${rideRequestId}`))
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'ride_messages', filter: `ride_request_id=eq.${rideRequestId}` },

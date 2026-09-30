@@ -156,7 +156,7 @@ test('subscribeToNotifications filters on user_id and reconciles on SUBSCRIBED',
   const received: unknown[] = [];
   const unsubscribe = subscribeToNotifications('u1', (rows) => received.push(rows));
 
-  assert.equal(capturedChannelName, 'notifications_u1');
+  assert.ok(capturedChannelName?.startsWith('notifications_u1'));
   assert.equal(capturedOnArgs.filter, 'user_id=eq.u1');
   assert.equal(capturedOnArgs.table, 'notifications');
 

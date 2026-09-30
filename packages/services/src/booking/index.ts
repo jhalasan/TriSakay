@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../supabase/client.ts';
+import { uniqueChannelName } from '../supabase/channelName.ts';
 import type { Database } from '../supabase/database.types.ts';
 
 // distance_meters isn't a ride_requests column — match-ride-request adds it
@@ -263,7 +264,7 @@ export function subscribeToRideRequestStatus(
 ): () => void {
   const client = getSupabaseClient();
   const channel = client
-    .channel(`ride_request_status_${rideRequestId}`)
+    .channel(uniqueChannelName(`ride_request_status_${rideRequestId}`))
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'ride_requests', filter: `id=eq.${rideRequestId}` },
@@ -307,7 +308,7 @@ export function subscribeToTripRideRequests(
 ): () => void {
   const client = getSupabaseClient();
   const channel = client
-    .channel(`trip_ride_requests_${tripId}`)
+    .channel(uniqueChannelName(`trip_ride_requests_${tripId}`))
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'ride_requests', filter: `trip_id=eq.${tripId}` },
@@ -405,7 +406,7 @@ export function subscribeToPendingRideRequests(
   }
 
   const channel = client
-    .channel('pending_ride_requests')
+    .channel(uniqueChannelName('pending_ride_requests'))
     .on('postgres_changes', { event: '*', schema: 'public', table: 'ride_requests' }, () => {
       scheduleRefetch();
     })

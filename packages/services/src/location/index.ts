@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../supabase/client.ts';
+import { uniqueChannelName } from '../supabase/channelName.ts';
 
 export interface Coordinates {
   lat: number;
@@ -151,7 +152,7 @@ export function subscribeToDriverLocation(
 ): () => void {
   const client = getSupabaseClient();
   const channel = client
-    .channel(`driver_location_${driverId}`)
+    .channel(uniqueChannelName(`driver_location_${driverId}`))
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'driver_locations', filter: `user_id=eq.${driverId}` },

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../supabase/client.ts';
+import { uniqueChannelName } from '../supabase/channelName.ts';
 import type { Database } from '../supabase/database.types.ts';
 
 export type NotificationRow = Database['public']['Tables']['notifications']['Row'];
@@ -83,7 +84,7 @@ export function subscribeToNotifications(
   }
 
   const channel = client
-    .channel(`notifications_${userId}`)
+    .channel(uniqueChannelName(`notifications_${userId}`))
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'notifications', filter: `user_id=eq.${userId}` },

@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../supabase/client.ts';
+import { uniqueChannelName } from '../supabase/channelName.ts';
 import type { Database } from '../supabase/database.types.ts';
 
 export type TransactionRow = Database['public']['Tables']['transactions']['Row'];
@@ -93,7 +94,7 @@ export function subscribeToTransactionStatus(
 ): () => void {
   const client = getSupabaseClient();
   const channel = client
-    .channel(`transaction_status_${rideRequestId}`)
+    .channel(uniqueChannelName(`transaction_status_${rideRequestId}`))
     .on(
       'postgres_changes',
       { event: 'UPDATE', schema: 'public', table: 'transactions', filter: `ride_request_id=eq.${rideRequestId}` },

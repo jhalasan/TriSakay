@@ -170,7 +170,7 @@ test('subscribeToTransactionStatus subscribes to the right channel/filter and re
 
   subscribeToTransactionStatus('rr1', (row) => received.push(row));
 
-  assert.equal(capturedChannelName, 'transaction_status_rr1');
+  assert.ok(capturedChannelName?.startsWith('transaction_status_rr1'));
   assert.equal((capturedOnArgs as any).event, 'UPDATE');
   assert.equal((capturedOnArgs as any).schema, 'public');
   assert.equal((capturedOnArgs as any).table, 'transactions');

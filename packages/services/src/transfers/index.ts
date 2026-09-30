@@ -1,4 +1,5 @@
 import { getSupabaseClient } from '../supabase/client.ts';
+import { uniqueChannelName } from '../supabase/channelName.ts';
 import type { Database } from '../supabase/database.types.ts';
 
 export type RideTransferRow = Database['public']['Tables']['ride_transfers']['Row'];
@@ -146,7 +147,7 @@ export function subscribeToTransferInvites(
   }
 
   const channel = client
-    .channel(`transfer_invites_${driverId}`)
+    .channel(uniqueChannelName(`transfer_invites_${driverId}`))
     .on(
       'postgres_changes',
       { event: '*', schema: 'public', table: 'ride_transfers', filter: `to_driver_id=eq.${driverId}` },

@@ -313,7 +313,7 @@ test('subscribeToRideRequestStatus filters on the row id and forwards status upd
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
       channel: (name: string) => {
-        assert.equal(name, 'ride_request_status_rr1');
+        assert.ok(name.startsWith('ride_request_status_rr1'), `unexpected channel name ${name}`);
         return fakeChannel;
       },
       removeChannel: (channel: unknown) => {
@@ -487,7 +487,7 @@ test('subscribeToTripRideRequests filters on trip_id and calls onChange on SUBSC
     changeCount += 1;
   });
 
-  assert.equal(capturedChannelName, 'trip_ride_requests_trip1');
+  assert.ok(capturedChannelName?.startsWith('trip_ride_requests_trip1'));
   assert.equal(capturedArgs.filter, 'trip_id=eq.trip1');
   assert.equal(capturedArgs.event, 'UPDATE');
   assert.equal(capturedArgs.table, 'ride_requests');
@@ -715,7 +715,7 @@ test('subscribeToPendingRideRequests invokes match-ride-request with driverId on
   const received: unknown[] = [];
   const unsubscribe = subscribeToPendingRideRequests('driver1', (rows) => received.push(rows));
 
-  assert.equal(capturedChannelName, 'pending_ride_requests');
+  assert.ok(capturedChannelName?.startsWith('pending_ride_requests'));
   assert.equal(capturedOnArgs.event, '*');
   assert.equal(capturedOnArgs.schema, 'public');
   assert.equal(capturedOnArgs.table, 'ride_requests');
