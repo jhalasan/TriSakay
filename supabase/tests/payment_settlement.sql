@@ -191,15 +191,21 @@ begin
   update public.ride_requests set status = 'completed', completed_at = now() where id = fx.ride_id;
   update public.transactions set status = 'pending', cash_confirmed_by = null, cash_confirmed_at = null where ride_request_id = fx.ride_id;
   set local session_replication_role = origin;
+  -- Isolate the booking block: switch off the other BEFORE INSERT guards (this whole
+  -- transaction is rolled back), so only the unpaid-ride check can refuse the insert.
+  alter table public.ride_requests disable trigger trg_ride_requests_fare_integrity;
+  alter table public.ride_requests disable trigger trg_ride_requests_insert_fields;
+  alter table public.ride_requests disable trigger trg_ride_requests_one_active_per_passenger;
+  alter table public.ride_requests disable trigger trg_ride_requests_seat_cap;
+  create temp table _newride as select * from public.ride_requests where id = fx.ride_id;
+  update _newride set id = gen_random_uuid(), status = 'pending', trip_id = null, completed_at = null;
   refused := false;
   begin
-    insert into public.ride_requests (passenger_id, pickup_lat, pickup_lng, dest_lat, dest_lng, seats_requested, preferred_method)
-    select passenger_id, pickup_lat, pickup_lng, dest_lat, dest_lng, seats_requested, preferred_method
-    from public.ride_requests where id = fx.ride_id;
+    insert into public.ride_requests select * from _newride;
   exception when others then
     refused := sqlerrm like '%settle your last ride%';
   end;
-  if not refused then raise exception 'FAIL 10: booking was allowed with an unpaid completed ride'; end if;
+  if not refused then raise exception 'FAIL 10: booking was allowed with an unpaid completed ride (or failed for another reason)'; end if;
 end $$;
 
 select 'payment_settlement: all assertions passed' as result;
