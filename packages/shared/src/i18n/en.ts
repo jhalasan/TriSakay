@@ -1620,6 +1620,8 @@ export const en = {
       monthA11y: 'Month',
       dayA11y: 'Day',
       yearA11y: 'Year',
+      emptyTitle: 'No documents yet',
+      emptyMessage: 'Documents you submit for verification will show up here so you can track their expiry dates.',
     },
     requestCard: {
       decline: 'Decline',

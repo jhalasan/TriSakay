@@ -122,6 +122,8 @@ export function HoldToConfirmButton({
             fill="none"
             strokeDasharray={DISC_RING_CIRCUMFERENCE}
             strokeDashoffset={strokeDashoffset}
+            // A round cap draws a dot even at zero length, so the ring is invisible until the hold starts.
+            opacity={loading ? 1 : progress.interpolate({ inputRange: [0, 0.001, 1], outputRange: [0, 1, 1] })}
             strokeLinecap="round"
             rotation={-90}
             originX={DISC_OUTER / 2}

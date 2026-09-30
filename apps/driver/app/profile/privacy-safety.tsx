@@ -83,7 +83,7 @@ export default function PrivacySafetyScreen() {
 
   return (
     <View style={styles.container}>
-      <ScreenHeader title={p.title} />
+      <ScreenHeader title={p.eyebrow} />
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <SosCard
           state={sosState}

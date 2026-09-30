@@ -1589,6 +1589,8 @@ export const fil: Translations = {
       monthA11y: 'Buwan',
       dayA11y: 'Araw',
       yearA11y: 'Taon',
+      emptyTitle: 'Wala pang dokumento',
+      emptyMessage: 'Lalabas dito ang mga dokumentong isinumite mo para sa beripikasyon para masubaybayan ang mga petsa ng expiry.',
     },
     requestCard: {
       decline: 'Tanggihan',

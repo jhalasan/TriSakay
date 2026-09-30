@@ -76,7 +76,7 @@ export function NavyBandHeader({
               ) : (
                 <View style={styles.spacer} />
               )}
-              {right}
+              {right ? <View style={styles.rightSlot}>{right}</View> : null}
             </View>
           )}
           {children}
@@ -112,4 +112,6 @@ const styles = StyleSheet.create({
   titleLg: { fontFamily: fontFamily.extrabold, fontSize: 22, lineHeight: 28 },
   titleXl: { fontFamily: fontFamily.extrabold, fontSize: 28, lineHeight: 34, letterSpacing: -0.7 },
   spacer: { flex: 1 },
+  // Centres the right slot on the title row (a pill is otherwise pinned to the top by its own alignSelf).
+  rightSlot: { alignSelf: 'center' },
 });

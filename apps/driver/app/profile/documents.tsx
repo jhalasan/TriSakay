@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { IconTile, NavyBandHeader, ProgressSegments, colors, recordsPalette, type IconTileTone } from '@trisakay/ui';
+import { EmptyState, IconTile, NavyBandHeader, ProgressSegments, colors, recordsPalette, type IconTileTone } from '@trisakay/ui';
 import {
   countDocumentStatuses,
   documentHealthSegments,
@@ -181,6 +181,8 @@ export default function MyDocumentsScreen() {
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {error && <Text style={styles.error}>{error}</Text>}
+
+        {!loading && !error && rows.length === 0 && <EmptyState title={d.emptyTitle} message={d.emptyMessage} />}
 
         {attentionRows.length > 0 && (
           <View style={styles.group}>
