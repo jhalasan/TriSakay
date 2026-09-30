@@ -12,6 +12,7 @@
 // client-facing insert/update policy for GCash rows (docs/SCHEMA.MD §7.6).
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { fareForRide, isSessionPaid } from './paid.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -109,7 +110,7 @@ Deno.serve(async (req: Request) => {
 
     const { data: rideRequest, error: rideError } = await supabase
       .from('ride_requests')
-      .select('id, passenger_id, status, final_fare')
+      .select('id, passenger_id, status, final_fare, estimated_fare, payment_requested_at, preferred_method')
       .eq('id', rideRequestId)
       .maybeSingle();
 
@@ -118,16 +119,60 @@ Deno.serve(async (req: Request) => {
     if (rideRequest.passenger_id !== userData.user.id) {
       return json({ checkoutUrl: null, error: 'rideRequestId must belong to the authenticated passenger' }, 403);
     }
-    if (rideRequest.status !== 'completed') {
-      return json({ checkoutUrl: null, error: "Ride isn't completed yet" }, 400);
-    }
-    if (rideRequest.final_fare == null) {
-      return json({ checkoutUrl: null, error: 'Ride has no locked fare yet' }, 500);
-    }
-
     // service-role client: no client-facing write policy exists for
     // transactions on the GCash path (docs/SCHEMA.MD §7.6).
     const serviceClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    // 'verify': ask PayMongo directly whether this ride's checkout session was
+    // paid, and mark the transaction paid if so. A second path next to the
+    // webhook, so a slow or missed webhook can't leave a paid ride looking
+    // unpaid. The client never marks anything paid — only this server code,
+    // from PayMongo's own answer, with the same exact-amount rule.
+    if (body.action === 'verify') {
+      const { data: txn, error: txnError } = await serviceClient
+        .from('transactions')
+        .select('id, status, method, amount, paymongo_session_id')
+        .eq('ride_request_id', rideRequestId)
+        .maybeSingle();
+
+      if (txnError) return json({ status: null, error: txnError.message }, 500);
+      if (!txn) return json({ status: 'pending' });
+      if (txn.status === 'paid') return json({ status: 'paid' });
+      if (txn.method !== 'gcash' || !txn.paymongo_session_id) return json({ status: 'pending' });
+
+      const sessionResponse = await fetch(`${PAYMONGO_API_BASE}/checkout_sessions/${txn.paymongo_session_id}`, {
+        headers: { Authorization: `Basic ${btoa(`${Deno.env.get('PAYMONGO_SECRET_KEY')!}:`)}` },
+      });
+      if (!sessionResponse.ok) return json({ status: 'pending' });
+
+      const sessionPayload = await sessionResponse.json();
+      const paidState = isSessionPaid(sessionPayload, Math.round(Number(txn.amount) * 100));
+      if (paidState === 'mismatch') {
+        console.error('create-gcash-checkout verify: paid amount does not match transaction amount', { rideRequestId });
+        return json({ status: 'pending' });
+      }
+      if (paidState !== 'paid') return json({ status: 'pending' });
+
+      const { error: markError } = await serviceClient
+        .from('transactions')
+        .update({ status: 'paid', paymongo_payload: sessionPayload })
+        .eq('id', txn.id)
+        .eq('status', 'pending')
+        .eq('method', 'gcash');
+      if (markError) return json({ status: null, error: markError.message }, 500);
+      return json({ status: 'paid' });
+    }
+
+    if (rideRequest.preferred_method !== 'gcash') {
+      return json({ checkoutUrl: null, error: 'This ride is paying by cash' }, 400);
+    }
+
+    // A completed ride charges its locked final fare; an ongoing ride charges
+    // the estimated fare, but only once the driver has requested payment.
+    const fare = fareForRide(rideRequest);
+    if (fare === null) {
+      return json({ checkoutUrl: null, error: "Payment hasn't been requested for this ride yet" }, 400);
+    }
 
     const { data: existing, error: existingError } = await serviceClient
       .from('transactions')
@@ -154,7 +199,7 @@ Deno.serve(async (req: Request) => {
         .from('transactions')
         .insert({
           ride_request_id: rideRequestId,
-          amount: rideRequest.final_fare,
+          amount: fare,
           method: 'gcash',
           status: 'pending',
         })
@@ -167,7 +212,7 @@ Deno.serve(async (req: Request) => {
 
     const { session, errorMessage } = await createPaymongoCheckoutSession(
       Deno.env.get('PAYMONGO_SECRET_KEY')!,
-      rideRequest.final_fare,
+      fare,
       transactionId,
       rideRequestId,
     );

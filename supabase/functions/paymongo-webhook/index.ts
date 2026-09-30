@@ -143,6 +143,9 @@ Deno.serve(async (req: Request) => {
         .select('amount')
         .eq('id', referenceNumber)
         .eq('status', 'pending')
+        // A row the driver switched to cash is no longer GCash: a late payment
+        // on its old checkout must not mark the cash row paid.
+        .eq('method', 'gcash')
         .maybeSingle();
 
       if (fetchError) {
@@ -150,7 +153,7 @@ Deno.serve(async (req: Request) => {
         return new Response('Internal error', { status: 500 });
       }
       if (!existingTxn) {
-        console.log('paymongo-webhook: no pending transaction matched (already paid or unknown)', { referenceNumber });
+        console.warn('paymongo-webhook: no pending GCash transaction matched (already paid, unknown, or the ride was switched to cash — refund review if money moved)', { referenceNumber });
         return new Response('ok', { status: 200 });
       }
 
@@ -174,6 +177,7 @@ Deno.serve(async (req: Request) => {
         .update({ status: 'paid', paymongo_payload: event })
         .eq('id', referenceNumber)
         .eq('status', 'pending')
+        .eq('method', 'gcash')
         .select('id')
         .maybeSingle();
 
@@ -226,7 +230,8 @@ Deno.serve(async (req: Request) => {
         .from('transactions')
         .update({ status: 'failed', paymongo_payload: event })
         .eq(matchColumn, matchValue)
-        .eq('status', 'pending');
+        .eq('status', 'pending')
+        .eq('method', 'gcash');
 
       if (error) {
         console.error('paymongo-webhook: failed to mark transaction failed', error.message);
