@@ -3,6 +3,7 @@ import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, TRICYCLE_SPEED_KMH, 
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
 import { Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Avatar,
@@ -16,6 +17,7 @@ import {
   ReasonPickerModal,
   TransferCandidatesModal,
   colors,
+  useNavigationRoute,
   useTutorialTarget,
 } from '@trisakay/ui';
 import { inviteTransfer, listMessages, listTransferCandidates, type TransferCandidate } from '@trisakay/services';
@@ -29,6 +31,7 @@ import { useDriverStore } from '../../src/store/useDriverStore';
 import { useRequestsStore } from '../../src/store/useRequestsStore';
 import { useTripStore } from '../../src/store/useTripStore';
 import { formatCurrency } from '../../src/utils/currency';
+import { fetchNavigationRoute } from '../../src/utils/route';
 import { interpolate } from '../../src/utils/interpolate';
 import type { PendingRequest } from '../../src/types/request';
 import type { ActivePassenger } from '../../src/types/trip';
@@ -52,6 +55,7 @@ export default function ActiveTripScreen() {
   const tripError = useTripStore((state) => state.error);
   const driverLat = useDriverStore((state) => state.currentLat);
   const driverLng = useDriverStore((state) => state.currentLng);
+  const driverHeading = useDriverStore((state) => state.currentHeading);
   const confirmCash = useTripStore((state) => state.confirmCash);
   const startPassenger = useTripStore((state) => state.startPassenger);
   const markArrived = useTripStore((state) => state.markArrived);
@@ -109,6 +113,8 @@ export default function ActiveTripScreen() {
   // Transfer/Release/Cancel directly on the card.
   const [optionsPassenger, setOptionsPassenger] = useState<ActivePassenger | null>(null);
 
+  // The sheet reports its live height here so the map's recenter button rides it up and down (drag/collapse).
+  const sheetHeight = useSharedValue(260);
   const { height: windowHeight } = useWindowDimensions();
   // Bounds the sheet so it can never grow past the viewport — with it
   // unbounded, 3+ simultaneous passengers pushed the top card(s) above y=0
@@ -132,6 +138,14 @@ export default function ActiveTripScreen() {
     previousOrderRef.current = sorted.map((s) => s.passenger.id);
     return sorted;
   }, [passengers, driverLat, driverLng]);
+
+  // In-app navigation: a road route from the live position to the top stop that
+  // follows the driver along it (trimmed as they drive, re-fetched if they leave it).
+  const navTop = sortedStops[0];
+  const navOrigin = driverLat !== null && driverLng !== null ? { latitude: driverLat, longitude: driverLng } : null;
+  const navDestination =
+    navTop && navTop.stopLat !== null && navTop.stopLng !== null ? { latitude: navTop.stopLat, longitude: navTop.stopLng } : null;
+  const navigation = useNavigationRoute({ origin: navOrigin, destination: navDestination, fetchRoute: fetchNavigationRoute });
 
   const incoming = pending[0];
   const incomingSeconds = useRequestCountdown(incoming?.expiresAt ?? null);
@@ -370,10 +384,12 @@ export default function ActiveTripScreen() {
           longitude={hasDriverPosition ? driverLng! : hasTarget ? targetLng! : undefined}
           marker={hasTarget ? { latitude: targetLat!, longitude: targetLng! } : null}
           markerColor={routingPassenger?.status === 'ongoing' ? colors.accentBlue : colors.accentGreen}
-          route={hasTarget && hasDriverPosition ? [{ latitude: driverLat!, longitude: driverLng! }, { latitude: targetLat!, longitude: targetLng! }] : null}
+          route={navigation.route}
+          followPosition={hasDriverPosition ? { latitude: driverLat!, longitude: driverLng!, heading: driverHeading } : null}
           interactive
           edgeToEdge
           bottomInset={260}
+          bottomInsetValue={sheetHeight}
         />
       </View>
 
@@ -424,7 +440,7 @@ export default function ActiveTripScreen() {
           );
         })()}
 
-      <MapOverlaySheet bottomInset={insets.bottom} maxHeight={sheetMaxHeight} style={styles.content}>
+      <MapOverlaySheet bottomInset={insets.bottom} maxHeight={sheetMaxHeight} heightValue={sheetHeight} style={styles.content}>
         <ScrollView style={styles.passengerScroll} contentContainerStyle={styles.passengerScrollContent} showsVerticalScrollIndicator>
           {incoming && (
             <RequestBanner
@@ -540,7 +556,6 @@ export default function ActiveTripScreen() {
               })}
             </View>
           )}
-        </ScrollView>
 
         {(tripError || requestError) && <Text style={styles.error}>{tripError ?? requestError}</Text>}
 
@@ -567,6 +582,7 @@ export default function ActiveTripScreen() {
             />
           </>
         )}
+        </ScrollView>
       </MapOverlaySheet>
 
       {/* §6.6 — the ⋯ button's options sheet, shared by the next-stop card and the "then" list. */}

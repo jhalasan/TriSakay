@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmptyState, IconTile, NavyBandHeader, ProgressSegments, colors, recordsPalette, type IconTileTone } from '@trisakay/ui';
+import { EmptyState, IconTile, NavyBandHeader, Spinner, ProgressSegments, colors, recordsPalette, type IconTileTone } from '@trisakay/ui';
 import {
   countDocumentStatuses,
   documentHealthSegments,
@@ -182,6 +182,8 @@ export default function MyDocumentsScreen() {
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {error && <Text style={styles.error}>{error}</Text>}
 
+        {loading && rows.length === 0 && <Spinner size="large" />}
+
         {!loading && !error && rows.length === 0 && <EmptyState title={d.emptyTitle} message={d.emptyMessage} />}
 
         {attentionRows.length > 0 && (
@@ -202,7 +204,7 @@ export default function MyDocumentsScreen() {
                       <Text style={styles.footerText}>{d.renewedPrompt}</Text>
                       <Pressable accessibilityRole="button" onPress={() => openSheet(row.doc.id)} style={styles.updateButton}>
                         <Ionicons name="calendar-outline" size={14} color={colors.white} />
-                        <Text style={styles.updateText}>{d.updateDate}</Text>
+                        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.updateText}>{d.updateDate}</Text>
                       </Pressable>
                     </View>
                   </View>

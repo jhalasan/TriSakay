@@ -184,3 +184,26 @@ export function passwordRuleResults(password: string): [boolean, boolean, boolea
     /[0-9]/.test(password) || /[^A-Za-z0-9\s]/.test(password),
   ];
 }
+
+// --- Nearby drivers (passenger Home / Finding a driver) ---------------------
+
+/** Mirrors ROUND_TO in supabase/functions/nearby-driver-count: the server rounds the count UP to a multiple of this. */
+export const NEARBY_COUNT_ROUND_TO = 3;
+
+/**
+ * The server never returns an exact count (it would let a caller triangulate a
+ * lone driver), so a returned 3 means "1 to 3" and a 6 means "4 to 6". Showing
+ * the raw number would overstate availability; show the range instead.
+ * Returns null when nobody is nearby.
+ */
+export function nearbyDriverRange(roundedCount: number, roundTo: number = NEARBY_COUNT_ROUND_TO): { min: number; max: number } | null {
+  if (!Number.isFinite(roundedCount) || roundedCount <= 0) return null;
+  return { min: Math.max(1, roundedCount - roundTo + 1), max: roundedCount };
+}
+
+/** "1–3", or just "1" when the range is a single number. */
+export function formatNearbyRange(roundedCount: number): string | null {
+  const range = nearbyDriverRange(roundedCount);
+  if (!range) return null;
+  return range.min === range.max ? String(range.max) : `${range.min}\u2013${range.max}`;
+}

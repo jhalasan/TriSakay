@@ -27,7 +27,8 @@ const corsHeaders = {
 
 // Guardrails from the plan — see docs/UAT_PANELIST_REVIEW_ADRALES.md.
 const SEARCH_LIMIT_PER_HOUR = 60;
-const ROUTE_LIMIT_PER_HOUR = 20;
+// Raised from 20: a driver's in-app navigation re-routes whenever they leave the road, on top of the one route per stop.
+const ROUTE_LIMIT_PER_HOUR = 40;
 const GOOGLE_TIMEOUT_MS = 8000;
 
 // General Santos City centre — matches packages/ui's OsmMap DEFAULT_CENTER

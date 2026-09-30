@@ -96,3 +96,15 @@ test('passwordRuleResults checks length, mixed case, and a number or symbol', as
   assert.deepEqual(passwordRuleResults('Abcdefghi1'), [true, true, true]);
   assert.deepEqual(passwordRuleResults('Abcdef!'), [false, true, true]);
 });
+
+test('nearbyDriverRange turns the server\'s rounded-up count back into an honest range', async () => {
+  const { nearbyDriverRange, formatNearbyRange } = await import('../src/utils/records.ts');
+  assert.equal(nearbyDriverRange(0), null);
+  assert.deepEqual(nearbyDriverRange(3), { min: 1, max: 3 });
+  assert.deepEqual(nearbyDriverRange(6), { min: 4, max: 6 });
+  assert.deepEqual(nearbyDriverRange(9), { min: 7, max: 9 });
+  assert.equal(formatNearbyRange(3), '1\u20133');
+  assert.equal(formatNearbyRange(6), '4\u20136');
+  assert.equal(formatNearbyRange(0), null);
+  assert.equal(formatNearbyRange(1), '1');
+});

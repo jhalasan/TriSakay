@@ -20,7 +20,9 @@ interface DriverState {
    */
   currentLat: number | null;
   currentLng: number | null;
-  setCurrentPosition: (lat: number, lng: number) => void;
+  /** Compass heading in degrees (0 = north) while moving; null until the first moving fix. Kept across stops so the map doesn't spin back to north at a red light. */
+  currentHeading: number | null;
+  setCurrentPosition: (lat: number, lng: number, heading?: number | null) => void;
   /**
    * Resolves true only once the write actually succeeded. Callers going
    * online must resolve `coords` themselves first (expo-location has no
@@ -55,7 +57,9 @@ export const useDriverStore = create<DriverState>()((set) => {
     rating: null,
     currentLat: null,
     currentLng: null,
-    setCurrentPosition: (lat, lng) => set({ currentLat: lat, currentLng: lng }),
+    currentHeading: null,
+    setCurrentPosition: (lat, lng, heading) =>
+      set((state) => ({ currentLat: lat, currentLng: lng, currentHeading: typeof heading === 'number' ? heading : state.currentHeading })),
     ratingCount: 0,
     acceptRate: null,
     error: null,

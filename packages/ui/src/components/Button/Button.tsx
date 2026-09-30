@@ -141,7 +141,16 @@ export function Button({
                 ) : (
                   icon && <View style={styles.iconSlot}>{icon}</View>
                 )}
-                <Text style={[size === 'md' ? styles.labelMd : styles.labelSm, { color: s.textColor }]}>
+                {/* One line that shrinks to fit: a two-up row on a narrow phone (e.g. the confirm dialog's Cancel / Complete)
+                    otherwise wraps mid-word ("Complet / e"). maxFontSizeMultiplier keeps a large system font size from
+                    pushing the label past what the shrink can absorb. */}
+                <Text
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}
+                  maxFontSizeMultiplier={1.3}
+                  style={[size === 'md' ? styles.labelMd : styles.labelSm, styles.label, { color: s.textColor }]}
+                >
                   {label}
                 </Text>
               </View>

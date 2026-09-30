@@ -1,11 +1,19 @@
 import { useEffect, useRef } from 'react';
 import { AppState, type AppStateStatus } from 'react-native';
 import * as Location from 'expo-location';
+import { haversineKm } from '@trisakay/shared';
 import { pushDriverLocation } from '@trisakay/services/src/location/index.ts';
 import { useDriverStore } from '../store/useDriverStore';
 
 const DISTANCE_INTERVAL_METERS = 30;
 const TIME_INTERVAL_MS = 8000;
+// During a trip the in-app navigation follows the driver along the road, so the
+// phone wants fixes far more often than the server does. Local updates use this
+// tighter cadence; the write to the database stays at the cadence above.
+const TRIP_DISTANCE_INTERVAL_METERS = 8;
+const TRIP_TIME_INTERVAL_MS = 2000;
+/** Below this speed (m/s) the GPS heading is noise, so the last real heading is kept. */
+const MIN_HEADING_SPEED_MS = 1;
 
 /**
  * Keeps driver_profiles.current_lat/current_lng fresh while the driver is
@@ -18,6 +26,7 @@ export function useDriverLocationSync(
   sessionUserId: string | null,
   isAvailable: boolean,
   locationTrackingEnabled: boolean,
+  hasActiveTrip = false,
 ): void {
   const subscriptionRef = useRef<Location.LocationSubscription | null>(null);
   const appStateRef = useRef<AppStateStatus>(AppState.currentState);
@@ -26,6 +35,7 @@ export function useDriverLocationSync(
   // if a later start()/stop() has since begun, this call's result is stale
   // and must be discarded (removed, not stored) rather than racing the ref.
   const generationRef = useRef(0);
+  const lastPushRef = useRef<{ at: number; lat: number; lng: number } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -38,16 +48,24 @@ export function useDriverLocationSync(
       if (status !== 'granted' || cancelled || myGeneration !== generationRef.current) return;
 
       const subscription = await Location.watchPositionAsync(
-        { accuracy: Location.Accuracy.Balanced, distanceInterval: DISTANCE_INTERVAL_METERS, timeInterval: TIME_INTERVAL_MS },
+        hasActiveTrip
+          ? { accuracy: Location.Accuracy.High, distanceInterval: TRIP_DISTANCE_INTERVAL_METERS, timeInterval: TRIP_TIME_INTERVAL_MS }
+          : { accuracy: Location.Accuracy.Balanced, distanceInterval: DISTANCE_INTERVAL_METERS, timeInterval: TIME_INTERVAL_MS },
         (position) => {
-          void pushDriverLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-            mocked: position.mocked,
-          });
+          const { latitude, longitude, heading, speed } = position.coords;
+          // Server writes keep the original cadence however often the phone reports.
+          const last = lastPushRef.current;
+          const now = Date.now();
+          const movedM = last ? haversineKm(last.lat, last.lng, latitude, longitude) * 1000 : Infinity;
+          if (!last || now - last.at >= TIME_INTERVAL_MS || movedM >= DISTANCE_INTERVAL_METERS) {
+            lastPushRef.current = { at: now, lat: latitude, lng: longitude };
+            void pushDriverLocation({ lat: latitude, lng: longitude, mocked: position.mocked });
+          }
           // P1-14 (2026-09-15 launch audit): plain-data mirror for the
           // active-trip map's marker/route/recenter — see useDriverStore.
-          useDriverStore.getState().setCurrentPosition(position.coords.latitude, position.coords.longitude);
+          const movingHeading =
+            typeof heading === 'number' && heading >= 0 && (speed ?? 0) >= MIN_HEADING_SPEED_MS ? heading : null;
+          useDriverStore.getState().setCurrentPosition(latitude, longitude, movingHeading);
         }
       );
 
@@ -88,5 +106,5 @@ export function useDriverLocationSync(
       stop();
       appStateSubscription.remove();
     };
-  }, [sessionUserId, isAvailable, locationTrackingEnabled]);
+  }, [sessionUserId, isAvailable, locationTrackingEnabled, hasActiveTrip]);
 }

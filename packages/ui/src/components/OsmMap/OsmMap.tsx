@@ -33,6 +33,11 @@ const READY_TIMEOUT_MS = 8000;
 
 const RECENTER_DURATION_MS = 350;
 
+/** Navigation ("follow") camera: close in, tilted, rotated to the direction of travel. */
+const FOLLOW_ZOOM = 17;
+const FOLLOW_PITCH = 40;
+const FOLLOW_DURATION_MS = 900;
+
 /**
  * Reanimated's own Easing — the shared `motion.easing` token is built from core
  * react-native's Easing and is not worklet-safe (see the note on that token, and
@@ -108,6 +113,14 @@ export interface OsmMapProps {
    * `marker` to also be set; a no-op otherwise.
    */
   liveDriverMarker?: { latitude: number; longitude: number } | null;
+  /**
+   * Navigation mode: the camera follows this position, tilted and rotated to
+   * `heading` (degrees, 0 = north), and it is drawn as a direction arrow. The
+   * route is drawn as a trimmed road line with no start dot, and the map is
+   * not re-framed to fit it. Panning the map pauses following until the
+   * recenter button is pressed.
+   */
+  followPosition?: { latitude: number; longitude: number; heading?: number | null } | null;
   onReady?: () => void;
   /** Squares off the container corners for maps that run to the screen edges, instead of the default rounded-card look. */
   edgeToEdge?: boolean;
@@ -137,6 +150,15 @@ function DriverDot() {
   return <View style={styles.driverDot} pointerEvents="none" />;
 }
 
+/** Driver arrow for navigation mode — points up; the marker itself is rotated to the heading. */
+function NavArrow() {
+  return (
+    <View style={styles.navArrow} pointerEvents="none">
+      <View style={styles.navArrowTip} />
+    </View>
+  );
+}
+
 /** Route start/end markers — small filled circles, matching the old Leaflet circleMarkers. */
 function RouteEndpointDot({ color }: { color: string }) {
   return <View style={[styles.routeDot, { backgroundColor: color }]} pointerEvents="none" />;
@@ -159,11 +181,14 @@ export function OsmMap({
   tapToPlace = false,
   route = null,
   liveDriverMarker = null,
+  followPosition = null,
   onReady,
   edgeToEdge = false,
 }: OsmMapProps) {
   const [state, setState] = useState<MapState>('loading');
   const [hasMoved, setHasMoved] = useState(false);
+  // Navigation mode only: false once the rider pans away, until they press recenter.
+  const [following, setFollowing] = useState(true);
   const skeletonOpacity = useRef(new Animated.Value(1)).current;
   // Reanimated, unlike the skeleton's core-RN Animated above, so this one style
   // can carry both the fade and a `bottom` that tracks `bottomInsetValue` on the
@@ -251,9 +276,14 @@ export function OsmMap({
   }));
 
   const handleRecenter = useCallback(() => {
+    if (followPosition) {
+      setFollowing(true);
+      showRecenter(false);
+      return;
+    }
     mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta }, RECENTER_DURATION_MS);
     showRecenter(false);
-  }, [lat, lng, delta, showRecenter]);
+  }, [lat, lng, delta, showRecenter, followPosition]);
 
   const handlePress = useCallback(
     (event: { nativeEvent: { coordinate: { latitude: number; longitude: number } } }) => {
@@ -274,7 +304,7 @@ export function OsmMap({
   // props change — not on marker/liveDriverMarker movement. See the comment
   // on `initialRegion` above.
   useEffect(() => {
-    if (state !== 'ready') return;
+    if (state !== 'ready' || followPosition) return;
     mapRef.current?.animateToRegion({ latitude: lat, longitude: lng, latitudeDelta: delta, longitudeDelta: delta }, RECENTER_DURATION_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps -- deliberately excludes markerLat/markerLng/liveDriverMarker; see comment above.
   }, [state, lat, lng, delta]);
@@ -282,13 +312,26 @@ export function OsmMap({
   // Frame the route whenever it actually changes (not on every render — same
   // discipline as the position-recenter effect above).
   useEffect(() => {
-    if (state !== 'ready' || routeCoords.length < 2) return;
+    if (state !== 'ready' || routeCoords.length < 2 || followPosition) return;
     mapRef.current?.fitToCoordinates(routeCoords, {
       edgePadding: { top: 24, left: 24, bottom: 24 + Math.max(0, bottomInset), right: 24 },
       animated: true,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps -- keyed on routeKey (content), not the array reference.
   }, [state, routeKey, bottomInset]);
+
+  // Navigation camera: glide to each new fix, rotated to the heading. With no
+  // heading yet (not moving) the current rotation is kept.
+  const followLat = followPosition ? finite(followPosition.latitude, NaN) : NaN;
+  const followLng = followPosition ? finite(followPosition.longitude, NaN) : NaN;
+  const followHeading = typeof followPosition?.heading === 'number' ? followPosition.heading : undefined;
+  useEffect(() => {
+    if (state !== 'ready' || !following || !Number.isFinite(followLat) || !Number.isFinite(followLng)) return;
+    mapRef.current?.animateCamera(
+      { center: { latitude: followLat, longitude: followLng }, heading: followHeading, pitch: FOLLOW_PITCH, zoom: FOLLOW_ZOOM },
+      { duration: FOLLOW_DURATION_MS },
+    );
+  }, [state, following, followLat, followLng, followHeading]);
 
   return (
     <View style={[styles.container, { height }, edgeToEdge && styles.edgeToEdge]}>
@@ -299,7 +342,12 @@ export function OsmMap({
         initialRegion={initialRegion}
         onMapReady={handleMapReady}
         onPress={handlePress}
-        onPanDrag={() => showRecenter(true)}
+        onPanDrag={() => {
+          if (followPosition) setFollowing(false);
+          showRecenter(true);
+        }}
+        // Navigation mode: shift the camera centre up so the arrow sits in the visible map, above the bottom sheet.
+        mapPadding={followPosition ? { top: 0, left: 0, right: 0, bottom: Math.max(0, bottomInset) } : undefined}
         scrollEnabled={interactive}
         zoomEnabled={interactive}
         rotateEnabled={interactive}
@@ -309,7 +357,15 @@ export function OsmMap({
         showsMyLocationButton={false}
         showsCompass={false}
       >
-        {routeCoords.length >= 2 && (
+        {routeCoords.length >= 2 && followPosition && (
+          // White casing under the blue line, the way navigation apps draw it.
+          <>
+            <Polyline coordinates={routeCoords} strokeColor="#FFFFFF" strokeWidth={10} zIndex={1} />
+            <Polyline coordinates={routeCoords} strokeColor={colors.accentBlue} strokeWidth={6} zIndex={2} />
+          </>
+        )}
+
+        {routeCoords.length >= 2 && !followPosition && (
           <>
             <Polyline coordinates={routeCoords} strokeColor={colors.accentBlue} strokeWidth={5} />
             {/*
@@ -344,14 +400,30 @@ export function OsmMap({
           </Marker>
         )}
 
+        {followPosition && Number.isFinite(followLat) && Number.isFinite(followLng) && (
+          <Marker
+            coordinate={{ latitude: followLat, longitude: followLng }}
+            anchor={{ x: 0.5, y: 0.5 }}
+            rotation={followHeading ?? 0}
+            flat
+            zIndex={3}
+            tracksViewChanges
+          >
+            <NavArrow />
+          </Marker>
+        )}
+
         {marker && liveDriverMarker && (
           <>
+            {/* With a road route drawn, the straight dashed guide line would just cross the buildings. */}
+            {routeCoords.length < 2 && (
             <Polyline
               coordinates={[liveDriverMarker, { latitude: markerLat, longitude: markerLng }]}
               strokeColor={colors.accentGreen}
               strokeWidth={4}
               lineDashPattern={[6, 6]}
             />
+            )}
             <Marker coordinate={liveDriverMarker} anchor={{ x: 0.5, y: 0.5 }} tracksViewChanges>
               <DriverDot />
             </Marker>

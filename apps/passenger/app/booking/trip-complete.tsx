@@ -149,7 +149,7 @@ export default function TripCompleteScreen() {
         style={styles.reportButton}
       >
         <Ionicons name="flag" size={16} color={colors.white} />
-        <Text style={styles.reportButtonText}>{t.tripComplete.reportFareIssueButton}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.reportButtonText}>{t.tripComplete.reportFareIssueButton}</Text>
       </Pressable>
     </View>
   ) : null;
@@ -193,7 +193,7 @@ export default function TripCompleteScreen() {
           onPress={() => handleRate()}
         />
         <Pressable accessibilityRole="button" onPress={handleSkip} style={styles.skipButton}>
-          <Text style={styles.skipText}>{t.rateDriver.skipForNow}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.skipText}>{t.rateDriver.skipForNow}</Text>
         </Pressable>
       </View>
     </View>

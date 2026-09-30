@@ -274,7 +274,7 @@ export default function ComplaintsScreen() {
                         </View>
                         {recentTrips.length > 1 && (
                           <Pressable accessibilityRole="button" onPress={() => setTripPickerOpen((open) => !open)} style={styles.linkButton}>
-                            <Text style={styles.linkText}>{c.changeTrip}</Text>
+                            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.linkText}>{c.changeTrip}</Text>
                           </Pressable>
                         )}
                       </View>

@@ -133,7 +133,7 @@ export default function RatingsScreen() {
                   onPress={() => setFilter(option.value)}
                   style={[styles.chip, active && styles.chipActive]}
                 >
-                  <Text style={[styles.chipLabel, active && styles.chipLabelActive]}>{option.label}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={[styles.chipLabel, active && styles.chipLabelActive]}>{option.label}</Text>
                 </Pressable>
               );
             })}

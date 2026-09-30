@@ -36,7 +36,7 @@ export const useConnectivityStore = create<ConnectivityState>()((set) => ({
     if (!Network) return () => {};
 
     const subscription = Network.addNetworkStateListener((state) => {
-      set({ isOffline: state.isConnected === false });
+      set({ isOffline: state.isConnected === false || state.isInternetReachable === false });
     });
     return () => subscription.remove();
   },
@@ -46,6 +46,6 @@ export const useConnectivityStore = create<ConnectivityState>()((set) => ({
     if (!Network) return;
 
     const state = await Network.getNetworkStateAsync();
-    set({ isOffline: state.isConnected === false });
+    set({ isOffline: state.isConnected === false || state.isInternetReachable === false });
   },
 }));

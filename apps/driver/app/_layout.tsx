@@ -11,9 +11,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
-import { ConfirmModal, colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
+import { ConfirmModal, ConnectionBanner, colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
 import { useChatNotifications } from '../src/hooks/useChatNotifications';
@@ -455,6 +455,21 @@ export default function RootLayout() {
   return <RootLayoutNav />;
 }
 
+/**
+ * The offline strip lives in the tab layout, so it never shows on the ride
+ * screens, which is where losing signal matters most. This adds a slim banner
+ * for those (active ride, outside the tabs) plus a brief "Back online".
+ */
+function RideConnectionBanner() {
+  const isOffline = useConnectivityStore((state) => state.isOffline);
+  const hasActiveRide = useTripStore((state) => state.current !== null);
+  const segments = useSegments();
+  const insets = useSafeAreaInsets();
+  const t = useTranslation();
+  if (!hasActiveRide || segments[0] === '(tabs)') return null;
+  return <ConnectionBanner offline={isOffline} topInset={insets.top} offlineLabel={t.offline.rideBanner} onlineLabel={t.offline.backOnline} />;
+}
+
 function RootLayoutNav() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
@@ -475,7 +490,7 @@ function RootLayoutNav() {
   useAvailabilitySync(sessionUserId);
   useRequestsSync(sessionUserId, isAvailable);
   useTransferInvitesSync(sessionUserId, isAvailable);
-  useDriverLocationSync(sessionUserId, isAvailable, locationTrackingEnabled);
+  useDriverLocationSync(sessionUserId, isAvailable, locationTrackingEnabled, hasActiveTrip);
   useRatingSync(sessionUserId);
   useTripSync(sessionUserId);
   useTripCancellationSync(activeTripId);
@@ -504,6 +519,7 @@ function RootLayoutNav() {
             <Stack.Screen name="location-permission" options={{ presentation: 'transparentModal', animation: 'fade' }} />
             <Stack.Screen name="logout" options={{ presentation: 'transparentModal', animation: 'fade' }} />
           </Stack>
+          <RideConnectionBanner />
           <DriverTutorialMount />
           <TransferInviteGate />
         </TutorialProvider>

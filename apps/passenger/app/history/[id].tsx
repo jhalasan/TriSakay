@@ -111,7 +111,7 @@ export default function RideDetailScreen() {
         style={styles.copyLink}
       >
         <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={14} color={colors.accentBlue} />
-        <Text style={styles.copyText}>{copied ? t.history.copiedReference : t.history.copyReference}</Text>
+        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.copyText}>{copied ? t.history.copiedReference : t.history.copyReference}</Text>
       </Pressable>
     </View>
   ) : null;
@@ -296,7 +296,7 @@ export default function RideDetailScreen() {
       <View style={[styles.bottomBar, { paddingBottom: Math.max(26, insets.bottom + 12) }]}>
         <Pressable accessibilityRole="button" onPress={handleGetHelp} style={styles.helpButton}>
           <Ionicons name="flag-outline" size={16} color={colors.inkSoft} />
-          <Text style={styles.helpText}>{t.history.getHelp}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.helpText}>{t.history.getHelp}</Text>
         </Pressable>
         <View style={styles.primarySlot}>
           <View style={styles.primaryShadow}>

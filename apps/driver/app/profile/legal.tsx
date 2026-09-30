@@ -77,7 +77,7 @@ export default function LegalScreen() {
                   onPress={() => switchTab(item.value)}
                   style={[styles.segment, active && styles.segmentActive]}
                 >
-                  <Text style={[styles.segmentText, active && styles.segmentTextActive]}>{item.label}</Text>
+                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={[styles.segmentText, active && styles.segmentTextActive]}>{item.label}</Text>
                 </Pressable>
               );
             })}

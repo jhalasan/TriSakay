@@ -32,8 +32,8 @@ test('load() maps rows from the real service call', async () => {
   await useRatingsStore.getState().load();
 
   assert.deepEqual(useRatingsStore.getState().ratings, [
-    { id: 'r1', stars: 5, comment: 'Great!', createdAt: '2026-08-20T00:00:00.000Z' },
-    { id: 'r2', stars: 3, comment: null, createdAt: '2026-08-18T00:00:00.000Z' },
+    { id: 'r1', stars: 5, comment: 'Great!', rideRequestId: 'rr1', tags: [], createdAt: '2026-08-20T00:00:00.000Z' },
+    { id: 'r2', stars: 3, comment: null, rideRequestId: 'rr2', tags: [], createdAt: '2026-08-18T00:00:00.000Z' },
   ]);
   assert.equal(useRatingsStore.getState().error, null);
 });

@@ -1,3 +1,4 @@
+import { formatNearbyRange } from '@trisakay/shared';
 import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -36,6 +37,7 @@ export default function FindingDriverScreen() {
   const [cancelError, setCancelError] = useState<string | null>(null);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [nearbyCount, setNearbyCount] = useState<number | null>(null);
+  const nearbyRange = nearbyCount != null ? formatNearbyRange(nearbyCount) : null;
   // Guards against a second, redundant exit: reset() clears rideRequestId,
   // which re-fires this effect (deps: [rideRequestId]) before the component
   // finishes unmounting from the first navigate-away.
@@ -192,7 +194,7 @@ export default function FindingDriverScreen() {
             </View>
             <View style={styles.infoTextSlot}>
               <Text style={styles.infoTitle}>
-                {t.findingDriver.tricyclesNearby.replace('{count}', String(nearbyCount))}
+                {nearbyRange ? t.findingDriver.tricyclesNearby.replace('{count}', nearbyRange) : t.findingDriver.tricyclesNearbyNone}
               </Text>
               {fare !== null && (
                 <Text style={styles.infoSubtitle}>

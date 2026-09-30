@@ -1,13 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useRouter } from 'expo-router';
 import * as Location from 'expo-location';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { haversineKm } from '@trisakay/shared';
 import { Avatar, BrandMotif, GradientSurface, PulseRing, RequestCard, colors, useTutorialTarget } from '@trisakay/ui';
 import type { PendingRequest } from '@trisakay/ui';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
+import { getPositionForGoOnline } from '../../src/utils/currentPosition';
 import { useDriverUnit } from '../../src/hooks/useDriverUnit';
 import { useRequestCountdown } from '../../src/hooks/useRequestCountdown';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -172,6 +173,8 @@ export default function DashboardScreen() {
   const acceptRate = tutorialDemo.active ? tutorialDemo.data.acceptRate : acceptRateReal;
 
   const [togglingAvailability, setTogglingAvailability] = useState(false);
+  // State updates lag a render behind a fast double-tap, so a ref is the actual re-entry guard.
+  const togglingRef = useRef(false);
   const unreadCount = useNotificationsStore((state) => state.items.filter((item) => !item.read).length);
 
   const dailyGoal = useSettingsStore((state) => state.dailyGoal);
@@ -202,20 +205,26 @@ export default function DashboardScreen() {
   const countdown = tutorialDemo.active ? tutorialDemo.data.countdown : countdownReal;
 
   async function handleToggleAvailable(next: boolean) {
+    if (togglingRef.current) return;
+    togglingRef.current = true;
     setTogglingAvailability(true);
-    let coords: { lat: number; lng: number; mocked?: boolean } | undefined;
-    if (next) {
-      try {
-        const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
-        coords = { lat: position.coords.latitude, lng: position.coords.longitude, mocked: position.mocked };
-      } catch {
-        useDriverStore.setState({ error: t.driver.dashboard.locationError });
-        setTogglingAvailability(false);
-        return;
+    try {
+      let coords: { lat: number; lng: number; mocked?: boolean } | undefined;
+      if (next) {
+        try {
+          // Bounded wait: a slow GPS fix falls back to a recent last-known position instead of hanging.
+          const position = await getPositionForGoOnline();
+          coords = { lat: position.coords.latitude, lng: position.coords.longitude, mocked: position.mocked };
+        } catch {
+          useDriverStore.setState({ error: t.driver.dashboard.locationError });
+          return;
+        }
       }
+      await setAvailable(next, coords);
+    } finally {
+      togglingRef.current = false;
+      setTogglingAvailability(false);
     }
-    await setAvailable(next, coords);
-    setTogglingAvailability(false);
   }
 
   if (activeTrip) {
@@ -292,8 +301,8 @@ export default function DashboardScreen() {
                   onPress={() => (tutorialDemo.active ? undefined : handleToggleAvailable(false))}
                   style={styles.goOfflineButton}
                 >
-                  <Ionicons name="power" size={15} color={colors.white} />
-                  <Text style={styles.goOfflineText}>{t.driver.dashboard.goOffline}</Text>
+                  {togglingAvailability ? <ActivityIndicator size="small" color={colors.white} /> : <Ionicons name="power" size={15} color={colors.white} />}
+                  <Text style={styles.goOfflineText}>{togglingAvailability ? t.driver.dashboard.goingOffline : t.driver.dashboard.goOffline}</Text>
                 </Pressable>
               </View>
 
@@ -358,8 +367,12 @@ export default function DashboardScreen() {
                 style={styles.goOnlineButtonShadowWrap}
               >
                 <View style={styles.goOnlineButton}>
-                  <Ionicons name="power" size={20} color={colors.white} />
-                  <Text style={styles.goOnlineText}>{t.driver.dashboard.goOnline}</Text>
+                  {togglingAvailability ? (
+                    <ActivityIndicator color={colors.white} />
+                  ) : (
+                    <Ionicons name="power" size={20} color={colors.white} />
+                  )}
+                  <Text style={styles.goOnlineText}>{togglingAvailability ? t.driver.dashboard.goingOnline : t.driver.dashboard.goOnline}</Text>
                 </View>
               </Pressable>
 

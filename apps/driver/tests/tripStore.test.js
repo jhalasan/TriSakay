@@ -574,7 +574,8 @@ test('subscribeToCancellations calls hydrate() on every change and unsubscribeFr
 
   useTripStore.getState().subscribeToCancellations('trip-9');
 
-  assert.equal(capturedChannelName, 'trip_ride_requests_trip-9');
+  // Realtime channel names carry a unique suffix (uniqueChannelName) so a re-subscribe never reuses a live channel.
+  assert.ok(capturedChannelName.startsWith('trip_ride_requests_trip-9:'));
   assert.equal(capturedFilter.filter, 'trip_id=eq.trip-9');
   assert.ok(capturedHandler);
 
@@ -660,6 +661,8 @@ test('useHistoryStore.load() fetches and maps completed/cancelled trips from the
     paymentMethod: 'cash',
     paymentStatus: 'paid',
     cancelReason: null,
+    cancelledBy: undefined,
+    cancelReasonCode: undefined,
   });
   assert.deepEqual(trips[1], {
     id: 'rr2',
@@ -676,6 +679,8 @@ test('useHistoryStore.load() fetches and maps completed/cancelled trips from the
     paymentMethod: null,
     paymentStatus: null,
     cancelReason: 'Passenger no-show',
+    cancelledBy: undefined,
+    cancelReasonCode: undefined,
   });
 });
 

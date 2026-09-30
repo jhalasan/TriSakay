@@ -99,7 +99,8 @@ export const styles = StyleSheet.create({
   driverName: { ...typography.bodySm, fontSize: 15.5, color: colors.ink, flexShrink: 1 },
   newTag: { backgroundColor: colors.accentBlueSoft, borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 2 },
   newTagText: { ...typography.label, fontSize: 10.5, letterSpacing: 0.5, color: colors.accentBluePressed },
-  driverMetaRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  // Wraps inside the info column so "PSO verified" drops under the rating on a narrow card instead of running into the plate tag.
+  driverMetaRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.md, rowGap: 2 },
   driverMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
   driverMetaText: { fontSize: 12, lineHeight: 15, fontFamily: typography.body.fontFamily, color: colors.inkSoft },
   plateTag: {
@@ -110,6 +111,7 @@ export const styles = StyleSheet.create({
     paddingHorizontal: spacing.sm,
     paddingVertical: 4,
     alignItems: 'center',
+    flexShrink: 0,
   },
   plateLabel: { ...typography.label, fontSize: 9.5, letterSpacing: 0.8, color: colors.inkSoft },
   plateValue: { ...typography.h3, fontSize: 15, letterSpacing: 0.6, color: colors.ink },

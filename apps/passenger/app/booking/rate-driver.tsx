@@ -168,7 +168,7 @@ export default function RateDriverScreen() {
       onPress={finish}
       style={styles.skipButton}
     >
-      <Text style={styles.skipText}>{compact ? t.rateDriver.skipShort : t.rateDriver.skipForNow}</Text>
+      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.skipText}>{compact ? t.rateDriver.skipShort : t.rateDriver.skipForNow}</Text>
     </Pressable>
   );
 

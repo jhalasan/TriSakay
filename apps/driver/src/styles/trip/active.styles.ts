@@ -26,7 +26,8 @@ export const styles = StyleSheet.create({
 
   content: { gap: spacing.md },
   passengerScroll: { flexShrink: 1 },
-  passengerScrollContent: { gap: spacing.lg, paddingBottom: spacing.xs },
+  // The whole sheet body scrolls (passenger cards, error, notes, End trip), so a short screen never clips the bottom.
+  passengerScrollContent: { gap: spacing.lg, paddingBottom: spacing.md },
 
   // --- next-stop block ---
   nextStopRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
@@ -55,10 +56,11 @@ export const styles = StyleSheet.create({
   passengerStrip: { gap: 10, backgroundColor: colors.bg, borderRadius: radius.card, padding: 10, paddingLeft: 12 },
   passengerTopRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
   passengerInfo: { flex: 1, minWidth: 0, gap: 2 },
-  passengerNameRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
-  passengerName: { ...typography.bodySm, fontSize: 15, color: colors.ink },
+  // Wraps so a long name or a narrow phone drops the status chip under the name instead of clipping it behind the options button.
+  passengerNameRow: { flexDirection: 'row', flexWrap: 'wrap', alignItems: 'center', columnGap: spacing.sm, rowGap: 2 },
+  passengerName: { ...typography.bodySm, fontSize: 15, color: colors.ink, maxWidth: '100%', flexShrink: 1 },
   passengerSub: { fontSize: 12.5, lineHeight: 17, fontFamily: typography.body.fontFamily, color: colors.inkSoft },
-  statusChip: { borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 3 },
+  statusChip: { borderRadius: radius.pill, paddingHorizontal: spacing.sm, paddingVertical: 3, flexShrink: 0 },
   statusChipArrived: { backgroundColor: colors.accentBlueSoft },
   statusChipOngoing: { backgroundColor: colors.accentGreenSoft },
   statusChipText: { fontSize: 10, lineHeight: 13, letterSpacing: 0.4, fontFamily: typography.label.fontFamily, color: colors.ink },

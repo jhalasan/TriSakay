@@ -11,7 +11,7 @@ import {
   type DriverLocation,
 } from '@trisakay/services';
 import { ASSUMED_TRICYCLE_SPEED_KMH, PASSENGER_CANCEL_REASON_CODES, estimateEtaMinutes, features, haversineKm } from '@trisakay/shared';
-import { Avatar, Button, ChatPreviewBanner, EmptyState, HoldToConfirmButton, OsmMap, colors, motion, useTutorialTarget } from '@trisakay/ui';
+import { Avatar, Button, ChatPreviewBanner, EmptyState, HoldToConfirmButton, OsmMap, colors, motion, useNavigationRoute, useTutorialTarget } from '@trisakay/ui';
 import { Ionicons } from '@expo/vector-icons';
 import { CancelReasonSheet } from '../../src/components/CancelReasonSheet';
 import { useChatPreviewBanner } from '../../src/hooks/useChatPreviewBanner';
@@ -22,6 +22,11 @@ import { useBookingStore } from '../../src/store/useBookingStore';
 import { formatCurrency } from '../../src/utils/currency';
 import { interpolate } from '../../src/utils/interpolate';
 import { fetchRouteEstimate, type RouteEstimate } from '../../src/utils/route';
+
+async function fetchRouteForNavigation(origin: { latitude: number; longitude: number }, destination: { latitude: number; longitude: number }) {
+  const { geometry, source } = await fetchRouteEstimate(origin, destination);
+  return { geometry, source };
+}
 import { styles } from '../../src/styles/booking/trip.styles';
 
 type Stage = 1 | 2 | 3;
@@ -223,6 +228,14 @@ export default function TripScreen() {
     };
   }, [rideStatus, pickup, dropoff]);
 
+  // While the driver is on the way, draw the road they'll take to the pickup
+  // (trimmed as they drive) instead of a straight line.
+  const approach = useNavigationRoute({
+    origin: rideStatus === 'assigned' && driverLocation ? { latitude: driverLocation.lat, longitude: driverLocation.lng } : null,
+    destination: rideStatus === 'assigned' && pickup ? pickup : null,
+    fetchRoute: fetchRouteForNavigation,
+  });
+
   // Auto-close the cancel sheet if the ride moves to 'ongoing' while it's open (Part B §B5).
   useEffect(() => {
     if (rideStatus === 'ongoing') setCancelSheetVisible(false);
@@ -352,7 +365,7 @@ export default function TripScreen() {
                 : null
           }
           markerColor={stage === 3 ? colors.accentBlue : colors.accentGreen}
-          route={stage === 3 ? tripRoute?.geometry : null}
+          route={stage === 3 ? tripRoute?.geometry : stage === 1 ? approach.route : null}
           liveDriverMarker={stage === 1 && driverLocation ? { latitude: driverLocation.lat, longitude: driverLocation.lng } : null}
         />
       </View>

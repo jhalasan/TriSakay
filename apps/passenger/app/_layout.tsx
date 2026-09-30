@@ -11,9 +11,9 @@ import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { AppState, type AppStateStatus } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
-import { colors, fontFamily, PASSENGER_FINISHED_MESSAGE, PASSENGER_STEPS, PASSENGER_WELCOME_BODY, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
+import { ConnectionBanner, colors, fontFamily, PASSENGER_FINISHED_MESSAGE, PASSENGER_STEPS, PASSENGER_WELCOME_BODY, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { PASSENGER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { usePassengerTutorialNavigation } from '../src/hooks/usePassengerTutorialNavigation';
@@ -21,6 +21,7 @@ import { usePassengerTutorialTrigger } from '../src/hooks/usePassengerTutorialTr
 import { useChatNotifications } from '../src/hooks/useChatNotifications';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useAuthStore } from '../src/store/useAuthStore';
+import { useTranslation } from '../src/hooks/useTranslation';
 import { useBookingStore } from '../src/store/useBookingStore';
 import { useConnectivityStore } from '../src/store/useConnectivityStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
@@ -389,6 +390,21 @@ export default function RootLayout() {
  * useProtectedRoute would let a router.replace() fire with no navigator
  * present, which expo-router treats as an error.
  */
+/**
+ * The offline strip lives in the tab layout, so it never shows on the ride
+ * screens, which is where losing signal matters most. This adds a slim banner
+ * for those (active ride, outside the tabs) plus a brief "Back online".
+ */
+function RideConnectionBanner() {
+  const isOffline = useConnectivityStore((state) => state.isOffline);
+  const hasActiveRide = useBookingStore((state) => state.tripStatus !== 'idle' && state.tripStatus !== 'rated');
+  const segments = useSegments();
+  const insets = useSafeAreaInsets();
+  const t = useTranslation();
+  if (!hasActiveRide || segments[0] === '(tabs)') return null;
+  return <ConnectionBanner offline={isOffline} topInset={insets.top} offlineLabel={t.offline.rideBanner} onlineLabel={t.offline.backOnline} />;
+}
+
 function RootLayoutNav() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
@@ -438,6 +454,7 @@ function RootLayoutNav() {
               options={{ presentation: 'modal', animation: 'slide_from_bottom' }}
             />
           </Stack>
+          <RideConnectionBanner />
           <PassengerTutorialMount />
         </TutorialProvider>
       </SafeAreaProvider>

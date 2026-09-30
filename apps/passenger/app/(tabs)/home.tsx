@@ -1,3 +1,4 @@
+import { formatNearbyRange } from '@trisakay/shared';
 import { useCallback, useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
@@ -55,6 +56,7 @@ export default function HomeScreen() {
   const removeSavedPlace = useSavedPlacesStore((state) => state.remove);
   const { stats } = usePassengerStats();
   const nearbyCount = useNearbyDriverCount();
+  const nearbyRange = nearbyCount != null ? formatNearbyRange(nearbyCount) : null;
   const [baseFare, setBaseFare] = useState<number | null>(null);
   const isOffline = useConnectivityStore((state) => state.isOffline);
   const greetingHeaderTarget = useTutorialTarget('greeting-header');
@@ -209,7 +211,7 @@ export default function HomeScreen() {
                           {nearbyCount != null && (
                             <Text style={styles.ctaNearbyText}>
                               {baseFare != null ? '· ' : ''}
-                              {t.home.ctaNearbySuffix.replace('{count}', String(nearbyCount))}
+                              {nearbyRange ? t.home.ctaNearbySuffix.replace('{count}', nearbyRange) : t.home.ctaNearbyNone}
                             </Text>
                           )}
                         </View>

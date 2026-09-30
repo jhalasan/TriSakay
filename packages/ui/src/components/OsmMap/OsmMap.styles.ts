@@ -99,6 +99,28 @@ export const styles = StyleSheet.create({
    * between each dot and the end of the route line it is supposed to cap. The
    * white ring is what separates it from map imagery here, not a shadow.
    */
+  navArrow: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: colors.accentBlue,
+    borderWidth: 3,
+    borderColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    // No shadow/elevation: it pads the marker bitmap asymmetrically (see routeDot below).
+  },
+  navArrowTip: {
+    width: 0,
+    height: 0,
+    marginBottom: 2,
+    borderLeftWidth: 6,
+    borderRightWidth: 6,
+    borderBottomWidth: 12,
+    borderLeftColor: 'transparent',
+    borderRightColor: 'transparent',
+    borderBottomColor: '#fff',
+  },
   routeDot: {
     width: 20,
     height: 20,

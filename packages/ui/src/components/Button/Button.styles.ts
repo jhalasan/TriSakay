@@ -29,6 +29,13 @@ export const styles = StyleSheet.create({
   content: {
     flexDirection: 'row',
     alignItems: 'center',
+    // Lets the label shrink when the button is narrower than its text.
+    flexShrink: 1,
+    maxWidth: '100%',
+  },
+  label: {
+    flexShrink: 1,
+    textAlign: 'center',
   },
   labelMd: {
     ...typography.button,

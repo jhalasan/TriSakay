@@ -49,3 +49,4 @@ export * from './StageTimeline';
 export * from './SosCard';
 export * from './PasswordChecklist';
 export * from './PasswordField';
+export * from './ConnectionBanner';

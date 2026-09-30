@@ -93,7 +93,7 @@ export default function DeactivateAccountScreen() {
         )}
         <Button label={d.confirm} tone="danger" fullWidth disabled={!understood} loading={submitting} onPress={handleConfirm} />
         <Pressable accessibilityRole="button" onPress={() => router.dismiss()} style={styles.keepButton}>
-          <Text style={styles.keepText}>{d.keepAccount}</Text>
+          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.keepText}>{d.keepAccount}</Text>
         </Pressable>
       </View>
     </View>
