@@ -432,6 +432,7 @@ export const fil: Translations = {
     discountStillValid: 'Balido pa rin ang iyong diskwento',
     findAnotherDriver: 'Maghanap ng Ibang Driver',
     reportCancellation: 'I-report ang Pagkansela',
+    backToHome: 'Bumalik sa home',
   },
   payment: {
     title: 'Bayad',

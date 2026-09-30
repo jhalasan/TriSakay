@@ -17,6 +17,7 @@ export default function RideCancelledScreen() {
   const driver = useBookingStore((state) => state.driver);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setRideRequestId = useBookingStore((state) => state.setRideRequestId);
+  const reset = useBookingStore((state) => state.reset);
 
   if (!rideRequestId) {
     return <Redirect href="/(tabs)/home" />;
@@ -34,6 +35,14 @@ export default function RideCancelledScreen() {
 
   function handleReport() {
     router.replace('/(tabs)/complaints');
+  }
+
+  // router.back() here lands on the trip screen for this same cancelled ride,
+  // which sends the rider straight back — so leaving means clearing the
+  // booking state (this screen's own guard is rideRequestId) and going Home.
+  function handleExit() {
+    reset();
+    router.replace('/(tabs)/home');
   }
 
   return (
@@ -55,7 +64,7 @@ export default function RideCancelledScreen() {
           accessibilityLabel={t.common.goBackA11y}
           hitSlop={8}
           style={styles.backButton}
-          onPress={() => router.back()}
+          onPress={handleExit}
         >
           <Ionicons name="chevron-back" size={20} color={colors.ink} />
         </Pressable>
@@ -94,6 +103,7 @@ export default function RideCancelledScreen() {
           fullWidth
           onPress={handleReport}
         />
+        <Button label={t.rideCancelled.backToHome} variant="ghost" tone="neutral" fullWidth onPress={handleExit} />
       </MapOverlaySheet>
     </SafeAreaView>
   );

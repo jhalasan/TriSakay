@@ -442,6 +442,7 @@ export const en = {
     discountStillValid: 'Your discount is still valid',
     findAnotherDriver: 'Find another driver',
     reportCancellation: 'Report this cancellation',
+    backToHome: 'Back to home',
   },
   payment: {
     title: 'Payment',

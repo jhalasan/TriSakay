@@ -23,7 +23,7 @@ export function QuickReplyRow({ options, onSelect, disabled = false, size = 'md'
   if (options.length === 0) return null;
   const isLg = size === 'lg';
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.content}>
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.scroll} contentContainerStyle={styles.content}>
       {options.map((option) => (
         <Pressable
           key={option.code}
