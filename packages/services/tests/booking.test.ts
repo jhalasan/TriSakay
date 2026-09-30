@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, subscribeToTripRideRequests, acceptRideRequest, reconcileAcceptedRide, declineRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver, startRideLeg } from '../src/booking/index.ts';
+import { createRideRequest, cancelRideRequest, getActiveRideForPassenger, subscribeToRideRequestStatus, subscribeToTripRideRequests, acceptRideRequest, reconcileAcceptedRide, declineRideRequest, subscribeToPendingRideRequests, completeRideLeg, cancelRideLeg, endTrip, getTripDriverInfo, getTripPassengerInfo, listDriverTripHistory, getActiveTripForDriver, startRideLeg, getRideRequestStatus } from '../src/booking/index.ts';
 
 test('createRideRequest inserts the full payload and returns the row', async () => {
   let capturedInsert: any = null;
@@ -1536,4 +1536,23 @@ test('getTripDriverInfo returns null data with no error on an empty result set',
   const { data, error } = await getTripDriverInfo('rr1');
   assert.equal(data, null);
   assert.equal(error, null);
+});
+
+test('getRideRequestStatus reads the ride status, or null when the row is missing or errors', async () => {
+  const makeClient = (result: { data: unknown; error: { message: string } | null }) =>
+    createFakeSupabaseClient({
+      from: (table: string) => {
+        assert.equal(table, 'ride_requests');
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => result }) }) };
+      },
+    });
+
+  __setSupabaseClientForTests(makeClient({ data: { status: 'completed' }, error: null }));
+  assert.deepEqual(await getRideRequestStatus('rr1'), { status: 'completed', error: null });
+
+  __setSupabaseClientForTests(makeClient({ data: null, error: null }));
+  assert.deepEqual(await getRideRequestStatus('rr1'), { status: null, error: null });
+
+  __setSupabaseClientForTests(makeClient({ data: null, error: { message: 'boom' } }));
+  assert.deepEqual(await getRideRequestStatus('rr1'), { status: null, error: 'boom' });
 });

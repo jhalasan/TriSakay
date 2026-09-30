@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   cancelRideRequest,
   getTripDriverInfo,
+  getTransactionStatus,
   listMessages,
   subscribeToDriverLocation,
   subscribeToRideRequestStatus,
@@ -24,6 +25,7 @@ import { useTripTutorialDemo } from '../../src/hooks/useTutorialDemoState';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { formatCurrency } from '../../src/utils/currency';
 import { interpolate } from '../../src/utils/interpolate';
+import { shouldOpenPaymentScreen } from '../../src/utils/paymentRoute';
 import { fetchRouteEstimate, type RouteEstimate } from '../../src/utils/route';
 import { styles } from '../../src/styles/booking/trip.styles';
 
@@ -79,11 +81,17 @@ export default function TripScreen() {
   const paymentMethod = useBookingStore((state) => state.paymentMethod);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
+  const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setDriver = useBookingStore((state) => state.setDriver);
   const reset = useBookingStore((state) => state.reset);
   const user = useAuthStore((state) => state.user);
   const [subscriptionError, setSubscriptionError] = useState<string | null>(null);
   const [transferBannerVisible, setTransferBannerVisible] = useState(false);
+  // Payment settlement: the driver asks for payment while the ride is still going, and can switch a GCash ride to cash.
+  const [paymentRequested, setPaymentRequested] = useState(false);
+  const [paymentPaid, setPaymentPaid] = useState(false);
+  const [paymentSwitchedVisible, setPaymentSwitchedVisible] = useState(false);
+  const paymentOpenedRef = useRef(false);
 
   // C1 — a per-ride unread count for the Message button, not a live
   // subscription: the full live thread only opens once the passenger taps
@@ -256,12 +264,42 @@ export default function TripScreen() {
         // on a fixed timer.
         if (row.arrived_at) setTransferBannerVisible(false);
 
+        // The driver may switch a GCash ride to cash mid-ride: follow the server's method and say so.
+        const previousMethod = useBookingStore.getState().paymentMethod;
+        if (row.preferred_method && row.preferred_method !== previousMethod) {
+          setPaymentMethod(row.preferred_method);
+          if (previousMethod === 'gcash' && row.preferred_method === 'cash') {
+            setPaymentSwitchedVisible(true);
+            setPaymentRequested(false);
+          }
+        }
+
         if (row.status === 'ongoing') {
           setRideStatus('ongoing');
+          if (shouldOpenPaymentScreen(row)) {
+            setPaymentRequested(true);
+            getTransactionStatus(rideRequestId).then(({ status }) => {
+              if (cancelled) return;
+              if (status === 'paid') {
+                setPaymentPaid(true);
+              } else if (!paymentOpenedRef.current) {
+                paymentOpenedRef.current = true;
+                router.push('/booking/payment');
+              }
+            });
+          }
         } else if (row.status === 'completed') {
           hasExitedRef.current = true;
-          setTripStatus('awaiting_payment');
-          router.replace('/booking/payment');
+          // Normally already paid (the driver could not complete otherwise); an unpaid completed ride goes to the payment screen as before.
+          getTransactionStatus(rideRequestId).then(({ status }) => {
+            if (status === 'paid') {
+              setTripStatus('paid');
+              router.replace('/booking/trip-complete');
+            } else {
+              setTripStatus('awaiting_payment');
+              router.replace('/booking/payment');
+            }
+          });
         } else if (row.status === 'cancelled') {
           hasExitedRef.current = true;
           router.replace({
@@ -561,6 +599,39 @@ export default function TripScreen() {
             </View>
           </GestureDetector>
           <ScrollView contentContainerStyle={styles.sheetScrollContent} showsVerticalScrollIndicator={false}>
+            {paymentSwitchedVisible && (
+              <View style={styles.transferBanner}>
+                <Ionicons name="cash-outline" size={20} color={colors.accentBlue} />
+                <View style={styles.transferTextCol}>
+                  <Text style={styles.transferTitle}>{t.payment.switchedToCashTitle}</Text>
+                  <Text style={styles.transferBody}>{t.payment.switchedToCashBody}</Text>
+                </View>
+                <Pressable accessibilityRole="button" style={styles.transferDismiss} onPress={() => setPaymentSwitchedVisible(false)}>
+                  <Ionicons name="close" size={14} color={colors.inkSoft} />
+                </Pressable>
+              </View>
+            )}
+
+            {paymentRequested && !paymentPaid && paymentMethod === 'gcash' && rideStatus === 'ongoing' && (
+              <Pressable accessibilityRole="button" style={styles.transferBanner} onPress={() => router.push('/booking/payment')}>
+                <Ionicons name="wallet-outline" size={20} color={colors.accentBlue} />
+                <View style={styles.transferTextCol}>
+                  <Text style={styles.transferTitle}>{t.payment.title}</Text>
+                  <Text style={styles.transferBody}>{t.payment.midRideNote}</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkSoft} />
+              </Pressable>
+            )}
+
+            {paymentPaid && (
+              <View style={styles.transferBanner}>
+                <Ionicons name="checkmark-circle" size={20} color={colors.accentGreen} />
+                <View style={styles.transferTextCol}>
+                  <Text style={styles.transferBody}>{t.payment.paidMidRide}</Text>
+                </View>
+              </View>
+            )}
+
             {transferBannerVisible && (
               <View style={styles.transferBanner}>
                 <Ionicons name="swap-horizontal" size={20} color={colors.accentBlue} />

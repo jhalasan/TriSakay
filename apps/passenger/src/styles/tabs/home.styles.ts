@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
+import { colors, elevation, radius, recordsPalette, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: colors.bg },
@@ -127,6 +127,19 @@ export const styles = StyleSheet.create({
   shortcutTextSlot: { flex: 1, gap: 2 },
   shortcutLabel: { ...typography.bodyStrong, color: colors.ink },
   shortcutAddress: { ...typography.caption, color: colors.inkSoft },
+
+  // Unpaid completed ride prompt: the amber "needs attention" card from the records palette.
+  settleCard: {
+    backgroundColor: recordsPalette.amberBg,
+    borderWidth: 1,
+    borderColor: recordsPalette.amberBorder,
+    borderRadius: radius.md3,
+    padding: spacing.md,
+    gap: spacing.sm,
+  },
+  settleTextCol: { gap: 2 },
+  settleTitle: { ...typography.bodyStrong, color: recordsPalette.amberText },
+  settleBody: { ...typography.body, color: recordsPalette.amberText },
 
   emptyPanel: {
     borderWidth: 1,

@@ -488,6 +488,7 @@ export const fil: Translations = {
     verifying: 'Sinusuri ang bayad mo…',
     checkPaid: 'Nagbayad na ako — suriin muli',
     midRideNote: 'Magbayad na para matapos ng driver mo ang biyahe.',
+    paidMidRide: 'Bayad na. Tatapusin ng driver mo ang biyahe.',
     checkAgain: 'Tingnan Muli',
     retryGcash: 'Subukang Muli ang GCash',
     openingPaymongo: 'Binubuksan ang PayMongo…',

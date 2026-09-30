@@ -787,3 +787,15 @@ export async function getTripPassengerInfo(rideRequestId: string): Promise<GetTr
     error: null,
   };
 }
+
+export interface GetRideRequestStatusResult {
+  status: Database['public']['Enums']['ride_status'] | null;
+  error: string | null;
+}
+
+/** One-off read of a ride's current status (null when the row is missing). */
+export async function getRideRequestStatus(rideRequestId: string): Promise<GetRideRequestStatusResult> {
+  const { data, error } = await getSupabaseClient().from('ride_requests').select('status').eq('id', rideRequestId).maybeSingle();
+  if (error) return { status: null, error: error.message };
+  return { status: data?.status ?? null, error: null };
+}

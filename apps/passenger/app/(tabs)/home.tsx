@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Avatar, BrandMotif, Button, EmptyState, GradientSurface, Spinner, StatTile, colors, useTutorialTarget } from '@trisakay/ui';
+import { Avatar, BrandMotif, Button, EmptyState, GradientSurface, Spinner, StatTile, colors, recordsPalette, useTutorialTarget } from '@trisakay/ui';
 import { OfflineState } from '../../src/components/OfflineState';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { usePassengerStats } from '../../src/hooks/usePassengerStats';
@@ -15,8 +15,8 @@ import { useConnectivityStore } from '../../src/store/useConnectivityStore';
 import { useNotificationsStore } from '../../src/store/useNotificationsStore';
 import { useSavedPlacesStore } from '../../src/store/useSavedPlacesStore';
 import { SHORTCUT_ICON_TONE, DEFAULT_SHORTCUT_TONE } from '../../src/utils/savedPlaceIconTone';
-import { formatDiscountLabel, getFareConfig } from '@trisakay/services';
-import type { SavedPlaceIcon, SavedPlaceRow } from '@trisakay/services';
+import { formatDiscountLabel, getFareConfig, getUnpaidCompletedRide } from '@trisakay/services';
+import type { SavedPlaceIcon, SavedPlaceRow, UnpaidCompletedRide } from '@trisakay/services';
 import type { LocationPoint } from '../../src/types/booking';
 import { formatCurrency } from '../../src/utils/currency';
 import { styles } from '../../src/styles/tabs/home.styles';
@@ -62,6 +62,32 @@ export default function HomeScreen() {
   const greetingHeaderTarget = useTutorialTarget('greeting-header');
   const requestCtaTarget = useTutorialTarget('request-cta');
   const savedPlacesTarget = useTutorialTarget('saved-places');
+
+  // A completed ride that was never paid: the passenger must settle it before booking again.
+  const [unpaidRide, setUnpaidRide] = useState<UnpaidCompletedRide | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!user?.id) return;
+      let cancelled = false;
+      getUnpaidCompletedRide(user.id).then(({ data }) => {
+        if (!cancelled) setUnpaidRide(data);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, [user?.id])
+  );
+
+  function handleSettleUnpaidRide() {
+    if (!unpaidRide) return;
+    useBookingStore.setState({
+      rideRequestId: unpaidRide.rideRequestId,
+      fare: unpaidRide.fare,
+      paymentMethod: unpaidRide.method,
+      tripStatus: 'awaiting_payment',
+    });
+    router.push('/booking/payment');
+  }
 
   useFocusEffect(
     useCallback(() => {
@@ -184,6 +210,18 @@ export default function HomeScreen() {
           {/* Pressable measures unreliably as a tutorial target (its internal ref/layout
               handling doesn't play well with measureInWindow) — wrap it in a plain View
               instead, same pattern as every other tutorial target in this app. */}
+          {unpaidRide && (
+            <View style={styles.settleCard}>
+              <View style={styles.settleTextCol}>
+                <Text style={styles.settleTitle}>{t.home.settleTitle}</Text>
+                <Text style={styles.settleBody}>
+                  {t.home.settleBody.replace('{fare}', unpaidRide.fare === null ? '' : formatCurrency(unpaidRide.fare))}
+                </Text>
+              </View>
+              <Button label={t.home.settleAction} onPress={handleSettleUnpaidRide} />
+            </View>
+          )}
+
           <View {...requestCtaTarget}>
             <Pressable
               accessibilityRole="button"

@@ -4,10 +4,11 @@ import * as WebBrowser from 'expo-web-browser';
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, Text, View } from 'react-native';
 import { BrandMotif, Button, GradientSurface, colors } from '@trisakay/ui';
-import { createGcashCheckout, subscribeToTransactionStatus } from '@trisakay/services';
+import { createGcashCheckout, getRideRequestStatus, getTransactionStatus, subscribeToTransactionStatus, verifyGcashPayment } from '@trisakay/services';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { formatCurrency } from '../../src/utils/currency';
+import { routeAfterPayment } from '../../src/utils/paymentRoute';
 import type { PaymentMethod } from '../../src/types/booking';
 import { styles } from '../../src/styles/booking/payment.styles';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -28,11 +29,11 @@ export default function PaymentScreen() {
   const fare = useBookingStore((state) => state.fare);
   const rideRequestId = useBookingStore((state) => state.rideRequestId);
   const paymentMethod = useBookingStore((state) => state.paymentMethod);
-  const setPaymentMethod = useBookingStore((state) => state.setPaymentMethod);
   const setTripStatus = useBookingStore((state) => state.setTripStatus);
 
   const [paymentPhase, setPaymentPhase] = useState<PaymentPhase>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
+  const [verifying, setVerifying] = useState(false);
   const unsubscribeRef = useRef<(() => void) | null>(null);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const cashWaitRestartRef = useRef<(() => void) | null>(null);
@@ -100,12 +101,49 @@ export default function PaymentScreen() {
     cashWaitRestartRef.current = startCashWait;
   }, [paymentMethod, rideRequestId]);
 
-  function finishSuccessfulPayment() {
+  // The driver can now ask for payment while the ride is still going, so a
+  // paid ride is not always a finished one: back to the ride until the driver
+  // completes it, trip complete once they have.
+  async function finishSuccessfulPayment() {
     if (settledRef.current) return;
     settledRef.current = true;
 
-    setTripStatus('paid');
-    router.replace('/booking/trip-complete');
+    const { status } = rideRequestId ? await getRideRequestStatus(rideRequestId) : { status: null };
+    const destination = routeAfterPayment(status);
+    if (destination === '/booking/trip-complete') {
+      setTripStatus('paid');
+      router.replace(destination);
+    } else if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace(destination);
+    }
+  }
+
+  // Arriving at an already-paid ride (paid on another screen, or the app was restarted) must not show a Pay now button.
+  useEffect(() => {
+    if (!rideRequestId) return;
+    let cancelled = false;
+    getTransactionStatus(rideRequestId).then(({ status }) => {
+      if (!cancelled && status === 'paid') void finishSuccessfulPayment();
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rideRequestId]);
+
+  // Asks the server to confirm the checkout with PayMongo directly, in case the webhook is slow or missed.
+  async function verifyPayment() {
+    if (!rideRequestId || verifying) return;
+    setVerifying(true);
+    const { status } = await verifyGcashPayment(rideRequestId);
+    setVerifying(false);
+    if (status === 'paid') {
+      unsubscribeRef.current?.();
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
+      void finishSuccessfulPayment();
+    }
   }
 
   async function handlePayNowGcash() {
@@ -177,6 +215,9 @@ export default function PaymentScreen() {
     // only thing that advances the UI (FR-9.2). This just gives the
     // passenger a hosted page to actually pay on.
     await WebBrowser.openBrowserAsync(checkoutUrl);
+
+    // The browser closed: confirm with PayMongo now instead of waiting on the webhook alone.
+    void verifyPayment();
   }
 
   async function handlePayNow() {
@@ -226,9 +267,10 @@ export default function PaymentScreen() {
                 key={option.value}
                 accessibilityRole="radio"
                 accessibilityState={{ selected }}
-                disabled={gcashBusy}
+                // The method was chosen at booking and is now decided by the server (the driver can
+                // switch a GCash ride to cash), so it is shown here but not changed locally.
+                disabled
                 style={[styles.optionRow, selected && styles.optionRowSelected]}
-                onPress={() => setPaymentMethod(option.value)}
               >
                 <View style={[styles.radioOuter, selected && styles.radioOuterSelected]}>
                   {selected && <View style={styles.radioInner} />}
@@ -266,7 +308,10 @@ export default function PaymentScreen() {
               {paymentMethod === 'cash' ? (
                 <Button label={t.payment.checkAgain} onPress={handleCheckAgainCash} />
               ) : (
-                <Button label={t.payment.retryGcash} onPress={handleRetryGcash} />
+                <>
+                  <Button label={t.payment.retryGcash} onPress={handleRetryGcash} />
+                  <Button label={verifying ? t.payment.verifying : t.payment.checkPaid} variant="outline" loading={verifying} onPress={() => void verifyPayment()} />
+                </>
               )}
             </View>
           </View>

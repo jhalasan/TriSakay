@@ -498,6 +498,7 @@ export const en = {
     verifying: 'Checking your payment…',
     checkPaid: "I've paid — check again",
     midRideNote: 'Pay now so your driver can finish the ride.',
+    paidMidRide: 'Paid. Your driver will finish the ride.',
     checkAgain: 'Check again',
     retryGcash: 'Retry GCash',
     openingPaymongo: 'Opening PayMongo…',
