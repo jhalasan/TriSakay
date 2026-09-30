@@ -93,17 +93,18 @@ begin
 end $$;
 
 -- 5: after the RPC the escape hatch is closed: a driver changing the method directly is still refused.
+-- Runs WITHOUT `set role authenticated`: as a real driver, RLS gives no UPDATE on ride_requests at all,
+-- so the update would silently touch zero rows and never reach the column-lock trigger under test.
+-- The trigger keys off auth.uid() (the JWT claim), so impersonating the driver's id is enough.
 do $$
 declare fx record; refused boolean := false;
 begin
   select * into fx from _fx;
-  set local role authenticated;
   perform set_config('request.jwt.claims', json_build_object('sub', fx.driver_id, 'role', 'authenticated')::text, true);
   begin
     update public.ride_requests set preferred_method = 'gcash' where id = fx.ride_id;
   exception when others then refused := true;
   end;
-  reset role;
   if not refused then raise exception 'FAIL 5: driver could change preferred_method directly'; end if;
 end $$;
 
