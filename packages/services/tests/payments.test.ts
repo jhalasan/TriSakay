@@ -2,7 +2,18 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
-import { confirmCashPayment, createGcashCheckout, subscribeToTransactionStatus } from '../src/payments/index.ts';
+import {
+  UNPAID_RIDE_CUTOFF_ISO,
+  confirmCashPayment,
+  createGcashCheckout,
+  getTransactionStatus,
+  getUnpaidCompletedRide,
+  requestGcashPayment,
+  subscribeToTransactionStatus,
+  subscribeToTripTransactions,
+  switchPaymentToCash,
+  verifyGcashPayment,
+} from '../src/payments/index.ts';
 
 test('confirmCashPayment updates the cash transaction to paid with cash_confirmed_by/at', async () => {
   let capturedUpdate: any = null;
@@ -257,5 +268,159 @@ test('subscribeToTransactionStatus unsubscribe removes the channel', async () =>
   const unsubscribe = subscribeToTransactionStatus('rr1', () => {});
   unsubscribe();
 
+  assert.equal(removedChannel, fakeChannel);
+});
+
+test('requestGcashPayment calls the RPC with the ride id and returns the timestamp', async () => {
+  const calls: { fn: string; args: unknown }[] = [];
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn, args) => {
+        calls.push({ fn, args });
+        return { data: '2026-09-30T10:00:00.000Z', error: null };
+      },
+    })
+  );
+
+  const result = await requestGcashPayment('rr1');
+
+  assert.deepEqual(calls, [{ fn: 'request_gcash_payment', args: { p_ride_request_id: 'rr1' } }]);
+  assert.deepEqual(result, { requestedAt: '2026-09-30T10:00:00.000Z', error: null });
+});
+
+test('requestGcashPayment surfaces the RPC error message', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({ rpc: async () => ({ data: null, error: { message: 'This ride is paying by cash' } }) })
+  );
+
+  assert.deepEqual(await requestGcashPayment('rr1'), { requestedAt: null, error: 'This ride is paying by cash' });
+});
+
+test('switchPaymentToCash passes the ride id and reason code and surfaces errors', async () => {
+  const calls: { fn: string; args: unknown }[] = [];
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async (fn, args) => {
+        calls.push({ fn, args });
+        return { data: null, error: null };
+      },
+    })
+  );
+
+  assert.deepEqual(await switchPaymentToCash('rr1', 'no_signal'), { error: null });
+  assert.deepEqual(calls, [{ fn: 'switch_payment_to_cash', args: { p_ride_request_id: 'rr1', p_reason_code: 'no_signal' } }]);
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({ rpc: async () => ({ data: null, error: { message: 'This ride is already paid by GCash' } }) })
+  );
+  assert.deepEqual(await switchPaymentToCash('rr1', 'other'), { error: 'This ride is already paid by GCash' });
+});
+
+test('getTransactionStatus returns the row status, or null when there is no row', async () => {
+  const makeClient = (row: unknown) =>
+    createFakeSupabaseClient({
+      from: (table) => {
+        assert.equal(table, 'transactions');
+        return { select: () => ({ eq: () => ({ maybeSingle: async () => ({ data: row, error: null }) }) }) };
+      },
+    });
+
+  __setSupabaseClientForTests(makeClient({ status: 'paid' }));
+  assert.deepEqual(await getTransactionStatus('rr1'), { status: 'paid', error: null });
+
+  __setSupabaseClientForTests(makeClient(null));
+  assert.deepEqual(await getTransactionStatus('rr1'), { status: null, error: null });
+});
+
+test('verifyGcashPayment invokes create-gcash-checkout with the verify action', async () => {
+  let captured: { name: string; options: unknown } | null = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      functionsInvoke: async (name, options) => {
+        captured = { name, options };
+        return { data: { status: 'paid' }, error: null };
+      },
+    })
+  );
+
+  assert.deepEqual(await verifyGcashPayment('rr1'), { status: 'paid', error: null });
+  assert.deepEqual(captured, { name: 'create-gcash-checkout', options: { body: { rideRequestId: 'rr1', action: 'verify' } } });
+});
+
+test('verifyGcashPayment returns a null status and the message when the function errors', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({ functionsInvoke: async () => ({ data: null, error: { message: 'Edge Function returned a non-2xx status code' } }) })
+  );
+
+  const result = await verifyGcashPayment('rr1');
+  assert.equal(result.status, null);
+  assert.equal(result.error, 'Edge Function returned a non-2xx status code');
+});
+
+test('getUnpaidCompletedRide returns the newest completed ride whose transaction is not paid', async () => {
+  const afterCutoff = '2026-10-02T00:00:00.000Z';
+  const beforeCutoff = '2026-09-01T00:00:00.000Z';
+  const rows = [
+    { id: 'paid-one', final_fare: 40, estimated_fare: 40, preferred_method: 'cash', completed_at: afterCutoff, transactions: { status: 'paid' } },
+    { id: 'unpaid-one', final_fare: 55, estimated_fare: 55, preferred_method: 'gcash', completed_at: afterCutoff, transactions: [{ status: 'pending' }] },
+    { id: 'old-unpaid', final_fare: 30, estimated_fare: 30, preferred_method: 'gcash', completed_at: beforeCutoff, transactions: null },
+  ];
+  const makeChain = (data: unknown) => {
+    const chain: any = {
+      select: () => chain,
+      eq: () => chain,
+      gte: () => chain,
+      order: () => chain,
+      limit: async () => ({ data, error: null }),
+    };
+    return chain;
+  };
+  __setSupabaseClientForTests(createFakeSupabaseClient({ from: () => makeChain(rows) }));
+
+  const { data, error } = await getUnpaidCompletedRide('p1');
+
+  assert.equal(error, null);
+  assert.deepEqual(data, { rideRequestId: 'unpaid-one', fare: 55, method: 'gcash' });
+
+  __setSupabaseClientForTests(createFakeSupabaseClient({ from: () => makeChain([rows[0]]) }));
+  assert.deepEqual(await getUnpaidCompletedRide('p1'), { data: null, error: null });
+  assert.ok(UNPAID_RIDE_CUTOFF_ISO.startsWith('2026-09-30'));
+});
+
+test('subscribeToTripTransactions listens on the transactions table, fires onChange, and removes the channel', async () => {
+  let capturedArgs: any = null;
+  let capturedHandler: ((payload: unknown) => void) | null = null;
+  let removedChannel: unknown = null;
+  const fakeChannel = {
+    on: (_event: string, filterArgs: unknown, handler: (payload: unknown) => void) => {
+      capturedArgs = filterArgs;
+      capturedHandler = handler;
+      return fakeChannel;
+    },
+    subscribe: () => fakeChannel,
+  };
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: (name: string) => {
+        assert.ok(name.startsWith('trip_transactions'), `unexpected channel name ${name}`);
+        return fakeChannel;
+      },
+      removeChannel: (channel: unknown) => {
+        removedChannel = channel;
+      },
+    })
+  );
+
+  let changes = 0;
+  const unsubscribe = subscribeToTripTransactions(() => {
+    changes += 1;
+  });
+
+  assert.equal(capturedArgs.table, 'transactions');
+  assert.equal(capturedArgs.schema, 'public');
+  capturedHandler!({ new: { status: 'paid' } });
+  assert.equal(changes, 1);
+
+  unsubscribe();
   assert.equal(removedChannel, fakeChannel);
 });
