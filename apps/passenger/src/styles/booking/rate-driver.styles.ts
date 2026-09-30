@@ -6,7 +6,8 @@ export const styles = StyleSheet.create({
   flex: { flex: 1 },
 
   // --- Band: large (before a score) and compact (score <= 3 or keyboard open) ---
-  bandLarge: { paddingHorizontal: 0, gap: 16, paddingBottom: 6 },
+  // No paddingHorizontal here: NavyBandHeader already insets its content 16px, and zeroing it pushed the eyebrow, avatar and Skip link to the screen edges.
+  bandLarge: { gap: 16, paddingBottom: 6 },
   bandCompact: { gap: 12, paddingBottom: 0 },
   topRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   eyebrow: {
