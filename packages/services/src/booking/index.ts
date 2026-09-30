@@ -244,6 +244,8 @@ export type RideRequestStatusUpdate = Pick<
   | 'assigned_at'
   | 'completed_at'
   | 'cancelled_at'
+  | 'payment_requested_at'
+  | 'preferred_method'
 >;
 
 /**
@@ -274,7 +276,7 @@ export function subscribeToRideRequestStatus(
       if (status === 'SUBSCRIBED') {
         client
           .from('ride_requests')
-          .select('id, status, cancel_reason, cancelled_by, discount_applied, trip_id, arrived_at, assigned_at, completed_at, cancelled_at')
+          .select('id, status, cancel_reason, cancelled_by, discount_applied, trip_id, arrived_at, assigned_at, completed_at, cancelled_at, payment_requested_at, preferred_method')
           .eq('id', rideRequestId)
           .maybeSingle()
           .then(({ data }: { data: RideRequestStatusUpdate | null }) => {
@@ -561,6 +563,8 @@ export interface ActiveTripPassenger {
   /** D1: set only while an after-pickup transfer to this driver is accepted but not yet handoff-confirmed — the point to meet the previous driver, distinct from the ride's original pickup. */
   handoffLat: number | null;
   handoffLng: number | null;
+  /** Set once the driver has asked this passenger to pay by GCash (the passenger's app then opens its payment screen). */
+  paymentRequestedAt: string | null;
 }
 
 export interface ActiveTripForDriver {
@@ -626,6 +630,7 @@ export async function getActiveTripForDriver(): Promise<GetActiveTripForDriverRe
         arrivedAt: row.arrived_at ?? null,
         handoffLat: row.handoff_lat ?? null,
         handoffLng: row.handoff_lng ?? null,
+        paymentRequestedAt: row.payment_requested_at ?? null,
       })),
     },
     error: null,

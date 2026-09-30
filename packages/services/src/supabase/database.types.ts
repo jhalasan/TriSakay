@@ -1325,6 +1325,7 @@ export type Database = {
           final_fare: number | null
           id: string
           passenger_id: string
+          payment_requested_at: string | null
           picked_up_at: string | null
           pickup_barangay_id: string | null
           pickup_label: string | null
@@ -1358,6 +1359,7 @@ export type Database = {
           final_fare?: number | null
           id?: string
           passenger_id: string
+          payment_requested_at?: string | null
           picked_up_at?: string | null
           pickup_barangay_id?: string | null
           pickup_label?: string | null
@@ -1391,6 +1393,7 @@ export type Database = {
           final_fare?: number | null
           id?: string
           passenger_id?: string
+          payment_requested_at?: string | null
           picked_up_at?: string | null
           pickup_barangay_id?: string | null
           pickup_label?: string | null
@@ -1636,8 +1639,12 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           paymongo_payload: Json | null
           paymongo_session_id: string | null
+          previous_paymongo_session_id: string | null
           ride_request_id: string
           status: Database["public"]["Enums"]["payment_status"]
+          switch_reason: string | null
+          switched_at: string | null
+          switched_from_method: Database["public"]["Enums"]["payment_method"] | null
           updated_at: string
         }
         Insert: {
@@ -1649,8 +1656,12 @@ export type Database = {
           method: Database["public"]["Enums"]["payment_method"]
           paymongo_payload?: Json | null
           paymongo_session_id?: string | null
+          previous_paymongo_session_id?: string | null
           ride_request_id: string
           status?: Database["public"]["Enums"]["payment_status"]
+          switch_reason?: string | null
+          switched_at?: string | null
+          switched_from_method?: Database["public"]["Enums"]["payment_method"] | null
           updated_at?: string
         }
         Update: {
@@ -1662,8 +1673,12 @@ export type Database = {
           method?: Database["public"]["Enums"]["payment_method"]
           paymongo_payload?: Json | null
           paymongo_session_id?: string | null
+          previous_paymongo_session_id?: string | null
           ride_request_id?: string
           status?: Database["public"]["Enums"]["payment_status"]
+          switch_reason?: string | null
+          switched_at?: string | null
+          switched_from_method?: Database["public"]["Enums"]["payment_method"] | null
           updated_at?: string
         }
         Relationships: [
@@ -2258,6 +2273,7 @@ export type Database = {
           handoff_lng: number | null
           passenger_id: string
           passenger_name: string
+          payment_requested_at: string | null
           picked_up_at: string
           pickup_lat: number
           pickup_lng: number
@@ -2446,6 +2462,10 @@ export type Database = {
           ride_request_id: string
         }[]
       }
+      request_gcash_payment: {
+        Args: { p_ride_request_id: string }
+        Returns: string
+      }
       respond_transfer: {
         Args: { p_accept: boolean; p_invite_id: string }
         Returns: {
@@ -2468,6 +2488,10 @@ export type Database = {
         Returns: {
           ride_request_id: string
         }[]
+      }
+      switch_payment_to_cash: {
+        Args: { p_reason_code: string; p_ride_request_id: string }
+        Returns: undefined
       }
       submit_driver_documents: {
         Args: { p_documents: Json; p_plate_no: string }

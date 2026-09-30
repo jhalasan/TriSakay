@@ -397,7 +397,7 @@ test('subscribeToRideRequestStatus reconciles once the channel reports SUBSCRIBE
   await Promise.resolve();
 
   assert.equal(capturedTable, 'ride_requests');
-  assert.equal(capturedSelect, 'id, status, cancel_reason, cancelled_by, discount_applied, trip_id, arrived_at, assigned_at, completed_at, cancelled_at');
+  assert.equal(capturedSelect, 'id, status, cancel_reason, cancelled_by, discount_applied, trip_id, arrived_at, assigned_at, completed_at, cancelled_at, payment_requested_at, preferred_method');
   assert.deepEqual(capturedEqArgs, ['id', 'rr1']);
   assert.deepEqual(received, [{ id: 'rr1', status: 'assigned' }]);
 });
@@ -1036,6 +1036,7 @@ test('getActiveTripForDriver combines the trip header with every passenger leg',
                 picked_up_at: '2026-08-10T00:04:00.000Z',
                 distance_km: 1.4,
                 arrived_at: '2026-08-10T00:00:30.000Z',
+                payment_requested_at: '2026-08-10T00:10:00.000Z',
               },
               // No D2/F4 timing columns: the shape before those migrations are applied live.
               {
@@ -1092,6 +1093,7 @@ test('getActiveTripForDriver combines the trip header with every passenger leg',
         arrivedAt: '2026-08-10T00:00:30.000Z',
         handoffLat: null,
         handoffLng: null,
+        paymentRequestedAt: '2026-08-10T00:10:00.000Z',
       },
       {
         rideRequestId: 'rr2',
@@ -1113,6 +1115,7 @@ test('getActiveTripForDriver combines the trip header with every passenger leg',
         arrivedAt: null,
         handoffLat: null,
         handoffLng: null,
+        paymentRequestedAt: null,
       },
     ],
   });
