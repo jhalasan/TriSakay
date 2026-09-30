@@ -1,6 +1,6 @@
 # Payment settlement: making sure a ride is actually paid
 
-Date: 2026-09-30. Status: **draft for review, nothing built.**
+Date: 2026-09-30. Status: **approved by the team lead; revised after a double-check against the live system (see "Double-check findings"). Nothing built yet.**
 
 ## Intent
 
@@ -10,6 +10,32 @@ Success looks like:
 - A driver cannot complete a ride until its fare is confirmed paid, for cash **and** GCash, and the server enforces it, not just the driver's screen.
 - If GCash cannot work at the drop-off (no signal, payment fails), the driver still has a way to finish the ride.
 - A passenger with an unpaid completed ride cannot start a new booking until they settle it, and is reminded of it after an app restart.
+
+## Double-check findings (read against the code and the live database, 2026-09-30)
+
+Checked read-only against the live project. What it showed, and what changed in the design because of it:
+
+**Confirmed facts**
+- The live `complete_ride_leg` has no payment check (it never touches `transactions`), so the gate is genuinely new.
+- Nobody can `UPDATE` `ride_requests` directly (no update policy at all); every change goes through server functions. So the new `payment_requested_at` marker cannot be forged from an app.
+- Drivers can already read their rides' transaction rows (`txn_own_read`), so the driver's live "paid" update works without a policy change. The cash policy only lets a driver set `paid` with themselves as confirmer.
+- Live data: 18 completed rides, all with a `paid` transaction (17 cash, 1 GCash). No old unpaid completed rides exist, so the booking block will not lock any test account. The 3 pending cash rows all belong to **cancelled** rides, so the block must look at `completed` rides only.
+- The GCash path has completed end to end once on the live project (1 paid GCash transaction with a PayMongo session), so checkout and webhook have worked at least once.
+
+**Problems found in the first draft, and the fixes (now part of the design)**
+1. **Rollout order could strand rides.** Switching on the `complete_ride_leg` gate before the apps have the new buttons would leave a GCash ride impossible to complete. **Fix: two-phase rollout.** Phase A is additive only (column, RPCs, edge function changes); the apps are installed next; Phase B (the gate and the booking block) is applied last, after a check that both apps are on the new build.
+2. **The payment screen mishandles an already-paid ride.** It only listens for a payment after the passenger taps Pay now, so a passenger arriving with a paid GCash ride would see a Pay now button that then errors with "Already paid". **Fix:** on opening, read the transaction; if it is already paid, go straight on.
+3. **Paying mid-ride would show "trip complete" too early.** Today a successful payment jumps to the trip-complete screen, but with payment now happening before the driver completes, the ride is still ongoing. **Fix:** when the ride is not yet completed, return to the ride screen showing "Paid"; when the driver completes, go to trip complete (skipping the payment screen because it is paid).
+4. **A reconnecting passenger could miss the payment request.** The ride screen's reconnect query lists columns explicitly and would not include `payment_requested_at`. **Fix:** add it to that query and its type, so a passenger who was offline or restarted the app still gets taken to the payment screen.
+5. **The gate depends entirely on the webhook, which is the single thing that marks GCash paid.** If PayMongo is slow or misses a delivery, a passenger who really paid would leave the driver waiting. **Fix:** add a server-side **verify** step (`create-gcash-checkout` gains a `verify` action): it asks PayMongo directly whether the checkout session was paid and, if so, marks it paid using the same amount check as the webhook. The passenger app calls it when they return from the checkout page. The client still cannot mark anything paid; only the server, based on PayMongo's answer. The exact PayMongo response fields are confirmed against PayMongo's docs while building.
+6. **A race between paying and switching to cash.** The passenger could pay at the same instant the driver switches. **Fix:** both operations lock the transaction row; the switch is refused if it is already paid, and the webhook/verify only confirm rows that are still GCash, so a late payment after a switch is logged for refund review and never marks the cash row paid. The passenger is shown a clear "your driver switched this ride to cash, do not pay in GCash" message.
+7. **PayMongo has a minimum amount and needs signal.** A very small fare or a passenger with no data cannot pay by GCash. **Fix:** the driver's Switch to cash is always available while waiting, and the passenger screen shows the existing connection banner.
+8. **A driver waiting with no guidance.** **Fix:** after about a minute the driver's card suggests reminding the passenger or switching to cash.
+9. **The switch to cash needs to work whether or not a GCash row exists yet.** If the passenger never opened the checkout there is no row. **Fix:** `switch_payment_to_cash` upserts the cash row and clears stale PayMongo fields.
+10. **Success/cancel redirect addresses.** `create-gcash-checkout` sends the passenger's browser to `https://trisakay.app/...` after paying. Payment still succeeds even if that page does not exist, but the passenger would see an error page. **To check while building:** confirm the domain is owned, or point these at the project's own address.
+11. **A push notification when the driver requests payment** is a real improvement (a passenger with a locked phone at the drop-off). It needs a small trigger plus edge function, so it is **Phase C, after the core works**, not a blocker; the driver's on-screen wait and switch cover the gap meanwhile.
+
+**Observation outside this change:** 10 cancelled rides carry a `paid` cash transaction (the driver tapped Received, then the ride was cancelled). Worth a look separately (refunds are out of scope here); this design does not change it.
 
 ## What happens today (findings)
 
@@ -54,6 +80,15 @@ Success looks like:
 - **Driver app:** Request GCash payment, Switch to cash, waiting state, corrected wording.
 - **Passenger app:** react to `payment_requested_at`, settle card, restore path.
 - English and Filipino strings for all new text.
+
+## Rollout order
+
+- **Phase A (additive, safe):** new column and columns, the two RPCs, edge function changes (`create-gcash-checkout` accepts an ongoing requested ride and gains `verify`; webhook checks the row is still GCash). Nothing here changes what an existing app can do.
+- **Apps:** driver and passenger builds with the new buttons and screens are installed on every test phone.
+- **Phase B (the gate):** `complete_ride_leg` starts requiring a paid transaction, and the booking block goes live. Applied only after Phase A is verified and both apps are updated.
+- **Phase C (nice to have):** push notification to the passenger when payment is requested.
+
+Each phase is a separate migration file, reviewed before it is applied, with SQL tests run before and after.
 
 ## Risks and how they are handled
 
