@@ -2,10 +2,11 @@ import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { requestPasswordReset, signOut, updatePassword, verifyPasswordReset } from '@trisakay/services';
-import { Button, TextField } from '@trisakay/ui';
+import { Button, PasswordStrengthMeter, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { interpolate } from '../src/utils/interpolate';
+import { passwordRuleList } from '@trisakay/shared';
 import { isPasswordPolicyMet } from '@trisakay/utils';
 import { styles } from '../src/styles/auth/reset-password.styles';
 
@@ -121,6 +122,7 @@ export default function ResetPasswordScreen() {
             secureTextEntry
             autoComplete="password-new"
           />
+          <PasswordStrengthMeter rules={passwordRuleList(t.changePassword, password)} labels={{ weak: t.changePassword.strengthWeak, fair: t.changePassword.strengthFair, strong: t.changePassword.strengthStrong }} />
           <TextField
             label={t.driver.resetPassword.confirmNewPassword}
             helperText={t.hints.confirmPassword}

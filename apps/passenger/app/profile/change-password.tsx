@@ -2,8 +2,8 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, PasswordChecklist, PasswordField, colors } from '@trisakay/ui';
-import { passwordRuleResults } from '@trisakay/shared';
+import { Button, PasswordField, PasswordStrengthMeter, colors } from '@trisakay/ui';
+import { passwordRuleList } from '@trisakay/shared';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { styles } from '../../src/styles/profile/change-password.styles';
@@ -24,12 +24,6 @@ export default function ChangePasswordScreen() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
 
-  const [lengthOk, caseOk, symbolOk] = passwordRuleResults(newPassword);
-  const rules = [
-    { label: c.ruleLength, met: lengthOk },
-    { label: c.ruleCase, met: caseOk },
-    { label: c.ruleSymbol, met: symbolOk },
-  ];
   // Only flag a mismatch once the confirmation is as long as the new password.
   const mismatch = confirmNewPassword.length >= newPassword.length && confirmNewPassword.length > 0 && confirmNewPassword !== newPassword;
 
@@ -66,7 +60,7 @@ export default function ChangePasswordScreen() {
             hideLabel={c.hidePasswordA11y}
             autoComplete="new-password"
           />
-          <PasswordChecklist rules={rules} />
+          <PasswordStrengthMeter rules={passwordRuleList(c, newPassword)} labels={{ weak: c.strengthWeak, fair: c.strengthFair, strong: c.strengthStrong }} />
           <PasswordField
             label={c.confirmNewPassword}
             value={confirmNewPassword}

@@ -185,6 +185,19 @@ export function passwordRuleResults(password: string): [boolean, boolean, boolea
   ];
 }
 
+/** The same three rules as a labelled list, for the signup strength meter. */
+export function passwordRuleList(
+  labels: { ruleLength: string; ruleCase: string; ruleSymbol: string },
+  password: string,
+): { label: string; met: boolean }[] {
+  const [lengthOk, caseOk, symbolOk] = passwordRuleResults(password);
+  return [
+    { label: labels.ruleLength, met: lengthOk },
+    { label: labels.ruleCase, met: caseOk },
+    { label: labels.ruleSymbol, met: symbolOk },
+  ];
+}
+
 // --- Nearby drivers (passenger Home / Finding a driver) ---------------------
 
 /** Mirrors ROUND_TO in supabase/functions/nearby-driver-count: the server rounds the count UP to a multiple of this. */

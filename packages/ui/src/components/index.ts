@@ -50,3 +50,4 @@ export * from './SosCard';
 export * from './PasswordChecklist';
 export * from './PasswordField';
 export * from './ConnectionBanner';
+export * from './PasswordStrengthMeter';

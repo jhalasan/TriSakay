@@ -5,12 +5,13 @@ import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
 import { Alert, Image, KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, View } from 'react-native';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION, getSession, updateAvatarUrl, uploadAvatar } from '@trisakay/services';
-import { BrandMotif, Button, Card, Checkbox, GradientSurface, SegmentedControl, TextField, colors } from '@trisakay/ui';
+import { BrandMotif, Button, Card, Checkbox, GradientSurface, PasswordStrengthMeter, SegmentedControl, TextField, colors } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConsentStore } from '../../src/store/useConsentStore';
 import { DISCLOSURES, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../../src/content/legalCopy';
+import { passwordRuleList } from '@trisakay/shared';
 import { isPasswordPolicyMet } from '@trisakay/utils';
 import { interpolate } from '../../src/utils/interpolate';
 import { isNonEmpty, isValidEmail, isValidLocalMobile } from '../../src/utils/validation';
@@ -256,6 +257,10 @@ export default function RegisterScreen() {
                 onChangeText={(v) => update('password', v)}
                 error={errors.password}
                 secureTextEntry
+              />
+              <PasswordStrengthMeter
+                rules={passwordRuleList(t.changePassword, form.password)}
+                labels={{ weak: t.changePassword.strengthWeak, fair: t.changePassword.strengthFair, strong: t.changePassword.strengthStrong }}
               />
               <TextField
                 label={t.auth.register.confirmPassword}

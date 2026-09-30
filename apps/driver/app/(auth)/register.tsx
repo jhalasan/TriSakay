@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { File } from 'expo-file-system';
 import { Alert, Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION, submitDriverDocuments, type DriverDocumentInput } from '@trisakay/services';
-import { BrandMotif, Button, Card, Checkbox, colors, GradientSurface, SegmentedControl, TextField } from '@trisakay/ui';
+import { BrandMotif, Button, Card, Checkbox, colors, GradientSurface, PasswordStrengthMeter, SegmentedControl, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { DocumentUploadRow } from '../../src/components/DocumentUploadRow';
 import { ScrollFade } from '../../src/components/ScrollFade';
@@ -14,6 +14,7 @@ import { useDocumentsStore } from '../../src/store/useDocumentsStore';
 import { DISCLOSURES, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../../src/content/legalCopy';
 import { DOCUMENT_TYPES } from '../../src/types/document';
 import { interpolate } from '../../src/utils/interpolate';
+import { passwordRuleList } from '@trisakay/shared';
 import { isPasswordPolicyMet } from '@trisakay/utils';
 import { isNonEmpty, isValidEmail, isValidLocalMobile } from '../../src/utils/validation';
 import { styles } from '../../src/styles/auth/register.styles';
@@ -231,6 +232,10 @@ export default function RegisterScreen() {
               onChangeText={(v) => update('password', v)}
               error={errors.password}
               secureTextEntry
+            />
+            <PasswordStrengthMeter
+              rules={passwordRuleList(t.changePassword, form.password)}
+              labels={{ weak: t.changePassword.strengthWeak, fair: t.changePassword.strengthFair, strong: t.changePassword.strengthStrong }}
             />
             <TextField
               label={t.driver.register.confirmPassword}

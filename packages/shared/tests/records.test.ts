@@ -108,3 +108,21 @@ test('nearbyDriverRange turns the server\'s rounded-up count back into an honest
   assert.equal(formatNearbyRange(0), null);
   assert.equal(formatNearbyRange(1), '1');
 });
+
+test('passwordRuleList labels the three rules and tracks which are met', async () => {
+  const { passwordRuleList } = await import('../src/utils/records.ts');
+  const labels = { ruleLength: 'len', ruleCase: 'case', ruleSymbol: 'sym' };
+  assert.deepEqual(passwordRuleList(labels, ''), [
+    { label: 'len', met: false },
+    { label: 'case', met: false },
+    { label: 'sym', met: false },
+  ]);
+  assert.deepEqual(
+    passwordRuleList(labels, 'MixedCase1!x').map((r) => r.met),
+    [true, true, true],
+  );
+  assert.deepEqual(
+    passwordRuleList(labels, 'alllowercase').map((r) => r.met),
+    [true, false, false],
+  );
+});
