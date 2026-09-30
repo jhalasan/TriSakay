@@ -271,6 +271,7 @@ export const en = {
     cancelRequest: 'Cancel request',
   },
   trip: {
+    sheetToggleA11y: 'Ride card, drag to collapse or expand',
     noDriverMatchedTitle: 'No driver matched',
     noDriverMatchedMessage: 'Try requesting a ride again.',
     backToHome: 'Back to Home',

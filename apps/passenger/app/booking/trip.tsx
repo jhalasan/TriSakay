@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { Animated, Pressable, ScrollView, Text, View } from 'react-native';
+import { Animated, Pressable, ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+import ReAnimated, { useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   cancelRideRequest,
@@ -22,12 +25,19 @@ import { useBookingStore } from '../../src/store/useBookingStore';
 import { formatCurrency } from '../../src/utils/currency';
 import { interpolate } from '../../src/utils/interpolate';
 import { fetchRouteEstimate, type RouteEstimate } from '../../src/utils/route';
+import { styles } from '../../src/styles/booking/trip.styles';
 
 async function fetchRouteForNavigation(origin: { latitude: number; longitude: number }, destination: { latitude: number; longitude: number }) {
   const { geometry, source } = await fetchRouteEstimate(origin, destination);
   return { geometry, source };
 }
-import { styles } from '../../src/styles/booking/trip.styles';
+
+/** How much of the ride card stays showing when collapsed: just the drag handle. */
+const SHEET_PEEK_HEIGHT = 28;
+/** Seed for the card's height before it has been measured; matches the map's bottomInset. */
+const SHEET_EXPANDED_GUESS = 340;
+/** A flick faster than this (px/s) snaps in that direction regardless of how far it was dragged. */
+const SHEET_FLING_VELOCITY = 500;
 
 type Stage = 1 | 2 | 3;
 
@@ -109,6 +119,8 @@ export default function TripScreen() {
   // map shows the driver-to-pickup line instead (drawn by OsmMap itself from
   // `liveDriverMarker`), so there's nothing for a pickup→dropoff route to add yet.
   const [tripRoute, setTripRoute] = useState<RouteEstimate | null>(null);
+  // The passenger's own phone position while riding: it is in the vehicle, and its GPS is smoother than the driver's ~8 s server updates.
+  const [ridePosition, setRidePosition] = useState<{ latitude: number; longitude: number; heading: number | null } | null>(null);
   // Same exit-guard pattern as finding-driver.tsx: reset() clears
   // rideRequestId, which would otherwise re-fire this effect a second time
   // before the component finishes unmounting from the first navigate-away.
@@ -116,6 +128,38 @@ export default function TripScreen() {
 
   /** Same settle-in entrance used when this screen previously arrived from finding-driver. */
   const settle = useRef(new Animated.Value(0)).current;
+
+  // Drag the handle down to collapse the ride card to a peek (so the map is
+  // fully visible), drag up or tap to bring it back. `sheetHeight` is the
+  // measured card height, `sheetOffset` how far it is slid down (0 = open).
+  const sheetHeight = useSharedValue(SHEET_EXPANDED_GUESS);
+  const sheetOffset = useSharedValue(0);
+  const dragStartOffset = useSharedValue(0);
+  const sheetAnimatedStyle = useAnimatedStyle(() => ({ transform: [{ translateY: sheetOffset.value }] }));
+  // What the map's recenter button sits above: the card's visible height.
+  const mapInset = useDerivedValue(() => Math.max(SHEET_PEEK_HEIGHT, sheetHeight.value - sheetOffset.value) + 10);
+  const sheetGesture = Gesture.Exclusive(
+    Gesture.Pan()
+      .onStart(() => {
+        dragStartOffset.value = sheetOffset.value;
+      })
+      .onUpdate((event) => {
+        const max = Math.max(0, sheetHeight.value - SHEET_PEEK_HEIGHT);
+        sheetOffset.value = Math.min(max, Math.max(0, dragStartOffset.value + event.translationY));
+      })
+      .onEnd((event) => {
+        const max = Math.max(0, sheetHeight.value - SHEET_PEEK_HEIGHT);
+        const collapse = Math.abs(event.velocityY) > SHEET_FLING_VELOCITY ? event.velocityY > 0 : sheetOffset.value > max / 2;
+        sheetOffset.value = withTiming(collapse ? max : 0, { duration: 250 });
+      }),
+    Gesture.Tap().onEnd(() => {
+      const max = Math.max(0, sheetHeight.value - SHEET_PEEK_HEIGHT);
+      sheetOffset.value = withTiming(sheetOffset.value > 0 ? 0 : max, { duration: 250 });
+    }),
+  );
+  const handleSheetLayout = (event: LayoutChangeEvent) => {
+    sheetHeight.value = event.nativeEvent.layout.height;
+  };
 
   useEffect(() => {
     Animated.timing(settle, {
@@ -206,13 +250,46 @@ export default function TripScreen() {
   }, [rideRequestId]);
 
   useEffect(() => {
-    if (rideStatus !== 'assigned' || arrivedAt || !driver?.id) {
+    // Heading to the pickup, and during the ride (as the fallback position if this phone has no GPS fix).
+    const wanted = (rideStatus === 'assigned' && !arrivedAt) || rideStatus === 'ongoing';
+    if (!wanted || !driver?.id) {
       setDriverLocation(null);
       return;
     }
     const unsubscribe = subscribeToDriverLocation(driver.id, setDriverLocation);
     return unsubscribe;
   }, [rideStatus, arrivedAt, driver?.id]);
+
+  // While riding, follow this phone's own GPS so the map moves smoothly with the vehicle.
+  useEffect(() => {
+    if (rideStatus !== 'ongoing') {
+      setRidePosition(null);
+      return;
+    }
+    let cancelled = false;
+    let subscription: Location.LocationSubscription | null = null;
+    void (async () => {
+      const { status } = await Location.getForegroundPermissionsAsync();
+      if (status !== 'granted' || cancelled) return;
+      const sub = await Location.watchPositionAsync(
+        { accuracy: Location.Accuracy.High, distanceInterval: 8, timeInterval: 2000 },
+        ({ coords }) => {
+          setRidePosition((previous) => ({
+            latitude: coords.latitude,
+            longitude: coords.longitude,
+            // GPS heading is noise when barely moving, so keep the last real one.
+            heading: typeof coords.heading === 'number' && coords.heading >= 0 && (coords.speed ?? 0) >= 1 ? coords.heading : (previous?.heading ?? null),
+          }));
+        },
+      );
+      if (cancelled) sub.remove();
+      else subscription = sub;
+    })();
+    return () => {
+      cancelled = true;
+      subscription?.remove();
+    };
+  }, [rideStatus]);
 
   useEffect(() => {
     if (rideStatus !== 'ongoing' || !pickup || !dropoff) {
@@ -236,6 +313,17 @@ export default function TripScreen() {
     fetchRoute: fetchRouteForNavigation,
   });
 
+  // During the ride: the road ahead from where the vehicle is now, trimmed as it moves.
+  const ridePoint =
+    rideStatus === 'ongoing'
+      ? ridePosition ?? (driverLocation ? { latitude: driverLocation.lat, longitude: driverLocation.lng, heading: null } : null)
+      : null;
+  const rideNav = useNavigationRoute({
+    origin: ridePoint ? { latitude: ridePoint.latitude, longitude: ridePoint.longitude } : null,
+    destination: rideStatus === 'ongoing' && dropoff ? dropoff : null,
+    fetchRoute: fetchRouteForNavigation,
+  });
+
   // Auto-close the cancel sheet if the ride moves to 'ongoing' while it's open (Part B §B5).
   useEffect(() => {
     if (rideStatus === 'ongoing') setCancelSheetVisible(false);
@@ -245,7 +333,11 @@ export default function TripScreen() {
     driverLocation && pickup
       ? estimateEtaMinutes(haversineKm(driverLocation.lat, driverLocation.lng, pickup.latitude, pickup.longitude), ASSUMED_TRICYCLE_SPEED_KMH)
       : null;
-  const etaToDropoffMinutes = tripRoute ? estimateEtaMinutes(tripRoute.distanceKm, ASSUMED_TRICYCLE_SPEED_KMH) : null;
+  // Distance still to go: along the remaining road once the vehicle's position is known, else the whole trip.
+  const remainingRideKm = rideNav.route
+    ? rideNav.route.slice(1).reduce((sum, point, i) => sum + haversineKm(rideNav.route![i].latitude, rideNav.route![i].longitude, point.latitude, point.longitude), 0)
+    : (tripRoute?.distanceKm ?? null);
+  const etaToDropoffMinutes = remainingRideKm !== null ? estimateEtaMinutes(remainingRideKm, ASSUMED_TRICYCLE_SPEED_KMH) : null;
 
   const stage: Stage = rideStatus === 'ongoing' ? 3 : arrivedAt ? 2 : 1;
 
@@ -325,7 +417,7 @@ export default function TripScreen() {
   } else {
     eyebrow = t.trip.eyebrow.arrivingDropoff;
     headline = etaToDropoffMinutes === null ? t.trip.headline.onTheWay : etaToDropoffMinutes < 1 ? t.trip.headline.lessThanMin : interpolate(t.trip.headline.minutes, { n: etaToDropoffMinutes });
-    sub = tripRoute ? interpolate(t.trip.sub.riding, { dropoff: dropoff?.label ?? '', km: tripRoute.distanceKm.toFixed(1) }) : '';
+    sub = remainingRideKm !== null ? interpolate(t.trip.sub.riding, { dropoff: dropoff?.label ?? '', km: remainingRideKm.toFixed(1) }) : '';
   }
 
   const step = stage - 1;
@@ -355,6 +447,7 @@ export default function TripScreen() {
           interactive
           edgeToEdge
           bottomInset={340}
+          bottomInsetValue={mapInset}
           marker={
             stage === 3
               ? dropoff
@@ -365,7 +458,10 @@ export default function TripScreen() {
                 : null
           }
           markerColor={stage === 3 ? colors.accentBlue : colors.accentGreen}
-          route={stage === 3 ? tripRoute?.geometry : stage === 1 ? approach.route : null}
+          route={stage === 3 ? (rideNav.route ?? tripRoute?.geometry) : stage === 1 ? approach.route : null}
+          followPosition={stage === 3 && ridePoint ? ridePoint : null}
+          followZoom={16}
+          followPitch={20}
           liveDriverMarker={stage === 1 && driverLocation ? { latitude: driverLocation.lat, longitude: driverLocation.lng } : null}
         />
       </View>
@@ -416,8 +512,13 @@ export default function TripScreen() {
           },
         ]}
       >
-        <View style={styles.sheet}>
-          <View style={styles.handle} />
+        <ReAnimated.View style={sheetAnimatedStyle}>
+        <View style={styles.sheet} onLayout={handleSheetLayout}>
+          <GestureDetector gesture={sheetGesture}>
+            <View style={styles.handleTouch} accessibilityRole="button" accessibilityLabel={t.trip.sheetToggleA11y}>
+              <View style={styles.handle} />
+            </View>
+          </GestureDetector>
           <ScrollView contentContainerStyle={styles.sheetScrollContent} showsVerticalScrollIndicator={false}>
             {transferBannerVisible && (
               <View style={styles.transferBanner}>
@@ -573,6 +674,7 @@ export default function TripScreen() {
             )}
           </ScrollView>
         </View>
+        </ReAnimated.View>
       </Animated.View>
 
       <CancelReasonSheet

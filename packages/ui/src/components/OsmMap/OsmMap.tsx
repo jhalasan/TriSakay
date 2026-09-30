@@ -121,6 +121,10 @@ export interface OsmMapProps {
    * recenter button is pressed.
    */
   followPosition?: { latitude: number; longitude: number; heading?: number | null } | null;
+  /** Camera zoom in navigation mode. Defaults to a close-in driver's view. */
+  followZoom?: number;
+  /** Camera tilt in degrees in navigation mode; 0 is straight down. */
+  followPitch?: number;
   onReady?: () => void;
   /** Squares off the container corners for maps that run to the screen edges, instead of the default rounded-card look. */
   edgeToEdge?: boolean;
@@ -182,6 +186,8 @@ export function OsmMap({
   route = null,
   liveDriverMarker = null,
   followPosition = null,
+  followZoom = FOLLOW_ZOOM,
+  followPitch = FOLLOW_PITCH,
   onReady,
   edgeToEdge = false,
 }: OsmMapProps) {
@@ -328,10 +334,10 @@ export function OsmMap({
   useEffect(() => {
     if (state !== 'ready' || !following || !Number.isFinite(followLat) || !Number.isFinite(followLng)) return;
     mapRef.current?.animateCamera(
-      { center: { latitude: followLat, longitude: followLng }, heading: followHeading, pitch: FOLLOW_PITCH, zoom: FOLLOW_ZOOM },
+      { center: { latitude: followLat, longitude: followLng }, heading: followHeading, pitch: followPitch, zoom: followZoom },
       { duration: FOLLOW_DURATION_MS },
     );
-  }, [state, following, followLat, followLng, followHeading]);
+  }, [state, following, followLat, followLng, followHeading, followZoom, followPitch]);
 
   return (
     <View style={[styles.container, { height }, edgeToEdge && styles.edgeToEdge]}>

@@ -45,7 +45,7 @@ export const styles = StyleSheet.create({
   sheet: {
     backgroundColor: colors.white,
     borderRadius: 26,
-    paddingTop: 10,
+    paddingTop: 2,
     paddingHorizontal: 16,
     paddingBottom: 16,
     gap: spacing.md,
@@ -56,6 +56,8 @@ export const styles = StyleSheet.create({
     shadowRadius: 24,
     elevation: 12,
   },
+  // A taller touch target around the visible 4px handle, so it is easy to grab and drag.
+  handleTouch: { alignSelf: 'stretch', alignItems: 'center', paddingVertical: 8 },
   handle: { width: 40, height: 4, borderRadius: 2, backgroundColor: colors.line, alignSelf: 'center' },
   sheetScrollContent: { gap: spacing.md },
 

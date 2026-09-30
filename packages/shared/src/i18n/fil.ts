@@ -263,6 +263,7 @@ export const fil: Translations = {
     cancelRequest: 'Kanselahin ang Request',
   },
   trip: {
+    sheetToggleA11y: 'Card ng biyahe, i-drag para paliitin o palakihin',
     noDriverMatchedTitle: 'Walang na-match na driver',
     noDriverMatchedMessage: 'Subukang humiling muli ng sakay.',
     backToHome: 'Bumalik sa Home',
