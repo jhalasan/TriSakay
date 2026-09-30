@@ -22,6 +22,33 @@ export const styles = StyleSheet.create({
   fabContent: { alignItems: 'center', justifyContent: 'center', gap: 2 },
   fabLabel: { fontSize: 11, lineHeight: 13, letterSpacing: 0.6, fontFamily: fontFamily.extrabold, color: colors.white },
 
+  // --- disc variant (Privacy & Safety SOS, trip-records handoff §2b) ---
+  discOuter: {
+    width: 148,
+    height: 148,
+    borderRadius: 74,
+    backgroundColor: colors.dangerSoft,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  discPressed: { transform: [{ scale: 0.97 }] },
+  discRing: { position: 'absolute', top: 0, left: 0 },
+  // The shadow sits on this wrapper: the gradient inside clips to its rounded corners, which would drop a shadow set on it.
+  discInnerShadow: {
+    width: 116,
+    height: 116,
+    borderRadius: 58,
+    shadowColor: colors.danger,
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.35,
+    shadowRadius: 24,
+    elevation: 8,
+  },
+  discInner: { width: 116, height: 116, borderRadius: 58, alignItems: 'center', justifyContent: 'center' },
+  discContent: { alignItems: 'center', gap: 1 },
+  discLabel: { fontSize: 26, lineHeight: 30, letterSpacing: 0.5, fontFamily: fontFamily.extrabold, color: colors.white },
+  discSublabel: { fontSize: 11, lineHeight: 15, fontFamily: fontFamily.semibold, color: 'rgba(255, 255, 255, 0.9)' },
+
   base: {
     flexDirection: 'row',
     alignItems: 'center',

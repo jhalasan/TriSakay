@@ -1,13 +1,21 @@
 import { useRef, useState } from 'react';
-import { Animated, Pressable, Text, View, type PressableProps } from 'react-native';
+import { ActivityIndicator, Animated, Pressable, Text, View, type PressableProps } from 'react-native';
 import Svg, { Circle } from 'react-native-svg';
-import { colors, motion } from '../../theme';
+import { colors, motion, recordsPalette } from '../../theme';
+import { GradientSurface } from '../GradientSurface';
 import { styles } from './HoldToConfirmButton.styles';
 
 /** How long the press must be held before onConfirm fires. Not part of the
  *  shared `motion` tokens — this is a one-off interaction duration, not a
  *  reusable transition timing. */
 const HOLD_DURATION_MS = 900;
+
+/** `variant="disc"` geometry — the Privacy & Safety SOS: a 148 outer disc, a 5px ring track inset in it, a 116 inner disc. */
+const DISC_OUTER = 148;
+const DISC_INNER = 116;
+const DISC_RING_STROKE = 5;
+const DISC_RING_RADIUS = (DISC_OUTER - DISC_RING_STROKE) / 2;
+const DISC_RING_CIRCUMFERENCE = 2 * Math.PI * DISC_RING_RADIUS;
 
 const AnimatedCircle = Animated.createAnimatedComponent(Circle);
 
@@ -25,7 +33,13 @@ export interface HoldToConfirmButtonProps extends Omit<PressableProps, 'style' |
   fullWidth?: boolean;
   icon?: React.ReactNode;
   /** `'fab'` is the active-trip screen's floating circular SOS (README §6.2) — same hold behaviour, a ring instead of a left-to-right fill. */
-  variant?: 'default' | 'fab';
+  variant?: 'default' | 'fab' | 'disc';
+  /** Hold time before `onConfirm` fires. Defaults to 900 ms (the trip SOS); the Privacy & Safety SOS passes 2000. */
+  holdDurationMs?: number;
+  /** `disc` only: the small line under the label ("Hold 2s"). */
+  sublabel?: string;
+  /** `disc` only: shows a spinner in place of the label and keeps the ring full while the request is in flight. Presses are ignored. */
+  loading?: boolean;
 }
 
 /**
@@ -44,17 +58,20 @@ export function HoldToConfirmButton({
   fullWidth = false,
   icon,
   variant = 'default',
+  holdDurationMs = HOLD_DURATION_MS,
+  sublabel,
+  loading = false,
   ...pressableProps
 }: HoldToConfirmButtonProps) {
   const progress = useRef(new Animated.Value(0)).current;
   const [holding, setHolding] = useState(false);
 
   function handlePressIn() {
-    if (disabled) return;
+    if (disabled || loading) return;
     setHolding(true);
     Animated.timing(progress, {
       toValue: 1,
-      duration: HOLD_DURATION_MS,
+      duration: holdDurationMs,
       easing: motion.easing.linear,
       useNativeDriver: false,
     }).start(({ finished }) => {
@@ -70,6 +87,61 @@ export function HoldToConfirmButton({
       easing: motion.easing.out,
       useNativeDriver: false,
     }).start();
+  }
+
+  if (variant === 'disc') {
+    const strokeDashoffset = loading
+      ? 0
+      : progress.interpolate({ inputRange: [0, 1], outputRange: [DISC_RING_CIRCUMFERENCE, 0] });
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityState={{ disabled: disabled || loading, busy: loading }}
+        accessibilityHint="Press and hold to confirm"
+        disabled={disabled || loading}
+        onPressIn={handlePressIn}
+        onPressOut={handlePressOut}
+        style={({ pressed }) => [styles.discOuter, pressed && styles.discPressed, disabled && styles.disabled]}
+        {...pressableProps}
+      >
+        <Svg width={DISC_OUTER} height={DISC_OUTER} style={styles.discRing} pointerEvents="none">
+          <Circle
+            cx={DISC_OUTER / 2}
+            cy={DISC_OUTER / 2}
+            r={DISC_RING_RADIUS}
+            stroke={recordsPalette.dangerLine}
+            strokeWidth={DISC_RING_STROKE}
+            fill="none"
+          />
+          <AnimatedCircle
+            cx={DISC_OUTER / 2}
+            cy={DISC_OUTER / 2}
+            r={DISC_RING_RADIUS}
+            stroke={colors.danger}
+            strokeWidth={DISC_RING_STROKE}
+            fill="none"
+            strokeDasharray={DISC_RING_CIRCUMFERENCE}
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            rotation={-90}
+            originX={DISC_OUTER / 2}
+            originY={DISC_OUTER / 2}
+          />
+        </Svg>
+        <View style={styles.discInnerShadow}>
+          <GradientSurface token="sos" direction="diagonal" style={styles.discInner}>
+            {loading ? (
+              <ActivityIndicator color={colors.white} />
+            ) : (
+              <View style={styles.discContent}>
+                <Text style={styles.discLabel}>{label}</Text>
+                {sublabel ? <Text style={styles.discSublabel}>{sublabel}</Text> : null}
+              </View>
+            )}
+          </GradientSurface>
+        </View>
+      </Pressable>
+    );
   }
 
   if (variant === 'fab') {
