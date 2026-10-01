@@ -37,6 +37,7 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 | N1 | *(Team addition)* Ride status push notifications (assigned, arriving, arrived, transferred, completed) | STRETCH | Code, small |
 | N2 | *(Team addition)* Cancellation and transfer charts for the PSO | STRETCH | Code, small |
 | N3 | *(Team addition)* Share my trip: a live link for a trusted contact | FUTURE | Code, medium |
+| AM1 | Account management (panel: don't show full personal details on the profile page): one Account screen with masked email/phone, change password, optional MFA for passengers and drivers, signed-in devices, reversible deactivation; MFA required for admin/PSO, with a staged database gate | **CODE DONE 2026-10-01 on branch `feature/account-management`; migrations, edge function and the gate are NOT applied yet.** Spec/plan: `docs/superpowers/specs|plans/2026-10-01-account-management*.md` | Code, large |
 
 ### Fixes found during exploration (required, do first)
 | ID | Fix |
