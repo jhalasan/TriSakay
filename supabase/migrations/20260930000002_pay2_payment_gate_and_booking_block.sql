@@ -1,4 +1,4 @@
--- STAGED, not part of the migration history: Phase B of payment settlement, NOT applied to the live project. Move to supabase/migrations/ (as 20260930000002_pay2_payment_gate_and_booking_block.sql) only after the on-device payment walkthrough passes and the user approves.
+-- Payment settlement Phase B. Applied live 2026-10-01 after the on-device payment walkthrough passed.
 -- Payment settlement, Phase B (the gate). APPLY ONLY AFTER Phase A (pay1) is
 -- live AND both apps with the request/switch buttons are installed on every
 -- test phone: from this point a ride cannot be completed until its
@@ -49,9 +49,9 @@ begin
   end if;
 
   -- Payment settlement: the fare must be confirmed paid before the ride can be completed.
-  select status into v_payment_status
-  from public.transactions
-  where ride_request_id = p_ride_request_id;
+  select tx.status into v_payment_status
+  from public.transactions tx
+  where tx.ride_request_id = p_ride_request_id;
 
   if v_payment_status is distinct from 'paid' then
     raise exception 'Payment has not been confirmed for this ride yet';
