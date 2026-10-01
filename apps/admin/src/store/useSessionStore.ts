@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import * as authService from '@trisakay/services';
 import type { PublicUser } from '@trisakay/services';
 import type { AdminRole, AdminSessionUser } from '../types/role';
+import { nextMfaStep, type MfaStep } from '../lib/mfaState.ts';
 
 // Unlike the driver/passenger apps' equivalent stores, this file deliberately
 // does NOT `import '../lib/supabase'` for its init side effect — that file
@@ -38,6 +39,13 @@ interface SessionState {
   /** True until the initial session check (page load / refresh) resolves — RequireAuth must not redirect while this is true. */
   isHydrating: boolean;
   error: string | null;
+  /**
+   * Staff MFA is required. 'unknown' until the level has been read; 'enroll' = no factor yet; 'challenge' =
+   * a factor exists but this session hasn't entered its code; 'ok' = the portal may open.
+   */
+  mfaStep: 'unknown' | MfaStep;
+  /** Re-reads the MFA state from the session. Fails closed: if it can't be read the portal stays shut. */
+  refreshMfa: () => Promise<void>;
   signIn: (email: string, password: string) => Promise<boolean>;
   signOut: () => Promise<void>;
   /** Sets the new password on the current session, then clears must_change_password so RequireForcedPasswordChange lets the user through. */
@@ -70,7 +78,7 @@ export const useSessionStore = create<SessionState>()((set, get) => {
     if (signingIn) return;
     const claimed = ++epoch;
     if (!hasSession) {
-      set({ user: null, isAuthenticated: false, isHydrating: false });
+      set({ user: null, isAuthenticated: false, isHydrating: false, mfaStep: 'unknown' });
       return;
     }
 
@@ -89,6 +97,9 @@ export const useSessionStore = create<SessionState>()((set, get) => {
       return;
     }
 
+    // The portal stays closed until the MFA step is known, so a page refresh never flashes it open.
+    await get().refreshMfa();
+    if (claimed !== epoch) return;
     set({ user, isAuthenticated: true, isHydrating: false });
   }
 
@@ -104,6 +115,15 @@ export const useSessionStore = create<SessionState>()((set, get) => {
     isAuthenticated: false,
     isHydrating: true,
     error: null,
+    mfaStep: 'unknown',
+
+    refreshMfa: async () => {
+      try {
+        set({ mfaStep: nextMfaStep(await authService.getMfaStatus()) });
+      } catch {
+        set({ mfaStep: 'challenge' });
+      }
+    },
 
     signIn: async (email, password) => {
       if (!email.trim() || !password.trim()) {
@@ -129,6 +149,7 @@ export const useSessionStore = create<SessionState>()((set, get) => {
           return false;
         }
 
+        await get().refreshMfa();
         set({ user, isAuthenticated: true, error: null });
         // UAT A1: fire-and-forget — a failed audit-log write must never
         // block a successful sign-in.
@@ -145,7 +166,7 @@ export const useSessionStore = create<SessionState>()((set, get) => {
       // requires auth.uid() to still resolve to this user.
       await authService.recordLoginEvent('logout').catch(() => {});
       await authService.signOut();
-      set({ user: null, isAuthenticated: false });
+      set({ user: null, isAuthenticated: false, mfaStep: 'unknown' });
     },
 
     completePasswordChange: async (newPassword) => {
@@ -209,6 +230,7 @@ export const useSessionStore = create<SessionState>()((set, get) => {
           return message;
         }
 
+        await get().refreshMfa();
         set({ user, isAuthenticated: true, error: null });
         return null;
       } finally {

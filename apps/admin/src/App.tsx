@@ -28,6 +28,7 @@ const EmergencyAlerts = lazy(() => import('./routes/EmergencyAlerts').then((m) =
 const PsoUsers = lazy(() => import('./routes/PsoUsers').then((m) => ({ default: m.PsoUsers })));
 const Barangays = lazy(() => import('./routes/Barangays').then((m) => ({ default: m.Barangays })));
 const SystemSettings = lazy(() => import('./routes/SystemSettings').then((m) => ({ default: m.SystemSettings })));
+const MfaGate = lazy(() => import('./routes/MfaGate').then((m) => ({ default: m.MfaGate })));
 const ForcePasswordChange = lazy(() => import('./routes/ForcePasswordChange').then((m) => ({ default: m.ForcePasswordChange })));
 const NotFound = lazy(() => import('./routes/NotFound').then((m) => ({ default: m.NotFound })));
 
@@ -44,6 +45,25 @@ function RequireAuth({ children }: { children: ReactNode }) {
 function RequirePasswordSet({ children }: { children: ReactNode }) {
   const mustChangePassword = useSessionStore((state) => state.user?.mustChangePassword);
   if (mustChangePassword) return <Navigate to="/force-password-change" replace />;
+  return <>{children}</>;
+}
+
+/** Staff MFA is required: until the code step is done the portal stays closed. */
+function RequireMfa({ children }: { children: ReactNode }) {
+  const mfaStep = useSessionStore((state) => state.mfaStep);
+  if (mfaStep === 'unknown') return null;
+  if (mfaStep !== 'ok') return <Navigate to="/mfa" replace />;
+  return <>{children}</>;
+}
+
+/** The MFA screen is only for a signed-in user who still owes the setup or the code. */
+function RequireMfaPending({ children }: { children: ReactNode }) {
+  const isAuthenticated = useSessionStore((state) => state.isAuthenticated);
+  const isHydrating = useSessionStore((state) => state.isHydrating);
+  const mfaStep = useSessionStore((state) => state.mfaStep);
+  if (isHydrating) return null;
+  if (!isAuthenticated) return <Navigate to="/login" replace />;
+  if (mfaStep === 'ok') return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
@@ -108,10 +128,23 @@ export default function App() {
             />
 
             <Route
+              path="/mfa"
+              element={
+                <RequirePasswordSet>
+                  <RequireMfaPending>
+                    <MfaGate />
+                  </RequireMfaPending>
+                </RequirePasswordSet>
+              }
+            />
+
+            <Route
               element={
                 <RequireAuth>
                   <RequirePasswordSet>
-                    <AppShell />
+                    <RequireMfa>
+                      <AppShell />
+                    </RequireMfa>
                   </RequirePasswordSet>
                 </RequireAuth>
               }

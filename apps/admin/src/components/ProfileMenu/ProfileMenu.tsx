@@ -17,6 +17,7 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
   const user = useSessionStore((state) => state.user);
   const updateName = useSessionStore((state) => state.updateName);
   const changeOwnPassword = useSessionStore((state) => state.changeOwnPassword);
+  const mfaOn = useSessionStore((state) => state.mfaStep === 'ok');
 
   const [open, setOpen] = useState(false);
   const wrapRef = useRef<HTMLDivElement>(null);
@@ -154,7 +155,10 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
               <span className={styles.email}>{user.email}</span>
             </div>
           </div>
-          <span className={styles.roleBand}>{ROLE_LABELS[user.role]}</span>
+          <span className={styles.roleBand}>
+            {ROLE_LABELS[user.role]}
+            {mfaOn ? ' · MFA on' : ''}
+          </span>
 
           <div className={styles.section}>
             <div className={styles.sectionRow}>

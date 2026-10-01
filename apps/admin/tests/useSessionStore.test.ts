@@ -16,6 +16,8 @@ interface FakeConfig {
   onUsersUpdate?: (attrs: Record<string, unknown>) => void;
   /** Captures each row inserted into login_events (UAT A1). */
   onLoginEventInsert?: (row: Record<string, unknown>) => void;
+  /** MFA factors and assurance level the fake session reports. Defaults to no factor at aal1. */
+  mfa?: { factors?: Array<{ id: string; status: string }>; currentLevel?: string; nextLevel?: string };
 }
 
 function fakeClient(config: FakeConfig) {
@@ -55,6 +57,13 @@ function fakeClient(config: FakeConfig) {
       updateUser: async (attrs: Record<string, unknown>) => {
         config.onUpdateUser?.(attrs);
         return config.updateUserError ? { error: { message: config.updateUserError } } : { error: null };
+      },
+      mfa: {
+        listFactors: async () => ({ data: { totp: config.mfa?.factors ?? [], all: config.mfa?.factors ?? [] }, error: null }),
+        getAuthenticatorAssuranceLevel: async () => ({
+          data: { currentLevel: config.mfa?.currentLevel ?? 'aal1', nextLevel: config.mfa?.nextLevel ?? 'aal1' },
+          error: null,
+        }),
       },
       onAuthStateChange: (cb: (event: string, session: unknown) => void) => {
         config.captureAuthStateCallback?.((session) => cb('SIGNED_IN', session));
@@ -321,4 +330,41 @@ test('updateName() rejects a blank first or last name without calling the servic
   assert.match(failure ?? '', /required/);
   assert.deepEqual(usersUpdateCalls, []);
   assert.equal(useSessionStore.getState().user?.fullName, PSO_ROW.full_name);
+});
+
+test('signIn() leaves an admin with no MFA factor at the enrol step', async () => {
+  __setSupabaseClientForTests(fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW }));
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  assert.equal(useSessionStore.getState().mfaStep, 'enroll');
+});
+
+test('signIn() leaves an enrolled admin at the code step until the code is entered', async () => {
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: PSO_ROW,
+      mfa: { factors: [{ id: 'f1', status: 'verified' }], currentLevel: 'aal1', nextLevel: 'aal2' },
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  assert.equal(useSessionStore.getState().mfaStep, 'challenge');
+});
+
+test('an enrolled admin whose session is already at aal2 goes straight through', async () => {
+  __setSupabaseClientForTests(
+    fakeClient({
+      session: { user: { id: 'u1' } },
+      userRow: PSO_ROW,
+      mfa: { factors: [{ id: 'f1', status: 'verified' }], currentLevel: 'aal2', nextLevel: 'aal2' },
+    })
+  );
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  assert.equal(useSessionStore.getState().mfaStep, 'ok');
+});
+
+test('signOut() resets the MFA step', async () => {
+  __setSupabaseClientForTests(fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW }));
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  await useSessionStore.getState().signOut();
+  assert.equal(useSessionStore.getState().mfaStep, 'unknown');
 });
