@@ -219,6 +219,24 @@ export default function SettingsScreen() {
           </View>
         </View>
 
+        <View>
+          <SectionLabel label={t.settings.sectionAccount} />
+          <View style={styles.card}>
+            <Pressable style={styles.row} onPress={() => router.push('/profile/account')} accessibilityRole="button">
+              <View style={styles.rowLeading}>
+                <IconBadge name="person-circle-outline" />
+                <View style={styles.rowTextSlot}>
+                  <Text style={styles.rowLabel}>{t.accountMgmt.rowTitle}</Text>
+                  <Text style={styles.rowSublabel} numberOfLines={1}>
+                    {t.accountMgmt.rowSubtitle}
+                  </Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+            </Pressable>
+          </View>
+        </View>
+
         <View style={styles.logoutWrap}>
           <Button label={t.settings.logOut} variant="outline" tone="danger" fullWidth onPress={() => router.push('/logout')} />
           <Text style={styles.versionLine}>{t.driver.settings.versionLine}</Text>

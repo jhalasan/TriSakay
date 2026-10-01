@@ -42,7 +42,6 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
-  const [phone, setPhone] = useState(user?.phone ?? '');
   const name = `${firstName} ${lastName}`.trim();
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
@@ -63,14 +62,13 @@ export default function ProfileScreen() {
     if (isEditing) return;
     setFirstName(user?.firstName ?? '');
     setLastName(user?.lastName ?? '');
-    setPhone(user?.phone ?? '');
   }, [user, isEditing]);
 
   async function handleToggleEdit() {
     if (!isEditing) {
       if (!user) {
         // Profile still hasn't loaded — entering edit mode here would let a
-        // save write blank name/phone over the real values in the database.
+        // save write blank names over the real values in the database.
         Alert.alert(t.driver.profile.couldNotSaveTitle, t.driver.profile.pleaseTryAgain);
         void refreshProfile();
         return;
@@ -79,7 +77,7 @@ export default function ProfileScreen() {
       return;
     }
     setSaving(true);
-    const { error } = await updateProfile({ firstName, lastName, phone });
+    const { error } = await updateProfile({ firstName, lastName });
     setSaving(false);
     if (error) {
       Alert.alert(t.driver.profile.couldNotSaveTitle, error);
@@ -220,40 +218,8 @@ export default function ProfileScreen() {
             )}
           </View>
 
-          <View style={styles.detailsCard}>
-            <View style={styles.detailRow}>
-              <View style={styles.detailIconTile}>
-                <Ionicons name="mail-outline" size={16} color={colors.accentBluePressed} />
-              </View>
-              <View style={styles.detailTextSlot}>
-                <Text style={styles.detailLabel}>{t.driver.profile.email}</Text>
-                <Text style={styles.detailValue} numberOfLines={1}>
-                  {user?.email ?? '—'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.detailRow}>
-              <View style={styles.detailIconTile}>
-                <Ionicons name="call-outline" size={16} color={colors.accentBluePressed} />
-              </View>
-              {isEditing ? (
-                <View style={styles.editFieldInlineWrap}>
-                  <TextField
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    placeholder={t.driver.profile.phonePlaceholder}
-                    helperText={t.hints.phone}
-                  />
-                </View>
-              ) : (
-                <View style={styles.detailTextSlot}>
-                  <Text style={styles.detailLabel}>{t.driver.profile.phone}</Text>
-                  <Text style={styles.detailValue}>{user?.phone ?? '—'}</Text>
-                </View>
-              )}
-            </View>
-            {tricycleLine && (
+          {tricycleLine && (
+            <View style={styles.detailsCard}>
               <View style={[styles.detailRow, styles.detailRowLast]}>
                 <View style={styles.detailIconTile}>
                   <Ionicons name="document-text-outline" size={16} color={colors.accentBluePressed} />
@@ -265,8 +231,8 @@ export default function ProfileScreen() {
                   </Text>
                 </View>
               </View>
-            )}
-          </View>
+            </View>
+          )}
 
           {driverUnit?.verificationStatus === 'approved' && (
             <View style={styles.franchiseCardShadow}>
@@ -297,6 +263,13 @@ export default function ProfileScreen() {
           <View>
             <Text style={styles.sectionLabel}>{t.driver.profile.accountSection}</Text>
             <View style={styles.navGroup}>
+              <Pressable style={styles.detailRow} onPress={() => router.push('/profile/account')} accessibilityRole="button">
+                <View style={styles.navIconTile}>
+                  <Ionicons name="person-circle-outline" size={18} color={colors.accentBluePressed} />
+                </View>
+                <Text style={[styles.detailValue, { flex: 1, marginTop: 0 }]}>{t.accountMgmt.rowTitle}</Text>
+                <Ionicons name="chevron-forward" size={16} color={colors.inkFaint} />
+              </Pressable>
               <Pressable style={styles.detailRow} onPress={() => router.push('/ratings')} accessibilityRole="button">
                 <View style={styles.navIconTile}>
                   <Ionicons name="star-outline" size={18} color={colors.accentBluePressed} />
