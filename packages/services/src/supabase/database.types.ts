@@ -2483,6 +2483,19 @@ export type Database = {
         Returns: undefined
       }
       self_deactivate_account: { Args: never; Returns: undefined }
+      self_reactivate_account: { Args: never; Returns: undefined }
+      my_deactivation_origin: { Args: never; Returns: string }
+      revoke_my_session: { Args: { p_session_id: string }; Returns: undefined }
+      list_my_sessions: {
+        Args: never
+        Returns: {
+          created_at: string
+          id: string
+          is_current: boolean
+          updated_at: string
+          user_agent: string
+        }[]
+      }
       start_ride_leg: {
         Args: { p_ride_request_id: string; p_trip_id: string }
         Returns: {
