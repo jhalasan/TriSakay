@@ -1,3 +1,4 @@
+-- STAGED, not part of the migration history: Phase B of payment settlement, NOT applied to the live project. Move to supabase/migrations/ (as 20260930000002_pay2_payment_gate_and_booking_block.sql) only after the on-device payment walkthrough passes and the user approves.
 -- Payment settlement, Phase B (the gate). APPLY ONLY AFTER Phase A (pay1) is
 -- live AND both apps with the request/switch buttons are installed on every
 -- test phone: from this point a ride cannot be completed until its
