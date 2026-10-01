@@ -45,3 +45,28 @@ test('formatCallDuration shows m:ss, floors seconds, never goes negative, and ad
   assert.equal(formatCallDuration(3661), '1:01:01');
   assert.equal(formatCallDuration(-4), '0:00');
 });
+
+import { isPastSplash, isStalled, waitUntil } from '../src/utils/callState.ts';
+
+test('isStalled is true only while the audio is connecting or reconnecting', () => {
+  assert.equal(isStalled('connecting'), true);
+  assert.equal(isStalled('reconnecting'), true);
+  for (const s of ['incoming', 'calling', 'connected', 'declined', 'no_answer', 'cancelled', 'ended'] as const) assert.equal(isStalled(s), false);
+});
+
+test('isPastSplash is false while the app is still booting through splash, true afterwards', () => {
+  assert.equal(isPastSplash(undefined), false);
+  assert.equal(isPastSplash(''), false);
+  assert.equal(isPastSplash('/'), false);
+  assert.equal(isPastSplash('/splash'), false);
+  assert.equal(isPastSplash('/(tabs)/home'), true);
+  assert.equal(isPastSplash('/trip/active'), true);
+});
+
+test('waitUntil resolves true as soon as the condition holds, and false when it never does', async () => {
+  let n = 0;
+  assert.equal(await waitUntil(() => ++n >= 3, { intervalMs: 5, timeoutMs: 500 }), true);
+  assert.equal(n, 3);
+  assert.equal(await waitUntil(() => false, { intervalMs: 5, timeoutMs: 40 }), false);
+  assert.equal(await waitUntil(() => true, { intervalMs: 5, timeoutMs: 40 }), true);
+});

@@ -2939,6 +2939,10 @@ Set up: phone A has the passenger app, phone B the driver app, two different acc
 12. **Simultaneous calls:** both people tap Call at the same moment → exactly one call proceeds; the other gets "A call is already in progress for this ride", never two calls.
 13. **Closed app:** force-stop the callee's app and call → the push rings; tap → opens straight to the answer screen.
 14. **Privacy:** across every screen and notification above, no phone number, email or full name appears.
+15. **Cold-start tap (reviewer's top risk):** force-stop the callee's app, call it, tap the notification: the answer screen must appear and *stay* (not vanish after about 2 seconds, and the caller must not see "Declined"). Then answer it.
+16. **Background microphone (reviewer's risk, Android):** mid-call, lock the screen for 20 seconds, then switch to another app for 20 seconds. The other person must still hear you throughout. If they hear silence, the call needs an Android foreground service for the microphone; stop and report instead of working around it.
+17. **Mute before connect:** tap Mute while it is still ringing or connecting; after it connects the other person must hear nothing, and Unmute must restore sound. Same for Speaker.
+18. **Stuck connecting:** answer a call and immediately put the answering phone in airplane mode; the caller must leave "Connecting…" within about 20 seconds with an explanation, and End must always work.
 
 If any case fails, use superpowers:systematic-debugging against `adb logcat`, the `ride_calls` rows (`select id, status, end_reason, created_at, answered_at from ride_calls order by created_at desc limit 5`), and the function logs, rather than guessing.
 

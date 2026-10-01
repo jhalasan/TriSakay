@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 import { usePathname, useRouter } from 'expo-router';
 import Constants, { ExecutionEnvironment } from 'expo-constants';
+import { isPastSplash, waitUntil } from '@trisakay/shared';
 
 /**
  * C1 — the three pieces of push plumbing that never existed in this app
@@ -72,7 +73,11 @@ export function useChatNotifications() {
         function routeFromData(data: Record<string, unknown> | undefined) {
           if (!data) return;
           if (data.type === 'incoming_call' && typeof data.callId === 'string') {
-            router.navigate({ pathname: '/booking/call', params: { callId: data.callId } });
+            const route = { pathname: '/booking/call', params: { callId: data.callId } } as const;
+            // A cold-start tap must wait for splash to finish, or splash's redirect replaces the call screen.
+            void waitUntil(() => isPastSplash(pathnameRef.current)).then((ready) => {
+              if (ready) router.navigate(route);
+            });
             return;
           }
           if (data.type !== 'chat_message') return;

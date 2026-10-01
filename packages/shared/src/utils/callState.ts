@@ -60,3 +60,32 @@ export function formatCallDuration(totalSeconds: number): string {
   if (hours > 0) return `${hours}:${String(minutes).padStart(2, '0')}:${ss}`;
   return `${minutes}:${ss}`;
 }
+
+/** The audio is meant to be up but is not: the call screen gives up on it after a short while instead of waiting forever. */
+export function isStalled(state: CallUiState): boolean {
+  return state === 'connecting' || state === 'reconnecting';
+}
+
+/** How long to wait for the audio before giving up on a connecting or reconnecting call. */
+export const CONNECT_GIVE_UP_SECONDS = 20;
+
+/** False while the app is still starting up through its splash screen (a notification tap must not navigate yet). */
+export function isPastSplash(pathname: string | undefined): boolean {
+  return !!pathname && pathname !== '/' && !pathname.startsWith('/splash');
+}
+
+/** Polls `condition` until it is true (resolves true) or `timeoutMs` passes (resolves false). */
+export function waitUntil(
+  condition: () => boolean,
+  { intervalMs = 250, timeoutMs = 10_000 }: { intervalMs?: number; timeoutMs?: number } = {},
+): Promise<boolean> {
+  return new Promise((resolve) => {
+    const startedAt = Date.now();
+    const tick = () => {
+      if (condition()) return resolve(true);
+      if (Date.now() - startedAt >= timeoutMs) return resolve(false);
+      setTimeout(tick, intervalMs);
+    };
+    tick();
+  });
+}
