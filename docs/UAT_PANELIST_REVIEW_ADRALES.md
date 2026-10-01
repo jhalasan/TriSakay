@@ -17,12 +17,12 @@ Legend for **Status**: `TODO` / `IN PROGRESS` / `STRETCH` / `FUTURE` (designed, 
 
 | ID | Recommendation | Status | Kind |
 |---|---|---|---|
-| G1 | Proper domain | TODO | Setup |
+| G1 | Proper domain | **PARTLY DONE 2026-10-01** � `trisakaygsc.org` bought (Namecheap); admin live at `https://admin.trisakaygsc.org` (Vercel, https valid); Supabase Auth Site URL and redirect URLs updated; GCash return pages moved to the new domain (create-gcash-checkout v9); Resend sending domain verified (DKIM, SPF, DMARC). Root `trisakaygsc.org` still shows the registrar parking page; the old `.vercel.app` address is kept as a fallback. G3 screenshots still to do on the new domain. | Setup |
 | G2 | Use Google Maps | **UNBLOCKED (2026-09-25)** — billing verified, code done, GCP project created, enabling APIs next | Code, large |
 | G3 | Screenshots of the final hosted system with the domain and Google Maps | TODO | Last step |
 | G4 | Help tips for text boxes | IN PROGRESS — code done 2026-09-27 (Person 3); on-device check **handed to Person 1**, see "Handoff: Person 3 → Person 1" | Code, small |
 | G5 | Scope: iOS and Android, Android preferred | TODO | Docs |
-| P1 | Email receipt if the passenger agrees | TODO | Code, medium |
+| P1 | Email receipt if the passenger agrees | **DONE 2026-10-01** � opt-in switch saved on the account (`users.email_receipts`, default off), automatic receipt when a ride completes, and an "Email me this receipt" button (trip-complete and history). Edge function `send-receipt` (Resend, from `receipts@trisakaygsc.org`), log table `receipt_emails` (one auto send per ride, manual limits 3 per ride / 20 per day), migration `20261001000005`. Applied live, passenger app rebuilt, confirmed on device. Design: `docs/superpowers/specs/2026-10-01-email-trip-receipt-design.md`. | Code, medium |
 | P2 | Ask passengers if they'd still use the app if the fare increases | TODO | Survey |
 | P3 | Suggested fare with supporting literature | TODO | Docs |
 | D1 | Driver can transfer a passenger to another tricycle | **DONE 2026-09-27 (Person 1)** — migrations `20260927000006` + `20260927000007` (L8/L9 hardening), both applied and verified live. Core mechanics done; a few UI/verification sub-pieces deferred (see the D1 section for the full list). | Code, large |
