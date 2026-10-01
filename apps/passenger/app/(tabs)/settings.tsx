@@ -1,7 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { useEffect, useState } from 'react';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { getEmailReceiptsConsent, setEmailReceiptsConsent } from '@trisakay/services';
 import { maskEmail, maskPhone } from '@trisakay/shared';
 import { Button, Card, Toggle, colors, useTutorial } from '@trisakay/ui';
 import { OfflineState } from '../../src/components/OfflineState';
@@ -68,14 +70,27 @@ export default function SettingsScreen() {
     locationTrackingEnabled,
     language,
     smsReceipts,
-    emailReceipts,
     togglePushNotifications,
     toggleLocationTracking,
     setLanguage,
     toggleSmsReceipts,
-    toggleEmailReceipts,
   } = useSettingsStore();
   const isOffline = useConnectivityStore((state) => state.isOffline);
+
+  // Email receipts live on the account (users.email_receipts), not on this phone, so the switch loads and saves there.
+  const [emailReceipts, setEmailReceipts] = useState(false);
+  useEffect(() => {
+    getEmailReceiptsConsent().then(({ data }) => setEmailReceipts(data));
+  }, []);
+
+  async function handleEmailReceiptsChange(value: boolean) {
+    setEmailReceipts(value);
+    const { error } = await setEmailReceiptsConsent(value);
+    if (error) {
+      setEmailReceipts(!value);
+      Alert.alert(t.settings.emailReceiptsSaveFailed);
+    }
+  }
 
   const languageLabels: Record<SettingsLanguage, string> = {
     en: t.settings.languageEnglish,
@@ -128,7 +143,7 @@ export default function SettingsScreen() {
             label={t.settings.emailReceipts}
             subtitle={user?.email ? maskEmail(user.email) : undefined}
             value={emailReceipts}
-            onValueChange={toggleEmailReceipts}
+            onValueChange={handleEmailReceiptsChange}
             divider={false}
           />
         </Card>

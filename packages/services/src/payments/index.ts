@@ -18,7 +18,7 @@ export interface CreateGcashCheckoutResult {
  * body (`{ checkoutUrl: null, error: "..." }`) on non-2xx responses, so we
  * have to reach into `error.context` (the raw Response) ourselves to get it.
  */
-async function extractFunctionErrorMessage(error: { message: string; context?: unknown }): Promise<string> {
+export async function extractFunctionErrorMessage(error: { message: string; context?: unknown }): Promise<string> {
   const context = error.context as { json?: () => Promise<unknown> } | undefined;
   if (context && typeof context.json === 'function') {
     try {

@@ -18,6 +18,7 @@ import {
 import { formatClockTime, formatDetailDate, minutesBefore } from '@trisakay/shared';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
+import { EmailReceiptButton } from '../../src/components/EmailReceiptButton';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { formatCurrency } from '../../src/utils/currency';
 import { getReferenceCode } from '../../src/utils/reference';
@@ -286,6 +287,7 @@ export default function RideDetailScreen() {
                 {paymentLabel && <StatusPill label={paymentLabel} tone={paymentTone} />}
               </View>
               {referenceRow}
+              <EmailReceiptButton rideRequestId={item.id} />
             </View>
           ) : (
             referenceRow && <View style={styles.refRowPad}>{referenceRow}</View>

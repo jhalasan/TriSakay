@@ -5,6 +5,7 @@ import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getPassengerRideReceipt, type PassengerTripHistoryItem } from '@trisakay/services';
 import { Avatar, Button, NavyBandHeader, RouteRail, StarPicker, StatCells, colors, recordsPalette } from '@trisakay/ui';
+import { EmailReceiptButton } from '../../src/components/EmailReceiptButton';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { formatCurrency } from '../../src/utils/currency';
@@ -183,6 +184,7 @@ export default function TripCompleteScreen() {
             journeyCard && <View style={styles.heroShadow}>{journeyCard}</View>
           )}
           {rateCard}
+          {rideRequestId && <EmailReceiptButton rideRequestId={rideRequestId} />}
         </View>
       </ScrollView>
 

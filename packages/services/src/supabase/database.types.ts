@@ -1948,6 +1948,7 @@ export type Database = {
       }
       users: {
         Row: {
+          email_receipts: boolean
           avatar_url: string | null
           contact_no: string | null
           created_at: string
@@ -1963,6 +1964,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          email_receipts?: boolean
           avatar_url?: string | null
           contact_no?: string | null
           created_at?: string
@@ -1978,6 +1980,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          email_receipts?: boolean
           avatar_url?: string | null
           contact_no?: string | null
           created_at?: string
@@ -2370,6 +2373,29 @@ export type Database = {
         Returns: {
           passenger_id: string
           ride_count: number
+        }[]
+      }
+      get_receipt_for_email: {
+        Args: { p_ride_request_id: string }
+        Returns: {
+          completed_at: string
+          dest_label: string
+          discount_applied: boolean
+          discount_percent: number
+          distance_km: number
+          driver_first_name: string
+          duration_minutes: number
+          email_receipts: boolean
+          fare: number
+          passenger_email: string
+          passenger_first_name: string
+          passenger_id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
+          payment_status: Database["public"]["Enums"]["payment_status"]
+          pickup_label: string
+          plate_no: string
+          ride_request_id: string
+          seats: number
         }[]
       }
       get_passenger_trip_history: {

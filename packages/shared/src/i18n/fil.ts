@@ -189,6 +189,7 @@ export const fil: Translations = {
     smsReceipts: 'SMS receipts',
     smsReceiptsSubtitlePrefix: 'Ipinadala sa',
     emailReceipts: 'Email receipts',
+    emailReceiptsSaveFailed: 'Hindi na-save ang setting na ito. Subukan ulit.',
     locationTracking: 'Location Tracking',
     locationTrackingSubtitle: 'Kinakailangan para humiling ng traysikel',
     language: 'Wika',
@@ -612,6 +613,9 @@ export const fil: Translations = {
     continue: 'Magpatuloy',
   },
   history: {
+    emailReceiptButton: 'I-email sa akin ang resibong ito',
+    emailReceiptSent: 'Naipadala ang resibo sa {email}',
+    emailReceiptFailedTitle: 'Hindi naipadala ang resibo',
     eyebrow: 'Iyong mga sakay',
     title: 'Kasaysayan ng Sakay',
     filterAll: 'Lahat',

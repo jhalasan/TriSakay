@@ -9,14 +9,14 @@ interface SettingsState {
   locationTrackingEnabled: boolean;
   language: SettingsLanguage;
   smsReceipts: boolean;
-  emailReceipts: boolean;
   togglePushNotifications: () => void;
   toggleLocationTracking: () => void;
   setLanguage: (language: SettingsLanguage) => void;
   toggleSmsReceipts: () => void;
-  toggleEmailReceipts: () => void;
 }
 
+// Email receipts are no longer a local setting: the switch reads and writes users.email_receipts
+// (see app/(tabs)/settings.tsx). The notes below predate that.
 // P1-20 (2026-09-15 launch audit) flagged locationTrackingEnabled, smsReceipts
 // and emailReceipts as dead — each was a toggle read by nothing (location
 // tracking is not gated by any flag anywhere in the app; nothing sends an SMS
@@ -32,14 +32,12 @@ export const useSettingsStore = create<SettingsState>()(
       locationTrackingEnabled: true,
       language: 'en',
       smsReceipts: false,
-      emailReceipts: true,
       togglePushNotifications: () =>
         set((state) => ({ pushNotificationsEnabled: !state.pushNotificationsEnabled })),
       toggleLocationTracking: () =>
         set((state) => ({ locationTrackingEnabled: !state.locationTrackingEnabled })),
       setLanguage: (language) => set({ language }),
       toggleSmsReceipts: () => set((state) => ({ smsReceipts: !state.smsReceipts })),
-      toggleEmailReceipts: () => set((state) => ({ emailReceipts: !state.emailReceipts })),
     }),
     {
       name: 'trisakay-passenger-settings',

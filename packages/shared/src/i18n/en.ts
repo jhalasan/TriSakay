@@ -195,6 +195,7 @@ export const en = {
     smsReceipts: 'SMS receipts',
     smsReceiptsSubtitlePrefix: 'Sent to',
     emailReceipts: 'Email receipts',
+    emailReceiptsSaveFailed: "Couldn't save this setting. Please try again.",
     locationTracking: 'Location tracking',
     locationTrackingSubtitle: 'Required to request a tricycle',
     language: 'Language',
@@ -628,6 +629,9 @@ export const en = {
     continue: 'Continue',
   },
   history: {
+    emailReceiptButton: 'Email me this receipt',
+    emailReceiptSent: 'Receipt sent to {email}',
+    emailReceiptFailedTitle: "Couldn't send the receipt",
     eyebrow: 'Your rides',
     title: 'Ride history',
     filterAll: 'All',
