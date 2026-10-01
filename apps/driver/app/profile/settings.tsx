@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
+import { maskEmail, maskPhone } from '@trisakay/shared';
 import { Button, Toggle, colors, useTutorial } from '@trisakay/ui';
 import { DailyGoalModal } from '../../src/components/DailyGoalModal';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
@@ -113,14 +114,14 @@ export default function SettingsScreen() {
             <ToggleRow
               icon="chatbubble-outline"
               label={t.settings.smsReceipts}
-              sublabel={user?.phone ? interpolate(t.driver.settings.smsReceiptsSubtitle, { phone: user.phone }) : undefined}
+              sublabel={user?.phone ? interpolate(t.driver.settings.smsReceiptsSubtitle, { phone: maskPhone(user.phone) }) : undefined}
               value={smsReceipts}
               onValueChange={toggleSmsReceipts}
             />
             <ToggleRow
               icon="mail-outline"
               label={t.settings.emailReceipts}
-              sublabel={user?.email ? interpolate(t.driver.settings.emailReceiptsSubtitle, { email: user.email }) : undefined}
+              sublabel={user?.email ? interpolate(t.driver.settings.emailReceiptsSubtitle, { email: maskEmail(user.email) }) : undefined}
               value={emailReceipts}
               onValueChange={toggleEmailReceipts}
               divider={false}

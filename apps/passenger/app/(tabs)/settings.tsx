@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { maskEmail, maskPhone } from '@trisakay/shared';
 import { Button, Card, Toggle, colors, useTutorial } from '@trisakay/ui';
 import { OfflineState } from '../../src/components/OfflineState';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -118,14 +119,14 @@ export default function SettingsScreen() {
           <ToggleRow
             icon="chatbubble-ellipses-outline"
             label={t.settings.smsReceipts}
-            subtitle={user?.phone ? `${t.settings.smsReceiptsSubtitlePrefix} ${user.phone}` : undefined}
+            subtitle={user?.phone ? `${t.settings.smsReceiptsSubtitlePrefix} ${maskPhone(user.phone)}` : undefined}
             value={smsReceipts}
             onValueChange={toggleSmsReceipts}
           />
           <ToggleRow
             icon="mail-outline"
             label={t.settings.emailReceipts}
-            subtitle={user?.email}
+            subtitle={user?.email ? maskEmail(user.email) : undefined}
             value={emailReceipts}
             onValueChange={toggleEmailReceipts}
             divider={false}
