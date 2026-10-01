@@ -1,4 +1,11 @@
 import {
+  acceptComplaintForAdmin,
+  assignComplaintForAdmin,
+  claimComplaintForAdmin,
+  declineComplaintForAdmin,
+  listComplaintAssignmentsForAdmin,
+  listPsoStaffForAdmin,
+  releaseComplaintForAdmin,
   listComplaintAttachmentsForAdmin,
   listComplaintsForAdmin,
   listComplaintStatusHistoryForAdmin,
@@ -7,12 +14,12 @@ import {
   scheduleComplaintMediationForAdmin,
   setComplaintStatusForAdmin,
 } from '@trisakay/services';
-import type { ComplaintAttachmentRow, ComplaintStatusHistoryRow } from '@trisakay/services';
+import type { ComplaintAssignmentRow, ComplaintAttachmentRow, ComplaintStatusHistoryRow, PsoStaffRow } from '@trisakay/services';
 import { businessDaysSince } from '../lib/format.ts';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import type { ServiceResult } from './drivers';
 
-export type { ComplaintAttachmentRow, ComplaintStatusHistoryRow };
+export type { ComplaintAssignmentRow, ComplaintAttachmentRow, ComplaintStatusHistoryRow, PsoStaffRow };
 
 export async function listComplaints(): Promise<ServiceResult<ComplaintRow[]>> {
   const { data, error } = await listComplaintsForAdmin();
@@ -33,6 +40,19 @@ export async function listComplaints(): Promise<ServiceResult<ComplaintRow[]>> {
     resolutionNotes: c.resolutionNotes,
     businessDaysElapsed: businessDaysSince(c.createdAt),
     createdAt: c.createdAt,
+    triagedByName: c.triagedByName,
+    triagedAt: c.triagedAt,
+    dhReviewedByName: c.dhReviewedByName,
+    dhReviewedAt: c.dhReviewedAt,
+    mediationScheduledByName: c.mediationScheduledByName,
+    mediationScheduledAt: c.mediationScheduledAt,
+    resolvedByName: c.resolvedByName,
+    resolvedAt: c.resolvedAt,
+    assignedToId: c.assignedToId,
+    assignedToName: c.assignedToName,
+    assignedAt: c.assignedAt,
+    assignmentAcceptedAt: c.assignmentAcceptedAt,
+    businessDaysUnowned: businessDaysSince(c.assignedToId && c.assignedAt ? c.assignedAt : c.createdAt),
   }));
 
   return { data: rows, error: null };
@@ -80,4 +100,40 @@ export async function recordComplaintResolution(
 ): Promise<ServiceResult<null>> {
   const { error } = await recordComplaintResolutionForAdmin(id, status, notes || null);
   return { data: null, error };
+}
+
+/** Complaint ownership — claim, assign (S+), accept, decline, release; see supabase/migrations/20261001000004. */
+export async function claimComplaint(id: string): Promise<ServiceResult<null>> {
+  const { error } = await claimComplaintForAdmin(id);
+  return { data: null, error };
+}
+
+export async function assignComplaint(id: string, toUserId: string, note: string): Promise<ServiceResult<null>> {
+  const { error } = await assignComplaintForAdmin(id, toUserId, note);
+  return { data: null, error };
+}
+
+export async function acceptComplaint(id: string): Promise<ServiceResult<null>> {
+  const { error } = await acceptComplaintForAdmin(id);
+  return { data: null, error };
+}
+
+export async function declineComplaint(id: string, note: string): Promise<ServiceResult<null>> {
+  const { error } = await declineComplaintForAdmin(id, note);
+  return { data: null, error };
+}
+
+export async function releaseComplaint(id: string, note: string): Promise<ServiceResult<null>> {
+  const { error } = await releaseComplaintForAdmin(id, note);
+  return { data: null, error };
+}
+
+export async function listPsoStaff(): Promise<ServiceResult<PsoStaffRow[]>> {
+  const { data, error } = await listPsoStaffForAdmin();
+  return { data, error };
+}
+
+export async function listComplaintAssignments(complaintId: string): Promise<ServiceResult<ComplaintAssignmentRow[]>> {
+  const { data, error } = await listComplaintAssignmentsForAdmin(complaintId);
+  return { data, error };
 }

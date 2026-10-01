@@ -18,6 +18,20 @@ export interface AdminComplaintRow {
   mediationLocation: string | null;
   resolutionNotes: string | null;
   createdAt: string;
+  /** Who acted at each step, and when — null until that step happens. */
+  triagedByName: string | null;
+  triagedAt: string | null;
+  dhReviewedByName: string | null;
+  dhReviewedAt: string | null;
+  mediationScheduledByName: string | null;
+  mediationScheduledAt: string | null;
+  resolvedByName: string | null;
+  resolvedAt: string | null;
+  /** Current owner; null = Unassigned. assignmentAcceptedAt null with an owner = awaiting acceptance. */
+  assignedToId: string | null;
+  assignedToName: string | null;
+  assignedAt: string | null;
+  assignmentAcceptedAt: string | null;
 }
 
 export interface ListComplaintsForAdminResult {
@@ -41,14 +55,14 @@ export async function listComplaintsForAdmin(): Promise<ListComplaintsForAdminRe
   const { data, error } = await client
     .from('complaints')
     .select(
-      'id, submitted_by, against_user_id, ride_request_id, category, subject, message, status, dh_directive, mediation_meeting_at, mediation_location, resolution_notes, created_at',
+      'id, submitted_by, against_user_id, ride_request_id, category, subject, message, status, dh_directive, mediation_meeting_at, mediation_location, resolution_notes, created_at, triaged_by, triaged_at, dh_reviewed_by, dh_reviewed_at, mediation_scheduled_by, mediation_scheduled_at, resolved_by, resolved_at, assigned_to, assigned_at, assignment_accepted_at',
     )
     .order('created_at', { ascending: false });
 
   if (error) return { data: [], error: error.message };
   if (!data || data.length === 0) return { data: [], error: null };
 
-  const ids = [...new Set(data.flatMap((c) => [c.submitted_by, c.against_user_id].filter((id): id is string => !!id)))];
+  const ids = [...new Set(data.flatMap((c) => [c.submitted_by, c.against_user_id, c.triaged_by, c.dh_reviewed_by, c.mediation_scheduled_by, c.resolved_by, c.assigned_to].filter((id): id is string => !!id)))];
   const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', ids);
   if (usersError) return { data: [], error: usersError.message };
 
@@ -68,6 +82,18 @@ export async function listComplaintsForAdmin(): Promise<ListComplaintsForAdminRe
     mediationLocation: c.mediation_location,
     resolutionNotes: c.resolution_notes,
     createdAt: c.created_at,
+    triagedByName: c.triaged_by ? (nameById.get(c.triaged_by) ?? null) : null,
+    triagedAt: c.triaged_at,
+    dhReviewedByName: c.dh_reviewed_by ? (nameById.get(c.dh_reviewed_by) ?? null) : null,
+    dhReviewedAt: c.dh_reviewed_at,
+    mediationScheduledByName: c.mediation_scheduled_by ? (nameById.get(c.mediation_scheduled_by) ?? null) : null,
+    mediationScheduledAt: c.mediation_scheduled_at,
+    resolvedByName: c.resolved_by ? (nameById.get(c.resolved_by) ?? null) : null,
+    resolvedAt: c.resolved_at,
+    assignedToId: c.assigned_to,
+    assignedToName: c.assigned_to ? (nameById.get(c.assigned_to) ?? null) : null,
+    assignedAt: c.assigned_at,
+    assignmentAcceptedAt: c.assignment_accepted_at,
   }));
 
   return { data: rows, error: null };
@@ -212,4 +238,91 @@ export async function recordComplaintResolutionForAdmin(
   });
 
   return { error: error?.message ?? null };
+}
+
+/** Complaint ownership (docs/superpowers/specs/2026-10-01-complaint-ownership-design.md) — every change goes through an RPC, never a direct update. */
+export async function claimComplaintForAdmin(id: string): Promise<AdminComplaintWriteResult> {
+  const { error } = await getSupabaseClient().rpc('claim_complaint', { p_complaint_id: id });
+  return { error: error?.message ?? null };
+}
+
+/** Supervisor+ only (enforced by the RPC). The new owner must accept before staff-level actions are allowed. */
+export async function assignComplaintForAdmin(id: string, toUserId: string, note: string): Promise<AdminComplaintWriteResult> {
+  const { error } = await getSupabaseClient().rpc('assign_complaint', { p_complaint_id: id, p_to_user: toUserId, p_note: note });
+  return { error: error?.message ?? null };
+}
+
+export async function acceptComplaintForAdmin(id: string): Promise<AdminComplaintWriteResult> {
+  const { error } = await getSupabaseClient().rpc('accept_complaint', { p_complaint_id: id });
+  return { error: error?.message ?? null };
+}
+
+export async function declineComplaintForAdmin(id: string, note: string): Promise<AdminComplaintWriteResult> {
+  const { error } = await getSupabaseClient().rpc('decline_complaint', { p_complaint_id: id, p_note: note });
+  return { error: error?.message ?? null };
+}
+
+export async function releaseComplaintForAdmin(id: string, note: string): Promise<AdminComplaintWriteResult> {
+  const { error } = await getSupabaseClient().rpc('release_complaint', { p_complaint_id: id, p_note: note });
+  return { error: error?.message ?? null };
+}
+
+export interface PsoStaffRow {
+  id: string;
+  fullName: string;
+  role: Database['public']['Enums']['user_role'];
+}
+
+/** Active PSO accounts, for the assign picker. */
+export async function listPsoStaffForAdmin(): Promise<{ data: PsoStaffRow[]; error: string | null }> {
+  const { data, error } = await getSupabaseClient().rpc('list_pso_staff');
+  if (error) return { data: [], error: error.message };
+  return { data: (data ?? []).map((u) => ({ id: u.id, fullName: u.full_name, role: u.role })), error: null };
+}
+
+export interface ComplaintAssignmentRow {
+  id: string;
+  kind: 'claimed' | 'assigned' | 'accepted' | 'declined' | 'released';
+  fromName: string | null;
+  toName: string | null;
+  byName: string | null;
+  note: string | null;
+  createdAt: string;
+}
+
+/** Append-only handoff history for one complaint, oldest first. */
+export async function listComplaintAssignmentsForAdmin(
+  complaintId: string,
+): Promise<{ data: ComplaintAssignmentRow[]; error: string | null }> {
+  const client = getSupabaseClient();
+  const { data, error } = await client
+    .from('complaint_assignments')
+    .select('id, kind, from_user, to_user, by_user, note, created_at')
+    .eq('complaint_id', complaintId)
+    .order('created_at', { ascending: true });
+
+  if (error) return { data: [], error: error.message };
+  if (!data || data.length === 0) return { data: [], error: null };
+
+  const ids = [...new Set(data.flatMap((r) => [r.from_user, r.to_user, r.by_user].filter((id): id is string => !!id)))];
+  let nameById = new Map<string, string>();
+  if (ids.length > 0) {
+    const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', ids);
+    if (usersError) return { data: [], error: usersError.message };
+    nameById = new Map((users ?? []).map((u) => [u.id, u.full_name!]));
+  }
+
+  const name = (id: string | null) => (id ? (nameById.get(id) ?? null) : null);
+  return {
+    data: data.map((r) => ({
+      id: r.id,
+      kind: r.kind as ComplaintAssignmentRow['kind'],
+      fromName: name(r.from_user),
+      toName: name(r.to_user),
+      byName: name(r.by_user),
+      note: r.note,
+      createdAt: r.created_at,
+    })),
+    error: null,
+  };
 }

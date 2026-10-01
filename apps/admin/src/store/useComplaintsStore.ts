@@ -1,5 +1,12 @@
 import { create } from 'zustand';
 import {
+  acceptComplaint,
+  assignComplaint,
+  claimComplaint,
+  declineComplaint,
+  listComplaintAssignments,
+  listPsoStaff,
+  releaseComplaint,
   listComplaintAttachments,
   listComplaints,
   listComplaintStatusHistory,
@@ -8,7 +15,7 @@ import {
   scheduleComplaintMediation,
   setComplaintStatus,
 } from '../services/complaints';
-import type { ComplaintAttachmentRow, ComplaintStatusHistoryRow } from '../services/complaints';
+import type { ComplaintAssignmentRow, ComplaintAttachmentRow, ComplaintStatusHistoryRow, PsoStaffRow } from '../services/complaints';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { runBulkAction, type BulkActionSummary } from '../lib/bulkActions';
 
@@ -23,6 +30,20 @@ interface ComplaintsState {
   attachmentsLoading: boolean;
   statusHistory: ComplaintStatusHistoryRow[];
   statusHistoryLoading: boolean;
+  assignments: ComplaintAssignmentRow[];
+  assignmentsLoading: boolean;
+  psoStaff: PsoStaffRow[];
+  /** 'all' (default), 'mine' (owned by me) or 'unassigned' — filters the list in Complaints.tsx. */
+  ownerFilter: 'all' | 'mine' | 'unassigned';
+  setOwnerFilter: (value: ComplaintsState['ownerFilter']) => void;
+  /** Ownership actions: each refetches the list and the open complaint's handoff history on success. */
+  claim: (id: string) => Promise<boolean>;
+  assign: (id: string, toUserId: string, note: string) => Promise<boolean>;
+  accept: (id: string) => Promise<boolean>;
+  decline: (id: string, note: string) => Promise<boolean>;
+  release: (id: string, note: string) => Promise<boolean>;
+  fetchAssignments: (complaintId: string) => Promise<void>;
+  fetchPsoStaff: () => Promise<void>;
   fetch: () => Promise<void>;
   setSearch: (value: string) => void;
   setStatusFilter: (value: ComplaintsState['statusFilter']) => void;
@@ -41,7 +62,19 @@ interface ComplaintsState {
   fetchStatusHistory: (complaintId: string) => Promise<void>;
 }
 
-export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
+export const useComplaintsStore = create<ComplaintsState>()((set, get) => {
+  async function runOwnershipAction(id: string, action: () => Promise<{ error: string | null }>): Promise<boolean> {
+    const { error } = await action();
+    if (error) {
+      set({ error });
+      return false;
+    }
+    set({ error: null });
+    await Promise.all([get().fetch(), get().fetchAssignments(id)]);
+    return true;
+  }
+
+  return {
   complaints: [],
   loading: false,
   error: null,
@@ -52,6 +85,31 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
   attachmentsLoading: false,
   statusHistory: [],
   statusHistoryLoading: false,
+  assignments: [],
+  assignmentsLoading: false,
+  psoStaff: [],
+  ownerFilter: 'all',
+
+  setOwnerFilter: (value) => set({ ownerFilter: value, page: 1 }),
+
+  claim: async (id) => runOwnershipAction(id, () => claimComplaint(id)),
+  assign: async (id, toUserId, note) => runOwnershipAction(id, () => assignComplaint(id, toUserId, note)),
+  accept: async (id) => runOwnershipAction(id, () => acceptComplaint(id)),
+  decline: async (id, note) => runOwnershipAction(id, () => declineComplaint(id, note)),
+  release: async (id, note) => runOwnershipAction(id, () => releaseComplaint(id, note)),
+
+  fetchAssignments: async (complaintId) => {
+    set({ assignments: [], assignmentsLoading: true });
+    const { data, error } = await listComplaintAssignments(complaintId);
+    if (error) return set({ assignmentsLoading: false, error });
+    set({ assignments: data, assignmentsLoading: false });
+  },
+
+  fetchPsoStaff: async () => {
+    const { data, error } = await listPsoStaff();
+    if (error) return set({ error });
+    set({ psoStaff: data });
+  },
 
   fetch: async () => {
     set({ loading: true, error: null });
@@ -123,4 +181,5 @@ export const useComplaintsStore = create<ComplaintsState>()((set, get) => ({
     if (error) return set({ statusHistoryLoading: false, error });
     set({ statusHistory: data, statusHistoryLoading: false });
   },
-}));
+};
+});

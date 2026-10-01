@@ -188,6 +188,39 @@ export type Database = {
           },
         ]
       }
+      complaint_assignments: {
+        Row: {
+          by_user: string | null
+          complaint_id: string
+          created_at: string
+          from_user: string | null
+          id: string
+          kind: string
+          note: string | null
+          to_user: string | null
+        }
+        Insert: {
+          by_user?: string | null
+          complaint_id: string
+          created_at?: string
+          from_user?: string | null
+          id?: string
+          kind: string
+          note?: string | null
+          to_user?: string | null
+        }
+        Update: {
+          by_user?: string | null
+          complaint_id?: string
+          created_at?: string
+          from_user?: string | null
+          id?: string
+          kind?: string
+          note?: string | null
+          to_user?: string | null
+        }
+        Relationships: []
+      }
       complaint_status_history: {
         Row: {
           changed_at: string
@@ -247,6 +280,10 @@ export type Database = {
       complaints: {
         Row: {
           against_user_id: string | null
+          assigned_at: string | null
+          assigned_by: string | null
+          assigned_to: string | null
+          assignment_accepted_at: string | null
           category: Database["public"]["Enums"]["complaint_category"]
           created_at: string
           dh_directive: string | null
@@ -271,6 +308,10 @@ export type Database = {
         }
         Insert: {
           against_user_id?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          assignment_accepted_at?: string | null
           category?: Database["public"]["Enums"]["complaint_category"]
           created_at?: string
           dh_directive?: string | null
@@ -295,6 +336,10 @@ export type Database = {
         }
         Update: {
           against_user_id?: string | null
+          assigned_at?: string | null
+          assigned_by?: string | null
+          assigned_to?: string | null
+          assignment_accepted_at?: string | null
           category?: Database["public"]["Enums"]["complaint_category"]
           created_at?: string
           dh_directive?: string | null
@@ -2473,6 +2518,34 @@ export type Database = {
           ride_request_id: string
           trip_id: string | null
         }[]
+      }
+      accept_complaint: {
+        Args: { p_complaint_id: string }
+        Returns: undefined
+      }
+      assign_complaint: {
+        Args: { p_complaint_id: string; p_note: string; p_to_user: string }
+        Returns: undefined
+      }
+      claim_complaint: {
+        Args: { p_complaint_id: string }
+        Returns: undefined
+      }
+      decline_complaint: {
+        Args: { p_complaint_id: string; p_note: string }
+        Returns: undefined
+      }
+      list_pso_staff: {
+        Args: never
+        Returns: {
+          full_name: string
+          id: string
+          role: Database["public"]["Enums"]["user_role"]
+        }[]
+      }
+      release_complaint: {
+        Args: { p_complaint_id: string; p_note: string }
+        Returns: undefined
       }
       schedule_complaint_mediation: {
         Args: {

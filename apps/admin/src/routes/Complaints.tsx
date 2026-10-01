@@ -17,9 +17,12 @@ import { RideChatThread } from '../components/RideChatThread';
 import { SkeletonBar } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useComplaintsStore } from '../store/useComplaintsStore';
+import { useSessionStore } from '../store/useSessionStore';
+import { complaintOwnership, ownershipLabel } from '../lib/complaintOwnership';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { formatDate, getReferenceCode, titleCaseLabel, toDatetimeLocalValue } from '../lib/format';
 import { formatBulkTargets } from '../lib/bulkActions';
+import type { ComplaintAssignmentRow } from '../services/complaints';
 import styles from './Complaints.module.css';
 
 const STATUS_TONE: Record<ComplaintStatus, 'neutral' | 'success' | 'warn' | 'danger' | 'info'> = {
@@ -100,6 +103,31 @@ const TRIAGE_STATUSES: { label: string; value: ComplaintStatus }[] = ALL_STATUSE
  * would be a behaviour change beyond a restyle â€” README Â§4 flags this rule
  * as still unconfirmed with the team.
  */
+/** Which staff step happened, by whom and when — only steps that have happened. */
+function handlerSteps(c: ComplaintRow): { label: string; name: string | null; at: string }[] {
+  const steps = [
+    { label: 'Triaged', name: c.triagedByName, at: c.triagedAt },
+    { label: 'Directive', name: c.dhReviewedByName, at: c.dhReviewedAt },
+    { label: 'Mediation scheduled', name: c.mediationScheduledByName, at: c.mediationScheduledAt },
+    { label: c.status === 'dismissed' ? 'Dismissed' : 'Resolved', name: c.resolvedByName, at: c.resolvedAt },
+  ];
+  return steps.filter((step): step is { label: string; name: string | null; at: string } => !!step.at);
+}
+
+const ROLE_LABEL: Record<string, string> = { pso_staff: 'Staff', pso_supervisor: 'Supervisor', admin: 'Admin' };
+
+/** One line of the handoff history: who did what, with the note when there is one. */
+function handoffText(h: ComplaintAssignmentRow): string {
+  const by = h.byName ?? 'Unknown';
+  const verb =
+    h.kind === 'claimed' ? `${by} claimed it`
+    : h.kind === 'assigned' ? `${by} assigned it to ${h.toName ?? 'Unknown'}`
+    : h.kind === 'accepted' ? `${by} accepted it`
+    : h.kind === 'declined' ? `${by} declined it`
+    : `${by} released it`;
+  return h.note ? `${verb} — “${h.note}”` : verb;
+}
+
 export function Complaints() {
   const {
     complaints,
@@ -123,7 +151,23 @@ export function Complaints() {
     statusHistory,
     statusHistoryLoading,
     fetchStatusHistory,
+    assignments,
+    assignmentsLoading,
+    fetchAssignments,
+    psoStaff,
+    fetchPsoStaff,
+    ownerFilter,
+    setOwnerFilter,
+    claim,
+    assign,
+    accept,
+    decline,
+    release,
   } = useComplaintsStore();
+  const viewer = useSessionStore((state) => state.user);
+  const [assigneeDraft, setAssigneeDraft] = useState('');
+  const [ownerNoteDraft, setOwnerNoteDraft] = useState('');
+  const [ownerBusy, setOwnerBusy] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [directiveDraft, setDirectiveDraft] = useState('');
   const [meetingAtDraft, setMeetingAtDraft] = useState('');
@@ -148,9 +192,12 @@ export function Complaints() {
     return complaints.filter((c) => {
       const matchesSearch = !q || c.subject.toLowerCase().includes(q) || c.submittedByName.toLowerCase().includes(q);
       const matchesStatus = statusFilter === 'all' || c.status === statusFilter;
-      return matchesSearch && matchesStatus;
+      const matchesOwner =
+        ownerFilter === 'all' ||
+        (ownerFilter === 'mine' ? c.assignedToId === viewer?.id : c.assignedToId === null);
+      return matchesSearch && matchesStatus && matchesOwner;
     });
-  }, [complaints, search, statusFilter]);
+  }, [complaints, search, statusFilter, ownerFilter, viewer?.id]);
 
   const pageCount = Math.max(1, Math.ceil(filtered.length / pageSize));
   const safePage = Math.min(page, pageCount);
@@ -162,12 +209,26 @@ export function Complaints() {
       open: complaints.filter((c) => c.status === 'open').length,
       underReview: complaints.filter((c) => c.status === 'under_review').length,
       resolved: complaints.filter((c) => c.status === 'resolved').length,
+      unassigned: complaints.filter((c) => c.assignedToId === null && !['resolved', 'dismissed'].includes(c.status)).length,
+      needsAttention: viewer ? complaints.filter((c) => complaintOwnership(c, viewer).stale).length : 0,
     }),
-    [complaints]
+    [complaints, viewer]
   );
 
   const selected = complaints.find((c) => c.id === selectedId) ?? null;
+  const ownership = selected && viewer ? complaintOwnership(selected, viewer) : null;
   const canScheduleMediation = selected?.status === 'escalated';
+
+  async function handleOwnerAction(action: () => Promise<boolean>, doneMessage: string) {
+    setOwnerBusy(true);
+    const ok = await action();
+    setOwnerBusy(false);
+    if (ok) {
+      setOwnerNoteDraft('');
+      setAssigneeDraft('');
+      showToast({ message: doneMessage });
+    }
+  }
 
   async function handleSaveDirective() {
     if (!selected) return;
@@ -233,6 +294,10 @@ export function Complaints() {
     setResolutionNotesDraft(c.resolutionNotes ?? '');
     fetchAttachments(c.id);
     fetchStatusHistory(c.id);
+    fetchAssignments(c.id);
+    setAssigneeDraft('');
+    setOwnerNoteDraft('');
+    if (viewer && complaintOwnership(c, viewer).canAssign) fetchPsoStaff();
   }
 
   const columns: DataTableColumn<ComplaintRow>[] = [
@@ -252,6 +317,20 @@ export function Complaints() {
     },
     { key: 'category', header: 'Category', render: (c) => <Badge label={CATEGORY_LABEL[c.category]} tone="neutral" /> },
     { key: 'status', header: 'Status', sortValue: (c) => c.status, render: (c) => <Badge label={titleCaseLabel(c.status)} tone={STATUS_TONE[c.status]} /> },
+    {
+      key: 'owner',
+      header: 'Owner',
+      sortValue: (c) => c.assignedToName ?? '',
+      render: (c) => {
+        const stale = viewer ? complaintOwnership(c, viewer).stale : false;
+        return (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+            <span style={{ fontSize: 12, color: c.assignedToId ? undefined : 'var(--ink-faint)' }}>{ownershipLabel(c)}</span>
+            {stale && <Badge label="Needs attention" tone="warn" />}
+          </div>
+        );
+      },
+    },
     {
       key: 'sla',
       header: 'SLA',
@@ -308,6 +387,16 @@ export function Complaints() {
                   options={[{ label: 'All statuses', value: 'all' }, ...ALL_STATUSES]}
                 />
                 <Select
+                  aria-label="Filter by owner"
+                  value={ownerFilter}
+                  onChange={(e) => setOwnerFilter(e.target.value as typeof ownerFilter)}
+                  options={[
+                    { label: 'All owners', value: 'all' },
+                    { label: 'My complaints', value: 'mine' },
+                    { label: 'Unassigned', value: 'unassigned' },
+                  ]}
+                />
+                <Select
                   aria-label="Rows per page"
                   value={String(pageSize)}
                   onChange={(e) => {
@@ -321,6 +410,8 @@ export function Complaints() {
           />
           <div className={styles.slaStrip}>
             <Badge label={`Overdue ${slaCounts.overdue}`} tone="danger" />
+            <Badge label={`Unassigned ${slaCounts.unassigned}`} tone="warn" />
+            {slaCounts.needsAttention > 0 && <Badge label={`Needs attention ${slaCounts.needsAttention}`} tone="warn" />}
             <Badge label={`Open ${slaCounts.open}`} tone="warn" />
             <Badge label={`Under review ${slaCounts.underReview}`} tone="info" />
             <Badge label={`Resolved ${slaCounts.resolved}`} tone="neutral" />
@@ -393,6 +484,11 @@ export function Complaints() {
                         : "This complaint is closed. Status can't be changed here."}
                     </span>
                   </>
+                ) : ownership && !ownership.canAct ? (
+                  <>
+                    <Badge label={titleCaseLabel(selected.status)} tone={STATUS_TONE[selected.status]} />
+                    <span className="footnote">Claim this complaint (or accept it once assigned) to change its status.</span>
+                  </>
                 ) : (
                   <Select
                     value={selected.status}
@@ -402,6 +498,95 @@ export function Complaints() {
                     }}
                     options={TRIAGE_STATUSES}
                   />
+                )}
+              </div>
+
+              {ownership && (
+                <div className={styles.subsection}>
+                  <div className={styles.subsectionTitle}>Owner</div>
+                  <div style={{ fontSize: 13 }}>
+                    {ownershipLabel(selected)}
+                    {ownership.stale && <> <Badge label="Needs attention" tone="warn" /></>}
+                  </div>
+                  {(ownership.canAssign || ownership.canDecline || ownership.canRelease) && (
+                    <Textarea
+                      label="Note"
+                      hint="Required to assign, decline or release. Saved in the handoff history."
+                      value={ownerNoteDraft}
+                      onChange={(e) => setOwnerNoteDraft(e.target.value)}
+                      placeholder="e.g. Please contact both parties by Friday."
+                    />
+                  )}
+                  {ownership.canAssign && (
+                    <Select
+                      aria-label="Assign to"
+                      value={assigneeDraft}
+                      onChange={(e) => setAssigneeDraft(e.target.value)}
+                      options={[
+                        { label: 'Assign to…', value: '' },
+                        ...psoStaff
+                          .filter((u) => u.id !== selected.assignedToId)
+                          .map((u) => ({ label: `${u.fullName} (${ROLE_LABEL[u.role] ?? u.role})`, value: u.id })),
+                      ]}
+                    />
+                  )}
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {ownership.canClaim && (
+                      <Button variant="solid" tone="primary" size="sm" loading={ownerBusy} onClick={() => handleOwnerAction(() => claim(selected.id), 'Complaint claimed.')}>
+                        Claim this complaint
+                      </Button>
+                    )}
+                    {ownership.canAccept && (
+                      <Button variant="solid" tone="primary" size="sm" loading={ownerBusy} onClick={() => handleOwnerAction(() => accept(selected.id), 'Complaint accepted.')}>
+                        Accept
+                      </Button>
+                    )}
+                    {ownership.canDecline && (
+                      <Button variant="outline" tone="neutral" size="sm" loading={ownerBusy} disabled={!ownerNoteDraft.trim()} onClick={() => handleOwnerAction(() => decline(selected.id, ownerNoteDraft), 'Complaint declined.')}>
+                        Decline
+                      </Button>
+                    )}
+                    {ownership.canAssign && (
+                      <Button variant="solid" tone="primary" size="sm" superscript="S+" loading={ownerBusy} disabled={!assigneeDraft || !ownerNoteDraft.trim()} onClick={() => handleOwnerAction(() => assign(selected.id, assigneeDraft, ownerNoteDraft), 'Complaint assigned.')}>
+                        Assign
+                      </Button>
+                    )}
+                    {ownership.canRelease && (
+                      <Button variant="outline" tone="neutral" size="sm" loading={ownerBusy} disabled={!ownerNoteDraft.trim()} onClick={() => handleOwnerAction(() => release(selected.id, ownerNoteDraft), 'Complaint released.')}>
+                        Release
+                      </Button>
+                    )}
+                  </div>
+
+                  <div className={styles.subsectionTitle} style={{ marginTop: 8 }}>Handoff history</div>
+                  {assignmentsLoading && <SkeletonBar width={140} height={12} />}
+                  {!assignmentsLoading && assignments.length === 0 && (
+                    <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No handoffs yet.</span>
+                  )}
+                  {!assignmentsLoading && assignments.length > 0 && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+                      {assignments.map((h) => (
+                        <div key={h.id}>
+                          <span style={{ color: 'var(--ink-faint)' }}>{formatDate(h.createdAt)}</span> · {handoffText(h)}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <div className={styles.subsection}>
+                <div className={styles.subsectionTitle}>Handled by</div>
+                {handlerSteps(selected).length > 0 ? (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
+                    {handlerSteps(selected).map((step) => (
+                      <div key={step.label}>
+                        <span style={{ color: 'var(--ink-faint)' }}>{step.label}:</span> {step.name ?? 'Unknown'} · {formatDate(step.at)}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <span style={{ fontSize: 12, color: 'var(--ink-faint)' }}>No staff has acted on this complaint yet.</span>
                 )}
               </div>
 

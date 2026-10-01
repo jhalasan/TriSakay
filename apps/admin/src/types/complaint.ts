@@ -30,4 +30,18 @@ export interface ComplaintRow {
   resolutionNotes: string | null; // FR-4.6 mediation outcome / settlement details
   businessDaysElapsed: number; // feeds the FR-4.8 3-day ARTA flag
   createdAt: string;
+  triagedByName: string | null;
+  triagedAt: string | null;
+  dhReviewedByName: string | null;
+  dhReviewedAt: string | null;
+  mediationScheduledByName: string | null;
+  mediationScheduledAt: string | null;
+  resolvedByName: string | null;
+  resolvedAt: string | null;
+  assignedToId: string | null;
+  assignedToName: string | null;
+  assignedAt: string | null;
+  assignmentAcceptedAt: string | null;
+  /** Business days since filed (unassigned) or since last assigned (awaiting acceptance). */
+  businessDaysUnowned: number;
 }
