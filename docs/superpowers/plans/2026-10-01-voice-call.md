@@ -77,7 +77,8 @@ begin;
 create temp table _fx as
 select rr.id as ride, rr.passenger_id as passenger, t.driver_id as driver, t.id as trip,
   (select u.id from public.users u where u.status = 'active' and u.id not in (rr.passenger_id, t.driver_id) order by u.created_at limit 1) as outsider,
-  (select r2.id from public.ride_requests r2 where r2.status = 'completed' and r2.id <> rr.id order by r2.completed_at desc limit 1) as other_ride
+  (select r2.id from public.ride_requests r2 where r2.status = 'completed' and r2.id <> rr.id order by r2.completed_at desc limit 1) as other_ride,
+  (select dp.user_id from public.driver_profiles dp where dp.user_id <> t.driver_id order by dp.user_id limit 1) as other_driver
 from public.ride_requests rr
 join public.trips t on t.id = rr.trip_id
 where rr.status = 'completed' and t.driver_id is not null
@@ -106,7 +107,7 @@ do $$
 declare fx record; v_call uuid; v_callee uuid;
 begin
   select * into fx from _fx;
-  if fx.ride is null or fx.outsider is null or fx.other_ride is null then raise exception 'FAIL 0: need a completed ride with a driver, an outsider and a second ride'; end if;
+  if fx.ride is null or fx.outsider is null or fx.other_ride is null or fx.other_driver is null then raise exception 'FAIL 0: need a completed ride with a driver, an outsider, a second ride and a second driver'; end if;
   perform pg_temp.as_user(fx.outsider);
   begin
     perform public.start_ride_call(fx.ride);
@@ -292,15 +293,17 @@ begin
   if (select end_reason from public.ride_calls where id = v_call) <> 'max_duration' then raise exception 'FAIL 13: no max-duration backstop'; end if;
 end $$;
 
--- 14: a transfer to another driver ends the call.
+-- 14: a transfer to another driver ends the call. (Earlier checks used up the hourly attempt limit on this ride, so its history is cleared first.)
 do $$
 declare fx record; v_call uuid;
 begin
   select * into fx from _fx;
+  perform pg_temp.as_service();
+  delete from public.ride_calls where ride_request_id = fx.ride;
   perform pg_temp.as_user(fx.passenger);
   v_call := public.start_ride_call(fx.ride);
   perform pg_temp.as_service();
-  update public.trips set driver_id = fx.outsider where id = fx.trip;
+  update public.trips set driver_id = fx.other_driver where id = fx.trip;
   perform public.expire_ride_calls();
   if (select status from public.ride_calls where id = v_call) not in ('cancelled', 'ended') then raise exception 'FAIL 14: call survived a driver change'; end if;
   update public.trips set driver_id = fx.driver where id = fx.trip;
