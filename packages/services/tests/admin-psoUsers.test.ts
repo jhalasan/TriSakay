@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { createPsoUserForAdmin, listPsoUserSessions, listPsoUsersForAdmin, revokePsoUserSession } from '../src/admin/psoUsers.ts';
+import { createPsoUserForAdmin, listPsoUserSessions, listPsoUsersForAdmin, resetPsoUserMfa, revokePsoUserSession } from '../src/admin/psoUsers.ts';
 
 test('listPsoUsersForAdmin maps status to isActive, joins lastSignInAt from the RPC, and passes role through', async () => {
   __setSupabaseClientForTests({
@@ -183,4 +183,36 @@ test('revokePsoUserSession surfaces an RPC error (e.g. non-Administrator caller)
 
   const { error } = await revokePsoUserSession('s1');
   assert.equal(error, 'Only an Administrator may revoke a session');
+});
+
+test('resetPsoUserMfa invokes the admin-reset-mfa Edge Function with the target user id', async () => {
+  let captured: { fn: string; body: unknown } | null = null;
+  __setSupabaseClientForTests({
+    functions: {
+      invoke: async (fn: string, opts: { body: unknown }) => {
+        captured = { fn, body: opts.body };
+        return { data: { error: null }, error: null };
+      },
+    },
+  } as any);
+
+  assert.deepEqual(await resetPsoUserMfa('u1'), { error: null });
+  assert.equal(captured!.fn, 'admin-reset-mfa');
+  assert.deepEqual(captured!.body, { userId: 'u1' });
+});
+
+test('resetPsoUserMfa surfaces the error message from the Edge Function', async () => {
+  __setSupabaseClientForTests({
+    functions: {
+      invoke: async () => ({
+        data: null,
+        error: {
+          message: 'Edge Function returned a non-2xx status code',
+          context: { json: async () => ({ error: 'Only an Administrator may reset MFA' }) },
+        },
+      }),
+    },
+  } as any);
+
+  assert.deepEqual(await resetPsoUserMfa('u1'), { error: 'Only an Administrator may reset MFA' });
 });

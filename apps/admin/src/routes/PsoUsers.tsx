@@ -9,7 +9,9 @@ import { Modal } from '../components/Modal';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
+import { resetPsoUserMfa } from '@trisakay/services';
 import { usePsoUsersStore } from '../store/usePsoUsersStore';
+import { useSessionStore } from '../store/useSessionStore';
 import type { PsoUserRow } from '../types/psoUser';
 import { ROLE_LABELS } from '../lib/rbac';
 import type { AdminRole } from '../types/role';
@@ -86,6 +88,11 @@ export function PsoUsers() {
   const [revoking, setRevoking] = useState(false);
   const { showToast } = useToast();
 
+  const currentUserId = useSessionStore((state) => state.user?.id);
+  const [pendingMfaReset, setPendingMfaReset] = useState<PsoUserRow | null>(null);
+  const [resettingMfa, setResettingMfa] = useState(false);
+  const [mfaResetError, setMfaResetError] = useState<string | null>(null);
+
   useEffect(() => {
     fetch();
   }, [fetch]);
@@ -124,6 +131,20 @@ export function PsoUsers() {
     if (!ok) return;
     showToast({ message: `${pendingAction.user.fullName} ${pendingAction.kind === 'disable' ? 'disabled' : 'enabled'}.` });
     closeActionModal();
+  }
+
+  async function handleConfirmMfaReset() {
+    if (!pendingMfaReset) return;
+    setResettingMfa(true);
+    setMfaResetError(null);
+    const { error: failure } = await resetPsoUserMfa(pendingMfaReset.id);
+    setResettingMfa(false);
+    if (failure) {
+      setMfaResetError(failure);
+      return;
+    }
+    showToast({ message: `MFA reset for ${pendingMfaReset.fullName}.` });
+    setPendingMfaReset(null);
   }
 
   function openSessions(u: PsoUserRow) {
@@ -166,12 +187,17 @@ export function PsoUsers() {
     {
       key: 'actions',
       header: 'Actions',
-      width: '190px',
+      width: '300px',
       render: (u) => (
         <div className="row-actions">
           <Button variant="outline" tone="neutral" size="sm" onClick={() => openSessions(u)}>
             Sessions
           </Button>
+          {u.id !== currentUserId && (
+            <Button variant="outline" tone="neutral" size="sm" onClick={() => { setMfaResetError(null); setPendingMfaReset(u); }}>
+              Reset MFA
+            </Button>
+          )}
           <Button
             variant="outline"
             tone={u.isActive ? 'danger' : 'primary'}
@@ -334,6 +360,19 @@ export function PsoUsers() {
           error={error}
           onCancel={() => setPendingRevokeId(null)}
           onConfirm={handleConfirmRevoke}
+        />
+      )}
+
+      {pendingMfaReset && (
+        <ConfirmModal
+          title="Reset MFA"
+          message={`${pendingMfaReset.fullName} will have to set up MFA again the next time they sign in. Use this when they lost or replaced their phone.`}
+          confirmLabel="Reset MFA"
+          tone="danger"
+          confirmLoading={resettingMfa}
+          error={mfaResetError}
+          onCancel={() => setPendingMfaReset(null)}
+          onConfirm={handleConfirmMfaReset}
         />
       )}
 

@@ -108,6 +108,17 @@ export async function createPsoUserForAdmin(input: CreatePsoUserInput): Promise<
   return { userId: result.userId ?? null, tempPassword: result.tempPassword ?? null, error: result.error ?? null };
 }
 
+/**
+ * Removes another PSO user's MFA factors (lost phone), so they set MFA up again at their next sign-in. Done by
+ * the admin-reset-mfa Edge Function: deleting someone else's factor needs the service-role key, and the function
+ * checks the caller is an Administrator who has passed MFA themself.
+ */
+export async function resetPsoUserMfa(userId: string): Promise<{ error: string | null }> {
+  const { data, error } = await getSupabaseClient().functions.invoke('admin-reset-mfa', { body: { userId } });
+  if (error) return { error: await extractFunctionErrorMessage(error) };
+  return { error: (data as { error?: string | null } | null)?.error ?? null };
+}
+
 export interface PsoUserSessionRow {
   id: string;
   createdAt: string;
