@@ -35,6 +35,9 @@ interface AuthState {
     password: string
   ) => Promise<{ outcome: 'signed_in' | 'check_email' | 'error'; userId: string | null }>;
   logout: () => Promise<void>;
+  deactivateAccount: () => Promise<string | null>;
+  /** Undoes a self-deactivation; returns an error message, or null on success. */
+  reactivateAccount: () => Promise<string | null>;
   clearError: () => void;
   refreshProfile: () => Promise<void>;
 }
@@ -97,6 +100,19 @@ export const useAuthStore = create<AuthState>()((set) => {
       return session
         ? { outcome: 'signed_in', userId: session.user.id }
         : { outcome: 'check_email', userId: null };
+    },
+
+    deactivateAccount: async () => {
+      const { error } = await authService.deactivateOwnAccount();
+      return error;
+    },
+
+    reactivateAccount: async () => {
+      const { error } = await authService.reactivateOwnAccount();
+      if (error) return error;
+      const profile = await authService.getCurrentUserProfile().catch(() => null);
+      if (profile) set({ user: toAppUser(profile) });
+      return null;
     },
 
     logout: async () => {

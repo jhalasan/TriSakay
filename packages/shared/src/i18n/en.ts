@@ -440,6 +440,7 @@ export const en = {
     learnMore: 'Learn more',
   },
   accountMgmt: {
+    driverFactBookTitle: "You can't take rides",
     title: 'Account',
     rowTitle: 'Account',
     rowSubtitle: 'Email, phone, password and security',
@@ -964,7 +965,7 @@ export const en = {
     deactivateAccount: {
       title: 'Deactivate your account?',
       message:
-        "You won't be able to book rides until you visit the PSO office to reactivate. This does not delete your ride history.",
+        "You won't be able to book rides until you reactivate. Sign in again and tap Reactivate. This does not delete your ride history.",
       confirm: 'Deactivate account',
       errorFallback: "Couldn't deactivate your account. Please try again.",
       // Trip-records redesign — 2c Deactivate account.
@@ -973,7 +974,8 @@ export const en = {
       factBookSub: 'Starting as soon as you confirm',
       factHistoryTitle: 'Your ride history is kept',
       factHistorySub: "Deactivating doesn't delete anything",
-      factReactivateTitle: 'Reactivate at the PSO office',
+      factReactivateTitle: 'Reactivate any time',
+      factReactivateSub: 'Sign in and tap Reactivate my account',
       understand: 'I understand and want to deactivate',
       keepAccount: 'Keep my account',
       closeA11y: 'Close',

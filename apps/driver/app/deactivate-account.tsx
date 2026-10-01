@@ -6,17 +6,15 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button, IconTile, colors } from '@trisakay/ui';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
-import { useBookingStore } from '../src/store/useBookingStore';
 import { styles } from '../src/styles/deactivate-account.styles';
 
-/** UAT P20: self-service account closure, routed the same way as /logout. Redesigned as a full page (trip-records handoff §2c). */
+/** Driver counterpart of the passenger deactivation page: reversible, refused while a trip is in progress. */
 export default function DeactivateAccountScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
   const t = useTranslation();
   const d = t.auth.deactivateAccount;
   const deactivateAccount = useAuthStore((state) => state.deactivateAccount);
-  const resetBooking = useBookingStore((state) => state.reset);
   const [understood, setUnderstood] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,12 +31,11 @@ export default function DeactivateAccountScreen() {
       return;
     }
 
-    resetBooking();
     router.dismiss();
   }
 
   const facts = [
-    { icon: 'close' as const, tone: 'red' as const, title: d.factBookTitle, sub: d.factBookSub },
+    { icon: 'close' as const, tone: 'red' as const, title: t.accountMgmt.driverFactBookTitle, sub: d.factBookSub },
     { icon: 'checkmark' as const, tone: 'green' as const, title: d.factHistoryTitle, sub: d.factHistorySub },
     { icon: 'location' as const, tone: 'navy' as const, title: d.factReactivateTitle, sub: d.factReactivateSub },
   ];

@@ -431,6 +431,7 @@ export const fil: Translations = {
     learnMore: 'Alamin pa',
   },
   accountMgmt: {
+    driverFactBookTitle: 'Hindi ka makakasakay ng pasahero',
     title: 'Account',
     rowTitle: 'Account',
     rowSubtitle: 'Email, telepono, password at seguridad',
@@ -937,7 +938,7 @@ export const fil: Translations = {
     deactivateAccount: {
       title: 'I-deactivate ang iyong account?',
       message:
-        'Hindi ka makakapag-book ng sakay hangga\'t hindi ka bumibisita sa PSO office para i-reactivate. Hindi nito bubura ang kasaysayan ng iyong mga sakay.',
+        'Hindi ka makakapag-book ng sakay hangga\'t hindi ka nagre-reactivate. Mag-sign in ulit at i-tap ang Reactivate. Hindi nito bubura ang kasaysayan ng iyong mga sakay.',
       confirm: 'I-deactivate ang account',
       errorFallback: 'Hindi na-deactivate ang iyong account. Pakisubukang muli.',
       // Trip-records redesign — 2c Deactivate account.
@@ -946,7 +947,8 @@ export const fil: Translations = {
       factBookSub: 'Simula sa oras na kumpirmahin mo',
       factHistoryTitle: 'Nananatili ang kasaysayan ng sakay mo',
       factHistorySub: 'Walang binubura ang pag-deactivate',
-      factReactivateTitle: 'I-reactivate sa opisina ng PSO',
+      factReactivateTitle: 'I-reactivate anumang oras',
+      factReactivateSub: 'Mag-sign in at i-tap ang I-reactivate ang aking account',
       understand: 'Naiintindihan ko at gusto kong i-deactivate',
       keepAccount: 'Panatilihin ang account ko',
       closeA11y: 'Isara',
