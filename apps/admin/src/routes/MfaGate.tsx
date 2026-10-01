@@ -30,6 +30,7 @@ export function MfaGate() {
   const [code, setCode] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [attempt, setAttempt] = useState(0); // bumped by "Try again" to re-read the factor after a failed lookup
 
   // Enrol mode: ask for a new factor and its QR code. Challenge mode: find the existing factor.
   useEffect(() => {
@@ -60,7 +61,7 @@ export function MfaGate() {
     return () => {
       cancelled = true;
     };
-  }, [mfaStep, refreshMfa]);
+  }, [mfaStep, refreshMfa, attempt]);
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault();
@@ -134,6 +135,11 @@ export function MfaGate() {
             />
 
             <ErrorBanner message={error} />
+            {error && mfaStep === 'challenge' && !factorId && (
+              <Button type="button" variant="outline" tone="neutral" fullWidth onClick={() => setAttempt((n) => n + 1)}>
+                Try again
+              </Button>
+            )}
 
             <Button type="submit" fullWidth loading={submitting} disabled={code.length !== 6} className={styles.submitButton}>
               {enrolling ? 'Turn on MFA' : 'Verify'}

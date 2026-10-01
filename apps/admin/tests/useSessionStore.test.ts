@@ -17,7 +17,7 @@ interface FakeConfig {
   /** Captures each row inserted into login_events (UAT A1). */
   onLoginEventInsert?: (row: Record<string, unknown>) => void;
   /** MFA factors and assurance level the fake session reports. Defaults to no factor at aal1. */
-  mfa?: { factors?: Array<{ id: string; status: string }>; currentLevel?: string; nextLevel?: string };
+  mfa?: { factors?: Array<{ id: string; status: string }>; currentLevel?: string; nextLevel?: string; failFactors?: boolean };
 }
 
 function fakeClient(config: FakeConfig) {
@@ -60,7 +60,10 @@ function fakeClient(config: FakeConfig) {
         return config.updateUserError ? { error: { message: config.updateUserError } } : { error: null };
       },
       mfa: {
-        listFactors: async () => ({ data: { totp: config.mfa?.factors ?? [], all: config.mfa?.factors ?? [] }, error: null }),
+        listFactors: async () =>
+          config.mfa?.failFactors
+            ? { data: null, error: { message: 'network blip' } }
+            : { data: { totp: config.mfa?.factors ?? [], all: config.mfa?.factors ?? [] }, error: null },
         getAuthenticatorAssuranceLevel: async () => ({
           data: { currentLevel: mfaVerified ? 'aal2' : (config.mfa?.currentLevel ?? 'aal1'), nextLevel: config.mfa?.nextLevel ?? 'aal1' },
           error: null,
@@ -397,4 +400,27 @@ test('confirmPasswordReset for an MFA account with the code sets the password an
   assert.equal(failure, null);
   assert.deepEqual(updates, [{ password: 'New-pass-123!' }]);
   assert.equal(useSessionStore.getState().mfaStep, 'ok');
+});
+
+test('a later auth event does not throw an admin who is already at the MFA step ok back to enrolment', async () => {
+  const verified = { factors: [{ id: 'f1', status: 'verified' }], currentLevel: 'aal2', nextLevel: 'aal2' };
+  __setSupabaseClientForTests(fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW, mfa: verified }));
+  await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
+  assert.equal(useSessionStore.getState().mfaStep, 'ok');
+
+  // The hourly token refresh fires another auth event while the factor read is failing (a network blip).
+  __setSupabaseClientForTests(fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW, mfa: { ...verified, failFactors: true } }));
+  capturedAuthStateCallback!({ user: { id: 'u1' } });
+  await new Promise((resolve) => setTimeout(resolve, 20));
+
+  assert.equal(useSessionStore.getState().mfaStep, 'ok');
+  assert.equal(useSessionStore.getState().isAuthenticated, true);
+});
+
+test('refreshMfa fails closed when the MFA state cannot be read', async () => {
+  __setSupabaseClientForTests(
+    fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW, mfa: { failFactors: true } })
+  );
+  await useSessionStore.getState().refreshMfa();
+  assert.equal(useSessionStore.getState().mfaStep, 'challenge');
 });

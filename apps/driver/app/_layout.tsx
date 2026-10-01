@@ -69,6 +69,9 @@ function useProtectedRoute(
     // would get bounced back before the driver could confirm it.
     if (root === 'logout') return;
 
+    // deactivate-account signs the driver out itself; do not let this effect race its own navigation.
+    if (root === 'deactivate-account') return;
+
     // Verifying the emailed reset code establishes a real session mid-flow
     // (see packages/services/src/auth's verifyPasswordReset), which would
     // otherwise flip isAuthenticated and bounce this screen to Dashboard
@@ -527,23 +530,25 @@ function RootLayoutNav() {
   const consentStatus = useConsentStore((state) => state.status);
   const verificationStatus = useVerificationStore((state) => state.status);
   const mfaStatus = useMfaStore((state) => state.status);
+  // A password-only session (MFA code still owed) must not register push tokens, go online or start syncs.
+  const syncUserId = mfaStatus === 'ok' ? sessionUserId : null;
   useSupabaseAutoRefresh();
   useConnectivitySync();
   useConsentSync(sessionUserId);
   useMfaSync(sessionUserId);
-  useVerificationSync(sessionUserId);
-  useDocumentsSync(sessionUserId);
-  useDriverDataSync(sessionUserId);
-  useAvailabilitySync(sessionUserId);
-  useRequestsSync(sessionUserId, isAvailable);
-  useTransferInvitesSync(sessionUserId, isAvailable);
-  useDriverLocationSync(sessionUserId, isAvailable, locationTrackingEnabled, hasActiveTrip);
-  useRatingSync(sessionUserId);
-  useTripSync(sessionUserId);
+  useVerificationSync(syncUserId);
+  useDocumentsSync(syncUserId);
+  useDriverDataSync(syncUserId);
+  useAvailabilitySync(syncUserId);
+  useRequestsSync(syncUserId, isAvailable);
+  useTransferInvitesSync(syncUserId, isAvailable);
+  useDriverLocationSync(syncUserId, isAvailable, locationTrackingEnabled, hasActiveTrip);
+  useRatingSync(syncUserId);
+  useTripSync(syncUserId);
   useTripCancellationSync(activeTripId);
   useTripPaymentSync(activeTripId);
-  useNotificationsSync(sessionUserId);
-  usePushNotificationsSync(sessionUserId);
+  useNotificationsSync(syncUserId);
+  usePushNotificationsSync(syncUserId);
   useChatNotifications();
   useProtectedRoute(isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip, mfaStatus);
   useLocationPrompt(isAuthenticated, consentStatus);

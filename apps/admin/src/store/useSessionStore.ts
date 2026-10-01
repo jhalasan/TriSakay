@@ -97,9 +97,14 @@ export const useSessionStore = create<SessionState>()((set, get) => {
       return;
     }
 
-    // The portal stays closed until the MFA step is known, so a page refresh never flashes it open.
-    await get().refreshMfa();
-    if (claimed !== epoch) return;
+    // The portal stays closed until the MFA step is known, so a page refresh never flashes it open. An admin who is
+    // already past the code (this fires again on every hourly token refresh) keeps that state: re-reading it on a
+    // network blip would throw them out of the portal mid-task.
+    const alreadyThrough = get().isAuthenticated && get().user?.id === user.id && get().mfaStep === 'ok';
+    if (!alreadyThrough) {
+      await get().refreshMfa();
+      if (claimed !== epoch) return;
+    }
     set({ user, isAuthenticated: true, isHydrating: false });
   }
 

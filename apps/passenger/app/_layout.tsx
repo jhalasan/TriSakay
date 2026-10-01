@@ -440,13 +440,15 @@ function RootLayoutNav() {
   const accountBlocked = accountStatus === 'suspended' || accountStatus === 'deactivated';
   const tripStatus = useBookingStore((state) => state.tripStatus);
   const hasActiveTrip = tripStatus !== 'idle' && tripStatus !== 'rated';
+  // A password-only session (MFA code still owed) must not register push tokens or start syncs for this account.
+  const syncUserId = mfaStatus === 'ok' ? sessionUserId : null;
   useSupabaseAutoRefresh();
   useConsentSync(sessionUserId);
   useMfaSync(sessionUserId);
   useBookingStoreReset(sessionUserId);
-  useNotificationsSync(sessionUserId);
+  useNotificationsSync(syncUserId);
   useConnectivitySync();
-  usePushNotificationsSync(sessionUserId);
+  usePushNotificationsSync(syncUserId);
   useChatNotifications();
   useProtectedRoute(isAuthenticated, consentStatus, accountBlocked, hasActiveTrip, mfaStatus);
   useForegroundActiveRideSync(sessionUserId, consentStatus);

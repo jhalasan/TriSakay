@@ -366,7 +366,7 @@ export function PsoUsers() {
       {pendingMfaReset && (
         <ConfirmModal
           title="Reset MFA"
-          message={`${pendingMfaReset.fullName} will have to set up MFA again the next time they sign in. Use this when they lost or replaced their phone.`}
+          message={`${pendingMfaReset.fullName} will have to set up MFA again the next time they sign in. Use this when they lost or replaced their phone. If you suspect their password was stolen, also revoke their sessions and have them change it first: whoever signs in next with the password can set up MFA.`}
           confirmLabel="Reset MFA"
           tone="danger"
           confirmLoading={resettingMfa}
