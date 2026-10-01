@@ -25,6 +25,15 @@ export async function getMfaStatus(): Promise<MfaStatus> {
 }
 
 /**
+ * The sign-in gate for the mobile apps. Reads the assurance level the session already carries (no network call,
+ * so it works offline): 'challenge' only when the password step is done and a verified factor still needs its code.
+ */
+export async function getMfaGate(): Promise<'ok' | 'challenge'> {
+  const { data } = await getSupabaseClient().auth.mfa.getAuthenticatorAssuranceLevel();
+  return data?.currentLevel === 'aal1' && data?.nextLevel === 'aal2' ? 'challenge' : 'ok';
+}
+
+/**
  * Step 1 of setup: creates an unverified factor and returns the secret (to type or open in an
  * authenticator app) and a QR code. An unverified factor left over from an abandoned attempt is
  * removed first, otherwise Supabase rejects the new enrolment.

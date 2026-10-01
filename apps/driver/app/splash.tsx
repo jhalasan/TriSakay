@@ -16,6 +16,8 @@ import { MapGround, MapPin, RoadBand, RoutePath, useMapScale } from '../src/comp
 import { PopEntrance } from '../src/components/PopEntrance';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
+import { getMfaGate } from '@trisakay/services';
+import { useMfaStore } from '../src/store/useMfaStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { wait } from '../src/mocks/delay';
 import { styles } from '../src/styles/splash.styles';
@@ -173,6 +175,15 @@ export default function SplashScreen() {
 
       if (!useAuthStore.getState().isAuthenticated) {
         router.replace('/(auth)/login');
+        return;
+      }
+
+      // A password-only session with MFA on goes to the code prompt before anything else.
+      if ((await getMfaGate().catch(() => 'ok' as const)) === 'challenge') {
+        useMfaStore.getState().reset();
+        await useMfaStore.getState().check();
+        if (cancelled) return;
+        router.replace('/mfa-challenge');
         return;
       }
 

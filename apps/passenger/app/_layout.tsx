@@ -24,6 +24,7 @@ import { useAuthStore } from '../src/store/useAuthStore';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useBookingStore } from '../src/store/useBookingStore';
 import { useConnectivityStore } from '../src/store/useConnectivityStore';
+import { useMfaStore, type MfaGateStatus } from '../src/store/useMfaStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { useNotificationsStore } from '../src/store/useNotificationsStore';
 import { resolveActiveRideRoute } from '../src/utils/resolveActiveRideRoute';
@@ -81,6 +82,7 @@ function useProtectedRoute(
   consentStatus: ConsentGateStatus,
   accountBlocked: boolean,
   hasActiveTrip: boolean,
+  mfaStatus: MfaGateStatus,
 ) {
   const root = useRootSegment();
   const router = useRouter();
@@ -114,9 +116,17 @@ function useProtectedRoute(
     const inAuthGroup = root === '(auth)';
     const onConsent = root === 'consent';
     const onAccountSuspended = root === 'account-suspended';
+    const onMfa = root === 'mfa-challenge';
 
     if (!isAuthenticated) {
       if (!inAuthGroup) router.replace('/(auth)/login');
+      return;
+    }
+
+    // MFA comes first: a password-only session must not reach consent or the app.
+    if (mfaStatus === 'unknown') return;
+    if (mfaStatus === 'challenge') {
+      if (!onMfa) router.replace('/mfa-challenge');
       return;
     }
 
@@ -150,10 +160,10 @@ function useProtectedRoute(
     // rider on an empty Home while a driver is still en route to them.
     // `fast=1` skips splash's cold-start branding delay — this app instance
     // is already warm, so there's nothing to cover for.
-    if (inAuthGroup || onConsent || (onAccountSuspended && (!accountBlocked || hasActiveTrip))) {
+    if (inAuthGroup || onConsent || onMfa || (onAccountSuspended && (!accountBlocked || hasActiveTrip))) {
       router.replace({ pathname: '/splash', params: { fast: '1' } });
     }
-  }, [isAuthenticated, consentStatus, accountBlocked, hasActiveTrip, root, router]);
+  }, [isAuthenticated, consentStatus, accountBlocked, hasActiveTrip, mfaStatus, root, router]);
 }
 
 /**
@@ -204,6 +214,22 @@ function useForegroundActiveRideSync(sessionUserId: string | null, consentStatus
 
     return () => subscription.remove();
   }, [sessionUserId, consentStatus, router]);
+}
+
+/**
+ * MFA gate: reads the session's MFA level whenever the signed-in identity changes. 'challenge' means the
+ * password step is done but a verified factor still needs its code, so the app stays on /mfa-challenge.
+ * Keyed on the session's user id for the same reason as useConsentSync.
+ */
+function useMfaSync(sessionUserId: string | null) {
+  const check = useMfaStore((state) => state.check);
+  const reset = useMfaStore((state) => state.reset);
+
+  useEffect(() => {
+    reset();
+    if (sessionUserId === null) return;
+    void check();
+  }, [sessionUserId, check, reset]);
 }
 
 /**
@@ -409,18 +435,20 @@ function RootLayoutNav() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const sessionUserId = useAuthStore((state) => state.sessionUserId);
   const consentStatus = useConsentStore((state) => state.status);
+  const mfaStatus = useMfaStore((state) => state.status);
   const accountStatus = useAuthStore((state) => state.user?.accountStatus);
   const accountBlocked = accountStatus === 'suspended' || accountStatus === 'deactivated';
   const tripStatus = useBookingStore((state) => state.tripStatus);
   const hasActiveTrip = tripStatus !== 'idle' && tripStatus !== 'rated';
   useSupabaseAutoRefresh();
   useConsentSync(sessionUserId);
+  useMfaSync(sessionUserId);
   useBookingStoreReset(sessionUserId);
   useNotificationsSync(sessionUserId);
   useConnectivitySync();
   usePushNotificationsSync(sessionUserId);
   useChatNotifications();
-  useProtectedRoute(isAuthenticated, consentStatus, accountBlocked, hasActiveTrip);
+  useProtectedRoute(isAuthenticated, consentStatus, accountBlocked, hasActiveTrip, mfaStatus);
   useForegroundActiveRideSync(sessionUserId, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 

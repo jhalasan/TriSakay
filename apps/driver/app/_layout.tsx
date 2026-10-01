@@ -26,6 +26,7 @@ import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useComplaintsStore } from '../src/store/useComplaintsStore';
 import { useConnectivityStore } from '../src/store/useConnectivityStore';
+import { useMfaStore, type MfaGateStatus } from '../src/store/useMfaStore';
 import { useConsentStore, type ConsentGateStatus } from '../src/store/useConsentStore';
 import { useDocumentsStore } from '../src/store/useDocumentsStore';
 import { useDriverStore } from '../src/store/useDriverStore';
@@ -53,7 +54,8 @@ function useProtectedRoute(
   consentStatus: ConsentGateStatus,
   verificationStatus: VerificationGateStatus,
   accountBlocked: boolean,
-  hasActiveTrip: boolean
+  hasActiveTrip: boolean,
+  mfaStatus: MfaGateStatus,
 ) {
   const root = useRootSegment();
   const router = useRouter();
@@ -77,9 +79,17 @@ function useProtectedRoute(
     const onConsent = root === 'consent';
     const onVerification = root === 'verification-pending';
     const onAccountSuspended = root === 'account-suspended';
+    const onMfa = root === 'mfa-challenge';
 
     if (!isAuthenticated) {
       if (!inAuthGroup) router.replace('/(auth)/login');
+      return;
+    }
+
+    // MFA comes first: a password-only session must not reach consent, verification or the app.
+    if (mfaStatus === 'unknown') return;
+    if (mfaStatus === 'challenge') {
+      if (!onMfa) router.replace('/mfa-challenge');
       return;
     }
 
@@ -109,10 +119,10 @@ function useProtectedRoute(
       return;
     }
 
-    if (inAuthGroup || onConsent || onVerification || (onAccountSuspended && (!accountBlocked || hasActiveTrip))) {
+    if (inAuthGroup || onConsent || onMfa || onVerification || (onAccountSuspended && (!accountBlocked || hasActiveTrip))) {
       router.replace('/(tabs)/dashboard');
     }
-  }, [isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip, root, router]);
+  }, [isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip, mfaStatus, root, router]);
 }
 
 /**
@@ -139,6 +149,22 @@ function useSupabaseAutoRefresh() {
 
     return () => subscription.remove();
   }, []);
+}
+
+/**
+ * MFA gate: reads the session's MFA level whenever the signed-in identity changes. 'challenge' means the
+ * password step is done but a verified factor still needs its code, so the app stays on /mfa-challenge.
+ * Keyed on the session's user id for the same reason as useConsentSync.
+ */
+function useMfaSync(sessionUserId: string | null) {
+  const check = useMfaStore((state) => state.check);
+  const reset = useMfaStore((state) => state.reset);
+
+  useEffect(() => {
+    reset();
+    if (sessionUserId === null) return;
+    void check();
+  }, [sessionUserId, check, reset]);
 }
 
 /**
@@ -500,9 +526,11 @@ function RootLayoutNav() {
   const locationTrackingEnabled = useSettingsStore((state) => state.locationTrackingEnabled);
   const consentStatus = useConsentStore((state) => state.status);
   const verificationStatus = useVerificationStore((state) => state.status);
+  const mfaStatus = useMfaStore((state) => state.status);
   useSupabaseAutoRefresh();
   useConnectivitySync();
   useConsentSync(sessionUserId);
+  useMfaSync(sessionUserId);
   useVerificationSync(sessionUserId);
   useDocumentsSync(sessionUserId);
   useDriverDataSync(sessionUserId);
@@ -517,7 +545,7 @@ function RootLayoutNav() {
   useNotificationsSync(sessionUserId);
   usePushNotificationsSync(sessionUserId);
   useChatNotifications();
-  useProtectedRoute(isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip);
+  useProtectedRoute(isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip, mfaStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 
   return (

@@ -6,6 +6,7 @@ import {
   confirmMfaEnrollment,
   disableMfa,
   getDeactivationOrigin,
+  getMfaGate,
   getMfaStatus,
   listMySessions,
   reactivateOwnAccount,
@@ -156,4 +157,23 @@ test('revokeMySession, reactivateOwnAccount and getDeactivationOrigin call their
     ['self_reactivate_account', undefined],
     ['my_deactivation_origin', undefined],
   ]);
+});
+
+test('getMfaGate: challenge only when the session is at aal1 and a verified factor needs aal2', async () => {
+  const levels = (currentLevel: string, nextLevel: string) =>
+    createFakeSupabaseClient({ mfa: { getAuthenticatorAssuranceLevel: async () => ({ data: { currentLevel, nextLevel }, error: null }) } });
+
+  __setSupabaseClientForTests(levels('aal1', 'aal2'));
+  assert.equal(await getMfaGate(), 'challenge');
+  __setSupabaseClientForTests(levels('aal2', 'aal2'));
+  assert.equal(await getMfaGate(), 'ok');
+  __setSupabaseClientForTests(levels('aal1', 'aal1'));
+  assert.equal(await getMfaGate(), 'ok');
+});
+
+test('getMfaGate does not block when the level cannot be read', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({ mfa: { getAuthenticatorAssuranceLevel: async () => ({ data: null, error: { message: 'offline' } }) } })
+  );
+  assert.equal(await getMfaGate(), 'ok');
 });
