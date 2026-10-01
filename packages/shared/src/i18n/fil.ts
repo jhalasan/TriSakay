@@ -436,10 +436,11 @@ export const fil: Translations = {
     newPassword: 'Bagong password',
     confirmNewPassword: 'Kumpirmahin ang bagong password',
     saveButton: 'I-update ang password',
-    notAvailableNotice:
-      'Hindi pa available ang pagpapalit ng password mula sa app sa prototype na ito. Makipag-ugnayan sa PSO kung kailangan mo ng tulong sa pag-access ng iyong account.',
+    currentIncorrect: 'Mali ang kasalukuyang password.',
+    updateFailedTitle: 'Hindi na-update ang password',
+    updatedTitle: 'Na-update ang password',
+    updatedMessage: 'Napalitan ang iyong password at na-sign out ang iyong ibang mga device.',
     // Trip-records redesign — 2b Palitan ang password.
-    notAvailableTitle: 'Hindi pa available',
     confirmPlaceholder: 'I-type ulit ang parehong password',
     mismatch: 'Hindi magkapareho ang mga password',
     ruleLength: 'Hindi bababa sa 10 karakter',

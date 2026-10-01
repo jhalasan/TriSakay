@@ -445,10 +445,11 @@ export const en = {
     newPassword: 'New password',
     confirmNewPassword: 'Confirm new password',
     saveButton: 'Update password',
-    notAvailableNotice:
-      "Changing your password from the app isn't available yet in this prototype. Contact PSO if you need help accessing your account.",
+    currentIncorrect: 'Current password is incorrect.',
+    updateFailedTitle: "Couldn't update password",
+    updatedTitle: 'Password updated',
+    updatedMessage: 'Your password was changed and your other devices were signed out.',
     // Trip-records redesign — 2b Change password.
-    notAvailableTitle: 'Not available yet',
     confirmPlaceholder: 'Type the same password again',
     mismatch: "Passwords don't match",
     ruleLength: 'At least 10 characters',
