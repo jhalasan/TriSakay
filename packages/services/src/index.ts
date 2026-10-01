@@ -42,3 +42,4 @@ export * from './admin/verification.ts';
 export function getServiceStatus() {
   return 'Services ready';
 }
+export * from './account/index.ts';

@@ -46,6 +46,15 @@ export interface FakeClientConfig {
     name: string,
     options: unknown
   ) => Promise<{ data: unknown; error: { message: string; context?: unknown } | null }>;
+  /** Overrides for `auth.mfa.*`. */
+  mfa?: {
+    listFactors?: () => Promise<{ data: unknown; error: { message: string } | null }>;
+    getAuthenticatorAssuranceLevel?: () => Promise<{ data: unknown; error: { message: string } | null }>;
+    enroll?: (args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+    challenge?: (args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+    verify?: (args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+    unenroll?: (args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
+  };
   /** Override for `.rpc(fn, args)` — used by RPC-based service functions (e.g. get_trip_driver_info). */
   rpc?: (fn: string, args: unknown) => Promise<{ data: unknown; error: { message: string } | null }>;
 }
@@ -62,6 +71,15 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
     resetPasswordForEmail: config.resetPasswordForEmail ?? (async () => ({ data: {}, error: null })),
     verifyOtp: config.verifyOtp ?? (async () => ({ data: { session: null }, error: null })),
     updateUser: config.updateUser ?? (async () => ({ data: {}, error: null })),
+    mfa: {
+      listFactors: config.mfa?.listFactors ?? (async () => ({ data: { totp: [] }, error: null })),
+      getAuthenticatorAssuranceLevel:
+        config.mfa?.getAuthenticatorAssuranceLevel ?? (async () => ({ data: { currentLevel: 'aal1', nextLevel: 'aal1' }, error: null })),
+      enroll: config.mfa?.enroll ?? (async () => ({ data: null, error: { message: 'enroll not configured' } })),
+      challenge: config.mfa?.challenge ?? (async () => ({ data: { id: 'challenge-1' }, error: null })),
+      verify: config.mfa?.verify ?? (async () => ({ data: {}, error: null })),
+      unenroll: config.mfa?.unenroll ?? (async () => ({ data: {}, error: null })),
+    },
   };
 
   const usersQuery = {
