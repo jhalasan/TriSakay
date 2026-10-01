@@ -14,6 +14,7 @@
 // display once. It is never logged or stored anywhere else.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { assuranceLevel } from './aal.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -73,6 +74,12 @@ Deno.serve(async (req: Request) => {
     // restriction, matching is_account_active()'s own definition.
     if (callerRow.status !== 'active' && callerRow.status !== 'flagged') {
       return json({ userId: null, tempPassword: null, error: 'Your account is not active' }, 403);
+    }
+
+    // Staff MFA gate: creating a staff account is a privileged action, so the caller's session must have passed MFA
+    // (otherwise a stolen password alone could mint a new admin that then enrols its own authenticator).
+    if (assuranceLevel(authHeader) !== 'aal2') {
+      return json({ userId: null, tempPassword: null, error: 'Verify your MFA code first' }, 403);
     }
 
     const body = await req.json().catch(() => ({}) as Record<string, unknown>);

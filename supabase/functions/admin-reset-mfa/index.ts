@@ -7,6 +7,7 @@
 // caller. People set up their own MFA again through the normal sign-in flow, not through this function.
 
 import { createClient } from 'npm:@supabase/supabase-js@2';
+import { assuranceLevel } from './aal.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -20,18 +21,6 @@ function json(body: unknown, status = 200): Response {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
-}
-
-/** Reads the `aal` claim from the bearer token. The token was already validated by getUser() before this is used. */
-function assuranceLevel(authHeader: string): string | null {
-  try {
-    const token = authHeader.replace(/^Bearer\s+/i, '');
-    const payload = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
-    const claims = JSON.parse(atob(payload.padEnd(Math.ceil(payload.length / 4) * 4, '=')));
-    return typeof claims.aal === 'string' ? claims.aal : null;
-  } catch {
-    return null;
-  }
 }
 
 Deno.serve(async (req: Request) => {
