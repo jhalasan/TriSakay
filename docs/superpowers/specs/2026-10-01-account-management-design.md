@@ -19,8 +19,11 @@ Date: 2026-10-01. Apps: passenger and driver. Origin: a panelist recommended tha
 6. **MFA** uses Supabase authenticator-app codes (TOTP), optional for passengers and drivers. Setup shows the secret key and an "Open authenticator app" button (no QR library needed, since the authenticator is on the same phone). After password sign-in, an account with a verified factor must enter a 6-digit code before reaching the app.
 7. **Devices:** a list of signed-in devices with "Sign out" for each other device and "Sign out all other devices".
 
+8. **Admin and PSO accounts: MFA is required.** After the password, a staff account with no factor must enrol (QR code on the desktop), and one with a factor must enter a code every sign-in. The portal stays closed until that is done.
+9. **Extra layer for staff:** the database also requires the MFA level (`aal2`) for staff privileges (`is_pso`, `is_supervisor`, `is_admin`), so a stolen password alone reads nothing even through the API. It ships switched OFF and is switched ON, with approval, only after an admin has proven the sign-in on the live portal.
+10. **Lost phone:** an admin can reset another PSO user's MFA from the PSO Users page (the edge function needs an `aal2` admin caller). A lone locked-out admin is recovered in the Supabase dashboard.
+
 ## Out of scope (stated, not silent)
 
-- Required MFA for admin accounts (separate spec; the admin web login was not examined here).
-- Server-side enforcement of MFA (RLS aal2 checks). This plan gates in the app only.
+- Server-side MFA enforcement for passengers and drivers (their MFA is optional and gated in the app only).
 - Account deletion request, email change.

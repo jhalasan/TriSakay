@@ -18,6 +18,7 @@
 - `packages/ui` must not import `@trisakay/shared` (rootDir); the new code lives in services/shared/apps only.
 - Do not push, merge or rebuild apps without the user's say-so. Applying the migration to the live project needs the user's approval.
 - Work on a new branch `feature/account-management` cut from `feature/payment-settlement`.
+- Admin MFA is REQUIRED and enforced in two places (the admin app gate, then the database). The database gate ships switched OFF and is switched ON only after an admin has enrolled and signed in with a code on the live portal; each switch is a separate migration that needs the user's approval.
 
 ## Review Focus
 
@@ -28,6 +29,10 @@
 - Signing in with a verified MFA factor but closing the app at the code prompt: next launch must ask for the code again, never land in the app at aal1.
 - Wrong or expired 6-digit code: error shown, can retry, no crash.
 - Signing out the current device from the device list must be impossible (current device row has no sign-out button).
+- Admin loses the phone: another admin can reset that person's MFA (Task 11); a lone locked-out admin is recovered in the Supabase dashboard (Authentication > Users > the user > remove the MFA factor). Say so in the wrap-up.
+- Admin refreshes the page at the code prompt: still blocked, never lands in the portal at aal1.
+- A PSO user has a password but no factor yet: forced to enrol before seeing anything; once the database gate is on, an aal1 session reads nothing.
+- The database gate must not change anything for passengers, drivers, service-role calls or cron jobs.
 
 ---
 
@@ -112,7 +117,7 @@ Add to `packages/shared/src/utils/index.ts`: `export * from './mask.ts';`
 **Interfaces:**
 - Produces:
   - `getMfaStatus(): Promise<{ enrolled: boolean; factorId: string | null; needsChallenge: boolean }>`
-  - `startMfaEnrollment(): Promise<{ factorId: string | null; secret: string | null; uri: string | null; error: string | null }>`
+  - `startMfaEnrollment(): Promise<{ factorId: string | null; secret: string | null; uri: string | null; qrCode: string | null; error: string | null }>`
   - `confirmMfaEnrollment(factorId: string, code: string): Promise<{ error: string | null }>`
   - `verifyMfaCode(factorId: string, code: string): Promise<{ error: string | null }>`
   - `disableMfa(factorId: string): Promise<{ error: string | null }>`
@@ -198,10 +203,10 @@ test('getMfaStatus: an unverified factor does not count as enrolled', async () =
 test('startMfaEnrollment returns the secret and uri, and surfaces errors', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
-      mfa: { enroll: async () => ({ data: { id: 'f9', totp: { secret: 'ABCD', uri: 'otpauth://totp/x' } }, error: null }) },
+      mfa: { enroll: async () => ({ data: { id: 'f9', totp: { secret: 'ABCD', uri: 'otpauth://totp/x', qr_code: 'data:image/svg+xml;utf8,<svg/>' } }, error: null }) },
     })
   );
-  assert.deepEqual(await startMfaEnrollment(), { factorId: 'f9', secret: 'ABCD', uri: 'otpauth://totp/x', error: null });
+  assert.deepEqual(await startMfaEnrollment(), { factorId: 'f9', secret: 'ABCD', uri: 'otpauth://totp/x', qrCode: 'data:image/svg+xml;utf8,<svg/>', error: null });
 
   __setSupabaseClientForTests(createFakeSupabaseClient({ mfa: { enroll: async () => ({ data: null, error: { message: 'MFA disabled' } }) } }));
   assert.equal((await startMfaEnrollment()).error, 'MFA disabled');
@@ -307,10 +312,10 @@ export async function getMfaStatus(): Promise<MfaStatus> {
 }
 
 /** Step 1 of setup: creates an unverified factor and returns the secret to type or open in an authenticator app. */
-export async function startMfaEnrollment(): Promise<{ factorId: string | null; secret: string | null; uri: string | null; error: string | null }> {
+export async function startMfaEnrollment(): Promise<{ factorId: string | null; secret: string | null; uri: string | null; qrCode: string | null; error: string | null }> {
   const { data, error } = await getSupabaseClient().auth.mfa.enroll({ factorType: 'totp' });
-  if (error || !data) return { factorId: null, secret: null, uri: null, error: error?.message ?? 'Could not start setup.' };
-  return { factorId: data.id, secret: data.totp.secret, uri: data.totp.uri, error: null };
+  if (error || !data) return { factorId: null, secret: null, uri: null, qrCode: null, error: error?.message ?? 'Could not start setup.' };
+  return { factorId: data.id, secret: data.totp.secret, uri: data.totp.uri, qrCode: data.totp.qr_code, error: null };
 }
 
 /** Challenge + verify in one step: used for finishing setup, and for the code prompt after a password sign-in. */
@@ -880,10 +885,143 @@ reactivateAccount: async () => {
 
 ---
 
-### Task 10: Final verification
+### Task 10: Admin MFA: required enrolment and sign-in code (admin web)
+
+**Files:**
+- Create: `apps/admin/src/lib/mfaState.ts`, `apps/admin/tests/mfaState.test.ts`, `apps/admin/src/routes/MfaGate.tsx`, `apps/admin/src/routes/MfaGate.module.css`
+- Modify: `apps/admin/src/store/useSessionStore.ts`, `apps/admin/src/App.tsx`, the ProfileMenu component under `apps/admin/src/components/ProfileMenu/`
+
+**Interfaces:**
+- Consumes: `getMfaStatus`, `startMfaEnrollment`, `confirmMfaEnrollment`, `verifyMfaCode` (Task 2).
+- Produces: `nextMfaStep(status: { enrolled: boolean; needsChallenge: boolean }): 'enroll' | 'challenge' | 'ok'`; store field `mfaStep: 'unknown' | 'enroll' | 'challenge' | 'ok'` and action `refreshMfa(): Promise<void>`.
+
+- [ ] **Step 1: Write the failing test** `apps/admin/tests/mfaState.test.ts`:
+
+```ts
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { nextMfaStep } from '../src/lib/mfaState.ts';
+
+test('no factor means the user must enrol', () => {
+  assert.equal(nextMfaStep({ enrolled: false, needsChallenge: false }), 'enroll');
+});
+test('a factor at password-only level means the user must enter a code', () => {
+  assert.equal(nextMfaStep({ enrolled: true, needsChallenge: true }), 'challenge');
+});
+test('a factor and a code-verified session is fine', () => {
+  assert.equal(nextMfaStep({ enrolled: true, needsChallenge: false }), 'ok');
+});
+```
+
+- [ ] **Step 2: Run it, expect FAIL** (`cd apps/admin && node --test tests/mfaState.test.ts`, module not found), then create `apps/admin/src/lib/mfaState.ts`:
+
+```ts
+export type MfaStep = 'enroll' | 'challenge' | 'ok';
+
+/** Staff MFA is mandatory: no factor means enrol; a factor but no code entered this session means challenge. */
+export function nextMfaStep(status: { enrolled: boolean; needsChallenge: boolean }): MfaStep {
+  if (!status.enrolled) return 'enroll';
+  return status.needsChallenge ? 'challenge' : 'ok';
+}
+```
+
+- [ ] **Step 3: Run, expect PASS.**
+- [ ] **Step 4: Store.** In `useSessionStore.ts` add `mfaStep: 'unknown' | MfaStep` (initially `'unknown'`) and `refreshMfa`, which calls `getMfaStatus()` and sets `mfaStep: nextMfaStep(status)`. If `getMfaStatus` throws, fail closed: set `'challenge'` (the gate screen shows a retry message). Call `refreshMfa()` at the end of a successful `signIn`, in `hydrateFromSession` right after the user is set (and keep `isHydrating` true until it resolves, so a refresh never flashes the portal), and after a successful `confirmPasswordReset`. Reset `mfaStep` to `'unknown'` on sign-out and on every failure branch that signs the user out. Add three store tests using `__setSupabaseClientForTests` (follow how the existing session-store tests are set up: `grep -rl useSessionStore apps/admin/tests`): an unenrolled admin ends sign-in with `mfaStep === 'enroll'`; an enrolled admin at aal1 ends with `'challenge'`; an enrolled admin at aal2 ends with `'ok'`.
+- [ ] **Step 5: Route guard and screen.** In `App.tsx` add:
+
+```tsx
+/** Staff MFA is required: until the code step is done the portal stays closed. */
+function RequireMfa({ children }: { children: ReactNode }) {
+  const mfaStep = useSessionStore((state) => state.mfaStep);
+  if (mfaStep === 'unknown') return null;
+  if (mfaStep !== 'ok') return <Navigate to="/mfa" replace />;
+  return <>{children}</>;
+}
+```
+
+Wrap the shell route as `RequireAuth > RequirePasswordSet > RequireMfa > AppShell`, and add a `/mfa` route (must be authenticated; redirects to `/` once `mfaStep === 'ok'`). `MfaGate.tsx` renders by `mfaStep`:
+  - `enroll`: calls `startMfaEnrollment()` on mount; shows the QR image (`<img src={qrCode} alt="MFA QR code" />`), the secret as text for manual entry, a 6-digit `TextField` and a "Turn on MFA" button that runs `confirmMfaEnrollment(factorId, code)` then `refreshMfa()`.
+  - `challenge`: a 6-digit `TextField` and a "Verify" button that runs `verifyMfaCode(factorId, code)` then `refreshMfa()`. The `factorId` comes from `getMfaStatus()` on mount.
+  - Both show "That code didn't work. Check it and try again." on failure, and a "Sign out" link.
+  - Layout and CSS tokens: copy `ForcePasswordChange.tsx` and its CSS module; use the admin `TextField` and `Button`; no new colors.
+- [ ] **Step 6: ProfileMenu.** Add a read-only line "MFA: On", shown when `mfaStep === 'ok'`. Staff cannot turn it off.
+- [ ] **Step 7: Typecheck and test.** `npx tsc --noEmit -p apps/admin` and `cd apps/admin && node --test tests/*.test.ts`; expect green. Then verify in the browser with the Playwright tools against the local dev server, using a throwaway admin account the user provides: enrol, sign out, sign in, a wrong code is rejected, the right code opens the dashboard, and a refresh at the code prompt stays on `/mfa`.
+- [ ] **Step 8: Commit** `Admin: MFA is required; enrolment, sign-in code and route gate`.
+
+---
+
+### Task 11: Admin can reset another PSO user's MFA (lost phone)
+
+**Files:**
+- Create: `supabase/functions/admin-reset-mfa/index.ts`
+- Modify: `packages/services/src/admin/psoUsers.ts`, `packages/services/tests/admin-psoUsers.test.ts`, `apps/admin/src/routes/PsoUsers.tsx`
+
+**Interfaces:**
+- Produces: `resetPsoUserMfa(userId: string): Promise<{ error: string | null }>`; edge function takes `{ userId }` and returns `{ error: string | null }`.
+
+- [ ] **Step 1: Failing test** in `admin-psoUsers.test.ts`: with `functionsInvoke` returning `{ data: { error: null }, error: null }`, `resetPsoUserMfa('u1')` resolves `{ error: null }` and the function invoked is `admin-reset-mfa` with body `{ userId: 'u1' }`; with `{ data: { error: 'Only an Administrator may reset MFA' }, error: null }` it resolves that error text.
+- [ ] **Step 2: Implement** `resetPsoUserMfa` next to `createPsoUserForAdmin`, using the same `functions.invoke` and `extractFunctionErrorMessage` pattern; run `npm run --workspace packages/services test`.
+- [ ] **Step 3: Edge function** `admin-reset-mfa/index.ts`, same structure as `admin-create-pso-user` (CORS, `getUser`, caller row read, `role === 'admin'`, status active or flagged), plus:
+  - The caller's JWT must be at `aal2`: decode the bearer token's payload and require `aal === 'aal2'`, otherwise 403 "Verify your MFA code first".
+  - The target must exist and hold a staff role (`pso_staff`, `pso_supervisor`, `admin`) and must not be the caller (people re-enrol through sign-in, not through this).
+  - With the service-role client, list the target's factors (`auth.admin.mfa.listFactors({ userId })`) and delete each (`auth.admin.mfa.deleteFactor({ userId, id })`). Check these method names against the installed `@supabase/supabase-js` version's types before relying on them.
+  - Log the action with `console.log` (who reset whom); a persistent audit row is a noted follow-up unless the existing admin audit log table accepts it (`grep -rn "audit" supabase/functions`).
+  - Deploying the function needs the user's approval.
+- [ ] **Step 4: UI.** In `PsoUsers.tsx` add a "Reset MFA" row action (administrators only, not shown on the caller's own row) opening the existing `ConfirmModal` ("{name} will have to set up MFA again the next time they sign in.") then `resetPsoUserMfa`; success and error toasts.
+- [ ] **Step 5: Typecheck, run tests, commit** `Admin: reset another PSO user's MFA`.
+
+---
+
+### Task 12: Database enforcement of MFA for staff (staged, off by default)
+
+**Files:**
+- Create: `supabase/migrations/20261001000002_staff_mfa_gate.sql` (installs the gate, OFF), `supabase/migrations/20261001000003_staff_mfa_gate_on.sql` (switches it ON, written later), `supabase/tests/staff_mfa_gate.sql`
+
+**Interfaces:**
+- Produces: `public.staff_mfa_enforced() returns boolean`; `is_pso()`, `is_supervisor()` and `is_admin()` additionally require an `aal2` JWT while enforcement is on.
+
+- [ ] **Step 1: Read the live definitions first.** With `execute_sql`, run `select pg_get_functiondef('public.is_pso()'::regprocedure)` and the same for `is_supervisor`, `is_admin` and `app_current_role`; the repo baseline may be out of date. Also list policies that name `app_current_role()` directly: `select polrelid::regclass, polname, pg_get_expr(polqual, polrelid) from pg_policy where pg_get_expr(polqual, polrelid) like '%app_current_role%'`. A staff-access policy written with `app_current_role()` instead of `is_pso()` is not covered by this gate; record each one here and switch it to `is_pso()` or `is_admin()` in this migration.
+- [ ] **Step 2: Migration (gate OFF).**
+
+```sql
+-- Staff must be at MFA level (aal2) to use staff privileges. Ships OFF so nothing changes until
+-- an admin has enrolled and proven the sign-in code works on the live portal. Switching it on is
+-- a separate migration; switching it back off is the same one-line change.
+create or replace function public.staff_mfa_enforced()
+returns boolean language sql immutable as $$ select false $$;
+
+create or replace function public.staff_aal_ok()
+returns boolean language sql stable as $$
+  select not public.staff_mfa_enforced() or coalesce(auth.jwt() ->> 'aal', '') = 'aal2';
+$$;
+
+create or replace function public.is_admin()
+returns boolean language sql stable set search_path to 'public' as $$
+  select public.app_current_role() = 'admin' and public.staff_aal_ok();
+$$;
+create or replace function public.is_pso()
+returns boolean language sql stable set search_path to 'public' as $$
+  select public.app_current_role() in ('pso_staff','pso_supervisor','admin') and public.staff_aal_ok();
+$$;
+create or replace function public.is_supervisor()
+returns boolean language sql stable set search_path to 'public' as $$
+  select public.app_current_role() in ('pso_supervisor','admin') and public.staff_aal_ok();
+$$;
+```
+
+Keep any `security definer`, grants and revokes exactly as the live definitions show (Step 1); the SQL above shows only the logic.
+- [ ] **Step 3: SQL test** `supabase/tests/staff_mfa_gate.sql` (one `execute_sql` call, ending in ROLLBACK). It borrows an existing admin user. With the gate OFF it asserts `is_pso()` is true at `aal1`. Then it replaces `staff_mfa_enforced()` with `select true` inside the transaction and asserts: `aal1` makes `is_pso()` and `is_admin()` false; `aal2` makes them true; a passenger's `aal1` JWT is still false (unchanged); no JWT (service role) is false in both settings. JWTs are impersonated with `set_config('request.jwt.claims', json_build_object('sub', <id>, 'role', 'authenticated', 'aal', 'aal1')::text, true)`.
+- [ ] **Step 4: Approval, then apply (gate OFF).** Ask the user; apply with `apply_migration`; run the SQL test; confirm the admin portal behaves exactly as before.
+- [ ] **Step 5: Switch ON, only after Task 10 is live and proven.** Preconditions the user must confirm: at least one admin has enrolled and signed in with a code on the live portal, and they understand the recovery steps in Review Focus. Then, with approval, apply `..._gate_on.sql` (replaces `staff_mfa_enforced()` with `select true`) and check from the live portal that the dashboard still loads at aal2. Put the rollback statement in that migration file's header comment: `create or replace function public.staff_mfa_enforced() returns boolean language sql immutable as $$ select false $$;`
+- [ ] **Step 6: Commit** each migration with its own message (`Staff MFA gate installed, off` and `Staff MFA gate switched on`).
+
+---
+
+### Task 13: Final verification
 
 - [ ] **Step 1:** `npm run --workspace packages/shared test`, `npm run --workspace packages/services test`, and each app's tests (`npm test --workspace apps/passenger`, `apps/driver`); expected: 0 failing.
 - [ ] **Step 2:** `npx tsc -b packages/shared packages/services packages/ui packages/utils` then `npx tsc --noEmit -p apps/passenger`, `apps/driver`, `apps/admin`; expected: clean.
 - [ ] **Step 3:** Ask the user before building. When told, build both apps with the project's forced-rebuild recipe (`expo export:embed --reset-cache`, `createBundleReleaseJsAndAssets --rerun assembleRelease`, check the APK contains `accountMgmt`-only text such as "Signed-in devices", `adb install -r`).
 - [ ] **Step 4:** On the phone, walk through: Profile shows no email/phone; Account → Show asks for a password and re-masks after 60 s; wrong password rejected; change password works and a second signed-in device is signed out; two-step on/off and sign-in challenge; devices list; deactivate refused during an active ride; deactivate then sign in → Reactivate works; a PSO-deactivated account shows the PSO office instead.
-- [ ] **Step 5:** Update `docs/UAT_PANELIST_REVIEW_ADRALES.md` with the new account-management row and its status.
+- [ ] **Step 5:** Admin walk-through: required enrolment on first sign-in, code prompt every sign-in, refresh at the prompt, reset of another PSO user's MFA, then (after approval) the database gate switched on and the dashboard still loading.
+- [ ] **Step 6:** Update `docs/UAT_PANELIST_REVIEW_ADRALES.md` with the new account-management row and its status.
