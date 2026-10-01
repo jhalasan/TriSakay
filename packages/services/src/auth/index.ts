@@ -1,5 +1,5 @@
 import type { Session } from '@supabase/supabase-js';
-import { getSupabaseClient } from '../supabase/client.ts';
+import { getPasswordCheckClient, getSupabaseClient } from '../supabase/client.ts';
 import type { Database } from '../supabase/database.types.ts';
 
 export type PublicUser = Database['public']['Tables']['users']['Row'];
@@ -155,7 +155,7 @@ export async function updatePassword(newPassword: string): Promise<UpdatePasswor
  * refreshes the existing session rather than creating a new one.
  */
 export async function verifyCurrentPassword(email: string, currentPassword: string): Promise<UpdatePasswordResult> {
-  const { error } = await getSupabaseClient().auth.signInWithPassword({ email, password: currentPassword });
+  const { error } = await getPasswordCheckClient().auth.signInWithPassword({ email, password: currentPassword });
   return { error: error ? 'Current password is incorrect.' : null };
 }
 

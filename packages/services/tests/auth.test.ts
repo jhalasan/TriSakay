@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
+import { __setPasswordCheckClientForTests, __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
 import {
   deactivateOwnAccount,
@@ -13,6 +13,7 @@ import {
   signUp,
   updatePassword,
   updateProfile,
+  verifyCurrentPassword,
   verifyPasswordReset,
 } from '../src/auth/index.ts';
 
@@ -441,4 +442,39 @@ test('onAuthStateChange forwards session changes and returns an unsubscribe func
   assert.deepEqual(receivedSession, { access_token: 'xyz' });
   unsubscribe();
   assert.equal(unsubscribed, true);
+});
+
+test('verifyCurrentPassword checks on an isolated client, so the live session and its MFA level are untouched', async () => {
+  let mainCalled = false;
+  let isolatedArgs: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signInWithPassword: async () => {
+        mainCalled = true;
+        return { data: { session: null }, error: null };
+      },
+    })
+  );
+  __setPasswordCheckClientForTests(
+    createFakeSupabaseClient({
+      signInWithPassword: async (args) => {
+        isolatedArgs = args;
+        return { data: { session: null }, error: null };
+      },
+    })
+  );
+
+  const { error } = await verifyCurrentPassword('a@b.co', 'pw');
+
+  assert.equal(error, null);
+  assert.deepEqual(isolatedArgs, { email: 'a@b.co', password: 'pw' });
+  assert.equal(mainCalled, false);
+});
+
+test('verifyCurrentPassword reports a wrong password from the isolated client', async () => {
+  __setSupabaseClientForTests(createFakeSupabaseClient());
+  __setPasswordCheckClientForTests(
+    createFakeSupabaseClient({ signInWithPassword: async () => ({ data: { session: null }, error: { message: 'Invalid login credentials' } }) })
+  );
+  assert.deepEqual(await verifyCurrentPassword('a@b.co', 'bad'), { error: 'Current password is incorrect.' });
 });
