@@ -11,3 +11,4 @@ export * from './nextStop.ts';
 export * from './records.ts';
 export * from './mask.ts';
 export * from './device.ts';
+export * from './callState.ts';
