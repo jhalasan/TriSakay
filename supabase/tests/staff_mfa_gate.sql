@@ -56,6 +56,22 @@ begin
   if public.is_pso() then raise exception 'FAIL 6: staff privileges without any caller'; end if;
 end $$;
 
+-- 7: with the gate ON, a caller with no user (service role / SQL editor) can still change a user's status;
+-- a real non-staff user still cannot. (The users column-lock trigger lives in the account_management migration.)
+do $$
+declare fx record; refused boolean := false;
+begin
+  select * into fx from _fx;
+  perform set_config('request.jwt.claims', '', true);
+  update public.users set status = 'flagged' where id = fx.passenger_id;
+  perform pg_temp.as_user(fx.passenger_id, 'aal1');
+  begin
+    update public.users set status = 'suspended' where id = fx.passenger_id;
+  exception when others then refused := true;
+  end;
+  if not refused then raise exception 'FAIL 7: a passenger changed their own status'; end if;
+end $$;
+
 select 'staff_mfa_gate: all assertions passed' as result;
 
 rollback;

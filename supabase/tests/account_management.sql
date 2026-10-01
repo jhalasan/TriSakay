@@ -119,6 +119,47 @@ begin
   if not refused then raise exception 'FAIL 5: the own session could be revoked'; end if;
 end $$;
 
+-- 6: a deactivated status with no action row after an older self-deactivation reads as staff, not self.
+do $$
+declare fx record;
+begin
+  select * into fx from _fx;
+  set local session_replication_role = replica;
+  delete from public.account_actions where target_user_id = fx.passenger_id;
+  insert into public.account_actions (target_user_id, action_type, performed_by, reason, created_at)
+  values (fx.passenger_id, 'deactivate', fx.passenger_id, 'old self deactivation', now() - interval '2 days'),
+         (fx.passenger_id, 'reactivate', fx.passenger_id, 'old self reactivation', now() - interval '1 day');
+  update public.users set status = 'deactivated' where id = fx.passenger_id;
+  set local session_replication_role = origin;
+  perform set_config('request.jwt.claims', json_build_object('sub', fx.passenger_id, 'role', 'authenticated')::text, true);
+  if public.my_deactivation_origin() <> 'staff' then raise exception 'FAIL 6: an unlogged deactivation read as self'; end if;
+end $$;
+
+-- 7: a driver with a completed ride whose payment is not confirmed cannot deactivate.
+do $$
+declare drv uuid; rid uuid; refused boolean := false;
+begin
+  select t.driver_id, rr.id into drv, rid
+  from public.ride_requests rr join public.trips t on t.id = rr.trip_id
+  join public.users u on u.id = t.driver_id and u.status = 'active'
+  where rr.status = 'completed' limit 1;
+  if drv is null then raise notice 'FAIL 7 skipped: no completed ride with a driver to borrow'; return; end if;
+
+  set local session_replication_role = replica;
+  update public.ride_requests set status = 'cancelled' where status in ('assigned', 'ongoing') and trip_id in (select id from public.trips where driver_id = drv);
+  update public.ride_requests set completed_at = now() where id = rid;
+  delete from public.transactions where ride_request_id = rid;
+  set local session_replication_role = origin;
+
+  perform set_config('request.jwt.claims', json_build_object('sub', drv, 'role', 'authenticated')::text, true);
+  begin
+    perform public.self_deactivate_account();
+  exception when others then
+    refused := sqlerrm like '%Confirm the payment%';
+  end;
+  if not refused then raise exception 'FAIL 7: a driver deactivated with an unconfirmed ride payment'; end if;
+end $$;
+
 select 'account_management: all assertions passed' as result;
 
 rollback;

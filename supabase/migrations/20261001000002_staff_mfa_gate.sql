@@ -22,6 +22,7 @@ create or replace function public.staff_aal_ok()
 returns boolean
 language sql
 stable
+set search_path to 'public'
 as $$
   select not public.staff_mfa_enforced() or coalesce(auth.jwt() ->> 'aal', '') = 'aal2';
 $$;

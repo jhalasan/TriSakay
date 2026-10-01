@@ -14,7 +14,9 @@ begin
     return new;
   end if;
 
-  if not is_pso() and (
+  -- Only real signed-in users are restricted. A caller with no user (service role, SQL editor) has no is_pso(),
+  -- and once the staff MFA gate is on that is FALSE rather than NULL, which would otherwise block them.
+  if auth.uid() is not null and not coalesce(is_pso(), false) and (
     new.status is distinct from old.status
     or new.email is distinct from old.email
     or (new.must_change_password and not old.must_change_password)
@@ -64,12 +66,17 @@ stable
 security definer
 set search_path = public
 as $$
-  select case when a.performed_by = a.target_user_id then 'self' else 'staff' end
+  -- 'self' only when the newest status-changing action is a deactivation the person performed themself. A status set
+  -- without any action row, or after a later action by someone else, reads as staff.
+  select case
+           when a.action_type = 'deactivate' and a.performed_by = a.target_user_id then 'self'
+           else 'staff'
+         end
   from public.users u
-  join lateral (
-    select performed_by, target_user_id
+  left join lateral (
+    select action_type, performed_by, target_user_id
     from public.account_actions
-    where target_user_id = u.id and action_type = 'deactivate'
+    where target_user_id = u.id and action_type in ('suspend', 'reactivate', 'deactivate')
     order by created_at desc
     limit 1
   ) a on true
@@ -111,6 +118,16 @@ begin
       and not exists (select 1 from public.transactions t where t.ride_request_id = rr.id and t.status = 'paid')
   ) then
     raise exception 'Settle your last ride before deactivating.';
+  end if;
+
+  if exists (
+    select 1 from public.ride_requests rr
+    join public.trips t on t.id = rr.trip_id
+    where t.driver_id = v_uid and rr.status = 'completed'
+      and rr.completed_at >= timestamptz '2026-09-30 00:00:00+08'
+      and not exists (select 1 from public.transactions x where x.ride_request_id = rr.id and x.status = 'paid')
+  ) then
+    raise exception 'Confirm the payment for your last ride before deactivating.';
   end if;
 
   perform set_config('trisakay.allow_self_status', 'on', true);
