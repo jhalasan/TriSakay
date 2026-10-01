@@ -188,6 +188,42 @@ export type Database = {
           },
         ]
       }
+      ride_calls: {
+        Row: {
+          answered_at: string | null
+          callee_id: string
+          caller_id: string
+          created_at: string
+          end_reason: string | null
+          ended_at: string | null
+          id: string
+          ride_request_id: string
+          status: string
+        }
+        Insert: {
+          answered_at?: string | null
+          callee_id: string
+          caller_id: string
+          created_at?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          ride_request_id: string
+          status?: string
+        }
+        Update: {
+          answered_at?: string | null
+          callee_id?: string
+          caller_id?: string
+          created_at?: string
+          end_reason?: string | null
+          ended_at?: string | null
+          id?: string
+          ride_request_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
       complaint_assignments: {
         Row: {
           by_user: string | null
@@ -2396,6 +2432,52 @@ export type Database = {
           plate_no: string
           ride_request_id: string
           seats: number
+        }[]
+      }
+      answer_ride_call: {
+        Args: { p_call_id: string }
+        Returns: undefined
+      }
+      decline_ride_call: {
+        Args: { p_call_id: string }
+        Returns: undefined
+      }
+      end_ride_call: {
+        Args: { p_call_id: string }
+        Returns: undefined
+      }
+      start_ride_call: {
+        Args: { p_ride_request_id: string }
+        Returns: string
+      }
+      get_ride_call: {
+        Args: { p_call_id: string }
+        Returns: {
+          age_seconds: number
+          answered_age_seconds: number | null
+          callee_id: string
+          caller_id: string
+          id: string
+          is_caller: boolean
+          peer_avatar_url: string | null
+          peer_first_name: string | null
+          ride_request_id: string
+          status: string
+        }[]
+      }
+      list_my_active_calls: {
+        Args: never
+        Returns: {
+          age_seconds: number
+          answered_age_seconds: number | null
+          callee_id: string
+          caller_id: string
+          id: string
+          is_caller: boolean
+          peer_avatar_url: string | null
+          peer_first_name: string | null
+          ride_request_id: string
+          status: string
         }[]
       }
       get_passenger_trip_history: {

@@ -14,6 +14,7 @@ export * from './notifications/index.ts';
 export * from './passenger-stats/index.ts';
 export * from './payments/index.ts';
 export * from './receipts/index.ts';
+export * from './calls/index.ts';
 export * from './ratings/index.ts';
 export * from './saved-places/index.ts';
 export * from './location/index.ts';
