@@ -2,7 +2,7 @@
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Give passenger and driver apps one Account screen that holds the personal details (masked), phone edit, password change, two-factor sign-in, signed-in devices and reversible deactivation, and take email and phone off the Profile page.
+**Goal:** Give passenger and driver apps one Account screen that holds the personal details (masked), phone edit, password change, MFA, signed-in devices and reversible deactivation, and take email and phone off the Profile page.
 
 **Architecture:** Pure mask helpers in `packages/shared`; auth/MFA/session/reactivation calls in a new `packages/services/src/account` module; three small SECURITY DEFINER RPCs plus a tightened `self_deactivate_account` in one migration; one `accountMgmt` i18n section (en + fil) used by both apps; per-app screens that follow the existing duplicated-screen convention (`change-password.tsx` is already one copy per app).
 
@@ -604,14 +604,14 @@ accountMgmt: {
   phoneSaved: 'Phone number updated',
   securitySection: 'Security',
   changePassword: 'Change password',
-  twoFactor: 'Two-step sign-in',
+  twoFactor: 'Multi-factor authentication (MFA)',
   twoFactorOn: 'On',
   twoFactorOff: 'Off',
   devices: 'Signed-in devices',
   dangerSection: 'Account',
   deactivate: 'Deactivate account',
   deactivateSubtitle: 'Pause your account. You can reactivate it by signing in.',
-  mfaTitle: 'Two-step sign-in',
+  mfaTitle: 'Multi-factor authentication (MFA)',
   mfaIntro: 'Add a 6-digit code from an authenticator app (such as Google Authenticator) each time you sign in.',
   mfaStart: 'Set up',
   mfaSecretLabel: 'Setup key',
@@ -619,14 +619,14 @@ accountMgmt: {
   mfaOpenAppFailed: 'No authenticator app found. Install one, then type the setup key into it.',
   mfaCodeLabel: '6-digit code',
   mfaVerify: 'Turn on',
-  mfaEnabled: 'Two-step sign-in is on.',
+  mfaEnabled: 'MFA is on.',
   mfaDisable: 'Turn off',
-  mfaDisableConfirm: 'Turn off two-step sign-in?',
+  mfaDisableConfirm: 'Turn off MFA?',
   mfaChallengeTitle: 'Enter your code',
   mfaChallengeBody: 'Open your authenticator app and enter the 6-digit code for TriSakay.',
   mfaChallengeSubmit: 'Continue',
   mfaWrongCode: "That code didn't work. Check it and try again.",
-  mfaUnavailable: "Two-step sign-in isn't available right now. Try again later.",
+  mfaUnavailable: "MFA isn't available right now. Try again later.",
   devicesTitle: 'Signed-in devices',
   devicesThisDevice: 'This device',
   devicesLastActive: 'Last active',
@@ -764,7 +764,7 @@ export default function AccountScreen() {
           <ListRow
             title={a.twoFactor}
             subtitle={mfaOn === null ? undefined : mfaOn ? a.twoFactorOn : a.twoFactorOff}
-            onPress={() => router.push('/profile/two-factor')}
+            onPress={() => router.push('/profile/MFA')}
             chevron
           />
           <ListRow title={a.devices} onPress={() => router.push('/profile/devices')} chevron divider={false} />
@@ -849,21 +849,21 @@ reactivateAccount: async () => {
 
 ---
 
-### Task 8: Two-step sign-in (setup screen and sign-in challenge), both apps
+### Task 8: MFA (multi-factor authentication) (setup screen and sign-in challenge), both apps
 
 **Files:**
-- Create (each app): `app/profile/two-factor.tsx`, `app/mfa-challenge.tsx`, styles for each (`src/styles/profile/two-factor.styles.ts`, `src/styles/mfa-challenge.styles.ts`)
+- Create (each app): `app/profile/MFA.tsx`, `app/mfa-challenge.tsx`, styles for each (`src/styles/profile/MFA.styles.ts`, `src/styles/mfa-challenge.styles.ts`)
 - Modify (each app): `app/_layout.tsx` (gate + Stack screens)
 
 **Interfaces:**
 - Consumes: `getMfaStatus`, `startMfaEnrollment`, `confirmMfaEnrollment`, `verifyMfaCode`, `disableMfa` (Task 2).
 
 - [ ] **Step 1: Confirm MFA is enabled on the live project.** Ask the user to check Supabase Dashboard → Authentication → Sign In / Providers → "Multi-Factor" → TOTP "Enroll" and "Verify" both enabled (hosted projects have this on by default). Do not change project settings without approval. Verify with a real call in Step 5.
-- [ ] **Step 2: Setup screen** `two-factor.tsx`. State machine: `loading` → (`getMfaStatus`) → `off` | `on`. `off`: intro text and a "Set up" button → `startMfaEnrollment()`; on success show the secret (`selectable` Text, monospace via `fontFamily` already in the design system's mono token if present, else regular), an "Open authenticator app" button (`Linking.openURL(uri)`, on rejection `Alert.alert(a.mfaOpenAppFailed)`), a 6-digit `TextField` (`keyboardType="number-pad"`, `maxLength={6}`) and a "Turn on" button → `confirmMfaEnrollment(factorId, code)`; error → show `a.mfaWrongCode`; success → state `on`. `on`: shows `a.mfaEnabled` and a danger "Turn off" button → `Alert.alert(a.mfaDisableConfirm, …, [cancel, confirm→disableMfa(factorId)])`. If `startMfaEnrollment` returns an error show `a.mfaUnavailable`. Abandoned (never-verified) factors are handled by Supabase (they are replaced on the next enroll attempt); before enrolling, if `listFactors` returns an unverified factor, call `disableMfa` on it first (add this to `startMfaEnrollment` in the service, with a test in `account.test.ts` that an unverified factor is unenrolled first).
+- [ ] **Step 2: Setup screen** `MFA.tsx`. State machine: `loading` → (`getMfaStatus`) → `off` | `on`. `off`: intro text and a "Set up" button → `startMfaEnrollment()`; on success show the secret (`selectable` Text, monospace via `fontFamily` already in the design system's mono token if present, else regular), an "Open authenticator app" button (`Linking.openURL(uri)`, on rejection `Alert.alert(a.mfaOpenAppFailed)`), a 6-digit `TextField` (`keyboardType="number-pad"`, `maxLength={6}`) and a "Turn on" button → `confirmMfaEnrollment(factorId, code)`; error → show `a.mfaWrongCode`; success → state `on`. `on`: shows `a.mfaEnabled` and a danger "Turn off" button → `Alert.alert(a.mfaDisableConfirm, …, [cancel, confirm→disableMfa(factorId)])`. If `startMfaEnrollment` returns an error show `a.mfaUnavailable`. Abandoned (never-verified) factors are handled by Supabase (they are replaced on the next enroll attempt); before enrolling, if `listFactors` returns an unverified factor, call `disableMfa` on it first (add this to `startMfaEnrollment` in the service, with a test in `account.test.ts` that an unverified factor is unenrolled first).
 - [ ] **Step 3: Challenge screen** `mfa-challenge.tsx`: on mount `getMfaStatus()` to get `factorId`; one `TextField` for the code and a "Continue" button → `verifyMfaCode(factorId, code)`; success → `router.replace('/splash')` (same entry the root layout uses after sign-in, so the active-ride restore still runs); failure → `a.mfaWrongCode`. A "Log out" ghost button → `router.push('/logout')`.
 - [ ] **Step 4: Gate.** In each root `_layout.tsx`, next to the consent/suspended gates (passenger around line 116-141): track `mfaPending` in the same effect style as `consentStatus`: after `isAuthenticated`, call `getMfaStatus()` once per `sessionUserId`; while it resolves hold position (like the consent `unknown` state); if `needsChallenge` and not already on `mfa-challenge`, `router.replace('/mfa-challenge')`; if on `mfa-challenge` and not `needsChallenge`, leave. The gate must run BEFORE the consent and suspended gates so a half-signed-in session can't reach them. If `getMfaStatus` throws (offline), treat as `needsChallenge = false` only when the user has no cached "mfa enrolled" flag; otherwise hold: store `mfaEnrolled` in the auth store after each successful status call and, when the call fails and `mfaEnrolled` is true, route to `mfa-challenge` (fail closed). Register the screens in the `Stack`.
 - [ ] **Step 5: Verify on the live project** (after approval to use a test account): enroll, confirm the factor shows `verified` through `execute_sql` on `auth.mfa_factors`, sign out, sign in, expect the challenge screen, a wrong code is rejected, the right code reaches Home. Then turn it off and confirm sign-in goes straight to Home.
-- [ ] **Step 6: Typecheck, run package tests, commit** — `Two-step sign-in: setup screen, sign-in challenge and gate`.
+- [ ] **Step 6: Typecheck, run package tests, commit** — `MFA (multi-factor authentication): setup screen, sign-in challenge and gate`.
 
 ---
 
