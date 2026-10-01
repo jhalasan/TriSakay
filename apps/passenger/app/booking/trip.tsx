@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import * as Location from 'expo-location';
 import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
-import { Animated, Pressable, ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
+import { Alert, Animated, Pressable, ScrollView, Text, View, type LayoutChangeEvent } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import ReAnimated, { Easing, interpolateColor, useAnimatedStyle, useDerivedValue, useSharedValue, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -10,6 +10,7 @@ import {
   getTripDriverInfo,
   getTransactionStatus,
   listMessages,
+  startRideCall,
   subscribeToDriverLocation,
   subscribeToRideRequestStatus,
   type DriverLocation,
@@ -415,6 +416,16 @@ export default function TripScreen() {
 
   const stage: Stage = rideStatus === 'ongoing' ? 3 : arrivedAt ? 2 : 1;
 
+  async function handleCall() {
+    if (tutorialDemo.active || !rideRequestId) return;
+    const { data: callId, error } = await startRideCall(rideRequestId);
+    if (error || !callId) {
+      Alert.alert(t.callUi.cannotStartTitle, error ?? '');
+      return;
+    }
+    router.push({ pathname: '/booking/call', params: { callId } });
+  }
+
   /**
    * P2 (2026-09-15 launch audit): the only exit from this screen used to be
    * SOS — no way to back out of a ride once a driver was assigned. Only
@@ -720,7 +731,7 @@ export default function TripScreen() {
 
               <View style={styles.contactRow}>
                 {features.rideCall && (
-                  <Pressable style={styles.contactButton} accessibilityRole="button" onPress={() => {}}>
+                  <Pressable style={styles.contactButton} accessibilityRole="button" onPress={handleCall}>
                     <Ionicons name="call-outline" size={17} color={colors.accentBlue} />
                     <Text style={styles.contactLabel}>{t.trip.driver.call}</Text>
                   </Pressable>

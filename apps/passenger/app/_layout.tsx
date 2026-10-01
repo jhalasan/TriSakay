@@ -19,6 +19,7 @@ import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { usePassengerTutorialNavigation } from '../src/hooks/usePassengerTutorialNavigation';
 import { usePassengerTutorialTrigger } from '../src/hooks/usePassengerTutorialTrigger';
 import { useChatNotifications } from '../src/hooks/useChatNotifications';
+import { useIncomingCalls } from '../src/hooks/useIncomingCalls';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useTranslation } from '../src/hooks/useTranslation';
@@ -450,6 +451,7 @@ function RootLayoutNav() {
   useConnectivitySync();
   usePushNotificationsSync(syncUserId);
   useChatNotifications();
+  useIncomingCalls(syncUserId, (callId) => ({ pathname: '/booking/call', params: { callId } }));
   useProtectedRoute(isAuthenticated, consentStatus, accountBlocked, hasActiveTrip, mfaStatus);
   useForegroundActiveRideSync(sessionUserId, consentStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
