@@ -15,12 +15,18 @@ export interface MfaStatus {
   needsChallenge: boolean;
 }
 
-/** Reads whether the signed-in user has a verified authenticator factor and whether this session still owes a code. */
+/**
+ * Reads whether the signed-in user has a verified authenticator factor and whether this session still owes a code.
+ * Throws when either read fails, so callers can fail closed instead of mistaking an error for "no MFA".
+ */
 export async function getMfaStatus(): Promise<MfaStatus> {
   const mfa = getSupabaseClient().auth.mfa;
   const [factors, level] = await Promise.all([mfa.listFactors(), mfa.getAuthenticatorAssuranceLevel()]);
+  if (factors.error) throw new Error(factors.error.message);
+  if (level.error) throw new Error(level.error.message);
   const verified = (factors.data?.totp ?? []).find((factor) => factor.status === 'verified');
-  const needsChallenge = !!verified && level.data?.currentLevel === 'aal1' && level.data?.nextLevel === 'aal2';
+  // Anything short of a confirmed aal2 session counts as owing a code.
+  const needsChallenge = !!verified && level.data?.currentLevel !== 'aal2';
   return { enrolled: !!verified, factorId: verified?.id ?? null, needsChallenge };
 }
 
@@ -75,12 +81,12 @@ export async function disableMfa(factorId: string): Promise<{ error: string | nu
 export async function listMySessions(): Promise<{ sessions: AccountSession[]; error: string | null }> {
   const { data, error } = await getSupabaseClient().rpc('list_my_sessions');
   if (error) return { sessions: [], error: error.message };
-  const rows = (data ?? []) as Array<{ id: string; created_at: string; updated_at: string; user_agent: string | null; is_current: boolean }>;
+  const rows = (data ?? []) as Array<{ id: string; created_at: string; updated_at: string | null; user_agent: string | null; is_current: boolean }>;
   return {
     sessions: rows.map((row) => ({
       id: row.id,
       createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      updatedAt: row.updated_at ?? row.created_at,
       userAgent: row.user_agent,
       isCurrent: row.is_current,
     })),

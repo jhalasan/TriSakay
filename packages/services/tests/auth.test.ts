@@ -478,3 +478,18 @@ test('verifyCurrentPassword reports a wrong password from the isolated client', 
   );
   assert.deepEqual(await verifyCurrentPassword('a@b.co', 'bad'), { error: 'Current password is incorrect.' });
 });
+
+test('verifyCurrentPassword ends the throwaway session it just created (local scope only)', async () => {
+  let signOutArgs: unknown = 'not called';
+  __setSupabaseClientForTests(createFakeSupabaseClient());
+  __setPasswordCheckClientForTests(
+    createFakeSupabaseClient({
+      signInWithPassword: async () => ({ data: { session: { access_token: 'x' } }, error: null }),
+      signOut: async (args) => {
+        signOutArgs = args;
+      },
+    })
+  );
+  await verifyCurrentPassword('a@b.co', 'pw');
+  assert.deepEqual(signOutArgs, { scope: 'local' });
+});

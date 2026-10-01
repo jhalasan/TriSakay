@@ -177,3 +177,36 @@ test('getMfaGate does not block when the level cannot be read', async () => {
   );
   assert.equal(await getMfaGate(), 'ok');
 });
+
+test('getMfaStatus throws when the factors or the level cannot be read, so callers can fail closed', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({ mfa: { listFactors: async () => ({ data: null, error: { message: 'offline' } }) } })
+  );
+  await assert.rejects(() => getMfaStatus(), /offline/);
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({ mfa: { getAuthenticatorAssuranceLevel: async () => ({ data: null, error: { message: 'no session' } }) } })
+  );
+  await assert.rejects(() => getMfaStatus(), /no session/);
+});
+
+test('getMfaStatus: a verified factor with an unknown level still needs a challenge', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      mfa: {
+        listFactors: async () => ({ data: { totp: [{ id: 'f1', status: 'verified' }] }, error: null }),
+        getAuthenticatorAssuranceLevel: async () => ({ data: { currentLevel: null, nextLevel: 'aal2' }, error: null }),
+      },
+    })
+  );
+  assert.equal((await getMfaStatus()).needsChallenge, true);
+});
+
+test('listMySessions falls back to created_at when updated_at is null', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      rpc: async () => ({ data: [{ id: 's1', created_at: 'made', updated_at: null, user_agent: null, is_current: false }], error: null }),
+    })
+  );
+  assert.equal((await listMySessions()).sessions[0].updatedAt, 'made');
+});

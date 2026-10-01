@@ -151,11 +151,15 @@ export async function updatePassword(newPassword: string): Promise<UpdatePasswor
  * account's password with no re-authentication at all, which is a full
  * account takeover if the device is left unattended. Re-running
  * signInWithPassword against the same account is the standard way to check
- * this without a separate "verify password" endpoint; on success it simply
- * refreshes the existing session rather than creating a new one.
+ * this without a separate "verify password" endpoint. It runs on a throwaway
+ * client (see getPasswordCheckClient) so the live session, and its MFA level,
+ * are untouched; the throwaway session is signed out again straight away.
  */
 export async function verifyCurrentPassword(email: string, currentPassword: string): Promise<UpdatePasswordResult> {
-  const { error } = await getPasswordCheckClient().auth.signInWithPassword({ email, password: currentPassword });
+  const checkClient = getPasswordCheckClient();
+  const { data, error } = await checkClient.auth.signInWithPassword({ email, password: currentPassword });
+  // The check created a real server session on its own throwaway client; end it (local scope: only that one).
+  if (data?.session) await checkClient.auth.signOut({ scope: 'local' }).catch(() => {});
   return { error: error ? 'Current password is incorrect.' : null };
 }
 
