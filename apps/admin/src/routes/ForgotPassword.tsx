@@ -31,6 +31,7 @@ export function ForgotPassword() {
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [code, setCode] = useState('');
+  const [mfaCode, setMfaCode] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +78,7 @@ export function ForgotPassword() {
 
     setError(null);
     setSubmitting(true);
-    const failure = await confirmPasswordReset(email.trim(), code.trim(), password);
+    const failure = await confirmPasswordReset(email.trim(), code.trim(), password, mfaCode.trim());
     setSubmitting(false);
 
     if (failure) {
@@ -134,6 +135,18 @@ export function ForgotPassword() {
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 required
+                className={styles.field}
+              />
+
+              <TextField
+                label="Authenticator code"
+                hint="The 6-digit code from your authenticator app. Staff accounts use MFA, so it is needed to reset a password."
+                inputMode="numeric"
+                autoComplete="off"
+                placeholder="123456"
+                maxLength={6}
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}
                 className={styles.field}
               />
 

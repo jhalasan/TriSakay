@@ -1,9 +1,10 @@
 import { useState } from 'react';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
-import { requestPasswordReset, signOut, updatePassword, verifyPasswordReset } from '@trisakay/services';
+import { finishRecovery, requestPasswordReset, signOut, verifyRecovery } from '@trisakay/services';
 import { Button, PasswordStrengthMeter, TextField } from '@trisakay/ui';
 import { ScreenHeader } from '../src/components/ScreenHeader';
+import { useMfaStore } from '../src/store/useMfaStore';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { interpolate } from '../src/utils/interpolate';
 import { passwordRuleList } from '@trisakay/shared';
@@ -29,6 +30,10 @@ export default function ResetPasswordScreen() {
   const [submitting, setSubmitting] = useState(false);
   const [resending, setResending] = useState(false);
   const [done, setDone] = useState(false);
+  // An account with MFA must also enter its authenticator code before the password can change.
+  const [recoveryVerified, setRecoveryVerified] = useState(false);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState('');
 
   if (!email) {
     return (
@@ -61,25 +66,44 @@ export default function ResetPasswordScreen() {
     setFormError(null);
     setSubmitting(true);
 
-    const { error: verifyError } = await verifyPasswordReset({ email: email!, token: code.trim() });
-    if (verifyError) {
+    let factorId = mfaFactorId;
+    if (!recoveryVerified) {
+      const verified = await verifyRecovery({ email: email!, token: code.trim() });
+      if (verified.error) {
+        setSubmitting(false);
+        setFormError(t.driver.resetPassword.codeInvalid);
+        return;
+      }
+      setRecoveryVerified(true);
+      factorId = verified.mfaFactorId;
+      setMfaFactorId(factorId);
+    }
+
+    if (factorId && mfaCode.length !== 6) {
       setSubmitting(false);
-      setFormError(t.driver.resetPassword.codeInvalid);
+      setFormError(t.accountMgmt.mfaChallengeBody);
       return;
     }
 
-    const { error: updateError } = await updatePassword(password);
+    const { error: updateError } = await finishRecovery({ newPassword: password, mfaFactorId: factorId, mfaCode });
     setSubmitting(false);
 
     if (updateError) {
+      if (factorId) {
+        // The recovery session is still valid: let them retry the authenticator code.
+        setFormError(t.accountMgmt.mfaWrongCode);
+        return;
+      }
       // A recovery session now exists without the password having changed —
-      // sign it back out so the reset stays all-or-nothing, then let the
-      // driver retry with a fresh code rather than land half-authenticated.
+      // sign it back out so the reset stays all-or-nothing, then let them
+      // retry with a fresh code rather than land half-authenticated.
       await signOut();
       setFormError(t.driver.resetPassword.couldNotUpdatePassword);
       return;
     }
 
+    // The authenticator code raised this session to MFA level; re-read it so the sign-in gate does not ask again.
+    await useMfaStore.getState().check();
     setDone(true);
   }
 
@@ -133,6 +157,18 @@ export default function ResetPasswordScreen() {
             secureTextEntry
             autoComplete="password-new"
           />
+          {mfaFactorId && (
+            <TextField
+              label={t.accountMgmt.mfaCodeLabel}
+              helperText={t.accountMgmt.mfaChallengeBody}
+              placeholder="123456"
+              value={mfaCode}
+              onChangeText={(value) => setMfaCode(value.replace(/\D/g, ''))}
+              keyboardType="number-pad"
+              maxLength={6}
+              autoComplete="one-time-code"
+            />
+          )}
         </View>
 
         <Text style={styles.resendLink} onPress={resending ? undefined : handleResend}>

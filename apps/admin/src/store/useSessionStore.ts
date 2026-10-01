@@ -60,7 +60,7 @@ interface SessionState {
    */
   changeOwnPassword: (currentPassword: string, newPassword: string) => Promise<string | null>;
   /** Forgot-password completion: exchanges the emailed 6-digit code for a session, sets the new password, then signs the user straight in. */
-  confirmPasswordReset: (email: string, token: string, newPassword: string) => Promise<string | null>;
+  confirmPasswordReset: (email: string, token: string, newPassword: string, mfaCode?: string) => Promise<string | null>;
   /** Renames the signed-in user's own account, from the ProfileMenu. */
   updateName: (firstName: string, lastName: string) => Promise<string | null>;
 }
@@ -204,19 +204,29 @@ export const useSessionStore = create<SessionState>()((set, get) => {
       return null;
     },
 
-    confirmPasswordReset: async (email, token, newPassword) => {
+    confirmPasswordReset: async (email, token, newPassword, mfaCode = '') => {
       set({ error: null });
       signingIn = true;
 
       try {
-        const { error: verifyError } = await authService.verifyPasswordReset({ email, token });
-        if (verifyError) {
-          set({ error: verifyError });
-          return verifyError;
+        const recovery = await authService.verifyRecovery({ email, token });
+        if (recovery.error) {
+          set({ error: recovery.error });
+          return recovery.error;
         }
 
-        const { error: updateError } = await authService.updatePassword(newPassword);
+        // Staff MFA is required, so Supabase will not change the password from a password-level recovery session:
+        // the authenticator code has to be entered along with the emailed code.
+        if (recovery.mfaFactorId && mfaCode.length !== 6) {
+          await authService.signOut();
+          const message = 'This account uses MFA. Request a new reset code, then enter it together with your 6-digit authenticator code.';
+          set({ error: message });
+          return message;
+        }
+
+        const { error: updateError } = await authService.finishRecovery({ newPassword, mfaFactorId: recovery.mfaFactorId, mfaCode });
         if (updateError) {
+          await authService.signOut();
           set({ error: updateError });
           return updateError;
         }

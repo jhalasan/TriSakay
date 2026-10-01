@@ -40,6 +40,7 @@ function fakeClient(config: FakeConfig) {
   };
 
   let signInCalls = 0;
+  let mfaVerified = false;
 
   return {
     auth: {
@@ -61,10 +62,16 @@ function fakeClient(config: FakeConfig) {
       mfa: {
         listFactors: async () => ({ data: { totp: config.mfa?.factors ?? [], all: config.mfa?.factors ?? [] }, error: null }),
         getAuthenticatorAssuranceLevel: async () => ({
-          data: { currentLevel: config.mfa?.currentLevel ?? 'aal1', nextLevel: config.mfa?.nextLevel ?? 'aal1' },
+          data: { currentLevel: mfaVerified ? 'aal2' : (config.mfa?.currentLevel ?? 'aal1'), nextLevel: config.mfa?.nextLevel ?? 'aal1' },
           error: null,
         }),
+        challenge: async () => ({ data: { id: 'ch1' }, error: null }),
+        verify: async () => {
+          mfaVerified = true;
+          return { data: {}, error: null };
+        },
       },
+      verifyOtp: async () => ({ data: { session: config.session ?? null }, error: null }),
       onAuthStateChange: (cb: (event: string, session: unknown) => void) => {
         config.captureAuthStateCallback?.((session) => cb('SIGNED_IN', session));
         return { data: { subscription: { unsubscribe: () => {} } } };
@@ -367,4 +374,27 @@ test('signOut() resets the MFA step', async () => {
   await useSessionStore.getState().signIn('w.nazareno@pso.gensantos.gov.ph', 'pw');
   await useSessionStore.getState().signOut();
   assert.equal(useSessionStore.getState().mfaStep, 'unknown');
+});
+
+const MFA_ACCOUNT = { factors: [{ id: 'f1', status: 'verified' }], currentLevel: 'aal1', nextLevel: 'aal2' };
+
+test('confirmPasswordReset for an MFA account refuses a missing authenticator code and leaves the password alone', async () => {
+  const updates: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW, mfa: MFA_ACCOUNT, onUpdateUser: (attrs) => updates.push(attrs) })
+  );
+  const failure = await useSessionStore.getState().confirmPasswordReset('w@pso.gov.ph', '123456', 'New-pass-123!', '');
+  assert.match(failure ?? '', /authenticator/i);
+  assert.deepEqual(updates, []);
+});
+
+test('confirmPasswordReset for an MFA account with the code sets the password and opens the portal', async () => {
+  const updates: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests(
+    fakeClient({ session: { user: { id: 'u1' } }, userRow: PSO_ROW, mfa: MFA_ACCOUNT, onUpdateUser: (attrs) => updates.push(attrs) })
+  );
+  const failure = await useSessionStore.getState().confirmPasswordReset('w@pso.gov.ph', '123456', 'New-pass-123!', '654321');
+  assert.equal(failure, null);
+  assert.deepEqual(updates, [{ password: 'New-pass-123!' }]);
+  assert.equal(useSessionStore.getState().mfaStep, 'ok');
 });

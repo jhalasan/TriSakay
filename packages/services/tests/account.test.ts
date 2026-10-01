@@ -6,6 +6,7 @@ import {
   confirmMfaEnrollment,
   disableMfa,
   getDeactivationOrigin,
+  finishRecovery,
   getMfaGate,
   getMfaStatus,
   listMySessions,
@@ -13,6 +14,7 @@ import {
   revokeMySession,
   startMfaEnrollment,
   verifyMfaCode,
+  verifyRecovery,
 } from '../src/account/index.ts';
 
 test('getMfaStatus: no factor means not enrolled and no challenge', async () => {
@@ -209,4 +211,61 @@ test('listMySessions falls back to created_at when updated_at is null', async ()
     })
   );
   assert.equal((await listMySessions()).sessions[0].updatedAt, 'made');
+});
+
+const verifiedFactorAtAal1 = {
+  listFactors: async () => ({ data: { totp: [{ id: 'f1', status: 'verified' }] }, error: null }),
+  getAuthenticatorAssuranceLevel: async () => ({ data: { currentLevel: 'aal1', nextLevel: 'aal2' }, error: null }),
+};
+
+test('verifyRecovery returns no factor for an account without MFA', async () => {
+  __setSupabaseClientForTests(createFakeSupabaseClient({ verifyOtp: async () => ({ data: { session: { access_token: 'x' } }, error: null }) }));
+  assert.deepEqual(await verifyRecovery({ email: 'a@b.co', token: '123456' }), { error: null, mfaFactorId: null });
+});
+
+test('verifyRecovery asks for the authenticator code when the account has MFA', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      verifyOtp: async () => ({ data: { session: { access_token: 'x' } }, error: null }),
+      mfa: verifiedFactorAtAal1,
+    })
+  );
+  assert.deepEqual(await verifyRecovery({ email: 'a@b.co', token: '123456' }), { error: null, mfaFactorId: 'f1' });
+});
+
+test('verifyRecovery reports a bad emailed code and does not look at MFA', async () => {
+  __setSupabaseClientForTests(createFakeSupabaseClient({ verifyOtp: async () => ({ data: { session: null }, error: { message: 'Token has expired' } }) }));
+  assert.deepEqual(await verifyRecovery({ email: 'a@b.co', token: '000000' }), { error: 'Token has expired', mfaFactorId: null });
+});
+
+test('finishRecovery verifies the authenticator code before changing the password', async () => {
+  const order: string[] = [];
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      mfa: { verify: async () => (order.push('mfa'), { data: {}, error: null }) },
+      updateUser: async () => (order.push('update'), { data: {}, error: null }),
+    })
+  );
+  assert.deepEqual(await finishRecovery({ newPassword: 'New-pass-123!', mfaFactorId: 'f1', mfaCode: '123456' }), { error: null });
+  assert.deepEqual(order, ['mfa', 'update']);
+});
+
+test('finishRecovery does not change the password when the authenticator code is wrong', async () => {
+  let updated = false;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      mfa: { verify: async () => ({ data: null, error: { message: 'Invalid TOTP code' } }) },
+      updateUser: async () => ((updated = true), { data: {}, error: null }),
+    })
+  );
+  const result = await finishRecovery({ newPassword: 'New-pass-123!', mfaFactorId: 'f1', mfaCode: '000000' });
+  assert.equal(result.error, 'Invalid TOTP code');
+  assert.equal(updated, false);
+});
+
+test('finishRecovery without MFA just sets the password', async () => {
+  let updated = false;
+  __setSupabaseClientForTests(createFakeSupabaseClient({ updateUser: async () => ((updated = true), { data: {}, error: null }) }));
+  assert.deepEqual(await finishRecovery({ newPassword: 'New-pass-123!', mfaFactorId: null, mfaCode: '' }), { error: null });
+  assert.equal(updated, true);
 });

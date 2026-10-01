@@ -1,3 +1,4 @@
+import { updatePassword, verifyPasswordReset } from '../auth/index.ts';
 import { getSupabaseClient } from '../supabase/client.ts';
 
 export interface AccountSession {
@@ -114,4 +115,33 @@ export async function getDeactivationOrigin(): Promise<'self' | 'staff' | null> 
   const { data, error } = await getSupabaseClient().rpc('my_deactivation_origin');
   if (error) return null;
   return data === 'self' || data === 'staff' ? data : null;
+}
+
+/**
+ * Forgot-password, step 1: exchange the emailed code for a recovery session, then say whether the account's MFA
+ * still has to be satisfied. Supabase refuses a password change from a password-level session when a verified
+ * factor exists, so `mfaFactorId` (non-null) means the person must enter their authenticator code before step 2.
+ */
+export async function verifyRecovery(input: { email: string; token: string }): Promise<{ error: string | null; mfaFactorId: string | null }> {
+  const { error } = await verifyPasswordReset(input);
+  if (error) return { error, mfaFactorId: null };
+  try {
+    const status = await getMfaStatus();
+    return { error: null, mfaFactorId: status.needsChallenge ? status.factorId : null };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Could not check MFA.', mfaFactorId: null };
+  }
+}
+
+/** Forgot-password, step 2: confirm the authenticator code when one is required, and only then set the new password. */
+export async function finishRecovery(input: {
+  newPassword: string;
+  mfaFactorId: string | null;
+  mfaCode: string;
+}): Promise<{ error: string | null }> {
+  if (input.mfaFactorId) {
+    const { error } = await verifyMfaCode(input.mfaFactorId, input.mfaCode);
+    if (error) return { error };
+  }
+  return updatePassword(input.newPassword);
 }
