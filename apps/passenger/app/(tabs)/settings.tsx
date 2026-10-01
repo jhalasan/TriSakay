@@ -219,13 +219,13 @@ export default function SettingsScreen() {
 
         <SectionLabel label={t.settings.sectionAccount} />
         <Card variant="raised" style={styles.card}>
-          <Pressable style={styles.row} onPress={() => router.push('/deactivate-account')} accessibilityRole="button">
+          <Pressable style={styles.row} onPress={() => router.push('/profile/account')} accessibilityRole="button">
             <View style={styles.rowLeading}>
-              <IconBadge name="person-remove-outline" />
+              <IconBadge name="person-circle-outline" />
               <View style={styles.rowTextSlot}>
-                <Text style={styles.rowLabel}>{t.settings.deactivateAccountRow}</Text>
+                <Text style={styles.rowLabel}>{t.accountMgmt.rowTitle}</Text>
                 <Text style={styles.rowSubtitle} numberOfLines={1}>
-                  {t.settings.deactivateAccountRowSubtitle}
+                  {t.accountMgmt.rowSubtitle}
                 </Text>
               </View>
             </View>

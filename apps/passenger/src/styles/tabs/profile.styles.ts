@@ -195,45 +195,6 @@ export const styles = StyleSheet.create({
     color: colors.inkSoft,
   },
 
-  detailsCard: {
-    gap: spacing.md,
-  },
-  detailRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: spacing.md,
-  },
-  detailIconTile: {
-    width: 34,
-    height: 34,
-    borderRadius: radius.xs,
-    backgroundColor: colors.accentBlueSoft,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  detailTextSlot: {
-    flex: 1,
-    minWidth: 0,
-    gap: 1,
-  },
-  detailDivider: {
-    height: 1,
-    backgroundColor: colors.lineSoft,
-  },
-  detailLabel: {
-    ...typography.label,
-    fontSize: 10,
-    color: colors.inkFaint,
-  },
-  detailValue: {
-    ...typography.bodyStrong,
-    fontSize: 14,
-    color: colors.ink,
-  },
-  detailEditWrap: {
-    flex: 1,
-  },
-
   sectionLabel: {
     ...typography.label,
     color: colors.inkSoft,
@@ -252,34 +213,4 @@ export const styles = StyleSheet.create({
     justifyContent: 'center',
   },
 
-  // P19 (UAT audit) — password re-confirmation before a phone-number change.
-  confirmBackdrop: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingHorizontal: spacing.xl,
-  },
-  confirmCard: {
-    alignSelf: 'stretch',
-    backgroundColor: colors.white,
-    borderRadius: radius.lg,
-    padding: spacing.xl,
-    gap: spacing.md,
-  },
-  confirmTitle: {
-    ...typography.h2,
-    color: colors.ink,
-  },
-  confirmMessage: {
-    ...typography.body,
-    color: colors.inkSoft,
-  },
-  confirmActions: {
-    flexDirection: 'row',
-    gap: spacing.md,
-  },
-  confirmActionButton: {
-    flex: 1,
-  },
 });

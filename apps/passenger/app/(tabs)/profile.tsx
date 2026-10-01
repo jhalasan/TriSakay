@@ -3,10 +3,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import { File } from 'expo-file-system';
-import { ActivityIndicator, Alert, Modal, Pressable, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { updateAvatarUrl, updateProfile, uploadAvatar, verifyCurrentPassword, type DiscountCategory } from '@trisakay/services';
-import { Avatar, BrandMotif, Button, Card, GradientSurface, ListRow, TextField, colors } from '@trisakay/ui';
+import { updateAvatarUrl, updateProfile, uploadAvatar, type DiscountCategory } from '@trisakay/services';
+import { Avatar, BrandMotif, Card, GradientSurface, ListRow, TextField, colors } from '@trisakay/ui';
 import { OfflineState } from '../../src/components/OfflineState';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConnectivityStore } from '../../src/store/useConnectivityStore';
@@ -31,19 +31,9 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [firstName, setFirstName] = useState(user?.firstName ?? '');
   const [lastName, setLastName] = useState(user?.lastName ?? '');
-  const [phone, setPhone] = useState(user?.phone ?? '');
   const name = `${firstName} ${lastName}`.trim();
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
-  // P19 (UAT audit): changing the phone number requires re-entering the
-  // current password first, same re-auth pattern already used for admin
-  // password changes (verifyCurrentPassword) — an unattended, unlocked
-  // device must not be able to silently swap the number a driver/PSO uses
-  // to reach this account.
-  const [confirmingPhoneChange, setConfirmingPhoneChange] = useState(false);
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [confirmError, setConfirmError] = useState<string | null>(null);
-  const [confirming, setConfirming] = useState(false);
 
   const CATEGORY_LABEL: Record<DiscountCategory, string> = {
     senior_citizen: t.accountPages.categorySeniorFull,
@@ -56,38 +46,18 @@ export default function ProfileScreen() {
       setIsEditing(true);
       return;
     }
-    if (phone !== (user?.phone ?? '')) {
-      setConfirmError(null);
-      setConfirmPassword('');
-      setConfirmingPhoneChange(true);
-      return;
-    }
     await saveProfile();
   }
 
   async function saveProfile() {
     setSaving(true);
-    const { error } = await updateProfile({ firstName, lastName, phone });
+    const { error } = await updateProfile({ firstName, lastName });
     setSaving(false);
     if (error) {
       Alert.alert(t.profile.couldNotSaveTitle, error);
       return;
     }
     setIsEditing(false);
-  }
-
-  async function handleConfirmPhoneChange() {
-    if (!user?.email) return;
-    setConfirming(true);
-    setConfirmError(null);
-    const { error } = await verifyCurrentPassword(user.email, confirmPassword);
-    setConfirming(false);
-    if (error) {
-      setConfirmError(error);
-      return;
-    }
-    setConfirmingPhoneChange(false);
-    await saveProfile();
   }
 
   async function handleChangeAvatar() {
@@ -252,45 +222,19 @@ export default function ProfileScreen() {
             </Pressable>
           )}
 
-          <Card variant="raised" style={styles.detailsCard}>
-            <View style={styles.detailRow}>
-              <View style={styles.detailIconTile}>
-                <Ionicons name="mail-outline" size={16} color={colors.accentBluePressed} />
-              </View>
-              <View style={styles.detailTextSlot}>
-                <Text style={styles.detailLabel}>{t.profile.email}</Text>
-                <Text style={styles.detailValue} numberOfLines={1}>
-                  {user?.email ?? '—'}
-                </Text>
-              </View>
-            </View>
-            <View style={styles.detailDivider} />
-            <View style={styles.detailRow}>
-              <View style={styles.detailIconTile}>
-                <Ionicons name="call-outline" size={16} color={colors.accentBluePressed} />
-              </View>
-              {isEditing ? (
-                <View style={styles.detailEditWrap}>
-                  <TextField
-                    value={phone}
-                    onChangeText={setPhone}
-                    keyboardType="phone-pad"
-                    placeholder={t.profile.phonePlaceholder}
-                    helperText={t.hints.phone}
-                  />
-                </View>
-              ) : (
-                <View style={styles.detailTextSlot}>
-                  <Text style={styles.detailLabel}>{t.profile.phone}</Text>
-                  <Text style={styles.detailValue}>{user?.phone ?? '—'}</Text>
-                </View>
-              )}
-            </View>
-          </Card>
-
           <View>
             <Text style={styles.sectionLabel}>{t.profile.eyebrow}</Text>
             <Card variant="raised" style={styles.navGroup}>
+              <ListRow
+                title={t.accountMgmt.rowTitle}
+                leading={
+                  <View style={styles.navIconTile}>
+                    <Ionicons name="person-circle-outline" size={18} color={colors.accentBluePressed} />
+                  </View>
+                }
+                onPress={() => router.push('/profile/account')}
+                chevron
+              />
               <ListRow
                 title={t.profile.paymentMethods}
                 leading={
@@ -327,46 +271,6 @@ export default function ProfileScreen() {
         </View>
       </ScrollView>
 
-      <Modal visible={confirmingPhoneChange} transparent animationType="fade" onRequestClose={() => setConfirmingPhoneChange(false)}>
-        <View style={styles.confirmBackdrop}>
-          <View style={styles.confirmCard}>
-            <Text style={styles.confirmTitle}>{t.profile.confirmPhoneChangeTitle}</Text>
-            <Text style={styles.confirmMessage}>{t.profile.confirmPhoneChangeMessage}</Text>
-            <TextField
-              label={t.profile.currentPasswordLabel}
-              helperText={t.hints.currentPassword}
-              value={confirmPassword}
-              onChangeText={(v) => {
-                setConfirmPassword(v);
-                setConfirmError(null);
-              }}
-              secureTextEntry
-              error={confirmError ?? undefined}
-            />
-            <View style={styles.confirmActions}>
-              <View style={styles.confirmActionButton}>
-                <Button
-                  label={t.common.cancel}
-                  variant="outline"
-                  tone="neutral"
-                  fullWidth
-                  disabled={confirming}
-                  onPress={() => setConfirmingPhoneChange(false)}
-                />
-              </View>
-              <View style={styles.confirmActionButton}>
-                <Button
-                  label={t.profile.confirmButton}
-                  fullWidth
-                  disabled={confirmPassword.trim().length === 0}
-                  loading={confirming}
-                  onPress={handleConfirmPhoneChange}
-                />
-              </View>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
