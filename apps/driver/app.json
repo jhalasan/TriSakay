@@ -49,7 +49,7 @@
         {
           "photosPermission": "TriSakay needs access to your photos so you can upload verification documents.",
           "cameraPermission": "TriSakay needs access to your camera so you can upload verification documents.",
-          "microphonePermission": false
+          "microphonePermission": "TriSakay needs the microphone for in-app voice calls with your driver or passenger."
         }
       ],
       "expo-notifications"

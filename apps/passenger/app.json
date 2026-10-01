@@ -53,7 +53,7 @@
         {
           "photosPermission": "TriSakay needs access to your photos so you can set a profile picture.",
           "cameraPermission": "TriSakay needs access to your camera so you can take a profile picture.",
-          "microphonePermission": false
+          "microphonePermission": "TriSakay needs the microphone for in-app voice calls with your driver or passenger."
         }
       ],
       "expo-web-browser",
