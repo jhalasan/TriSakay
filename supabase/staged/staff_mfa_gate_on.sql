@@ -1,3 +1,4 @@
+-- STAGED, not part of the migration history: move to supabase/migrations/ (as 20261001000003_staff_mfa_gate_on.sql) only when it is time to apply.
 -- Switches the staff MFA gate ON. Apply ONLY after an admin has enrolled MFA and signed in with a code on the
 -- live portal (so at least one admin session is at aal2) and the sign-in flow has been checked end to end.
 --
