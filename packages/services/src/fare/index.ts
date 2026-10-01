@@ -12,10 +12,15 @@ export interface EstimateFareResult {
   error: string | null;
 }
 
+/** The ride stores its distance to 2 decimals and the database re-prices from that stored value, so quote on the same rounded number. */
+export function roundDistanceKm(distanceKm: number): number {
+  return Math.round(distanceKm * 100) / 100;
+}
+
 /** Calls the live `compute_fare` RPC — fares are quoted server-side (tariff, ordinance, discount eligibility), never computed on the client. */
 export async function estimateFare({ distanceKm, seats, passengerId }: EstimateFareInput): Promise<EstimateFareResult> {
   const { data, error } = await getSupabaseClient().rpc('compute_fare', {
-    p_distance_km: distanceKm,
+    p_distance_km: roundDistanceKm(distanceKm),
     p_seats: seats,
     p_passenger_id: passengerId,
   });

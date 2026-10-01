@@ -1,3 +1,4 @@
+import { roundDistanceKm } from '../fare/index.ts';
 import { getSupabaseClient } from '../supabase/client.ts';
 import { uniqueChannelName } from '../supabase/channelName.ts';
 import type { Database } from '../supabase/database.types.ts';
@@ -53,7 +54,7 @@ export async function createRideRequest(input: CreateRideRequestInput): Promise<
       dest_lng: input.dropoff.longitude,
       dest_label: input.dropoff.label,
       seats_requested: input.seats,
-      distance_km: input.distanceKm,
+      distance_km: roundDistanceKm(input.distanceKm),
       estimated_fare: input.estimatedFare,
       preferred_method: input.preferredMethod,
       discount_applied: input.discountApplied,

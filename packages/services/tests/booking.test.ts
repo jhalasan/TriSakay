@@ -55,6 +55,32 @@ test('createRideRequest inserts the full payload and returns the row', async () 
   });
 });
 
+test('createRideRequest stores the distance rounded to 2 decimals (what the database keeps and prices from)', async () => {
+  let capturedInsert: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      from: () => ({
+        insert: (row: unknown) => {
+          capturedInsert = row;
+          return { select: () => ({ single: async () => ({ data: { id: 'rr1' }, error: null }) }) };
+        },
+      }),
+    })
+  );
+  await createRideRequest({
+    passengerId: 'p1',
+    pickup: { latitude: 6.11, longitude: 125.17, label: 'Home' },
+    dropoff: { latitude: 6.12, longitude: 125.18, label: 'Mall' },
+    seats: 1,
+    distanceKm: 4.0049999,
+    estimatedFare: 16,
+    preferredMethod: 'cash',
+    discountApplied: false,
+    discountPercent: 0,
+  });
+  assert.equal(capturedInsert.distance_km, 4);
+});
+
 test('createRideRequest surfaces the Postgres error message', async () => {
   __setSupabaseClientForTests(
     createFakeSupabaseClient({
