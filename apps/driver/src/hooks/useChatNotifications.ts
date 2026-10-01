@@ -12,6 +12,9 @@ import Constants, { ExecutionEnvironment } from 'expo-constants';
  * ever read them back). Scoped to what chat needs, not a general
  * notification-system rebuild — see the plan's own note on this.
  *
+ * Voice calls (C2) also use this hook: it registers the `calls` Android channel, suppresses the banner for an
+ * incoming-call push while the app is open (the answer screen opens instead), and routes a tapped call push.
+ *
  * Same dynamic-import/Expo-Go guard as usePushNotificationsSync, for the
  * same reason: merely evaluating expo-notifications throws in Expo Go.
  */
@@ -42,13 +45,21 @@ export function useChatNotifications() {
             importance: Notifications.AndroidImportance.HIGH,
             sound: 'default',
           });
+          await Notifications.setNotificationChannelAsync('calls', {
+            name: 'Calls',
+            importance: Notifications.AndroidImportance.MAX,
+            sound: 'default',
+            vibrationPattern: [0, 600, 400, 600, 400, 600],
+          });
         }
 
         Notifications.setNotificationHandler({
           handleNotification: async (notification) => {
             const data = notification.request.content.data as Record<string, unknown> | undefined;
             const path = pathnameRef.current ?? '';
-            const alreadyVisible = data?.type === 'chat_message' && (path.startsWith('/trip/chat') || path.startsWith('/trip/active'));
+            const alreadyVisible =
+              (data?.type === 'chat_message' && (path.startsWith('/trip/chat') || path.startsWith('/trip/active'))) ||
+              data?.type === 'incoming_call';
             return {
               shouldShowBanner: !alreadyVisible,
               shouldShowList: !alreadyVisible,
@@ -59,7 +70,12 @@ export function useChatNotifications() {
         });
 
         function routeFromData(data: Record<string, unknown> | undefined) {
-          if (!data || data.type !== 'chat_message' || typeof data.rideRequestId !== 'string') return;
+          if (!data) return;
+          if (data.type === 'incoming_call' && typeof data.callId === 'string') {
+            router.navigate(`/trip/call/${data.callId}`);
+            return;
+          }
+          if (data.type !== 'chat_message' || typeof data.rideRequestId !== 'string') return;
           router.push(`/trip/chat/${data.rideRequestId}`);
         }
 

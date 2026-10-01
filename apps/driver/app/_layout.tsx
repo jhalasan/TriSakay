@@ -18,6 +18,7 @@ import { ConfirmModal, ConnectionBanner, colors, DRIVER_FINISHED_MESSAGE, DRIVER
 import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
 import { useChatNotifications } from '../src/hooks/useChatNotifications';
+import { useIncomingCalls } from '../src/hooks/useIncomingCalls';
 import { usePushNotificationsSync } from '../src/hooks/usePushNotificationsSync';
 import { useDriverTutorialNavigation } from '../src/hooks/useDriverTutorialNavigation';
 import { useDriverTutorialTrigger } from '../src/hooks/useDriverTutorialTrigger';
@@ -550,6 +551,7 @@ function RootLayoutNav() {
   useNotificationsSync(syncUserId);
   usePushNotificationsSync(syncUserId);
   useChatNotifications();
+  useIncomingCalls(syncUserId, (callId) => `/trip/call/${callId}`);
   useProtectedRoute(isAuthenticated, consentStatus, verificationStatus, accountBlocked, hasActiveTrip, mfaStatus);
   useLocationPrompt(isAuthenticated, consentStatus);
 

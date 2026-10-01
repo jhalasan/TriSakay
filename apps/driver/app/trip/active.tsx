@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { DRIVER_CANCEL_REASON_CODES, TRANSFER_REASON_CODES, TRICYCLE_SPEED_KMH, features, sortByNextStop } from '@trisakay/shared';
 import { Ionicons } from '@expo/vector-icons';
 import { Redirect, useFocusEffect, useRouter } from 'expo-router';
-import { ActivityIndicator, Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
+import { ActivityIndicator, Alert, Linking, Modal, Platform, Pressable, ScrollView, Text, View, useWindowDimensions } from 'react-native';
 import { useSharedValue } from 'react-native-reanimated';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
@@ -20,7 +20,7 @@ import {
   useNavigationRoute,
   useTutorialTarget,
 } from '@trisakay/ui';
-import { SWITCH_TO_CASH_REASON_CODES, inviteTransfer, listMessages, listTransferCandidates, type SwitchToCashReasonCode, type TransferCandidate } from '@trisakay/services';
+import { SWITCH_TO_CASH_REASON_CODES, inviteTransfer, listMessages, listTransferCandidates, startRideCall, type SwitchToCashReasonCode, type TransferCandidate } from '@trisakay/services';
 import { useAcceptRideRequest } from '../../src/hooks/useAcceptRideRequest';
 import { useChatPreviewBanner } from '../../src/hooks/useChatPreviewBanner';
 import { useRequestCountdown } from '../../src/hooks/useRequestCountdown';
@@ -45,6 +45,15 @@ function firstNameOf(name: string | null, fallback: string): string {
 export default function ActiveTripScreen() {
   const router = useRouter();
   const t = useTranslation();
+
+  async function handleCall(rideRequestId: string) {
+    const { data: callId, error } = await startRideCall(rideRequestId);
+    if (error || !callId) {
+      Alert.alert(t.callUi.cannotStartTitle, error ?? '');
+      return;
+    }
+    router.push(`/trip/call/${callId}`);
+  }
   const insets = useSafeAreaInsets();
   const user = useAuthStore((state) => state.user);
   const tutorialDemo = useActiveTripTutorialDemo();
@@ -550,6 +559,7 @@ export default function ActiveTripScreen() {
               onCompleteHandoff={handleCompleteHandoff}
               onOpenOptions={setOptionsPassenger}
               onOpenChat={(id) => router.push(`/trip/chat/${id}`)}
+              onCall={handleCall}
               unreadCount={unreadByRideRequestId[top.passenger.id] ?? 0}
               cardRef={passengerCardTarget}
             />
@@ -839,6 +849,7 @@ interface NextStopCardProps {
   onCompleteHandoff: (id: string) => void;
   onOpenOptions: (passenger: ActivePassenger) => void;
   onOpenChat: (rideRequestId: string) => void;
+  onCall: (rideRequestId: string) => void;
   unreadCount: number;
   cardRef: ReturnType<typeof useTutorialTarget>;
 }
@@ -867,6 +878,7 @@ function NextStopCard({
   onCompleteHandoff,
   onOpenOptions,
   onOpenChat,
+  onCall,
   unreadCount,
   cardRef,
 }: NextStopCardProps) {
@@ -986,7 +998,7 @@ function NextStopCard({
               number exists today); Message alone then takes the full row. */}
           <View style={styles.contactRow}>
             {features.rideCall && (
-              <Pressable style={styles.contactButton} accessibilityRole="button" onPress={() => {}}>
+              <Pressable style={styles.contactButton} accessibilityRole="button" onPress={() => onCall(passenger.id)}>
                 <Ionicons name="call-outline" size={17} color={colors.accentBlue} />
                 <Text style={styles.contactLabel}>{t.driver.tripActive.callButton}</Text>
               </Pressable>
