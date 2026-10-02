@@ -1002,7 +1002,8 @@ export const fil: Translations = {
     register: {
       stepTitleAccount: 'Magparehistro bilang Driver',
       stepTitleDocuments: 'Mga Dokumento at Traysikel',
-      stepLabel: 'Hakbang {step} ng 2',
+      stepTitleTerms: 'Mga Tuntunin at Privacy',
+      stepLabel: 'Hakbang {step} ng 3',
       firstName: 'Pangalan',
       firstNamePlaceholder: 'Juan',
       lastName: 'Apelyido',

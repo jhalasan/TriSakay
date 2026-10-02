@@ -1029,7 +1029,8 @@ export const en = {
     register: {
       stepTitleAccount: 'Register as driver',
       stepTitleDocuments: 'Documents & tricycle',
-      stepLabel: 'Step {step} of 2',
+      stepTitleTerms: 'Terms & privacy',
+      stepLabel: 'Step {step} of 3',
       firstName: 'First name',
       firstNamePlaceholder: 'Juan',
       lastName: 'Last name',

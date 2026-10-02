@@ -31,9 +31,10 @@ interface FormState {
 export default function RegisterScreen() {
   const router = useRouter();
   const t = useTranslation();
-  const STEP_TITLE: Record<1 | 2, string> = {
+  const STEP_TITLE: Record<1 | 2 | 3, string> = {
     1: t.driver.register.stepTitleAccount,
     2: t.driver.register.stepTitleDocuments,
+    3: t.driver.register.stepTitleTerms,
   };
   const DOCUMENT_LABEL: Record<(typeof DOCUMENT_TYPES)[number], string> = {
     drivers_license: t.driver.documents.driversLicense,
@@ -50,7 +51,7 @@ export default function RegisterScreen() {
   const submitDocument = useDocumentsStore((state) => state.submit);
   const removeDocument = useDocumentsStore((state) => state.remove);
 
-  const [step, setStep] = useState<1 | 2>(1);
+  const [step, setStep] = useState<1 | 2 | 3>(1);
   const [form, setForm] = useState<FormState>({ firstName: '', lastName: '', email: '', phone: '', password: '', confirmPassword: '' });
   const [errors, setErrors] = useState<Partial<FormState>>({});
   const [plateNo, setPlateNo] = useState('');
@@ -77,6 +78,15 @@ export default function RegisterScreen() {
     setErrors(nextErrors);
     if (Object.keys(nextErrors).length > 0) return;
     setStep(2);
+  }
+
+  function handleNextToTerms() {
+    if (!isNonEmpty(plateNo)) {
+      setPlateNoError(t.driver.register.enterPlateNumber);
+      return;
+    }
+    setPlateNoError(undefined);
+    setStep(3);
   }
 
   async function uploadPickedDocuments(userId: string) {
@@ -158,13 +168,18 @@ export default function RegisterScreen() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
-      <ScreenHeader title={STEP_TITLE[step]} onBack={step === 2 ? () => setStep(1) : undefined} />
+      <ScreenHeader
+        compact
+        title={STEP_TITLE[step]}
+        onBack={step === 3 ? () => setStep(2) : step === 2 ? () => setStep(1) : undefined}
+      />
 
       <View style={styles.stepWrap}>
         <Text style={styles.stepLabel}>{interpolate(t.driver.register.stepLabel, { step })}</Text>
         <View style={styles.stepTrack}>
           <View style={[styles.stepSegment, styles.stepSegmentActive]} />
-          <View style={[styles.stepSegment, step === 2 && styles.stepSegmentActive]} />
+          <View style={[styles.stepSegment, step >= 2 && styles.stepSegmentActive]} />
+          <View style={[styles.stepSegment, step === 3 && styles.stepSegmentActive]} />
         </View>
       </View>
 
@@ -251,7 +266,7 @@ export default function RegisterScreen() {
             <Button label={t.driver.register.next} onPress={handleNext} fullWidth />
           </ScrollView>
         </>
-      ) : (
+      ) : step === 2 ? (
         <View style={styles.stepTwoBody}>
           <View style={styles.scrollWrap}>
             <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
@@ -281,7 +296,23 @@ export default function RegisterScreen() {
                   onRemove={() => removeDocument(type)}
                 />
               ))}
+            </ScrollView>
+            <ScrollFade />
+          </View>
 
+          <View style={styles.footer}>
+            <Button
+              label={t.driver.register.next}
+              onPress={handleNextToTerms}
+              disabled={!isNonEmpty(plateNo) || !allDocumentsUploaded}
+              fullWidth
+            />
+          </View>
+        </View>
+      ) : (
+        <View style={styles.stepTwoBody}>
+          <View style={styles.scrollWrap}>
+            <ScrollView style={styles.scrollArea} contentContainerStyle={styles.scrollContent} keyboardShouldPersistTaps="handled">
               <Text style={styles.stepIntro}>{t.driver.register.acceptTermsIntro}</Text>
               <Text style={styles.version}>
                 Terms {CURRENT_TOS_VERSION} · Privacy {CURRENT_PRIVACY_VERSION}
@@ -338,7 +369,7 @@ export default function RegisterScreen() {
               label={t.driver.register.registerButton}
               onPress={handleSubmit}
               loading={submitting || awaitingGate}
-              disabled={!isNonEmpty(plateNo) || !allDocumentsUploaded || !termsChecked}
+              disabled={!termsChecked}
               fullWidth
             />
           </View>

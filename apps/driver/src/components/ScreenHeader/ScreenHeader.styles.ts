@@ -27,6 +27,9 @@ export const styles = StyleSheet.create({
     color: colors.ink,
     flex: 1,
   },
+  titleCompact: {
+    ...typography.h2,
+  },
   rightSlot: {
     alignItems: 'flex-end',
   },

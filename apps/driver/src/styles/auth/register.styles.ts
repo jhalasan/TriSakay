@@ -3,22 +3,22 @@ import { colors, elevation, radius, spacing, typography } from '@trisakay/ui';
 
 export const styles = StyleSheet.create({
   heroBand: {
-    height: 110,
+    height: 80,
     alignItems: 'center',
     justifyContent: 'center',
   },
   motif: { position: 'absolute', top: -40, right: -40 },
   /** Badge container — the mark image sits inside this, not stretched to fill it. */
   markBadge: {
-    width: 72,
-    height: 72,
+    width: 56,
+    height: 56,
     borderRadius: radius.lg,
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
     ...elevation.card,
   },
-  mark: { width: 42, height: 50 },
+  mark: { width: 32, height: 38 },
   stepWrap: { paddingHorizontal: spacing.xl, paddingTop: spacing.md, gap: spacing.xs },
   stepLabel: { ...typography.label, color: colors.inkSoft },
   stepTrack: { flexDirection: 'row', gap: spacing.xs },

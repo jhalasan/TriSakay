@@ -10,9 +10,11 @@ export interface ScreenHeaderProps {
   onBack?: () => void;
   showBack?: boolean;
   right?: React.ReactNode;
+  /** Smaller title, for long titles that would otherwise be cut off. */
+  compact?: boolean;
 }
 
-export function ScreenHeader({ title, onBack, showBack = true, right }: ScreenHeaderProps) {
+export function ScreenHeader({ title, onBack, showBack = true, right, compact = false }: ScreenHeaderProps) {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
@@ -33,7 +35,7 @@ export function ScreenHeader({ title, onBack, showBack = true, right }: ScreenHe
           <Ionicons name="chevron-back" size={24} color={colors.ink} />
         </Pressable>
       )}
-      <Text style={styles.title} numberOfLines={1}>
+      <Text style={[styles.title, compact && styles.titleCompact]} numberOfLines={1}>
         {title}
       </Text>
       {right && <View style={styles.rightSlot}>{right}</View>}
