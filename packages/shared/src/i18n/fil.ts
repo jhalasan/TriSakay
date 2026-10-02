@@ -273,6 +273,7 @@ export const fil: Translations = {
     backToHome: 'Bumalik sa Home',
     mapCaption: 'Mapa · ruta ng biyahe',
     messageDriver: 'Mensahe sa driver',
+    messageButton: 'Mensahe',
     sosButton: 'Emergency SOS',
     sosShortLabel: 'SOS',
     sosCaption: 'Pindutin at hawakan kung ikaw ay nasa agarang panganib',

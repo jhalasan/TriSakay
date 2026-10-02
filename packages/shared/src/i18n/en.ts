@@ -281,6 +281,7 @@ export const en = {
     backToHome: 'Back to Home',
     mapCaption: 'Map · trip route',
     messageDriver: 'Message driver',
+    messageButton: 'Message',
     sosButton: 'Emergency SOS',
     sosShortLabel: 'SOS',
     sosCaption: "Press and hold if you're in immediate danger",

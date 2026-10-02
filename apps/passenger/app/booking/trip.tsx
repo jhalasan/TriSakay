@@ -747,7 +747,7 @@ export default function TripScreen() {
                 >
                   <Ionicons name="chatbubble-ellipses-outline" size={17} color={unreadMessageCount > 0 ? colors.white : colors.accentBlue} />
                   <Text numberOfLines={1} style={[styles.contactLabel, unreadMessageCount > 0 && styles.contactLabelFilled]}>
-                    {unreadMessageCount > 0 ? interpolate(t.trip.messageDriverNamed, { name }) : t.trip.messageDriver}
+                    {t.trip.messageButton}
                   </Text>
                   {unreadMessageCount > 0 && (
                     <View style={styles.contactCountPill}>
