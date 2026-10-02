@@ -470,6 +470,49 @@ test('subscribeToRideRequestStatus calls onError when the channel errors out or 
   ]);
 });
 
+test('subscribeToRideRequestStatus calls onRecovered when the channel re-subscribes after an error', async () => {
+  const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
+  const fakeChannel: FakeStatusChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      captured.statusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      from: () => ({
+        select: () => ({
+          eq: () => ({
+            maybeSingle: async () => ({ data: null, error: null }),
+          }),
+        }),
+      }),
+    })
+  );
+
+  const events: string[] = [];
+  subscribeToRideRequestStatus(
+    'rr1',
+    () => {},
+    (message) => events.push(`error:${message}`),
+    () => events.push('recovered'),
+  );
+
+  const statusCallback = captured.statusCallback;
+  assert.ok(statusCallback);
+  statusCallback('CHANNEL_ERROR');
+  statusCallback('SUBSCRIBED');
+
+  assert.deepEqual(events, [
+    'error:Lost connection while waiting for a driver. Please check your connection.',
+    'recovered',
+  ]);
+});
+
 // R6 (existing-system audit): the driver previously had no live signal when
 // a passenger cancelled mid-trip.
 test('subscribeToTripRideRequests filters on trip_id and calls onChange on SUBSCRIBED and on every UPDATE', async () => {

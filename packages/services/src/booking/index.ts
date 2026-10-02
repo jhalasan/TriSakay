@@ -264,6 +264,8 @@ export function subscribeToRideRequestStatus(
   rideRequestId: string,
   onChange: (row: RideRequestStatusUpdate) => void,
   onError?: (message: string) => void,
+  /** Fired each time the channel (re)joins, so a screen can clear the message `onError` showed. */
+  onRecovered?: () => void,
 ): () => void {
   const client = getSupabaseClient();
   const channel = client
@@ -275,6 +277,7 @@ export function subscribeToRideRequestStatus(
     )
     .subscribe((status: string) => {
       if (status === 'SUBSCRIBED') {
+        onRecovered?.();
         client
           .from('ride_requests')
           .select('id, status, cancel_reason, cancelled_by, discount_applied, trip_id, arrived_at, assigned_at, completed_at, cancelled_at, payment_requested_at, preferred_method')

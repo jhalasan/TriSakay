@@ -33,7 +33,8 @@ export const useChatStore = create<ChatState>()((set, get) => ({
 
     stopMessages = subscribeToRideMessages(
       rideRequestId,
-      (messages) => set({ loading: false, messages }),
+      // A successful (re)fetch means the connection is back, so drop any earlier "lost connection" error.
+      (messages) => set({ loading: false, messages, error: null }),
       (message) => set({ loading: false, error: message })
     );
 

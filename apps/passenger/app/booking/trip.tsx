@@ -315,6 +315,9 @@ export default function TripScreen() {
       (message) => {
         if (!cancelled) setSubscriptionError(message);
       },
+      () => {
+        if (!cancelled) setSubscriptionError(null);
+      },
     );
 
     return () => {

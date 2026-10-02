@@ -106,6 +106,9 @@ export default function FindingDriverScreen() {
       (message) => {
         if (!cancelled) setSubscriptionError(message);
       },
+      () => {
+        if (!cancelled) setSubscriptionError(null);
+      },
     );
 
     return () => {
