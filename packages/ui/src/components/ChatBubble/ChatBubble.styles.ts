@@ -5,8 +5,10 @@ export const styles = StyleSheet.create({
   row: { flexDirection: 'row', marginBottom: 2 },
   rowSent: { justifyContent: 'flex-end' },
   rowReceived: { justifyContent: 'flex-start' },
+  // The 78% cap lives on the wrapper (a direct child of the full-width row), not on the bubble: a percent
+  // maxWidth on a child of a content-sized wrapper resolves against that squeezed wrapper and wraps text early.
+  bubbleWrap: { maxWidth: '78%' },
   bubble: {
-    maxWidth: '78%',
     borderRadius: 18,
     paddingVertical: spacing.sm,
     paddingHorizontal: spacing.md,

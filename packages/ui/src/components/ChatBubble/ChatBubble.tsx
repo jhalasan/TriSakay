@@ -85,7 +85,7 @@ export function ChatBubble({
           carries `overflow:'hidden'` for image messages, and a shadow on the
           same view as overflow:'hidden' clips to an unrounded rectangle on
           Android (Part C hard rule 4). */}
-      <View style={lifted && styles.liftedWrap}>
+      <View style={[styles.bubbleWrap, lifted && styles.liftedWrap]}>
         <Pressable
           style={[styles.bubble, bubbleToneStyle, tailRadii(sentByMe, groupPosition), lifted && styles.bubbleLiftedScale, kind === 'image' && styles.bubbleImage]}
           onLongPress={onLongPress}

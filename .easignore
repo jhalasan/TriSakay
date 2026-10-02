@@ -17,6 +17,9 @@ apps/passenger/android/app/build/
 apps/passenger/android/build/
 apps/passenger/android/.gradle/
 apps/passenger/android/.cxx/
+# Native C++ build cache under android/app (large, regenerated in the cloud).
+**/android/app/.cxx/
+**/android/app/build/
 # Same for the driver app: its stale local build output made the cloud Gradle
 # build fail ("No variants exist" for every React Native library).
 apps/driver/android/app/build/
