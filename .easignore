@@ -17,6 +17,12 @@ apps/passenger/android/app/build/
 apps/passenger/android/build/
 apps/passenger/android/.gradle/
 apps/passenger/android/.cxx/
+# Same for the driver app: its stale local build output made the cloud Gradle
+# build fail ("No variants exist" for every React Native library).
+apps/driver/android/app/build/
+apps/driver/android/build/
+apps/driver/android/.gradle/
+apps/driver/android/.cxx/
 
 # Claude Code's own tooling config — never read by Expo/Gradle/Metro, so it
 # has no business in a build upload. .claude/skills/* are real symlinks into
