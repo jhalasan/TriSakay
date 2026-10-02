@@ -743,7 +743,7 @@ export default function TripScreen() {
                   onPress={() => (tutorialDemo.active ? undefined : router.push('/booking/chat'))}
                 >
                   <Ionicons name="chatbubble-ellipses-outline" size={17} color={unreadMessageCount > 0 ? colors.white : colors.accentBlue} />
-                  <Text style={[styles.contactLabel, unreadMessageCount > 0 && styles.contactLabelFilled]}>
+                  <Text numberOfLines={1} style={[styles.contactLabel, unreadMessageCount > 0 && styles.contactLabelFilled]}>
                     {unreadMessageCount > 0 ? interpolate(t.trip.messageDriverNamed, { name }) : t.trip.messageDriver}
                   </Text>
                   {unreadMessageCount > 0 && (

@@ -1009,7 +1009,7 @@ function NextStopCard({
               onPress={() => onOpenChat(passenger.id)}
             >
               <Ionicons name="chatbubble-ellipses-outline" size={17} color={unreadCount > 0 ? colors.white : colors.accentBlue} />
-              <Text style={[styles.contactLabel, unreadCount > 0 && styles.contactLabelFilled]}>
+              <Text numberOfLines={1} style={[styles.contactLabel, unreadCount > 0 && styles.contactLabelFilled]}>
                 {unreadCount > 0 ? interpolate(t.driver.tripActive.messageButtonNamed, { name }) : t.driver.tripActive.messageButton}
               </Text>
               {unreadCount > 0 && (
