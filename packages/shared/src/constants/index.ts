@@ -38,11 +38,8 @@ export const TRANSFER_REASON_CODES = ['breakdown', 'full_seats', 'route', 'other
 export type TransferReasonCode = (typeof TRANSFER_REASON_CODES)[number];
 
 /**
- * Ride comms redesign (README §4.3): Call is opt-in and off by default —
- * the repo has no call feature today, and chat's own phone-number masking
- * (L11) would be undermined by a raw `tel:` link. Flip this on only once a
- * masked/proxy number (or an explicit product decision to show the raw
- * number) actually exists; until then Call never renders and Message takes
- * the full width, in both apps.
+ * Ride comms: the Call button starts an in-app voice call (Agora) between a ride's passenger and its driver. No
+ * phone number is ever shown or used, so chat's number masking (L11) is not undermined. Set to false to hide the
+ * Call buttons again; Message then takes the full width, in both apps.
  */
-export const features = { rideCall: false } as const;
+export const features = { rideCall: true } as const;
