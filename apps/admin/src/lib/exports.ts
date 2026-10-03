@@ -33,7 +33,7 @@ export const passengerCsvColumns: CsvColumn<PassengerRow>[] = [
 
 export const tricycleCsvColumns: CsvColumn<TricycleRow>[] = [
   { header: 'Plate No', value: (t) => t.plateNo },
-  { header: 'Body No', value: (t) => t.bodyNo },
+  { header: 'Tricycle ID No', value: (t) => t.bodyNo },
   { header: 'Cluster', value: (t) => (t.cluster ? titleCaseLabel(t.cluster) : '') },
   { header: 'Verification Status', value: (t) => titleCaseLabel(t.verificationStatus) },
   { header: 'MTOP No', value: (t) => t.mtopNo },

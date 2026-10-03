@@ -190,6 +190,10 @@ export function DriverVerification() {
           fallback={
             <>
               <div className={styles.readOnlyField}>
+                <span>Tricycle ID Number</span>
+                {c.bodyNo || '—'}
+              </div>
+              <div className={styles.readOnlyField}>
                 <span>MTOP Number</span>
                 {c.mtopNo || '—'}
               </div>
@@ -213,6 +217,13 @@ export function DriverVerification() {
         >
           <div className="decision-body">
             <TextField
+              label="Tricycle ID Number"
+              hint="The number painted on the front and rear of the tricycle (Ordinance 21, Sec. 3f). Leave blank if the permit does not show one."
+              value={c.bodyNo}
+              onChange={(e) => updateFields(c.driverId, { bodyNo: e.target.value })}
+              placeholder="e.g. 042"
+            />
+            <TextField
               label="MTOP Number"
               hint="As printed on the MTOP franchise, e.g. MTOP-2026-00123."
               value={c.mtopNo}
@@ -232,6 +243,9 @@ export function DriverVerification() {
               onChange={(e) => updateFields(c.driverId, { cluster: e.target.value as TricycleCluster | '' })}
               options={CLUSTER_OPTIONS}
             />
+            <p className="pane-subtitle">
+              Moving a tricycle to another cluster is an amendment to the MTOP and needs MTFRB approval (MTOP Condition 5). Only change the cluster to match an amended permit.
+            </p>
             <Textarea
               label="Reviewer Notes"
               hint="Explain the decision. Required when rejecting."

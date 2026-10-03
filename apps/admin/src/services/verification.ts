@@ -30,6 +30,7 @@ export async function listVerificationCases(): Promise<ServiceResult<Verificatio
       status: d.status,
       storagePath: d.storagePath,
     })),
+    bodyNo: c.bodyNo ?? '',
     mtopNo: c.mtopNo ?? '',
     mtopExpiryDate: c.mtopExpiryDate ?? '',
     cluster: c.cluster ?? '',
@@ -44,10 +45,11 @@ export async function listVerificationCases(): Promise<ServiceResult<Verificatio
 /** PSO Staff+ — transcription only, not an S+ decision (see updateVerificationFields's own doc comment on the RLS boundary). */
 export async function updateVerificationCase(
   driverId: string,
-  patch: Partial<Pick<VerificationCase, 'mtopNo' | 'mtopExpiryDate' | 'cluster' | 'notes'>>
+  patch: Partial<Pick<VerificationCase, 'bodyNo' | 'mtopNo' | 'mtopExpiryDate' | 'cluster' | 'notes'>>
 ): Promise<ServiceResult<null>> {
-  const { mtopNo, mtopExpiryDate, cluster } = patch;
+  const { bodyNo, mtopNo, mtopExpiryDate, cluster } = patch;
   const { error } = await updateVerificationFieldsReal(driverId, {
+    ...(bodyNo !== undefined && { bodyNo }),
     ...(mtopNo !== undefined && { mtopNo }),
     ...(mtopExpiryDate !== undefined && { mtopExpiryDate }),
     ...(cluster !== undefined && cluster !== '' && { cluster }),

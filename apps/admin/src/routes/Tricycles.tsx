@@ -158,7 +158,7 @@ export function Tricycles() {
           <div className="mono" style={{ fontWeight: 600 }}>
             {t.plateNo}
           </div>
-          <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>{t.bodyNo || '—'}</div>
+          {t.bodyNo && <div style={{ fontSize: 11, color: 'var(--ink-faint)' }}>ID {t.bodyNo}</div>}
         </div>
       ),
     },
@@ -308,7 +308,7 @@ export function Tricycles() {
             icon={VehicleIcon}
             fields={[
               { label: 'Plate No', value: <span className="mono">{selected.plateNo}</span> },
-              { label: 'Body No', value: selected.bodyNo || '—' },
+              { label: 'Tricycle ID No', value: selected.bodyNo || '—' },
               { label: 'Seat Capacity', value: selected.seatCapacity },
               { label: 'Cluster', value: selected.cluster ? titleCaseLabel(selected.cluster) : '—' },
             ]}

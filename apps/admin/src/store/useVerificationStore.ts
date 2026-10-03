@@ -25,7 +25,7 @@ interface VerificationState {
   select: (driverId: string | null) => void;
   updateFields: (
     driverId: string,
-    patch: Partial<Pick<VerificationCase, 'mtopNo' | 'mtopExpiryDate' | 'cluster' | 'notes'>>
+    patch: Partial<Pick<VerificationCase, 'bodyNo' | 'mtopNo' | 'mtopExpiryDate' | 'cluster' | 'notes'>>
   ) => Promise<void>;
   approve: (driverId: string, notes?: string) => Promise<boolean>;
   reject: (driverId: string, notes: string) => Promise<boolean>;
@@ -40,6 +40,7 @@ export const useVerificationStore = create<VerificationState>()((set, get) => {
     const current = get().cases.find((c) => c.driverId === driverId);
     if (current) {
       const { error } = await updateVerificationCase(driverId, {
+        bodyNo: current.bodyNo,
         mtopNo: current.mtopNo,
         mtopExpiryDate: current.mtopExpiryDate,
         cluster: current.cluster,

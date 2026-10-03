@@ -34,7 +34,7 @@ function fakeClient() {
             in: () => ({
               eq: async () => ({
                 data: [
-                  { id: 'tri1', driver_id: 'drv1', plate_no: 'GSC-1187', mtop_no: null, mtop_expiry_date: null, cluster: null },
+                  { id: 'tri1', driver_id: 'drv1', plate_no: 'GSC-1187', body_no: '042', mtop_no: null, mtop_expiry_date: null, cluster: null },
                 ],
                 error: null,
               }),
@@ -85,6 +85,7 @@ test('listPendingVerifications maps a pending driver with its tricycle and docum
       contactNo: '0917-555-0100',
       tricycleId: 'tri1',
       plateNo: 'GSC-1187',
+      bodyNo: '042',
       mtopNo: null,
       mtopExpiryDate: null,
       cluster: null,
@@ -160,6 +161,15 @@ test('updateVerificationFields writes only the provided fields, scoped to the dr
 
   const captured = (globalThis as any).__capturedTricycleUpdate;
   assert.deepEqual(captured.patch, { mtop_no: 'MTOP-2026-00123', cluster: 'melting_pot' });
+});
+
+test('updateVerificationFields saves the tricycle identification number as body_no', async () => {
+  __setSupabaseClientForTests(fakeClient());
+
+  const { error } = await updateVerificationFields('drv1', { bodyNo: '042' });
+  assert.equal(error, null);
+
+  assert.deepEqual((globalThis as any).__capturedTricycleUpdate.patch, { body_no: '042' });
 });
 
 test('approveVerification calls perform_verification_decision with the approved decision', async () => {

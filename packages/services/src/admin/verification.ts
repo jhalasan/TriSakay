@@ -18,6 +18,7 @@ export interface VerificationCaseRow {
   contactNo: string | null;
   tricycleId: string | null;
   plateNo: string;
+  bodyNo: string | null;
   mtopNo: string | null;
   mtopExpiryDate: string | null;
   cluster: AdminTricycleCluster | null;
@@ -71,7 +72,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
     client.from('admin_driver_directory').select('id, full_name, contact_no').in('id', driverIds),
     client
       .from('tricycles')
-      .select('id, driver_id, plate_no, mtop_no, mtop_expiry_date, cluster')
+      .select('id, driver_id, plate_no, body_no, mtop_no, mtop_expiry_date, cluster')
       .in('driver_id', driverIds)
       .eq('is_active', true),
     client.from('driver_documents').select('id, driver_id, doc_type, status, storage_path, remarks').in('driver_id', driverIds),
@@ -103,6 +104,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
       contactNo: contactNoById.get(p.user_id) ?? null,
       tricycleId: tricycle?.id ?? null,
       plateNo: tricycle?.plate_no ?? '—',
+      bodyNo: tricycle?.body_no ?? null,
       mtopNo: tricycle?.mtop_no ?? null,
       mtopExpiryDate: tricycle?.mtop_expiry_date ?? null,
       cluster: tricycle?.cluster ?? null,
@@ -122,6 +124,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
 }
 
 export interface UpdateVerificationFieldsInput {
+  bodyNo?: string;
   mtopNo?: string;
   mtopExpiryDate?: string;
   cluster?: AdminTricycleCluster;
@@ -145,6 +148,7 @@ export async function updateVerificationFields(
   const client = getSupabaseClient();
 
   const dbPatch: Database['public']['Tables']['tricycles']['Update'] = {};
+  if (patch.bodyNo !== undefined) dbPatch.body_no = patch.bodyNo || null;
   if (patch.mtopNo !== undefined) dbPatch.mtop_no = patch.mtopNo || null;
   if (patch.mtopExpiryDate !== undefined) dbPatch.mtop_expiry_date = patch.mtopExpiryDate || null;
   if (patch.cluster !== undefined) dbPatch.cluster = patch.cluster || null;

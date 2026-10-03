@@ -24,6 +24,7 @@ export interface VerificationCase {
   contactNo: string;
   plateNo: string;
   documents: DriverDocument[];
+  bodyNo: string;
   mtopNo: string;
   mtopExpiryDate: string; // ISO date, '' if not yet transcribed
   cluster: TricycleCluster | '';
