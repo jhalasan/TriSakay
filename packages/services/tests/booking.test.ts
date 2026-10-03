@@ -1,4 +1,4 @@
-import test from 'node:test';
+import test, { mock } from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { createFakeSupabaseClient } from './fakeSupabaseClient.ts';
@@ -854,6 +854,60 @@ test('subscribeToPendingRideRequests collapses a burst of change events into a s
   assert.equal(invokeCount, 1);
 
   unsubscribe();
+});
+
+test('subscribeToPendingRideRequests rechecks while requests are showing, so one another driver accepted disappears, then stops when the list is empty', async () => {
+  // rr_driver_read only lets a driver read status='pending' rows, so the moment
+  // another driver accepts, the row becomes invisible to everyone else and no
+  // realtime event ever reaches them. A request already on screen would sit
+  // there forever, hence the timed recheck while the list is not empty.
+  mock.timers.enable({ apis: ['setTimeout'] });
+  const flush = () => new Promise((resolve) => setImmediate(resolve));
+
+  const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
+  const fakeChannel = {
+    on: () => fakeChannel,
+    subscribe: (statusCallback?: (status: string) => void) => {
+      captured.statusCallback = statusCallback ?? null;
+      return fakeChannel;
+    },
+  };
+
+  const responses = [[{ id: 'r1' }], []];
+  let invokeCount = 0;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      channel: () => fakeChannel,
+      removeChannel: () => {},
+      functionsInvoke: async () => {
+        const rows = responses[Math.min(invokeCount, responses.length - 1)];
+        invokeCount += 1;
+        return { data: { data: rows, error: null }, error: null };
+      },
+    })
+  );
+
+  const received: unknown[][] = [];
+  const unsubscribe = subscribeToPendingRideRequests('driver2', (rows) => received.push(rows));
+
+  try {
+    captured.statusCallback!('SUBSCRIBED');
+    await flush();
+    assert.equal(invokeCount, 1);
+    assert.equal(received[0].length, 1);
+
+    mock.timers.tick(5000);
+    await flush();
+    assert.equal(invokeCount, 2, 'rechecked without any realtime event');
+    assert.deepEqual(received[1], [], 'the accepted request is gone from the list');
+
+    mock.timers.tick(60000);
+    await flush();
+    assert.equal(invokeCount, 2, 'no polling while there is nothing on screen');
+  } finally {
+    unsubscribe();
+    mock.timers.reset();
+  }
 });
 
 test('subscribeToPendingRideRequests forwards channel errors', async () => {

@@ -337,6 +337,15 @@ export function subscribeToTripRideRequests(
 const PENDING_REQUESTS_REFETCH_DEBOUNCE_MS = 500;
 
 /**
+ * rr_driver_read only lets a driver read `pending` rows, so the instant
+ * another driver accepts a request it becomes invisible to everyone else and
+ * no realtime event is ever delivered for it. While a request is on screen we
+ * therefore recheck on a timer, otherwise it would sit there until something
+ * unrelated changed. Stops as soon as the list is empty.
+ */
+const PENDING_REQUESTS_RECHECK_MS = 5000;
+
+/**
  * Request-board feed, filtered/ranked server-side by the `match-ride-request`
  * Edge Function (FR-2.5: cluster-authorization hard filter, then a
  * bearing-tolerance/detour-ratio soft filter once the driver has a known
@@ -384,8 +393,14 @@ export function subscribeToPendingRideRequests(
   const client = getSupabaseClient();
   let cancelled = false;
   let debounceTimer: ReturnType<typeof setTimeout> | null = null;
+  let recheckTimer: ReturnType<typeof setTimeout> | null = null;
 
   async function refetch() {
+    if (recheckTimer) {
+      clearTimeout(recheckTimer);
+      recheckTimer = null;
+    }
+
     const { data, error } = await client.functions.invoke('match-ride-request', { body: { driverId } });
 
     if (cancelled) return;
@@ -400,7 +415,15 @@ export function subscribeToPendingRideRequests(
       return;
     }
 
-    onData(result.data ?? []);
+    const rows = result.data ?? [];
+    onData(rows);
+
+    if (rows.length > 0 && !cancelled) {
+      recheckTimer = setTimeout(() => {
+        recheckTimer = null;
+        void refetch();
+      }, PENDING_REQUESTS_RECHECK_MS);
+    }
   }
 
   function scheduleRefetch() {
@@ -427,6 +450,7 @@ export function subscribeToPendingRideRequests(
   return () => {
     cancelled = true;
     if (debounceTimer) clearTimeout(debounceTimer);
+    if (recheckTimer) clearTimeout(recheckTimer);
     client.removeChannel(channel);
   };
 }
