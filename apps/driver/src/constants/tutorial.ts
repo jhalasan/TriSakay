@@ -1,2 +1,8 @@
-/** AsyncStorage key marking the in-app coach-mark tour as seen (or skipped) on this device. Written by useDriverTutorialTrigger on finish()/skip(). */
-export const DRIVER_TUTORIAL_SEEN_KEY = 'trisakay_driver_tutorial_seen_at';
+/**
+ * AsyncStorage key marking the in-app coach-mark tour as seen (or skipped) by one account on this device.
+ * Per account, not per device, so a brand new account on a phone that already ran the tour still gets it once.
+ * Written on finish()/skip() by the TutorialProvider in app/_layout.tsx, read by useDriverTutorialTrigger.
+ */
+export function driverTutorialSeenKey(userId: string): string {
+  return `trisakay_driver_tutorial_seen_at:${userId}`;
+}

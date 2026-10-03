@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSegments } from 'expo-router';
 import { useTutorial } from '@trisakay/ui';
-import { PASSENGER_TUTORIAL_SEEN_KEY } from '../constants/tutorial';
+import { passengerTutorialSeenKey } from '../constants/tutorial';
 import { useAuthStore } from '../store/useAuthStore';
 import { useConsentStore } from '../store/useConsentStore';
 
@@ -30,7 +30,7 @@ export function usePassengerTutorialTrigger() {
     if (attemptedForUserId.current === sessionUserId) return;
 
     attemptedForUserId.current = sessionUserId;
-    AsyncStorage.getItem(PASSENGER_TUTORIAL_SEEN_KEY)
+    AsyncStorage.getItem(passengerTutorialSeenKey(sessionUserId))
       .catch(() => null)
       .then((value) => {
         if (value === null) start();

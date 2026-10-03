@@ -14,7 +14,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
 import { ConnectionBanner, colors, fontFamily, PASSENGER_FINISHED_MESSAGE, PASSENGER_STEPS, PASSENGER_WELCOME_BODY, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
-import { PASSENGER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
+import { passengerTutorialSeenKey } from '../src/constants/tutorial';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { usePassengerTutorialNavigation } from '../src/hooks/usePassengerTutorialNavigation';
 import { usePassengerTutorialTrigger } from '../src/hooks/usePassengerTutorialTrigger';
@@ -386,7 +386,9 @@ function PassengerTutorialMount() {
 }
 
 function writePassengerTutorialSeen() {
-  void AsyncStorage.setItem(PASSENGER_TUTORIAL_SEEN_KEY, new Date().toISOString());
+  const userId = useAuthStore.getState().sessionUserId;
+  if (!userId) return;
+  void AsyncStorage.setItem(passengerTutorialSeenKey(userId), new Date().toISOString());
 }
 
 export default function RootLayout() {

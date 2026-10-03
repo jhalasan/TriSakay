@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useTutorial } from '@trisakay/ui';
-import { DRIVER_TUTORIAL_SEEN_KEY } from '../constants/tutorial';
+import { driverTutorialSeenKey } from '../constants/tutorial';
 import { useAuthStore } from '../store/useAuthStore';
 import { useRequestsStore } from '../store/useRequestsStore';
 import { useTripStore } from '../store/useTripStore';
@@ -34,7 +34,7 @@ export function useDriverTutorialTrigger() {
     if (attemptedForUserId.current === sessionUserId) return;
 
     attemptedForUserId.current = sessionUserId;
-    AsyncStorage.getItem(DRIVER_TUTORIAL_SEEN_KEY)
+    AsyncStorage.getItem(driverTutorialSeenKey(sessionUserId))
       .catch(() => null)
       .then((value) => {
         if (value === null) start();

@@ -15,7 +15,7 @@ import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-cont
 import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
 import { subscribeToTripTransactions } from '@trisakay/services/src/payments/index.ts';
 import { ConfirmModal, ConnectionBanner, colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
-import { DRIVER_TUTORIAL_SEEN_KEY } from '../src/constants/tutorial';
+import { driverTutorialSeenKey } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
 import { useChatNotifications } from '../src/hooks/useChatNotifications';
 import { useIncomingCalls } from '../src/hooks/useIncomingCalls';
@@ -488,7 +488,9 @@ function DriverTutorialMount() {
 }
 
 function writeDriverTutorialSeen() {
-  void AsyncStorage.setItem(DRIVER_TUTORIAL_SEEN_KEY, new Date().toISOString());
+  const userId = useAuthStore.getState().sessionUserId;
+  if (!userId) return;
+  void AsyncStorage.setItem(driverTutorialSeenKey(userId), new Date().toISOString());
 }
 
 export default function RootLayout() {
