@@ -41,7 +41,8 @@ function expiryBadge(days: number | null): { label: string; tone: BadgeTone } {
   if (days < 0) return { label: `Lapsed ${Math.abs(days)}d ago`, tone: 'danger' };
   if (days === 0) return { label: 'Expires today', tone: 'danger' };
   if (days <= 30) return { label: `Expires in ${days}d`, tone: 'warn' };
-  return { label: formatDate(new Date(Date.now() + days * 86_400_000).toISOString()), tone: 'neutral' };
+  // The exact date already sits under this badge in the table (and in the modal's MTOP Expiry row), so say what the date means instead of repeating it.
+  return { label: `Valid, ${days}d left`, tone: 'success' };
 }
 
 function matchesExpiryFilter(days: number | null, filter: ExpiryFilter): boolean {
