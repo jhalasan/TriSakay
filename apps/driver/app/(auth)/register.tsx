@@ -11,6 +11,7 @@ import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useConsentStore } from '../../src/store/useConsentStore';
 import { useDocumentsStore } from '../../src/store/useDocumentsStore';
+import { useVerificationStore } from '../../src/store/useVerificationStore';
 import { DISCLOSURES, PRIVACY_POLICY, TERMS_OF_SERVICE } from '../../src/content/legalCopy';
 import { DOCUMENT_TYPES } from '../../src/types/document';
 import { interpolate } from '../../src/utils/interpolate';
@@ -162,6 +163,12 @@ export default function RegisterScreen() {
       );
       return;
     }
+
+    // The gate already read this driver's status as 'unsubmitted' when the
+    // session appeared, before the upload above ran. Without a refresh it
+    // stays stale and routes the driver to the "Finish your registration"
+    // upload form even though the documents are already on file.
+    await useVerificationStore.getState().check();
 
     Alert.alert(t.driver.register.documentsSubmittedTitle, reviewNote);
   }

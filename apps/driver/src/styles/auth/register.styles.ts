@@ -26,7 +26,7 @@ export const styles = StyleSheet.create({
   stepSegmentActive: { backgroundColor: colors.accentBlue },
   scrollContent: { paddingHorizontal: spacing.xl, paddingTop: spacing.xl, paddingBottom: spacing.xxxl, gap: spacing.md },
   stepTwoBody: { flex: 1 },
-  scrollWrap: { flex: 1 },
+  scrollWrap: { flex: 1, paddingTop: spacing.sm },
   scrollArea: { flex: 1 },
   footer: {
     backgroundColor: colors.bg,

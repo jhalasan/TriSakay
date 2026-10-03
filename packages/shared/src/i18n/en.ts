@@ -1066,7 +1066,7 @@ export const en = {
       documentsSubmittedMessage:
         "Your documents are under review. We'll send you a text message or email once your account is approved to go online.",
       registeredButFailedTitle: 'Registered, but documents failed to upload',
-      registeredButFailedMessage: '{error}\n\nPlease try registering again so your documents are on file for review.',
+      registeredButFailedMessage: '{error}\n\nYour account is created. Upload your documents on the next screen so they are on file for review.',
       couldNotReadFile: 'Could not read one of your selected files.',
     },
     forgotPassword: {

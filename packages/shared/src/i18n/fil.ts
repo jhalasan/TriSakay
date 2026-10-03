@@ -1040,7 +1040,7 @@ export const fil: Translations = {
         'Sinusuri pa ang iyong mga dokumento. Magpapadala kami ng text o email kapag naaprubahan na ang iyong account para makapag-online.',
       registeredButFailedTitle: 'Narehistro ka na, pero hindi na-upload ang mga dokumento',
       registeredButFailedMessage:
-        '{error}\n\nPakisubukang magparehistro muli para masumite ang iyong mga dokumento para sa pagsusuri.',
+        '{error}\n\nNagawa na ang iyong account. I-upload ang iyong mga dokumento sa susunod na screen para masuri ang mga ito.',
       couldNotReadFile: 'Hindi mabasa ang isa sa iyong napiling file.',
     },
     forgotPassword: {

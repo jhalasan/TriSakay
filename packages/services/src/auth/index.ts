@@ -38,6 +38,12 @@ function translateSignUpError(message: string): string {
   if (/users_contact_no_unique/i.test(message)) {
     return 'This mobile number is already registered.';
   }
+  // Observed live: GoTrue hides the trigger's real error behind this generic
+  // text. The only data-driven way handle_new_auth_user() fails is a phone
+  // number another account already uses, so say that instead of the raw text.
+  if (/database error saving new user/i.test(message)) {
+    return 'We could not create your account. This mobile number may already be registered. Please check it or use a different one.';
+  }
   return message;
 }
 

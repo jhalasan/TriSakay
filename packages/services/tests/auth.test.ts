@@ -46,6 +46,18 @@ test('signUp sends first/last name, phone, and default role as signup metadata',
   });
 });
 
+test('signUp turns the generic trigger failure into a duplicate mobile number hint', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      signUp: async () => ({ data: { session: null }, error: { message: 'Database error saving new user' } }),
+    })
+  );
+
+  const result = await signUp({ firstName: 'Juan', lastName: 'Cruz', email: 'juan@example.com', phone: '09171234567', password: 'secret1' });
+
+  assert.match(result.error ?? '', /mobile number may already be registered/i);
+});
+
 test('signUp defaults role to passenger when omitted', async () => {
   let capturedArgs: any = null;
   __setSupabaseClientForTests(
