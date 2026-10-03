@@ -4,6 +4,8 @@
 **Type:** Undergraduate BSIT Capstone Project (academic prototype, not a production deployment)
 
 > **Status note:** All phases below reflect current decisions and are subject to change as data gathering with PSO, drivers, and passengers progresses. Revisit any section as needed — nothing here is final until validated by field data.
+>
+> **Refreshed 2026-10-03.** Sections 1–15 are the original plan and requirements; where later work changed them, an inline *(Updated 2026-10-03)* note was added. **Section 17 is the catch-up log of everything built or changed from 2026-09-15 to 2026-10-03** (UAT panel round 2, security hardening, chat, voice call, payments, MFA, domain). For the detailed per-item status, `docs/UAT_PANELIST_REVIEW_ADRALES.md` is the living tracker.
 
 ---
 
@@ -38,14 +40,16 @@ Three separate applications sharing one backend/database:
 | Driver app | React Native, Expo, TypeScript |
 | Admin app | React, Vite, TypeScript |
 | Backend | Supabase (PostgreSQL, Supabase Auth, Supabase Storage) |
-| Maps | OpenStreetMap + Leaflet |
+| Maps | **Google Maps** *(Updated 2026-10-03; was OpenStreetMap + Leaflet)* — `react-native-maps` (Google provider) in both mobile apps, `@vis.gl/react-google-maps` in the admin, Places/Routes search and routing through the `maps-proxy` edge function (falls back to Nominatim/straight line if Google fails) |
+| Email | Resend, from `receipts@trisakaygsc.org` (trip receipts) |
+| Voice call | Agora (`react-native-agora`), audio only, no phone numbers shared |
 | State management | Zustand |
 | Forms | React Hook Form |
 | Validation | Zod |
 | Localization | Custom i18n in `packages/shared/src/i18n` (English + Filipino), implements NFR-3 |
 | Payment | PayMongo — GCash channel, kept in Test Mode only (prototype scope, no Live Mode activation) |
-| Deployment — Passenger/Driver | EAS Build → Android + iOS, internal distribution only (EAS internal / TestFlight, no public store listing) |
-| Deployment — Admin | Vercel |
+| Deployment — Passenger/Driver | EAS Build → Android + iOS, internal distribution only (EAS internal / TestFlight, no public store listing). *(Updated 2026-10-03: in practice only Android APKs are built, via EAS `preview` profile (runtimeVersion `1.0.0`); JS-only fixes ship through EAS Update (OTA, branch `preview`); native changes need a rebuild. iOS is supported by the code but not released — it needs a paid Apple Developer account.)* |
+| Deployment — Admin | Vercel, at `https://admin.trisakaygsc.org` (domain `trisakaygsc.org`) |
 | Deployment — Backend | Supabase |
 
 **Repo structure (monorepo):**
@@ -118,7 +122,7 @@ Two matching moments, both governed by the same system-assisted route-corridor h
 - FR-2.6 Driver toggles availability (online/offline)
 - FR-2.7 Available driver(s) notified of incoming requests
 - FR-2.8 Driver accepts/declines requests
-- FR-2.9 Passenger views assigned driver/tricycle info post-acceptance (name, photo, tricycle plate/details — no in-app messaging or calling; contact between Passenger and Driver is out of scope)
+- FR-2.9 Passenger views assigned driver/tricycle info post-acceptance (name, photo, tricycle plate/details). *(Updated 2026-10-03: the original "no in-app messaging or calling" rule is **superseded** — in-app chat (Section 17.5) and in-app voice call (17.6) now exist; phone numbers are still never shown to either side, and there is no `tel:`/`sms:` fallback.)*
 - FR-2.10 Ride status tracked: requested → matched → ongoing → completed → cancelled
 - FR-2.11 Completed/cancelled rides logged to ride history
 - FR-2.12 *(New — replaces the earlier settlement-notice feature, see Section 11 item 2 and Section 16)* Driver views a peak-demand-hours chart (12 two-hour buckets, aggregated city-wide from completed rides, no per-ride or per-user data exposed) on the Earnings screen, to help decide when to go online. Backed by a SECURITY DEFINER aggregate function (`get_peak_hour_histogram`), the same pattern already used for the Dashboard's Accept-rate stat (`get_driver_accept_rate`).
@@ -296,7 +300,9 @@ Full actor-by-actor use case list and formal specifications (actor, precondition
 
 **Shared backend:** Supabase — Auth, PostgreSQL Database, Storage, Realtime, Edge Functions.
 
-**Edge Functions (kept minimal for feasibility):**
+> *(Updated 2026-10-03: "kept minimal" no longer holds. There are now 13 edge functions: `match-ride-request`, `paymongo-webhook`, `create-gcash-checkout`, `maps-proxy`, `nearby-driver-count`, `notify-drivers-new-request`, `notify-expiring-documents`, `notify-new-message`, `notify-incoming-call`, `call-token`, `send-receipt`, `admin-create-pso-user`, `admin-reset-mfa`. Many state changes also moved from direct table writes into SECURITY DEFINER RPCs. See Section 17.)*
+
+**Edge Functions (original two, kept minimal for feasibility):**
 1. `match-ride-request` — runs the bearing/detour matching heuristic server-side when a new request comes in or a driver's route changes; pushes results via Realtime.
 2. `paymongo-webhook` — receives PayMongo webhook events (test mode) server-side, verifies the webhook signature, updates transaction/ride status (payment success is never trusted from the client).
 
@@ -336,7 +342,7 @@ All other state changes (verification approval, complaint status, account suspen
 
 A low-fidelity wireframe kit (42 screens: Driver 14, Passenger 17, Admin 11) was reviewed against all locked phases. Required edits identified below. **Status tags added 2026-09-12**, re-verified directly against the current shipped code (not the wireframe kit itself, which no longer resembles any of the three apps after their full visual redesigns — see Section 16): ✅ confirmed built, ❌ genuinely still missing, ⚠️ plausible but not independently re-checked this pass.
 
-1. ✅ Remove **Call** and **Message** buttons (Driver Found screen, Active Trip screen) — no in-app messaging/calling feature exists anywhere in the codebase, confirmed.
+1. ~~Remove **Call** and **Message** buttons~~ — **superseded 2026-09-29/2026-10-01.** In-app chat and in-app voice call were added on purpose after the second panel review; both buttons now exist in both apps (Section 17.5, 17.6).
 2. ~~Rename **"Request payout"** to "Submit settlement request"~~ — **superseded 2026-09-12.** The settlement-notice button was removed entirely rather than kept and renamed: it was self-reported and unverifiable, and gated no account state (see the peak-hours FR-2.12 addition instead). The underlying `settlements` table/trigger are left in the database, unused, rather than dropped.
 3. ✅ Add role-based visibility: Verify/Suspend (Driver Management), Approve/Reject (Verification), Block/Unblock (Passenger Management) should only be visible to PSO Supervisor/Admin — PSO Staff sees View/Flag only. Confirmed via the shared `RoleGate` component/`min="supervisor"` pattern used consistently across Driver/Passenger Management, Verification, Discount Review, and Complaints mediation.
 4. ✅ Add a **"Confirm cash received"** step to the Driver's trip-completion flow for cash-method trips (see FR-9.9). Confirmed real (not mock) per `docs/DRIVER_TODO.MD`'s own verification notes.
@@ -409,3 +415,65 @@ This section tracks what's actually built, refreshed periodically — the phases
 - ~~Saved Places has no corresponding FR~~ — resolved 2026-09-12, see FR-2.13.
 - ~~The ERD diagram needs a pass to add `barangays`, `saved_places`, `user_consents`, `complaint_attachments`, `account_actions`~~ — resolved 2026-09-12; `docs/ERD.mmd` now also has `settlements` and `ride_request_declines`, both added post-ERD-lock too.
 - Section 11 (wireframe review) has been re-verified against current code as of 2026-09-12 (see the status tag on each item) — items 5's license hint is the one genuine remaining gap found. Sections 10, 12, 13 (data gaps, sequence diagrams, flowcharts) are unchanged design-intent documents, not re-verified this pass.
+
+---
+
+## 17. Changes since 2026-09-15 (catch-up log, written 2026-10-03)
+
+Source of truth for detail: git history, `supabase/migrations/`, and `docs/UAT_PANELIST_REVIEW_ADRALES.md`. This section is the orientation summary. Things not yet tested are marked as such, not presented as verified.
+
+### 17.1 UAT panel rounds and cheap fixes (2026-09-21 to 09-22)
+- First panel tracker (`UAT_PANELIST_REVIEW_OLAYBAL.md`) items closed: login/logout audit (`login_events`) and admin idle timeout, Ride Log screen, fare-change confirmation, barangay dependency check, password reuse block, self deactivation RPC, rating tags, per-document expiry for drivers (`driver_documents.expiry_date`), discount validity (`passenger_discounts.expires_at`), document-expiry notifications, complaint status history, masked passenger directory view, phone change needs password re-check, location toggle wired to real behaviour.
+- EAS Update (OTA) wired for both apps. Driver ride history brought to parity with passenger's.
+- Second panel review (Adrales, 2026-09-22, result *For UAT*) produced 14 recommendations plus team additions. Tracked with IDs G/P/D/PD/C/S/N, fixes F1–F6, loopholes L1–L18, audit items X0–X11, Y1–Y10, R1–R10 in `UAT_PANELIST_REVIEW_ADRALES.md`. Prep guide: `docs/UAT_PANEL_PREP.md`.
+
+### 17.2 Maps and domain (G1, G2)
+- Maps moved from OpenStreetMap/Leaflet to Google Maps (Maps SDK for Android via `react-native-maps`, admin via `@vis.gl/react-google-maps`). The `maps-proxy` edge function holds the server key, requires a user JWT, and limits each user to 60 searches and 20 routes per hour; geocoding and routing moved off Nominatim/OSRM, with a quiet fallback.
+- Android Maps key restrictions are package name plus signing SHA-1. EAS builds are signed with the EAS keystore, so that SHA-1 must be on the key. The key is read from `android/app/src/main/AndroidManifest.xml` (bare workflow), not from `app.config.js`.
+- Domain `trisakaygsc.org` bought. Admin live at `https://admin.trisakaygsc.org`; Supabase Auth URLs and the GCash return pages moved to it; Resend sending domain verified. The root domain still shows the registrar parking page. G3 (final screenshots) still to do.
+
+### 17.3 Security hardening (X0–X11, Y, R series)
+- **X0:** the live database was captured into `20260925120000_remote_schema_baseline.sql` so migrations match reality.
+- **X1–X6, X8–X11:** column-lock triggers and RPCs for users, `ride_requests` inserts, discounts, driver profiles, tricycles, driver documents and trips; suspension enforced across write paths (and banned in Auth); direct passenger cancel and direct driver claim removed in favour of RPCs.
+- **F-series:** F3 free-seat check in matching; F4 "driver arrived" (`arrived_at`, `mark_arrived`, within about 100 m); F5 receipt from the server record; F6 atomic `accept_ride_request`.
+- **Y/R/L items done:** one active ride per passenger even under races (Y8); start/complete location and time gates (Y1); expired documents block going online and accepting (Y9); complaint and SOS insert locks (Y4/Y5); admin driver directory without private columns (Y6); far drop-off flag (`fare_flagged`, Y10); ghost-driver offline cron (R1); GPS integrity and mocked-location rejection (R3, L3); phone number normalisation (R8); Manila time zone fixes (R9); batch hardening (R10).
+- The notification shared secret that was committed in source was rotated (2026-09-24). Purging it from git history is still pending. The repo is public, so treat the old value as leaked.
+
+### 17.4 Ride flow features (D1, D2, PD1, PD2)
+- **Cancellation policy (PD1/PD2):** passenger cancel is free while `pending`, needs a reason and counts as a strike once `assigned`, and is blocked while `ongoing`. 3 strikes in 168 hours gives a 24 hour booking cooldown; more than 5 cancels while searching in 60 minutes gives a 30 minute pause; all numbers live in `system_settings`. Driver cancel after accepting counts as a strike except passenger no show (5 minutes after `arrived_at`, driver within about 100 m) and transfers. Repeat driver strikes flag the driver for PSO review (no auto suspension). RPCs `cancel_ride_request` and `cancel_ride_leg` set `cancelled_by` and `cancel_reason_code`. Stale pending requests are cancelled by the system at 15 minutes. Not built: L1 confirm handshake, L18 seat adjust at pickup.
+- **Driver transfer (D1):** a driver can invite up to 3 nearby drivers with free seats; first to accept wins; invites expire in 30 seconds; the ride can be released to the pool; the passenger rates both drivers; table `ride_transfers`. Some UI and verification pieces were deferred (see tracker).
+- **Nearest next stop (D2):** the driver's passenger list sorts by distance to each passenger's next stop, with transfer and overdue priorities and a 150 m no jump rule.
+- **Fare precision:** distance is rounded to 2 decimals when quoted and stored (fixed a quoted vs charged mismatch of 15 vs 16 pesos, 2026-10-01).
+
+### 17.5 In-app chat (C1) and PSO case view (S1 slice)
+- Table `ride_messages`, two party RLS (passenger and the ride's current driver), sending only while the ride is `assigned` or `ongoing`, then read only. Free text, fixed quick replies (stored as codes so both languages render), read receipts, typing indicator, photo sharing (EXIF stripped, private `ride-chat` bucket, signed URLs), phone number masking, 20 messages per minute limit, "Report message" into the complaints flow, push through `notify-new-message`.
+- PSO can open a ride's chat thread only with a reason, which is logged (`ride_message_view_log`). The rest of S1 (route trail, legal hold, timeline, map case view) is not built. No retention job yet.
+- Both buttons now read just **Message** (unread count as a badge). A "lost connection" banner clears when the realtime channel recovers.
+- Known gap: a full two device live test of chat has not been run.
+
+### 17.6 In-app voice call (C2)
+- Agora audio only. Table `ride_calls`, functions to start, answer, decline and end, a pg_cron job that expires unanswered calls, edge functions `call-token` and `notify-incoming-call`. Call buttons are on in both apps (`features.rideCall`). Calls are only possible while the ride is active; nothing is recorded; no phone numbers shared.
+- **Not yet tested with two phones.** Known limits: Android push rings once (no looping ringtone), no lock screen call screen, no missed call notification, no PSO call log, no iOS.
+
+### 17.7 Payments (PAY1, PAY2) and email receipts (P1)
+- **Payment settlement:** the driver can request GCash payment, switch to cash, and complete the ride only once paid; the passenger pays when requested, can switch to cash, and a passenger with an unpaid completed ride is blocked from booking until settled (applied live 2026-10-01). Checkout verifies with PayMongo; the webhook ignores rows that were switched to cash. Still PayMongo test mode only.
+- **Email receipts:** opt in switch (`users.email_receipts`, default off), an automatic email when a ride completes, and an "Email me this receipt" button. Function `send-receipt` (Resend), log table `receipt_emails`, one automatic send per ride, manual limits 3 per ride and 20 per day.
+
+### 17.8 Account management and MFA (AM1)
+- One Account screen per app with masked email and phone, a working Change password (checks the current password, signs out other devices), a signed in devices list, reversible deactivation (Reactivate on the suspended screen), and optional MFA for passengers and drivers.
+- MFA is **required** for admin and PSO staff; the database gate is switched on (applied live 2026-10-01). `admin-reset-mfa` lets an admin reset another staff member's MFA; `admin-create-pso-user` requires an MFA verified session.
+
+### 17.9 Complaints and admin
+- Complaint ownership: PSO staff claim, assign, accept, decline or release a complaint with an append only handoff history; staff are limited to complaints they own; the department head directive is required before mediation scheduling; a "Handled by" step list shows the chain.
+- Admin also got the PSO chat case view, Audit Log tabs, a PSO Sessions modal, and payment return pages. Updated draw.io diagrams are in `docs/` (use case, ERD, DFD level 1, context, and activity diagrams for chat, complaint, driver verification, SOS, payment, ride request, transfer, voice call). Note: `docs/ERD.mmd` was not refreshed; `docs/erd.drawio` is the current one.
+
+### 17.10 App UX work
+- Driver app redesigned (Dashboard, History, Earnings, Active trip); driver registration is now 3 steps (account, documents, terms and privacy) with a smaller header; passenger Complaints, trip records, ratings, documents, safety and account screens redesigned; collapsible ride card with a live follow the vehicle map; driver in app navigation; password strength bar; help tips under every text field (G4); small screen and keyboard fixes.
+- Tutorials and first run flow handoffs live in `docs/design_handoff_*`.
+
+### 17.11 Open items (as of 2026-10-03)
+- Two phone live tests: chat and voice call. Re-check the driver map on the EAS build after any key change.
+- Purge the old leaked secret from git history; G3 screenshots; G5 scope note; P2, P3, PD3, PD4 survey and literature docs.
+- Not built: S1 route trail and legal hold, N1 status push notifications, N2 PSO cancellation charts, N3 share my trip, L1 and L18, chat retention job.
+- Stated limitation still true: the hard cluster filter (FR-2.5) has not been exercised, and the pilot area is one cluster (Melting Pot).
+- Pending local git work: commits on `main` not yet pushed (pushed through GitHub Desktop), a staged `eas.json` and an untracked `app.json` in the repo root that Claude did not create, and `shot_phone.png` to delete.
