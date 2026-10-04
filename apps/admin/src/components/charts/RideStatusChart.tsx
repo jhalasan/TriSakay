@@ -16,7 +16,7 @@ const STATUS_LABEL: Record<RideStatusCount['status'], string> = {
   completed: 'Completed',
   ongoing: 'Ongoing',
   assigned: 'Assigned',
-  pending: 'Waiting for driver',
+  pending: 'Waiting',
   cancelled: 'Cancelled',
 };
 
@@ -52,6 +52,9 @@ export function RideStatusChart({ data, loading = false }: RideStatusChartProps)
               ))}
             </Pie>
             <Tooltip
+              // Drawn above the total in the middle of the ring, and kept clear of the cursor.
+              wrapperStyle={{ zIndex: 10 }}
+              offset={16}
               contentStyle={{ background: TOOLTIP_BG, border: `1px solid ${TOOLTIP_BORDER}`, borderRadius: 8, fontSize: 12 }}
               formatter={(value, name) => (typeof value === 'number' ? [`${value} rides`, STATUS_LABEL[name as RideStatusCount['status']] ?? titleCaseLabel(String(name ?? ''))] : null)}
             />

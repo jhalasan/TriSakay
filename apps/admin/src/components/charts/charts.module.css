@@ -10,7 +10,7 @@
 .donutRow {
   display: flex;
   align-items: center;
-  gap: var(--sp-xl);
+  gap: var(--sp-lg);
   padding: var(--sp-md) 0;
 }
 
@@ -55,6 +55,7 @@
   flex-direction: column;
   gap: var(--sp-sm);
   flex: 1;
+  min-width: 0; /* lets the labels shrink inside a narrow card instead of pushing the counts out of view */
 }
 
 .donutLegendRow {
@@ -74,6 +75,8 @@
 
 .donutLegendLabel {
   flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
 }
 
 .donutLegendCount {
