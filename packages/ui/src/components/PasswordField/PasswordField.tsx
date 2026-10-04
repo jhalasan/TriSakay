@@ -12,6 +12,12 @@ export interface PasswordFieldProps {
   showLabel: string;
   hideLabel: string;
   autoComplete?: 'password' | 'new-password' | 'current-password';
+  /**
+   * Keeps the phone's password manager out of this field. A screen with several password fields that
+   * carry different autofill hints (current + new) can make Android's autofill move focus between them
+   * every time one is tapped, so the change password screens turn it off.
+   */
+  disableAutofill?: boolean;
 }
 
 /** A masked field with an eye toggle, styled as the handoff's resting (1px line) / focused (1.5px navy) input. */
@@ -24,6 +30,7 @@ export function PasswordField({
   showLabel,
   hideLabel,
   autoComplete = 'password',
+  disableAutofill = false,
 }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const [focused, setFocused] = useState(false);
@@ -40,7 +47,9 @@ export function PasswordField({
           secureTextEntry={!visible}
           autoCapitalize="none"
           autoCorrect={false}
-          autoComplete={autoComplete}
+          autoComplete={disableAutofill ? 'off' : autoComplete}
+          importantForAutofill={disableAutofill ? 'no' : 'auto'}
+          textContentType={disableAutofill ? 'none' : undefined}
           accessibilityLabel={label}
           onFocus={() => setFocused(true)}
           onBlur={() => setFocused(false)}

@@ -66,6 +66,7 @@ export default function ChangePasswordScreen() {
             showLabel={c.showPasswordA11y}
             hideLabel={c.hidePasswordA11y}
             autoComplete="current-password"
+            disableAutofill
           />
           <PasswordField
             label={c.newPassword}
@@ -75,6 +76,7 @@ export default function ChangePasswordScreen() {
             showLabel={c.showPasswordA11y}
             hideLabel={c.hidePasswordA11y}
             autoComplete="new-password"
+            disableAutofill
           />
           <PasswordStrengthMeter rules={rules} labels={{ weak: c.strengthWeak, fair: c.strengthFair, strong: c.strengthStrong }} />
           <PasswordField
@@ -86,6 +88,7 @@ export default function ChangePasswordScreen() {
             showLabel={c.showPasswordA11y}
             hideLabel={c.hidePasswordA11y}
             autoComplete="new-password"
+            disableAutofill
           />
         </ScrollView>
 
