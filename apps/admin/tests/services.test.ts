@@ -456,9 +456,11 @@ test('reports service resolves a transaction list', async () => {
         return {
           select: () => ({
             gte: () => ({
-              order: async () => ({
-                data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'paid', created_at: '2026-08-05T07:00:00.000Z' }],
-                error: null,
+              order: () => ({
+                limit: async () => ({
+                  data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'paid', created_at: '2026-08-05T07:00:00.000Z' }],
+                  error: null,
+                }),
               }),
             }),
           }),

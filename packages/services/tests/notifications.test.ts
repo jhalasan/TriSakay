@@ -117,7 +117,7 @@ interface FakeChannel {
 }
 
 test('subscribeToNotifications filters on user_id and reconciles on SUBSCRIBED', async () => {
-  let capturedChannelName: string | null = null;
+  let capturedChannelName = null as string | null;
   let capturedOnArgs: any = null;
   const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
   const fakeChannel: FakeChannel = {

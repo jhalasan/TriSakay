@@ -516,7 +516,7 @@ test('subscribeToRideRequestStatus calls onRecovered when the channel re-subscri
 // R6 (existing-system audit): the driver previously had no live signal when
 // a passenger cancelled mid-trip.
 test('subscribeToTripRideRequests filters on trip_id and calls onChange on SUBSCRIBED and on every UPDATE', async () => {
-  let capturedChannelName: string | null = null;
+  let capturedChannelName = null as string | null;
   let capturedArgs: any = null;
   let removedChannel: unknown = null;
   // Wrapped in an object, not bare `let`s — same reasoning as
@@ -741,7 +741,7 @@ test('declineRideRequest surfaces a Postgres error', async () => {
 });
 
 test('subscribeToPendingRideRequests invokes match-ride-request with driverId on SUBSCRIBED and on every change event', async () => {
-  let capturedChannelName: string | null = null;
+  let capturedChannelName = null as string | null;
   let capturedOnArgs: any = null;
   let capturedChangeHandler: (() => void) | null = null;
   // Wrapped in an object, not a bare `let`: a closure-assigned `let` gets

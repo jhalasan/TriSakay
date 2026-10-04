@@ -141,7 +141,7 @@ test('createGcashCheckout surfaces an application-level error returned in the pa
 });
 
 test('subscribeToTransactionStatus subscribes to the right channel/filter and reconciles on SUBSCRIBED', async () => {
-  let capturedChannelName: string | null = null;
+  let capturedChannelName = null as string | null;
   let capturedOnArgs: any = null;
   const captured: { statusCallback: ((status: string) => void) | null } = { statusCallback: null };
   const received: { id: string; status: string }[] = [];
