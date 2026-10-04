@@ -103,7 +103,7 @@ const TRIAGE_STATUSES: { label: string; value: ComplaintStatus }[] = ALL_STATUSE
  * would be a behaviour change beyond a restyle â€” README Â§4 flags this rule
  * as still unconfirmed with the team.
  */
-/** Which staff step happened, by whom and when — only steps that have happened. */
+/** Which staff step happened, by whom and when â€” only steps that have happened. */
 function handlerSteps(c: ComplaintRow): { label: string; name: string | null; at: string }[] {
   const steps = [
     { label: 'Triaged', name: c.triagedByName, at: c.triagedAt },
@@ -125,7 +125,7 @@ function handoffText(h: ComplaintAssignmentRow): string {
     : h.kind === 'accepted' ? `${by} accepted it`
     : h.kind === 'declined' ? `${by} declined it`
     : `${by} released it`;
-  return h.note ? `${verb} — “${h.note}”` : verb;
+  return h.note ? `${verb} â€” â€œ${h.note}â€` : verb;
 }
 
 export function Complaints() {
@@ -523,7 +523,7 @@ export function Complaints() {
                       value={assigneeDraft}
                       onChange={(e) => setAssigneeDraft(e.target.value)}
                       options={[
-                        { label: 'Assign to…', value: '' },
+                        { label: 'Assign toâ€¦', value: '' },
                         ...psoStaff
                           .filter((u) => u.id !== selected.assignedToId)
                           .map((u) => ({ label: `${u.fullName} (${ROLE_LABEL[u.role] ?? u.role})`, value: u.id })),
@@ -567,7 +567,7 @@ export function Complaints() {
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
                       {assignments.map((h) => (
                         <div key={h.id}>
-                          <span style={{ color: 'var(--ink-faint)' }}>{formatDate(h.createdAt)}</span> · {handoffText(h)}
+                          <span style={{ color: 'var(--ink-faint)' }}>{formatDate(h.createdAt)}</span> Â· {handoffText(h)}
                         </div>
                       ))}
                     </div>
@@ -581,7 +581,7 @@ export function Complaints() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 4, fontSize: 12 }}>
                     {handlerSteps(selected).map((step) => (
                       <div key={step.label}>
-                        <span style={{ color: 'var(--ink-faint)' }}>{step.label}:</span> {step.name ?? 'Unknown'} · {formatDate(step.at)}
+                        <span style={{ color: 'var(--ink-faint)' }}>{step.label}:</span> {step.name ?? 'Unknown'} Â· {formatDate(step.at)}
                       </div>
                     ))}
                   </div>

@@ -9,6 +9,8 @@
   font-weight: 500;
   cursor: pointer;
   white-space: nowrap;
+  /* Inside a column flex or grid parent an inline-flex box would stretch to the full row; .fullWidth below still wins. */
+  width: fit-content;
   transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
 }
 

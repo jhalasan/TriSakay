@@ -11,6 +11,8 @@
   background: var(--fill);
   white-space: nowrap;
   line-height: 1.6;
+  /* Inside a column flex or grid parent an inline-flex box would stretch to the full row. */
+  width: fit-content;
 }
 
 .neutral {

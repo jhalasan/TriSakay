@@ -18,7 +18,7 @@ export interface AdminComplaintRow {
   mediationLocation: string | null;
   resolutionNotes: string | null;
   createdAt: string;
-  /** Who acted at each step, and when — null until that step happens. */
+  /** Who acted at each step, and when â€” null until that step happens. */
   triagedByName: string | null;
   triagedAt: string | null;
   dhReviewedByName: string | null;
@@ -240,7 +240,7 @@ export async function recordComplaintResolutionForAdmin(
   return { error: error?.message ?? null };
 }
 
-/** Complaint ownership (docs/superpowers/specs/2026-10-01-complaint-ownership-design.md) — every change goes through an RPC, never a direct update. */
+/** Complaint ownership (docs/superpowers/specs/2026-10-01-complaint-ownership-design.md) â€” every change goes through an RPC, never a direct update. */
 export async function claimComplaintForAdmin(id: string): Promise<AdminComplaintWriteResult> {
   const { error } = await getSupabaseClient().rpc('claim_complaint', { p_complaint_id: id });
   return { error: error?.message ?? null };

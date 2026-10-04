@@ -33,7 +33,7 @@ interface ComplaintsState {
   assignments: ComplaintAssignmentRow[];
   assignmentsLoading: boolean;
   psoStaff: PsoStaffRow[];
-  /** 'all' (default), 'mine' (owned by me) or 'unassigned' — filters the list in Complaints.tsx. */
+  /** 'all' (default), 'mine' (owned by me) or 'unassigned' â€” filters the list in Complaints.tsx. */
   ownerFilter: 'all' | 'mine' | 'unassigned';
   setOwnerFilter: (value: ComplaintsState['ownerFilter']) => void;
   /** Ownership actions: each refetches the list and the open complaint's handoff history on success. */

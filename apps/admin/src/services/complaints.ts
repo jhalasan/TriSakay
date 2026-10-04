@@ -102,7 +102,7 @@ export async function recordComplaintResolution(
   return { data: null, error };
 }
 
-/** Complaint ownership — claim, assign (S+), accept, decline, release; see supabase/migrations/20261001000004. */
+/** Complaint ownership â€” claim, assign (S+), accept, decline, release; see supabase/migrations/20261001000004. */
 export async function claimComplaint(id: string): Promise<ServiceResult<null>> {
   const { error } = await claimComplaintForAdmin(id);
   return { data: null, error };
