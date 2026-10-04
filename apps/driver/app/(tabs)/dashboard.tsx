@@ -22,7 +22,7 @@ import { useRequestsStore } from '../../src/store/useRequestsStore';
 import { useSettingsStore } from '../../src/store/useSettingsStore';
 import { useTripStore } from '../../src/store/useTripStore';
 import { CLUSTER_LABEL } from '../../src/utils/cluster';
-import { formatCurrency } from '../../src/utils/currency';
+import { formatAmount, formatCurrency } from '../../src/utils/currency';
 import { interpolate } from '../../src/utils/interpolate';
 import type { TripHistoryItem } from '../../src/types/history';
 import { styles } from '../../src/styles/tabs/dashboard.styles';
@@ -320,9 +320,9 @@ export default function DashboardScreen() {
                     <Text style={styles.goalText}>
                       {goalReached
                         ? t.driver.dashboard.goalReached
-                        : interpolate(t.driver.dashboard.goalToGo, { amount: formatCurrency(dailyGoal! - todayEarnings) })}
+                        : interpolate(t.driver.dashboard.goalToGo, { amount: formatAmount(dailyGoal! - todayEarnings) })}
                     </Text>
-                    <Text style={styles.goalText}>{interpolate(t.driver.dashboard.goalLabel, { amount: formatCurrency(dailyGoal!) })}</Text>
+                    <Text style={styles.goalText}>{interpolate(t.driver.dashboard.goalLabel, { amount: dailyGoal!.toLocaleString('en-PH') })}</Text>
                   </View>
                 </View>
               )}

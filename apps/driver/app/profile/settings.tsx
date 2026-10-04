@@ -9,7 +9,6 @@ import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { useAuthStore } from '../../src/store/useAuthStore';
 import { useSettingsStore, type SettingsLanguage } from '../../src/store/useSettingsStore';
-import { formatCurrency } from '../../src/utils/currency';
 import { interpolate } from '../../src/utils/interpolate';
 import { styles } from '../../src/styles/profile/settings.styles';
 
@@ -174,7 +173,7 @@ export default function SettingsScreen() {
                   <Text style={styles.rowLabel}>{t.driver.settings.dailyGoalLabel}</Text>
                   <Text style={styles.rowSublabel} numberOfLines={1}>
                     {dailyGoal !== null
-                      ? interpolate(t.driver.settings.dailyGoalSubtitleSet, { amount: formatCurrency(dailyGoal) })
+                      ? interpolate(t.driver.settings.dailyGoalSubtitleSet, { amount: dailyGoal.toLocaleString('en-PH') })
                       : t.driver.settings.dailyGoalSubtitleUnset}
                   </Text>
                 </View>
