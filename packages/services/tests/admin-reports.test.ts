@@ -3,337 +3,190 @@ import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { getAdminReportSummary, getPeakHourHistogram, getRidesRevenueOverTime, listTransactionsForAdmin } from '../src/admin/reports.ts';
 
-/**
- * R9 (existing-system audit): the peak-hour/day bucketing is now pinned to
- * Asia/Manila regardless of which timezone the test runner's machine is in
- * (CI is typically UTC) — so fixtures must be built as the UTC instant that
- * corresponds to a given Manila wall-clock hour, not the runner's own local
- * time. Manila has no DST (fixed UTC+8 year-round), so this is a plain
- * 8-hour offset from "today in Manila", not a real timezone conversion.
- */
-function todayInManila(): { year: number; month: number; day: number } {
-  const [year, month, day] = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' }).split('-').map(Number);
-  return { year, month, day };
-}
+type RpcCall = { fn: string; args: unknown };
 
-function manilaTimeIso(hour: number, minute = 0, dayOffset = 0): string {
-  const { year, month, day } = todayInManila();
-  return new Date(Date.UTC(year, month - 1, day + dayOffset, hour - 8, minute, 0, 0)).toISOString();
-}
-
-function todayAt(hour: number, minute = 0): string {
-  return manilaTimeIso(hour, minute);
-}
-
-test('getAdminReportSummary sums paid revenue, counts completed rides, and picks the busiest 2-hour window', async () => {
+function fakeRpc(handlers: Record<string, (args: any) => { data: unknown; error: { message: string } | null }>, calls: RpcCall[] = []) {
   __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            eq: () => ({
-              gte: async () => ({
-                data: [{ requested_at: todayAt(6, 15) }, { requested_at: todayAt(7, 40) }, { requested_at: todayAt(14, 0) }],
-                error: null,
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === 'transactions') {
-        return {
-          select: () => ({
-            eq: () => ({ gte: async () => ({ data: [{ amount: '18.00' }, { amount: '24.50' }], error: null }) }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
+    rpc: async (fn: string, args: unknown) => {
+      calls.push({ fn, args });
+      const handler = handlers[fn];
+      if (!handler) throw new Error(`unexpected rpc ${fn}`);
+      return handler(args);
     },
   } as any);
+  return calls;
+}
+
+const PEAK_6_TO_8 = Array.from({ length: 12 }, (_, i) => ({ bucket_index: i, bucket_count: i === 3 ? 2 : i === 7 ? 1 : 0 }));
+
+test('getAdminReportSummary reads the completed-ride totals from the database and names the busiest 2-hour window', async () => {
+  const calls = fakeRpc({
+    admin_report_summary: () => ({ data: [{ total_rides: 30, total_revenue: '630.00', average_fare: '21.00' }], error: null }),
+    get_peak_hour_histogram: () => ({ data: PEAK_6_TO_8, error: null }),
+  });
 
   const { data, error } = await getAdminReportSummary('2026-08-01T00:00:00.000Z');
+
   assert.equal(error, null);
-  assert.equal(data.totalRides, 3);
-  assert.equal(data.totalRevenue, 42.5);
-  assert.equal(Math.round(data.averageFare * 100) / 100, 14.17);
-  // Two of three rides fall in the 6:00 AM–8:00 AM Manila window (6:15, 7:40).
+  assert.equal(data.totalRides, 30);
+  assert.equal(data.totalRevenue, 630);
+  // The average comes from the same completed rides as the revenue, so 630 / 30.
+  assert.equal(data.averageFare, 21);
+  // Bucket 3 is 6:00–8:00 AM and holds the most rides.
   assert.equal(data.peakHourLabel, '6:00 AM–8:00 AM');
+  assert.deepEqual(calls.find((c) => c.fn === 'admin_report_summary')?.args, { p_since: '2026-08-01T00:00:00.000Z' });
 });
 
-test('getAdminReportSummary applies an upper bound too when untilIso is given (the previous-period comparison window)', async () => {
-  let capturedRideBound: string | undefined;
-  let capturedTxnBound: string | undefined;
-
-  __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            eq: () => ({
-              gte: () => ({
-                lt: async (_col: string, bound: string) => {
-                  capturedRideBound = bound;
-                  return { data: [{ requested_at: todayAt(9, 0) }], error: null };
-                },
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === 'transactions') {
-        return {
-          select: () => ({
-            eq: () => ({
-              gte: () => ({
-                lt: async (_col: string, bound: string) => {
-                  capturedTxnBound = bound;
-                  return { data: [{ amount: '30.00' }], error: null };
-                },
-              }),
-            }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any);
+test('getAdminReportSummary passes the upper bound and skips the peak-hour call for the previous-period window', async () => {
+  const calls = fakeRpc({
+    admin_report_summary: () => ({ data: [{ total_rides: 4, total_revenue: '60.00', average_fare: '15.00' }], error: null }),
+  });
 
   const { data, error } = await getAdminReportSummary('2026-07-01T00:00:00.000Z', '2026-08-01T00:00:00.000Z');
+
   assert.equal(error, null);
-  assert.equal(data.totalRides, 1);
-  assert.equal(data.totalRevenue, 30);
-  assert.equal(capturedRideBound, '2026-08-01T00:00:00.000Z');
-  assert.equal(capturedTxnBound, '2026-08-01T00:00:00.000Z');
+  assert.equal(data.totalRides, 4);
+  assert.equal(data.peakHourLabel, '—');
+  assert.deepEqual(calls.map((c) => c.fn), ['admin_report_summary']);
+  assert.deepEqual(calls[0].args, { p_since: '2026-07-01T00:00:00.000Z', p_until: '2026-08-01T00:00:00.000Z' });
 });
 
-test('getAdminReportSummary degrades to a 0/— summary (not an error) when there are no rides in range', async () => {
-  __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') return { select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) };
-      if (table === 'transactions') return { select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) };
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any);
+test('getAdminReportSummary degrades to a 0/— summary (not an error) when there are no completed rides', async () => {
+  fakeRpc({
+    admin_report_summary: () => ({ data: [{ total_rides: 0, total_revenue: '0', average_fare: '0' }], error: null }),
+    get_peak_hour_histogram: () => ({ data: PEAK_6_TO_8.map((b) => ({ ...b, bucket_count: 0 })), error: null }),
+  });
 
   const { data, error } = await getAdminReportSummary('2026-08-01T00:00:00.000Z');
   assert.equal(error, null);
   assert.deepEqual(data, { totalRides: 0, totalRevenue: 0, averageFare: 0, peakHourLabel: '—' });
 });
 
-test('getAdminReportSummary returns an error summary when the rides query fails', async () => {
-  __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
-  } as any);
+test('getAdminReportSummary returns an error summary when the totals call fails', async () => {
+  fakeRpc({
+    admin_report_summary: () => ({ data: null, error: { message: 'Not allowed' } }),
+    get_peak_hour_histogram: () => ({ data: [], error: null }),
+  });
 
-  const { error } = await getAdminReportSummary('2026-08-01T00:00:00.000Z');
-  assert.equal(error, 'connection refused');
+  const { data, error } = await getAdminReportSummary('2026-08-01T00:00:00.000Z');
+  assert.equal(error, 'Not allowed');
+  assert.deepEqual(data, { totalRides: 0, totalRevenue: 0, averageFare: 0, peakHourLabel: '—' });
 });
 
-test('listTransactionsForAdmin resolves passenger + driver names through the ride_requests -> trips -> users chain', async () => {
-  __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'transactions') {
-        return {
-          select: () => ({
-            gte: () => ({
-              order: () => ({
-                limit: async () => ({
-                  data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'paid', created_at: '2026-08-05T07:40:00.000Z' }],
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === 'ride_requests') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'rr1', passenger_id: 'p1', trip_id: 'trip1' }], error: null }) }) };
-      }
-      if (table === 'trips') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'trip1', driver_id: 'd1' }], error: null }) }) };
-      }
-      if (table === 'users') {
-        return {
-          select: () => ({
-            in: async () => ({
-              data: [
-                { id: 'p1', full_name: 'Maria Fe Santos' },
-                { id: 'd1', full_name: 'Ronnie Bautista' },
-              ],
-              error: null,
-            }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any);
+test('getPeakHourHistogram returns 12 two-hour buckets and labels each one', async () => {
+  fakeRpc({ get_peak_hour_histogram: () => ({ data: PEAK_6_TO_8, error: null }) });
 
-  const { data, error, truncated } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
+  const { data, error } = await getPeakHourHistogram('2026-08-01T00:00:00.000Z');
+
   assert.equal(error, null);
-  assert.equal(truncated, false);
+  assert.equal(data.length, 12);
+  assert.deepEqual(data[0], { hourLabel: '12:00 AM–2:00 AM', count: 0 });
+  assert.deepEqual(data[3], { hourLabel: '6:00 AM–8:00 AM', count: 2 });
+  assert.deepEqual(data[11], { hourLabel: '10:00 PM–12:00 AM', count: 0 });
+});
+
+test('getPeakHourHistogram returns { data: [], error } when the call fails', async () => {
+  fakeRpc({ get_peak_hour_histogram: () => ({ data: null, error: { message: 'boom' } }) });
+
+  const { data, error } = await getPeakHourHistogram('2026-08-01T00:00:00.000Z');
+  assert.deepEqual(data, []);
+  assert.equal(error, 'boom');
+});
+
+test('getRidesRevenueOverTime maps the per-day rows from the database, oldest first', async () => {
+  fakeRpc({
+    admin_rides_revenue_daily: () => ({
+      data: [
+        { day: '2026-10-02', rides: 3, revenue: '46.00' },
+        { day: '2026-10-03', rides: 6, revenue: '165.00' },
+      ],
+      error: null,
+    }),
+  });
+
+  const { data, error } = await getRidesRevenueOverTime('2026-10-01T00:00:00.000Z');
+
+  assert.equal(error, null);
   assert.deepEqual(data, [
-    {
-      id: 'txn1',
-      rideRequestId: 'rr1',
-      passengerName: 'Maria Fe Santos',
-      driverName: 'Ronnie Bautista',
-      amount: 18,
-      method: 'cash',
-      status: 'paid',
-      createdAt: '2026-08-05T07:40:00.000Z',
-    },
+    { day: 'Oct 2', rides: 3, revenue: 46 },
+    { day: 'Oct 3', rides: 6, revenue: 165 },
   ]);
 });
 
-test('listTransactionsForAdmin degrades driverName to "—" for a ride cancelled before a trip existed, without dropping the transaction', async () => {
-  __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'transactions') {
-        return {
-          select: () => ({
-            gte: () => ({
-              order: () => ({
-                limit: async () => ({
-                  data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'refunded', created_at: '2026-08-05T07:40:00.000Z' }],
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === 'ride_requests') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'rr1', passenger_id: 'p1', trip_id: null }], error: null }) }) };
-      }
-      if (table === 'users') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'p1', full_name: 'Maria Fe Santos' }], error: null }) }) };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any);
+test('getRidesRevenueOverTime returns { data: [], error } when the call fails', async () => {
+  fakeRpc({ admin_rides_revenue_daily: () => ({ data: null, error: { message: 'boom' } }) });
 
-  const { data, error } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
-  assert.equal(error, null);
-  assert.equal(data[0].driverName, '—');
+  const { data, error } = await getRidesRevenueOverTime('2026-10-01T00:00:00.000Z');
+  assert.deepEqual(data, []);
+  assert.equal(error, 'boom');
 });
 
-test('listTransactionsForAdmin returns an empty list without further queries when there are no transactions in range', async () => {
-  __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'transactions') return { select: () => ({ gte: () => ({ order: () => ({ limit: async () => ({ data: [], error: null }) }) }) }) };
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any);
+function txnRow(i: number, overrides: Record<string, unknown> = {}) {
+  return {
+    id: `t${i}`,
+    ride_request_id: `r${i}`,
+    passenger_name: 'Ana Reyes',
+    driver_name: 'Juan Dela Cruz',
+    amount: '18.00',
+    method: 'cash',
+    status: 'paid',
+    ride_status: 'completed',
+    created_at: '2026-10-03T01:00:00.000Z',
+    ...overrides,
+  };
+}
 
-  const { data, error, truncated } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
-  assert.deepEqual(data, []);
+test('listTransactionsForAdmin maps the joined rows and keeps the ride status next to the payment', async () => {
+  const calls = fakeRpc({
+    admin_list_transactions: () => ({
+      data: [txnRow(1), txnRow(2, { status: 'paid', ride_status: 'cancelled', amount: '15.00' })],
+      error: null,
+    }),
+  });
+
+  const { data, error, truncated } = await listTransactionsForAdmin('2026-10-01T00:00:00.000Z');
+
   assert.equal(error, null);
   assert.equal(truncated, false);
+  assert.deepEqual(calls[0], { fn: 'admin_list_transactions', args: { p_since: '2026-10-01T00:00:00.000Z' } });
+  assert.deepEqual(data[0], {
+    id: 't1',
+    rideRequestId: 'r1',
+    passengerName: 'Ana Reyes',
+    driverName: 'Juan Dela Cruz',
+    amount: 18,
+    method: 'cash',
+    status: 'paid',
+    rideStatus: 'completed',
+    createdAt: '2026-10-03T01:00:00.000Z',
+  });
+  // A paid payment on a cancelled ride is still listed, but flagged by its ride status.
+  assert.equal(data[1].rideStatus, 'cancelled');
+  assert.equal(data[1].amount, 15);
 });
 
-test('listTransactionsForAdmin reports truncated when the row cap is hit', async () => {
-  const cappedRow = { id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash' as const, status: 'paid' as const, created_at: '2026-08-05T07:40:00.000Z' };
-  const capped = Array.from({ length: 2000 }, (_, i) => ({ ...cappedRow, id: `txn${i}` }));
+test('listTransactionsForAdmin shows "—" for a missing driver or passenger name instead of dropping the payment', async () => {
+  fakeRpc({ admin_list_transactions: () => ({ data: [txnRow(1, { driver_name: null, passenger_name: null })], error: null }) });
 
-  __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'transactions') {
-        return { select: () => ({ gte: () => ({ order: () => ({ limit: async () => ({ data: capped, error: null }) }) }) }) };
-      }
-      if (table === 'ride_requests') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'rr1', passenger_id: 'p1', trip_id: null }], error: null }) }) };
-      }
-      if (table === 'users') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'p1', full_name: 'Maria Fe Santos' }], error: null }) }) };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any);
+  const { data } = await listTransactionsForAdmin('2026-10-01T00:00:00.000Z');
+  assert.equal(data.length, 1);
+  assert.equal(data[0].driverName, '—');
+  assert.equal(data[0].passengerName, '—');
+});
 
-  const { data, error, truncated } = await listTransactionsForAdmin('2026-08-01T00:00:00.000Z');
-  assert.equal(error, null);
+test('listTransactionsForAdmin reports truncated and returns exactly 2000 rows when the database sends the extra row', async () => {
+  fakeRpc({ admin_list_transactions: () => ({ data: Array.from({ length: 2001 }, (_, i) => txnRow(i)), error: null }) });
+
+  const { data, truncated } = await listTransactionsForAdmin('2026-10-01T00:00:00.000Z');
   assert.equal(data.length, 2000);
   assert.equal(truncated, true);
 });
 
-test('getPeakHourHistogram returns 12 two-hour buckets and labels each one', async () => {
-  __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            eq: () => ({
-              gte: async () => ({
-                data: [{ requested_at: todayAt(6, 15) }, { requested_at: todayAt(7, 40) }, { requested_at: todayAt(14, 0) }],
-                error: null,
-              }),
-            }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any);
+test('listTransactionsForAdmin returns { data: [], error } when the call fails', async () => {
+  fakeRpc({ admin_list_transactions: () => ({ data: null, error: { message: 'Not allowed' } }) });
 
-  const { data, error } = await getPeakHourHistogram('2026-08-01T00:00:00.000Z');
-  assert.equal(error, null);
-  assert.equal(data.length, 12);
-  assert.deepEqual(data[3], { hourLabel: '6:00 AM–8:00 AM', count: 2 });
-  assert.deepEqual(data[7], { hourLabel: '2:00 PM–4:00 PM', count: 1 });
-  assert.equal(data.reduce((sum, b) => sum + b.count, 0), 3);
-});
-
-test('getPeakHourHistogram returns { data: [], error } when the query fails', async () => {
-  __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
-  } as any);
-
-  const { data, error } = await getPeakHourHistogram('2026-08-01T00:00:00.000Z');
+  const { data, error, truncated } = await listTransactionsForAdmin('2026-10-01T00:00:00.000Z');
   assert.deepEqual(data, []);
-  assert.equal(error, 'connection refused');
-});
-
-test('getRidesRevenueOverTime buckets completed rides and paid revenue by Manila calendar day', async () => {
-  const today = manilaTimeIso(9, 0);
-  const yesterday = manilaTimeIso(9, 0, -1);
-  const since = manilaTimeIso(0, 0, -1);
-
-  __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            eq: () => ({ gte: async () => ({ data: [{ requested_at: yesterday }, { requested_at: today }], error: null }) }),
-          }),
-        };
-      }
-      if (table === 'transactions') {
-        return {
-          select: () => ({
-            eq: () => ({ gte: async () => ({ data: [{ amount: '18.00', created_at: yesterday }, { amount: '24.50', created_at: today }], error: null }) }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any);
-
-  const { data, error } = await getRidesRevenueOverTime(since);
-  assert.equal(error, null);
-  assert.equal(data.length, 2);
-  assert.equal(data[0].rides, 1);
-  assert.equal(data[0].revenue, 18);
-  assert.equal(data[1].rides, 1);
-  assert.equal(data[1].revenue, 24.5);
-});
-
-test('getRidesRevenueOverTime returns { data: [], error } when the rides query fails', async () => {
-  __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
-  } as any);
-
-  const { data, error } = await getRidesRevenueOverTime('2026-08-01T00:00:00.000Z');
-  assert.deepEqual(data, []);
-  assert.equal(error, 'connection refused');
+  assert.equal(error, 'Not allowed');
+  assert.equal(truncated, false);
 });

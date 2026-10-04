@@ -15,7 +15,7 @@ import { useToast } from '../components/Toast';
 import { useVerificationStore } from '../store/useVerificationStore';
 import type { VerificationCase } from '../types/verification';
 import type { TricycleCluster } from '../types/driver';
-import { formatRelativeTime, titleCaseLabel } from '../lib/format';
+import { daysFromTodayManila, formatRelativeTime, titleCaseLabel } from '../lib/format';
 import { SkeletonRows } from '../components/Skeleton';
 import styles from './DriverVerification.module.css';
 
@@ -28,7 +28,7 @@ const CLUSTER_OPTIONS: { label: string; value: TricycleCluster | '' }[] = [
 ];
 
 function daysUntil(isoDate: string): number {
-  return Math.round((new Date(isoDate).getTime() - Date.now()) / 86_400_000);
+  return daysFromTodayManila(isoDate);
 }
 
 /**
@@ -37,6 +37,11 @@ function daysUntil(isoDate: string): number {
  * nothing in this data model records that a document was ever replaced, so
  * it's not implemented here; flagged as an open item.
  */
+/** Approve needs the franchise details on file — the database enforces the same rule. */
+function franchiseComplete(c: VerificationCase): boolean {
+  return c.mtopNo.trim() !== '' && c.mtopExpiryDate !== '' && c.cluster !== '';
+}
+
 function queueContext(c: VerificationCase): string {
   if (c.mtopExpiryDate) {
     const days = daysUntil(c.mtopExpiryDate);
@@ -283,7 +288,7 @@ export function DriverVerification() {
                 superscript="S+"
                 fullWidth
                 loading={deciding === 'approve'}
-                disabled={deciding !== null || c.overallStatus !== 'pending' || c.documents.some((d) => d.status === 'rejected')}
+                disabled={deciding !== null || c.overallStatus !== 'pending' || c.documents.some((d) => d.status === 'rejected') || !franchiseComplete(c)}
                 onClick={() => setPendingDecision({ kind: 'approve', case: c })}
               >
                 {deciding === 'approve' ? 'Approving…' : 'Approve'}
@@ -304,7 +309,9 @@ export function DriverVerification() {
               {c.overallStatus === 'pending'
                 ? c.documents.some((d) => d.status === 'rejected')
                   ? 'A document is marked Rejected. Press Reject to send only those documents back, or mark it OK to approve.'
-                  : 'Approve / Reject is limited to PSO Supervisor and Administrator. PSO Staff sees this panel read-only.'
+                  : !franchiseComplete(c)
+                    ? 'Enter the MTOP number, the MTOP expiry date and the cluster above to enable Approve.'
+                    : 'Approve / Reject is limited to PSO Supervisor and Administrator. PSO Staff sees this panel read-only.'
                 : `This case was already ${c.overallStatus}. Decisions can't be changed here.`}
             </p>
           </div>

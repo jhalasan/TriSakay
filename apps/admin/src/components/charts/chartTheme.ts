@@ -12,9 +12,10 @@ export const TOOLTIP_BORDER = '#DCE2E6'; // --line
 export const MONO_FONT = "'Inter', system-ui, \"Segoe UI\", Roboto, sans-serif"; // --mono
 
 /** Mirrors Badge's tone colors so the Ride Status donut matches status badges elsewhere on the dashboard. */
-export const STATUS_COLORS: Record<'forming' | 'active' | 'completed' | 'cancelled', string> = {
-  forming: '#e3b341', // Badge .warn border
-  active: '#002E60', // --primary / Badge .info
+export const STATUS_COLORS: Record<'pending' | 'assigned' | 'ongoing' | 'completed' | 'cancelled', string> = {
+  pending: '#e3b341', // Badge .warn border
+  assigned: '#4F7CAC', // lighter than ongoing, still the info blue family
+  ongoing: '#002E60', // --primary / Badge .info
   completed: '#477434', // --success / Badge .success
   cancelled: '#B3261E', // --danger / Badge .danger
 };

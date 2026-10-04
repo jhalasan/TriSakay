@@ -48,17 +48,17 @@ function fakeClient() {
           }),
         };
       }
-      if (table === 'trips') {
-        return {
-          select: () => ({
-            in: async () => ({
-              data: [{ driver_id: 'd1' }, { driver_id: 'd1' }, { driver_id: 'd2' }],
-              error: null,
-            }),
-          }),
-        };
-      }
       throw new Error(`unexpected table ${table}`);
+    },
+    rpc: async (fn: string) => {
+      if (fn !== 'get_driver_trip_counts') throw new Error(`unexpected rpc ${fn}`);
+      return {
+        data: [
+          { driver_id: 'd1', trip_count: 2 },
+          { driver_id: 'd2', trip_count: 1 },
+        ],
+        error: null,
+      };
     },
   } as any;
 }

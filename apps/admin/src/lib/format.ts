@@ -87,17 +87,25 @@ export function initials(fullName: string): string {
   return (first + last).toUpperCase();
 }
 
+/** The calendar date (YYYY-MM-DD) of an instant in Manila — the service runs in one city, and the database itself is in UTC. */
+export function manilaDateKey(instant: Date | string = new Date()): string {
+  return new Date(instant).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
+
+/** Whole days from today (Manila) to a YYYY-MM-DD date: positive = days left, 0 = today, negative = days past. */
+export function daysFromTodayManila(isoDate: string): number {
+  return Math.round((Date.parse(isoDate) - Date.parse(manilaDateKey())) / 86_400_000);
+}
+
 /**
  * Mirrors the DB's `business_days_since()` exactly (counts Mon–Fri days
- * strictly after `startIso`'s date, up to and including today) so this
- * matches `v_overdue_complaints`'s numbers for the same complaint. Computed
- * client-side rather than one RPC call per row.
+ * strictly after the Manila date of `startIso`, up to and including today in
+ * Manila) so this matches `v_overdue_complaints`'s numbers for the same
+ * complaint. Computed client-side rather than one RPC call per row.
  */
 export function businessDaysSince(startIso: string): number {
-  const start = new Date(startIso);
-  const cursor = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate() + 1));
-  const today = new Date();
-  const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
+  const cursor = new Date(Date.parse(manilaDateKey(startIso)) + 86_400_000);
+  const end = new Date(Date.parse(manilaDateKey()));
 
   let count = 0;
   while (cursor <= end) {

@@ -23,7 +23,7 @@ export async function getAdminDashboardStats(): Promise<GetAdminDashboardStatsRe
 
   const [totalDrivers, activeRides, pendingVerifications, openComplaints] = await Promise.all([
     client.from('users').select('*', { count: 'exact', head: true }).eq('role', 'driver'),
-    client.from('trips').select('*', { count: 'exact', head: true }).eq('status', 'active'),
+    client.from('ride_requests').select('*', { count: 'exact', head: true }).in('status', ['assigned', 'ongoing']),
     client.from('driver_profiles').select('*', { count: 'exact', head: true }).eq('verification_status', 'pending'),
     client
       .from('complaints')
@@ -143,7 +143,8 @@ export interface RecentTripActivityRow {
   id: string;
   driverName: string | null;
   passengerName: string | null;
-  status: 'forming' | 'active' | 'completed' | 'cancelled';
+  /** The ride's own status — not its trip's, which can read "completed" for a ride that was cancelled. */
+  status: RideStatusCount['status'];
   fare: number | null;
   updatedAt: string;
 }
@@ -154,25 +155,16 @@ export interface ListRecentTripActivityResult {
 }
 
 /**
- * One row per ride_request, not per trip — a trip is a shared ride
- * (trips.max_seats) with zero-to-many ride_requests attached, and each
- * ride_request is the thing that actually carries a passenger and a fare
- * (trips itself has neither column). Two flat queries plus the existing
- * resolveUserNames() follow-up, matching this file's established
- * no-nested-embeds convention (see listOverdueComplaints/
- * listExpiringFranchises above) rather than a multi-hop PostgREST embed.
- *
- * Ordering/truncation happens after the second query, once each request's
- * trip.updated_at is known, so the first query over-fetches by 4x on its
- * own requested_at ordering to give the final recency sort enough rows to
- * work with.
+ * One row per ride_request that has a driver, newest first by the moment it last changed
+ * (completed, cancelled, or requested). The status and fare are the ride's own: a cancelled ride
+ * shows as cancelled with no fare, even when its trip went on to finish with someone else.
  */
 export async function listRecentTripActivity(limit = 10): Promise<ListRecentTripActivityResult> {
   const client = getSupabaseClient();
 
   const { data: requests, error: requestsError } = await client
     .from('ride_requests')
-    .select('id, passenger_id, final_fare, trip_id')
+    .select('id, passenger_id, final_fare, trip_id, status, requested_at, completed_at, cancelled_at')
     .not('trip_id', 'is', null)
     .order('requested_at', { ascending: false })
     .limit(limit * 4);
@@ -182,23 +174,23 @@ export async function listRecentTripActivity(limit = 10): Promise<ListRecentTrip
 
   const tripIds = [...new Set(requests.map((r) => r.trip_id).filter((id): id is string => id !== null))];
 
-  const { data: trips, error: tripsError } = await client.from('trips').select('id, driver_id, status, updated_at').in('id', tripIds);
+  const { data: trips, error: tripsError } = await client.from('trips').select('id, driver_id').in('id', tripIds);
   if (tripsError) return { data: [], error: tripsError.message };
 
-  const tripById = new Map((trips ?? []).map((t) => [t.id, t]));
+  const driverByTripId = new Map((trips ?? []).map((t) => [t.id, t.driver_id]));
   const names = await resolveUserNames(client, [...(trips ?? []).map((t) => t.driver_id), ...requests.map((r) => r.passenger_id)]);
 
   const rows = requests
     .map((r): RecentTripActivityRow | null => {
-      const trip = r.trip_id ? tripById.get(r.trip_id) : undefined;
-      if (!trip) return null;
+      const driverId = r.trip_id ? driverByTripId.get(r.trip_id) : undefined;
+      if (!driverId) return null;
       return {
         id: r.id,
-        driverName: names.get(trip.driver_id) ?? null,
+        driverName: names.get(driverId) ?? null,
         passengerName: names.get(r.passenger_id) ?? null,
-        status: trip.status,
-        fare: r.final_fare,
-        updatedAt: trip.updated_at,
+        status: r.status,
+        fare: r.status === 'completed' ? r.final_fare : null,
+        updatedAt: r.completed_at ?? r.cancelled_at ?? r.requested_at,
       };
     })
     .filter((r): r is RecentTripActivityRow => r !== null)
@@ -218,64 +210,51 @@ export interface GetRidesPerDayResult {
   error: string | null;
 }
 
+const MANILA_TZ = 'Asia/Manila';
+const DAY_MS = 24 * 60 * 60 * 1000;
+
 /**
- * "Rides Over Time (Week)" dashboard chart — completed ride_requests for
- * each of the last 7 calendar days (local wall-clock, matching the rest of
- * this app's en-PH rendering), oldest first. Always returns exactly 7
- * points, zero-filled, so the chart never shows a gap for a quiet day.
+ * "Rides Over Time (Week)" dashboard chart — rides COMPLETED on each of the last 7 Manila
+ * calendar days, oldest first. Always returns exactly 7 points, zero-filled, so a quiet day shows
+ * as 0 instead of a gap. Counted in the database, so it is not cut off at 1,000 rows and does
+ * not depend on the browser's timezone. Manila has no daylight saving, so stepping back by whole
+ * 24 hour days always lands on the right calendar day.
  */
 export async function getRidesPerDay(): Promise<GetRidesPerDayResult> {
-  const client = getSupabaseClient();
-  const since = new Date();
-  since.setDate(since.getDate() - 6);
-  since.setHours(0, 0, 0, 0);
-
-  const { data, error } = await client
-    .from('ride_requests')
-    .select('requested_at')
-    .eq('status', 'completed')
-    .gte('requested_at', since.toISOString());
-
-  if (error) return { data: [], error: error.message };
-
+  const now = Date.now();
   const days: { key: string; day: string }[] = [];
   for (let i = 6; i >= 0; i--) {
-    const d = new Date();
-    d.setDate(d.getDate() - i);
-    days.push({ key: d.toLocaleDateString('en-CA'), day: d.toLocaleDateString('en-PH', { weekday: 'short', month: 'numeric', day: 'numeric' }) });
+    const d = new Date(now - i * DAY_MS);
+    days.push({
+      key: d.toLocaleDateString('en-CA', { timeZone: MANILA_TZ }),
+      day: d.toLocaleDateString('en-PH', { weekday: 'short', month: 'numeric', day: 'numeric', timeZone: MANILA_TZ }),
+    });
   }
 
-  const countByKey = new Map<string, number>();
-  for (const row of data ?? []) {
-    const key = new Date(row.requested_at).toLocaleDateString('en-CA');
-    countByKey.set(key, (countByKey.get(key) ?? 0) + 1);
-  }
+  const { data, error } = await getSupabaseClient().rpc('admin_rides_revenue_daily', { p_since: `${days[0].key}T00:00:00+08:00` });
+  if (error) return { data: [], error: error.message };
 
+  const countByKey = new Map((data ?? []).map((row) => [row.day, Number(row.rides)]));
   return { data: days.map(({ key, day }) => ({ day, count: countByKey.get(key) ?? 0 })), error: null };
 }
 
-export interface TripStatusCount {
-  status: 'forming' | 'active' | 'completed' | 'cancelled';
+export interface RideStatusCount {
+  status: 'pending' | 'assigned' | 'ongoing' | 'completed' | 'cancelled';
   count: number;
 }
 
-export interface GetTripStatusBreakdownResult {
-  data: TripStatusCount[];
+export interface GetRideStatusBreakdownResult {
+  data: RideStatusCount[];
   error: string | null;
 }
 
-const TRIP_STATUSES: TripStatusCount['status'][] = ['forming', 'active', 'completed', 'cancelled'];
+const RIDE_STATUSES: RideStatusCount['status'][] = ['pending', 'assigned', 'ongoing', 'completed', 'cancelled'];
 
-/** "Ride Status" dashboard donut — ride counts by TripStatus, all-time, 4 parallel counts (same idiom as getAdminDashboardStats). */
-export async function getTripStatusBreakdown(): Promise<GetTripStatusBreakdownResult> {
-  const client = getSupabaseClient();
+/** "Ride status" dashboard donut — RIDE counts by status, all time (a trip can hold several rides or none, so trips are not what this chart is about). */
+export async function getRideStatusBreakdown(): Promise<GetRideStatusBreakdownResult> {
+  const { data, error } = await getSupabaseClient().rpc('admin_ride_status_counts');
+  if (error) return { data: [], error: error.message };
 
-  const results = await Promise.all(
-    TRIP_STATUSES.map((status) => client.from('trips').select('*', { count: 'exact', head: true }).eq('status', status))
-  );
-
-  const firstError = results.find((r) => r.error)?.error;
-  if (firstError) return { data: [], error: firstError.message };
-
-  return { data: TRIP_STATUSES.map((status, i) => ({ status, count: results[i].count ?? 0 })), error: null };
+  const countByStatus = new Map((data ?? []).map((row) => [row.status, Number(row.ride_count)]));
+  return { data: RIDE_STATUSES.map((status) => ({ status, count: countByStatus.get(status) ?? 0 })), error: null };
 }

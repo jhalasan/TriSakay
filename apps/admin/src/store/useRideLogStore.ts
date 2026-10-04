@@ -9,6 +9,7 @@ interface RideLogState {
   rides: RideLogRow[];
   loading: boolean;
   error: string | null;
+  truncated: boolean;
   search: string;
   statusFilter: RideLogStatusFilter;
   dateRange: ReportDateRange;
@@ -24,6 +25,7 @@ export const useRideLogStore = create<RideLogState>()((set, get) => ({
   rides: [],
   loading: false,
   error: null,
+  truncated: false,
   search: '',
   statusFilter: 'all',
   dateRange: '30d',
@@ -31,8 +33,8 @@ export const useRideLogStore = create<RideLogState>()((set, get) => ({
 
   fetch: async () => {
     set({ loading: true, error: null });
-    const { data, error } = await listRideLog(get().dateRange);
-    set({ rides: data, loading: false, error });
+    const { data, error, truncated } = await listRideLog(get().dateRange);
+    set({ rides: data, loading: false, error, truncated });
   },
 
   setSearch: (value) => set({ search: value, page: 1 }),

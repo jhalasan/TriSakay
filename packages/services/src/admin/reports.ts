@@ -1,24 +1,11 @@
 import { getSupabaseClient } from '../supabase/client.ts';
 import type { Database } from '../supabase/database.types.ts';
 
-// R9 (existing-system audit): these charts used the ADMIN'S OWN BROWSER
-// timezone (new Date(ts).getHours() / toLocaleDateString() with no explicit
-// timeZone) to bucket rides by hour/day — correct only by accident for an
-// admin viewing the dashboard from within the Philippines, and silently
-// wrong (a ride at 11pm PHT bucketed into "tomorrow", or peak-hour bars
-// shifted by whatever the offset is) for anyone elsewhere. The service
-// operates in one city, so the bucketing should reflect Manila local time
-// regardless of who's looking at the chart.
-const MANILA_TZ = 'Asia/Manila';
-
-function toManilaDateKey(iso: string): string {
-  return new Date(iso).toLocaleDateString('en-CA', { timeZone: MANILA_TZ });
-}
-
-function getManilaHour(iso: string): number {
-  return Number(new Date(iso).toLocaleString('en-US', { timeZone: MANILA_TZ, hour: 'numeric', hourCycle: 'h23' }));
-}
-
+// Every report number is built in the database (admin_* functions, get_peak_hour_histogram) so
+// a long date range never hits PostgREST's 1,000 row default or a too-long URL. Rides are
+// counted by the day they COMPLETED, in Manila time (the database itself runs in UTC).
+// Only completed rides count: a cancelled ride can hold a paid cash row, but that money is
+// not revenue for a ride that did not happen.
 export interface AdminReportSummary {
   totalRides: number;
   totalRevenue: number;
@@ -32,51 +19,40 @@ export interface GetAdminReportSummaryResult {
 }
 
 /**
- * FR-5.3/5.4/9.7 — date-ranged aggregates. `totalRides` counts completed
- * ride_requests (a ride is only "real" once it happened, not merely
- * requested); `totalRevenue` sums paid transactions in the same window —
- * deliberately a separate query rather than joining, since a completed ride
- * and its payment can land in different moments of the same window.
- * `peakHourLabel` buckets completed rides into 2-hour windows (matching the
- * wireframe's "6:00–8:00 AM" style) and reports the busiest one; ties break
- * toward the earliest bucket. No rows in range degrades to a `0`/`—`
- * summary rather than an error — an empty report is a valid answer.
+ * FR-5.3/5.4/9.7 — date-ranged aggregates over COMPLETED rides. `totalRevenue` is the paid
+ * payments of those rides; `averageFare` is the mean fare of those same rides, so the two
+ * always describe the same set. `peakHourLabel` is the busiest 2-hour window (ties go to the
+ * earliest); it is only worked out for an open-ended range, since the previous-period
+ * comparison only needs rides and revenue. No rides in range is a valid answer, not an error.
  */
 export async function getAdminReportSummary(sinceIso: string, untilIso?: string): Promise<GetAdminReportSummaryResult> {
   const client = getSupabaseClient();
 
-  let ridesQuery = client.from('ride_requests').select('requested_at').eq('status', 'completed').gte('requested_at', sinceIso);
-  let txnsQuery = client.from('transactions').select('amount').eq('status', 'paid').gte('created_at', sinceIso);
-  if (untilIso) {
-    ridesQuery = ridesQuery.lt('requested_at', untilIso);
-    txnsQuery = txnsQuery.lt('created_at', untilIso);
-  }
+  const [summary, peak] = await Promise.all([
+    client.rpc('admin_report_summary', untilIso ? { p_since: sinceIso, p_until: untilIso } : { p_since: sinceIso }),
+    untilIso ? Promise.resolve(null) : client.rpc('get_peak_hour_histogram', { p_since: sinceIso }),
+  ]);
 
-  const [{ data: rides, error: ridesError }, { data: paidTxns, error: txnsError }] = await Promise.all([ridesQuery, txnsQuery]);
+  if (summary.error) return { data: emptySummary(), error: summary.error.message };
+  if (peak?.error) return { data: emptySummary(), error: peak.error.message };
 
-  if (ridesError) return { data: emptySummary(), error: ridesError.message };
-  if (txnsError) return { data: emptySummary(), error: txnsError.message };
+  const row = summary.data?.[0];
+  const totalRides = row ? Number(row.total_rides) : 0;
+  const peakHourLabel = peak && totalRides > 0 ? peakLabelFromHistogram((peak.data ?? []).map((b) => Number(b.bucket_count))) : '—';
 
-  const totalRides = rides?.length ?? 0;
-  const totalRevenue = (paidTxns ?? []).reduce((sum, t) => sum + Number(t.amount), 0);
-  const averageFare = totalRides > 0 ? totalRevenue / totalRides : 0;
-  const peakHourLabel = totalRides > 0 ? peakLabelFromHistogram(twoHourHistogram(rides!.map((r) => r.requested_at))) : '—';
-
-  return { data: { totalRides, totalRevenue, averageFare, peakHourLabel }, error: null };
+  return {
+    data: {
+      totalRides,
+      totalRevenue: row ? Number(row.total_revenue) : 0,
+      averageFare: row ? Number(row.average_fare) : 0,
+      peakHourLabel,
+    },
+    error: null,
+  };
 }
 
 function emptySummary(): AdminReportSummary {
   return { totalRides: 0, totalRevenue: 0, averageFare: 0, peakHourLabel: '—' };
-}
-
-/** Uses local wall-clock hours (not UTC) deliberately — matches lib/format.ts's en-PH date/time rendering, so "peak hour" means the PSO's own local time, not a UTC bucket. */
-function twoHourHistogram(timestamps: string[]): number[] {
-  const counts = new Array(12).fill(0); // 12 two-hour buckets covering a day
-  for (const ts of timestamps) {
-    const hour = getManilaHour(ts);
-    counts[Math.floor(hour / 2)]++;
-  }
-  return counts;
 }
 
 function peakLabelFromHistogram(counts: number[]): string {
@@ -101,6 +77,7 @@ function formatHour(hour24: number): string {
 
 export type AdminTransactionMethod = Database['public']['Enums']['payment_method'];
 export type AdminTransactionStatus = Database['public']['Enums']['payment_status'];
+export type AdminTransactionRideStatus = Database['public']['Enums']['ride_status'];
 
 export interface AdminTransactionRow {
   id: string;
@@ -110,94 +87,43 @@ export interface AdminTransactionRow {
   amount: number;
   method: AdminTransactionMethod;
   status: AdminTransactionStatus;
+  /** What happened to the ride itself; a paid payment on a cancelled ride is not revenue. */
+  rideStatus: AdminTransactionRideStatus;
   createdAt: string;
 }
 
 export interface ListTransactionsForAdminResult {
   data: AdminTransactionRow[];
   error: string | null;
-  /**
-   * True when the row cap below was hit for the current date range, meaning
-   * older transactions within the window exist but weren't returned. Same
-   * gap/fix shape as P1-22 (listAccountActions/listLoginEvents): this query
-   * had no `.limit()` at all before, so "This quarter" on a busy project
-   * could pull an unbounded number of rows through the 3-hop name-resolution
-   * chain below. An explicit, visible cap replaces that silent risk.
-   */
+  /** True when the 2,000 row cap was hit, meaning older transactions in the window were not returned. */
   truncated: boolean;
 }
 
 const TRANSACTIONS_ROW_CAP = 2000;
 
 /**
- * FR-9.7 — every transaction in the window, newest first (capped — see
- * `truncated` above). `transactions` has no passenger/driver columns of its
- * own; resolving names is a 3-hop chain (transactions -> ride_requests ->
- * trips -> users), done as sequential follow-up queries rather than a
- * nested embed, same convention as every other admin/*.ts module. A
- * transaction whose ride was cancelled before a driver was ever assigned
- * has no trip row, so driverName degrades to '—' rather than dropping the
- * transaction.
+ * FR-9.7 — every payment in the window, newest first, with passenger and driver names joined
+ * in the database (admin_list_transactions). A payment whose ride never had a driver shows
+ * '—' for the driver instead of dropping out of the list.
  */
 export async function listTransactionsForAdmin(sinceIso: string): Promise<ListTransactionsForAdminResult> {
-  const client = getSupabaseClient();
+  const { data, error } = await getSupabaseClient().rpc('admin_list_transactions', { p_since: sinceIso });
 
-  const { data: txns, error: txnsError } = await client
-    .from('transactions')
-    .select('id, ride_request_id, amount, method, status, created_at')
-    .gte('created_at', sinceIso)
-    .order('created_at', { ascending: false })
-    .limit(TRANSACTIONS_ROW_CAP);
+  if (error) return { data: [], error: error.message, truncated: false };
 
-  if (txnsError) return { data: [], error: txnsError.message, truncated: false };
-  if (!txns || txns.length === 0) return { data: [], error: null, truncated: false };
-  const truncated = txns.length >= TRANSACTIONS_ROW_CAP;
-
-  const rideRequestIds = [...new Set(txns.map((t) => t.ride_request_id))];
-  const { data: rideRequests, error: rideRequestsError } = await client
-    .from('ride_requests')
-    .select('id, passenger_id, trip_id')
-    .in('id', rideRequestIds);
-
-  if (rideRequestsError) return { data: [], error: rideRequestsError.message, truncated: false };
-
-  const tripIds = [...new Set((rideRequests ?? []).map((r) => r.trip_id).filter((id): id is string => !!id))];
-  const { data: trips, error: tripsError } = tripIds.length
-    ? await client.from('trips').select('id, driver_id').in('id', tripIds)
-    : { data: [] as { id: string; driver_id: string }[], error: null };
-
-  if (tripsError) return { data: [], error: tripsError.message, truncated: false };
-
-  const driverIdByTripId = new Map((trips ?? []).map((t) => [t.id, t.driver_id]));
-  const rideRequestById = new Map((rideRequests ?? []).map((r) => [r.id, r]));
-
-  const userIds = [
-    ...new Set(
-      (rideRequests ?? []).flatMap((r) => {
-        const driverId = r.trip_id ? driverIdByTripId.get(r.trip_id) : undefined;
-        return [r.passenger_id, driverId].filter((id): id is string => !!id);
-      })
-    ),
-  ];
-  const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', userIds);
-  if (usersError) return { data: [], error: usersError.message, truncated: false };
-
-  const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name]));
-
-  const rows: AdminTransactionRow[] = txns.map((t) => {
-    const rideRequest = rideRequestById.get(t.ride_request_id);
-    const driverId = rideRequest?.trip_id ? driverIdByTripId.get(rideRequest.trip_id) : undefined;
-    return {
-      id: t.id,
-      rideRequestId: t.ride_request_id,
-      passengerName: rideRequest ? (nameById.get(rideRequest.passenger_id) ?? '—') : '—',
-      driverName: driverId ? (nameById.get(driverId) ?? '—') : '—',
-      amount: Number(t.amount),
-      method: t.method,
-      status: t.status,
-      createdAt: t.created_at,
-    };
-  });
+  const all = data ?? [];
+  const truncated = all.length > TRANSACTIONS_ROW_CAP;
+  const rows: AdminTransactionRow[] = all.slice(0, TRANSACTIONS_ROW_CAP).map((t) => ({
+    id: t.id,
+    rideRequestId: t.ride_request_id,
+    passengerName: t.passenger_name ?? '—',
+    driverName: t.driver_name ?? '—',
+    amount: Number(t.amount),
+    method: t.method,
+    status: t.status,
+    rideStatus: t.ride_status,
+    createdAt: t.created_at,
+  }));
 
   return { data: rows, error: null, truncated };
 }
@@ -212,14 +138,14 @@ export interface GetPeakHourHistogramResult {
   error: string | null;
 }
 
-/** "Peak Hours" report chart — the same 12 two-hour buckets getAdminReportSummary's peakHourLabel is derived from, exposed in full. */
+/** "Peak Hours" report chart — the 12 two-hour buckets (Manila time) the summary's peakHourLabel is derived from, in full. */
 export async function getPeakHourHistogram(sinceIso: string): Promise<GetPeakHourHistogramResult> {
-  const client = getSupabaseClient();
-  const { data, error } = await client.from('ride_requests').select('requested_at').eq('status', 'completed').gte('requested_at', sinceIso);
+  const { data, error } = await getSupabaseClient().rpc('get_peak_hour_histogram', { p_since: sinceIso });
 
   if (error) return { data: [], error: error.message };
 
-  const counts = twoHourHistogram((data ?? []).map((r) => r.requested_at));
+  const counts = new Array<number>(12).fill(0);
+  for (const row of data ?? []) counts[row.bucket_index] = Number(row.bucket_count);
   return { data: counts.map((count, i) => ({ hourLabel: bucketLabel(i), count })), error: null };
 }
 
@@ -234,36 +160,19 @@ export interface GetRidesRevenueOverTimeResult {
   error: string | null;
 }
 
-/** "Rides / Revenue" report chart — completed ride_requests and paid transactions in range, bucketed by Manila calendar day (R9), oldest first. */
+/** "Rides / Revenue" report chart — completed rides and their paid revenue per Manila calendar day, oldest first. Days with nothing are left out. */
 export async function getRidesRevenueOverTime(sinceIso: string): Promise<GetRidesRevenueOverTimeResult> {
-  const client = getSupabaseClient();
+  const { data, error } = await getSupabaseClient().rpc('admin_rides_revenue_daily', { p_since: sinceIso });
 
-  const [{ data: rides, error: ridesError }, { data: paidTxns, error: txnsError }] = await Promise.all([
-    client.from('ride_requests').select('requested_at').eq('status', 'completed').gte('requested_at', sinceIso),
-    client.from('transactions').select('amount, created_at').eq('status', 'paid').gte('created_at', sinceIso),
-  ]);
+  if (error) return { data: [], error: error.message };
 
-  if (ridesError) return { data: [], error: ridesError.message };
-  if (txnsError) return { data: [], error: txnsError.message };
-
-  const ridesByDay = new Map<string, number>();
-  for (const r of rides ?? []) {
-    const key = toManilaDateKey(r.requested_at);
-    ridesByDay.set(key, (ridesByDay.get(key) ?? 0) + 1);
-  }
-
-  const revenueByDay = new Map<string, number>();
-  for (const t of paidTxns ?? []) {
-    const key = toManilaDateKey(t.created_at);
-    revenueByDay.set(key, (revenueByDay.get(key) ?? 0) + Number(t.amount));
-  }
-
-  const dayKeys = [...new Set([...ridesByDay.keys(), ...revenueByDay.keys()])].sort();
-  const data = dayKeys.map((key) => ({
-    day: new Date(key).toLocaleDateString('en-PH', { month: 'short', day: 'numeric' }),
-    rides: ridesByDay.get(key) ?? 0,
-    revenue: revenueByDay.get(key) ?? 0,
-  }));
-
-  return { data, error: null };
+  return {
+    data: (data ?? []).map((row) => ({
+      // The date comes back as plain YYYY-MM-DD; label it without letting the browser shift it by a timezone.
+      day: new Date(`${row.day}T00:00:00Z`).toLocaleDateString('en-PH', { month: 'short', day: 'numeric', timeZone: 'UTC' }),
+      rides: Number(row.rides),
+      revenue: Number(row.revenue),
+    })),
+    error: null,
+  };
 }

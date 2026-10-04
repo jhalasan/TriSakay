@@ -9,6 +9,8 @@ export interface TransactionRow {
   amount: number;
   method: PaymentMethod;
   status: PaymentStatus;
+  /** The ride's own status — a paid payment on a cancelled ride is not counted as revenue. */
+  rideStatus: 'pending' | 'assigned' | 'ongoing' | 'completed' | 'cancelled';
   createdAt: string;
 }
 

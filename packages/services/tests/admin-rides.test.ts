@@ -3,121 +3,85 @@ import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
 import { listRideLogForAdmin } from '../src/admin/rides.ts';
 
-function fakeClient() {
-  const rides = [
-    {
-      id: 'ride1',
-      passenger_id: 'p1',
-      trip_id: 'trip1',
-      status: 'completed',
-      pickup_label: 'General Santos City (Dadiangas)',
-      dest_label: 'SM Savemore Market',
-      requested_at: '2026-09-16T03:10:00.000Z',
-      completed_at: '2026-09-16T03:21:00.000Z',
-      cancelled_at: null,
-      final_fare: 15,
-      fare_flagged: true,
-    },
-    {
-      id: 'ride2',
-      passenger_id: 'p2',
-      trip_id: null,
-      status: 'cancelled',
-      pickup_label: 'Polomolok',
-      dest_label: 'Jollibee',
-      requested_at: '2026-09-15T09:40:00.000Z',
-      completed_at: null,
-      cancelled_at: '2026-09-15T09:45:00.000Z',
-      final_fare: null,
-      fare_flagged: false,
-    },
-  ];
-  const trips = [{ id: 'trip1', driver_id: 'd1' }];
-  const alerts = [{ ride_request_id: 'ride1' }];
-  const users = [
-    { id: 'p1', full_name: 'Jay Bee Halasan' },
-    { id: 'p2', full_name: 'Prinz' },
-    { id: 'd1', full_name: 'prinz' },
-  ];
-
+function row(i: number, overrides: Record<string, unknown> = {}) {
   return {
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            gte: () => ({
-              order: async () => ({ data: rides, error: null }),
-            }),
-          }),
-        };
-      }
-      if (table === 'trips') {
-        return { select: () => ({ in: async () => ({ data: trips, error: null }) }) };
-      }
-      if (table === 'emergency_alerts') {
-        return { select: () => ({ in: async () => ({ data: alerts, error: null }) }) };
-      }
-      if (table === 'users') {
-        return { select: () => ({ in: async () => ({ data: users, error: null }) }) };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
-  } as any;
+    id: `ride-${i}`,
+    passenger_name: 'Ana Reyes',
+    driver_name: 'Juan Dela Cruz',
+    status: 'completed',
+    pickup_label: 'Plaza',
+    dest_label: 'Market',
+    requested_at: '2026-10-03T01:00:00.000Z',
+    completed_at: '2026-10-03T01:20:00.000Z',
+    cancelled_at: null,
+    final_fare: '18.00',
+    has_emergency_alert: false,
+    fare_flagged: false,
+    ...overrides,
+  };
 }
 
-test('listRideLogForAdmin resolves passenger/driver names and flags the emergency-linked ride', async () => {
-  __setSupabaseClientForTests(fakeClient());
+test('listRideLogForAdmin maps the joined rows, including the SOS and fare flags', async () => {
+  const calls: unknown[] = [];
+  __setSupabaseClientForTests({
+    rpc: async (fn: string, args: unknown) => {
+      calls.push({ fn, args });
+      return { data: [row(1, { has_emergency_alert: true, fare_flagged: true })], error: null };
+    },
+  } as any);
 
-  const { data, error } = await listRideLogForAdmin('2026-09-01T00:00:00.000Z');
+  const { data, error, truncated } = await listRideLogForAdmin('2026-09-01T00:00:00.000Z');
+
   assert.equal(error, null);
-  assert.equal(data.length, 2);
-
+  assert.equal(truncated, false);
+  assert.deepEqual(calls, [{ fn: 'admin_list_ride_log', args: { p_since: '2026-09-01T00:00:00.000Z' } }]);
   assert.deepEqual(data[0], {
-    id: 'ride1',
-    passengerName: 'Jay Bee Halasan',
-    driverName: 'prinz',
+    id: 'ride-1',
+    passengerName: 'Ana Reyes',
+    driverName: 'Juan Dela Cruz',
     status: 'completed',
-    pickupLabel: 'General Santos City (Dadiangas)',
-    destLabel: 'SM Savemore Market',
-    requestedAt: '2026-09-16T03:10:00.000Z',
-    completedAt: '2026-09-16T03:21:00.000Z',
+    pickupLabel: 'Plaza',
+    destLabel: 'Market',
+    requestedAt: '2026-10-03T01:00:00.000Z',
+    completedAt: '2026-10-03T01:20:00.000Z',
     cancelledAt: null,
-    finalFare: 15,
+    finalFare: 18,
     hasEmergencyAlert: true,
     fareFlagged: true,
   });
 });
 
-test('listRideLogForAdmin leaves driverName null for a ride with no trip yet (pending/cancelled-before-assignment)', async () => {
-  __setSupabaseClientForTests(fakeClient());
-
-  const { data } = await listRideLogForAdmin('2026-09-01T00:00:00.000Z');
-  const cancelled = data.find((r) => r.id === 'ride2');
-  assert.equal(cancelled?.driverName, null);
-  assert.equal(cancelled?.hasEmergencyAlert, false);
-});
-
-test('listRideLogForAdmin returns an empty array without querying other tables when there are no rides in range', async () => {
+test('listRideLogForAdmin leaves driverName and finalFare null for a ride that never had a driver or a fare', async () => {
   __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return { select: () => ({ gte: () => ({ order: async () => ({ data: [], error: null }) }) }) };
-      }
-      throw new Error(`unexpected table ${table}`);
-    },
+    rpc: async () => ({ data: [row(1, { driver_name: null, final_fare: null, status: 'cancelled' })], error: null }),
   } as any);
 
-  const { data, error } = await listRideLogForAdmin('2026-09-01T00:00:00.000Z');
-  assert.equal(error, null);
+  const { data } = await listRideLogForAdmin('2026-09-01T00:00:00.000Z');
+  assert.equal(data[0].driverName, null);
+  assert.equal(data[0].finalFare, null);
+});
+
+test('listRideLogForAdmin returns an empty list when there are no rides in range', async () => {
+  __setSupabaseClientForTests({ rpc: async () => ({ data: [], error: null }) } as any);
+
+  const { data, error, truncated } = await listRideLogForAdmin('2026-09-01T00:00:00.000Z');
   assert.deepEqual(data, []);
+  assert.equal(error, null);
+  assert.equal(truncated, false);
+});
+
+test('listRideLogForAdmin reports truncated and returns exactly 2000 rows when the database sends the extra row', async () => {
+  __setSupabaseClientForTests({ rpc: async () => ({ data: Array.from({ length: 2001 }, (_, i) => row(i)), error: null }) } as any);
+
+  const { data, truncated } = await listRideLogForAdmin('2026-09-01T00:00:00.000Z');
+  assert.equal(data.length, 2000);
+  assert.equal(truncated, true);
 });
 
 test('listRideLogForAdmin surfaces a query error instead of guessing', async () => {
-  __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ gte: () => ({ order: async () => ({ data: null, error: { message: 'network down' } }) }) }) }),
-  } as any);
+  __setSupabaseClientForTests({ rpc: async () => ({ data: null, error: { message: 'Not allowed' } }) } as any);
 
   const { data, error } = await listRideLogForAdmin('2026-09-01T00:00:00.000Z');
-  assert.equal(error, 'network down');
   assert.deepEqual(data, []);
+  assert.equal(error, 'Not allowed');
 });

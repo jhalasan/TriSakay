@@ -1,15 +1,15 @@
 import {
   getAdminDashboardStats,
   getRidesPerDay as getRidesPerDayShared,
-  getTripStatusBreakdown as getTripStatusBreakdownShared,
+  getRideStatusBreakdown as getRideStatusBreakdownShared,
   listExpiringFranchises as listExpiringFranchisesShared,
   listOverdueComplaints as listOverdueComplaintsShared,
   listRecentTripActivity as listRecentTripActivityShared,
 } from '@trisakay/services';
-import type { ExpiringFranchiseRow, OverdueComplaintRow, RecentTripActivityRow, RidesPerDayPoint, TripStatusCount } from '@trisakay/services';
+import type { ExpiringFranchiseRow, OverdueComplaintRow, RecentTripActivityRow, RidesPerDayPoint, RideStatusCount } from '@trisakay/services';
 import type { ServiceResult } from './drivers';
 
-export type { ExpiringFranchiseRow, OverdueComplaintRow, RecentTripActivityRow, RidesPerDayPoint, TripStatusCount };
+export type { ExpiringFranchiseRow, OverdueComplaintRow, RecentTripActivityRow, RidesPerDayPoint, RideStatusCount };
 
 export interface DashboardStats {
   totalDrivers: number;
@@ -49,7 +49,7 @@ export async function getRidesPerDay(): Promise<ServiceResult<RidesPerDayPoint[]
   return { data, error };
 }
 
-export async function getTripStatusBreakdown(): Promise<ServiceResult<TripStatusCount[]>> {
-  const { data, error } = await getTripStatusBreakdownShared();
+export async function getRideStatusBreakdown(): Promise<ServiceResult<RideStatusCount[]>> {
+  const { data, error } = await getRideStatusBreakdownShared();
   return { data, error };
 }

@@ -9,7 +9,7 @@ import { RideStatusChart, RidesOverTimeChart } from '../components/charts';
 import {
   getDashboardStats,
   getRidesPerDay,
-  getTripStatusBreakdown,
+  getRideStatusBreakdown,
   listExpiringFranchises,
   listOverdueComplaints,
   listRecentTripActivity,
@@ -18,7 +18,7 @@ import {
   type OverdueComplaintRow,
   type RecentTripActivityRow,
   type RidesPerDayPoint,
-  type TripStatusCount,
+  type RideStatusCount,
 } from '../services/dashboard';
 import { listEmergencyAlerts } from '../services/emergency';
 import type { EmergencyAlertRow } from '../types/emergency';
@@ -28,8 +28,9 @@ import styles from './Dashboard.module.css';
 const RECENT_ACTIVITY_LIMIT = 5;
 
 const ACTIVITY_TONE: Record<string, BadgeTone> = {
-  active: 'info',
-  forming: 'warn',
+  pending: 'warn',
+  assigned: 'info',
+  ongoing: 'info',
   completed: 'success',
   cancelled: 'danger',
 };
@@ -110,7 +111,7 @@ export function Dashboard() {
   const [activityError, setActivityError] = useState<string | null>(null);
   const [ridesPerDay, setRidesPerDay] = useState<RidesPerDayPoint[]>([]);
   const [ridesError, setRidesError] = useState<string | null>(null);
-  const [statusBreakdown, setStatusBreakdown] = useState<TripStatusCount[]>([]);
+  const [statusBreakdown, setStatusBreakdown] = useState<RideStatusCount[]>([]);
   const [statusError, setStatusError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   // A2 (UAT audit): "traceable to underlying records" is already true (the
@@ -129,7 +130,7 @@ export function Dashboard() {
         listExpiringFranchises(),
         listRecentTripActivity(RECENT_ACTIVITY_LIMIT),
         getRidesPerDay(),
-        getTripStatusBreakdown(),
+        getRideStatusBreakdown(),
         listEmergencyAlerts(),
       ]);
       if (cancelled) return;
@@ -282,7 +283,7 @@ export function Dashboard() {
 
       <div className="panel">
         <PanelHeader
-          title="Recent trip activity"
+          title="Recent ride activity"
           action={
             <Link to="/monitoring">
               <Button variant="ghost" tone="neutral" size="sm">
@@ -298,7 +299,7 @@ export function Dashboard() {
           getRowKey={(r) => r.id}
           loading={loading}
           emptyMessage="No recent trip activity."
-          emptyHint="Completed and cancelled trips appear here as they happen."
+          emptyHint="Completed and cancelled rides appear here as they happen."
         />
       </div>
     </div>

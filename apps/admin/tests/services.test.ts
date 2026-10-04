@@ -13,7 +13,7 @@ import {
 } from '../src/services/complaints.ts';
 import { listActiveTricycles, getActiveTricycleLocations } from '../src/services/monitoring.ts';
 import { getReportSummary, listTransactions, getRidesRevenueOverTime, getPeakHourHistogram, dateRangeSinceIso } from '../src/services/reports.ts';
-import { getRidesPerDay, getTripStatusBreakdown } from '../src/services/dashboard.ts';
+import { getRidesPerDay, getRideStatusBreakdown } from '../src/services/dashboard.ts';
 import { getSignedDocumentUrl } from '../src/services/documents.ts';
 import { addPsoUser, disablePsoUser, enablePsoUser, listPsoUsers } from '../src/services/psoUsers.ts';
 import { getFareConfig, getFeatureToggles, getSystemSettings, updateFareConfig } from '../src/services/settings.ts';
@@ -421,22 +421,12 @@ test('monitoring service resolves on-duty drivers, splitting active trips from i
   assert.equal(idle?.maxSeats, 4);
 });
 
-/** Awaitable directly (the current-period query) but also chainable with .lt() (the previous-period comparison query getReportSummary now also fires). */
-function chainableResult<T>(data: T) {
-  const result = { data, error: null };
-  return Object.assign(Promise.resolve(result), { lt: async () => result });
-}
-
 test('reports service resolves a summary, including the vs-previous-period deltas', async () => {
   __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return { select: () => ({ eq: () => ({ gte: () => chainableResult([{ requested_at: '2026-08-05T07:00:00.000Z' }]) }) }) };
-      }
-      if (table === 'transactions') {
-        return { select: () => ({ eq: () => ({ gte: () => chainableResult([{ amount: '18.00' }]) }) }) };
-      }
-      throw new Error(`unexpected table ${table}`);
+    rpc: async (fn: string) => {
+      if (fn === 'admin_report_summary') return { data: [{ total_rides: 1, total_revenue: '18.00', average_fare: '18.00' }], error: null };
+      if (fn === 'get_peak_hour_histogram') return { data: [{ bucket_index: 3, bucket_count: 1 }], error: null };
+      throw new Error(`unexpected rpc ${fn}`);
     },
   } as any);
 
@@ -451,28 +441,24 @@ test('reports service resolves a summary, including the vs-previous-period delta
 
 test('reports service resolves a transaction list', async () => {
   __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'transactions') {
-        return {
-          select: () => ({
-            gte: () => ({
-              order: () => ({
-                limit: async () => ({
-                  data: [{ id: 'txn1', ride_request_id: 'rr1', amount: '18.00', method: 'cash', status: 'paid', created_at: '2026-08-05T07:00:00.000Z' }],
-                  error: null,
-                }),
-              }),
-            }),
-          }),
-        };
-      }
-      if (table === 'ride_requests') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'rr1', passenger_id: 'p1', trip_id: null }], error: null }) }) };
-      }
-      if (table === 'users') {
-        return { select: () => ({ in: async () => ({ data: [{ id: 'p1', full_name: 'Maria Fe Santos' }], error: null }) }) };
-      }
-      throw new Error(`unexpected table ${table}`);
+    rpc: async (fn: string) => {
+      if (fn !== 'admin_list_transactions') throw new Error(`unexpected rpc ${fn}`);
+      return {
+        data: [
+          {
+            id: 'txn1',
+            ride_request_id: 'rr1',
+            passenger_name: 'Maria Fe Santos',
+            driver_name: null,
+            amount: '18.00',
+            method: 'cash',
+            status: 'paid',
+            ride_status: 'cancelled',
+            created_at: '2026-08-05T07:00:00.000Z',
+          },
+        ],
+        error: null,
+      };
     },
   } as any);
 
@@ -481,6 +467,7 @@ test('reports service resolves a transaction list', async () => {
   assert.equal(transactions.data.length, 1);
   assert.equal(transactions.data[0].passengerName, 'Maria Fe Santos');
   assert.equal(transactions.data[0].driverName, '—');
+  assert.equal(transactions.data[0].rideStatus, 'cancelled');
 });
 
 function fakePsoUsersClient() {
@@ -590,50 +577,32 @@ test('updateFareConfig() rejects an incomplete patch instead of silently sending
 });
 
 test('getRidesPerDay() resolves 7 daily buckets with no error', async () => {
-  __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) }),
-  } as any);
+  __setSupabaseClientForTests({ rpc: async () => ({ data: [], error: null }) } as any);
 
   const { data, error } = await getRidesPerDay();
   assert.equal(error, null);
   assert.equal(data.length, 7);
 });
 
-test('getTripStatusBreakdown() resolves counts per TripStatus with no error', async () => {
+test('getRideStatusBreakdown() resolves counts per ride status with no error', async () => {
   __setSupabaseClientForTests({
-    from: () => ({
-      select: () => ({
-        eq: async (_column: string, value: unknown) => ({ count: value === 'active' ? 5 : 1, error: null }),
-      }),
-    }),
+    rpc: async () => ({ data: [{ status: 'completed', ride_count: 5 }], error: null }),
   } as any);
 
-  const { data, error } = await getTripStatusBreakdown();
+  const { data, error } = await getRideStatusBreakdown();
   assert.equal(error, null);
-  assert.equal(data.find((d) => d.status === 'active')?.count, 5);
+  assert.equal(data.find((d) => d.status === 'completed')?.count, 5);
+  assert.equal(data.find((d) => d.status === 'cancelled')?.count, 0);
 });
 
-test('getRidesRevenueOverTime() applies dateRangeSinceIso(range) to the gte(...) call', async () => {
+test('getRidesRevenueOverTime() applies dateRangeSinceIso(range) as the start of the window', async () => {
   let capturedSince: string | null = null;
 
   __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            eq: () => ({
-              gte: async (_col: string, value: string) => {
-                capturedSince = value;
-                return { data: [], error: null };
-              },
-            }),
-          }),
-        };
-      }
-      if (table === 'transactions') {
-        return { select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) };
-      }
-      throw new Error(`unexpected table ${table}`);
+    rpc: async (fn: string, args: { p_since: string }) => {
+      assert.equal(fn, 'admin_rides_revenue_daily');
+      capturedSince = args.p_since;
+      return { data: [], error: null };
     },
   } as any);
 
@@ -644,24 +613,14 @@ test('getRidesRevenueOverTime() applies dateRangeSinceIso(range) to the gte(...)
   assert.ok(Math.abs(new Date(capturedSince!).getTime() - new Date(dateRangeSinceIso('7d')).getTime()) < 1000);
 });
 
-test('getPeakHourHistogram() applies dateRangeSinceIso(range) to the gte(...) call', async () => {
+test('getPeakHourHistogram() applies dateRangeSinceIso(range) as the start of the window', async () => {
   let capturedSince: string | null = null;
 
   __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            eq: () => ({
-              gte: async (_col: string, value: string) => {
-                capturedSince = value;
-                return { data: [], error: null };
-              },
-            }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
+    rpc: async (fn: string, args: { p_since: string }) => {
+      assert.equal(fn, 'get_peak_hour_histogram');
+      capturedSince = args.p_since;
+      return { data: [], error: null };
     },
   } as any);
 
@@ -670,7 +629,6 @@ test('getPeakHourHistogram() applies dateRangeSinceIso(range) to the gte(...) ca
   assert.equal(data.length, 12);
   assert.equal(capturedSince, dateRangeSinceIso('quarter'));
 });
-
 
 test('getActiveTricycleLocations() resolves grid cells with no error', async () => {
   __setSupabaseClientForTests({

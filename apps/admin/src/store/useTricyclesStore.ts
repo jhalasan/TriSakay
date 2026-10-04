@@ -9,7 +9,7 @@ import type { TricycleCluster, VerificationStatus } from '../types/driver';
  * v_expiring_franchises) unions lapsed + expiring-within-30-days. The strip
  * keeps those two as separate, mutually exclusive cells for browsing.
  */
-export type ExpiryFilter = 'all' | 'lapsed' | 'expiring' | 'ok' | 'dueSoon';
+export type ExpiryFilter = 'all' | 'lapsed' | 'expiring' | 'ok' | 'missing' | 'dueSoon';
 
 interface TricyclesState {
   tricycles: TricycleRow[];

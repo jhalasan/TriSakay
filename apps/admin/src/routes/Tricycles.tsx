@@ -50,7 +50,8 @@ function matchesExpiryFilter(days: number | null, filter: ExpiryFilter): boolean
   if (filter === 'lapsed') return days !== null && days < 0;
   if (filter === 'expiring') return days !== null && days >= 0 && days <= 30;
   if (filter === 'dueSoon') return days !== null && days <= 30;
-  return days === null || days > 30; // 'ok'
+  if (filter === 'missing') return days === null;
+  return days !== null && days > 30; // 'ok'
 }
 
 /** README-style status strip (see Drivers.tsx's StatusStrip) but over franchise expiry urgency, not account status — that's this page's whole reason for existing: the Dashboard's "Expiring franchises" count had nowhere for PSO to click through to the actual list. */
@@ -68,7 +69,8 @@ function ExpiryStrip({
     { label: 'All tricycles', value: 'all', count: tricycles.length },
     { label: 'Lapsed', value: 'lapsed', count: days.filter((d) => d !== null && d < 0).length },
     { label: 'Expiring ≤ 30 days', value: 'expiring', count: days.filter((d) => d !== null && d >= 0 && d <= 30).length },
-    { label: 'Not expiring soon', value: 'ok', count: days.filter((d) => d === null || d > 30).length },
+    { label: 'Not expiring soon', value: 'ok', count: days.filter((d) => d !== null && d > 30).length },
+    { label: 'No expiry on file', value: 'missing', count: days.filter((d) => d === null).length },
   ];
   return (
     <div className="panel status-strip">

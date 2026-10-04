@@ -1,16 +1,24 @@
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts';
-import type { TripStatusCount } from '../../services/dashboard';
+import type { RideStatusCount } from '../../services/dashboard';
 import { titleCaseLabel } from '../../lib/format';
 import { STATUS_COLORS, TOOLTIP_BG, TOOLTIP_BORDER } from './chartTheme';
 import { SkeletonDonut } from '../Skeleton';
 import styles from './charts.module.css';
 
 export interface RideStatusChartProps {
-  data: TripStatusCount[];
+  data: RideStatusCount[];
   loading?: boolean;
 }
 
-const STATUS_ORDER: TripStatusCount['status'][] = ['completed', 'active', 'forming', 'cancelled'];
+const STATUS_ORDER: RideStatusCount['status'][] = ['completed', 'ongoing', 'assigned', 'pending', 'cancelled'];
+
+const STATUS_LABEL: Record<RideStatusCount['status'], string> = {
+  completed: 'Completed',
+  ongoing: 'Ongoing',
+  assigned: 'Assigned',
+  pending: 'Waiting for driver',
+  cancelled: 'Cancelled',
+};
 
 /**
  * "Ride Status" dashboard panel — README §03 wants a 124px donut with the
@@ -45,20 +53,20 @@ export function RideStatusChart({ data, loading = false }: RideStatusChartProps)
             </Pie>
             <Tooltip
               contentStyle={{ background: TOOLTIP_BG, border: `1px solid ${TOOLTIP_BORDER}`, borderRadius: 8, fontSize: 12 }}
-              formatter={(value, name) => (typeof value === 'number' ? [`${value} rides`, titleCaseLabel(String(name ?? ''))] : null)}
+              formatter={(value, name) => (typeof value === 'number' ? [`${value} rides`, STATUS_LABEL[name as RideStatusCount['status']] ?? titleCaseLabel(String(name ?? ''))] : null)}
             />
           </PieChart>
         </ResponsiveContainer>
         <div className={styles.donutCenter}>
           <span className={styles.donutTotal}>{total}</span>
-          <span className={styles.donutTotalLabel}>Trips</span>
+          <span className={styles.donutTotalLabel}>Rides</span>
         </div>
       </div>
       <ul className={styles.donutLegend}>
         {ordered.map((entry) => (
           <li key={entry.status} className={styles.donutLegendRow}>
             <span className={styles.donutDot} style={{ background: STATUS_COLORS[entry.status] }} />
-            <span className={styles.donutLegendLabel}>{titleCaseLabel(entry.status)}</span>
+            <span className={styles.donutLegendLabel}>{STATUS_LABEL[entry.status]}</span>
             <span className={styles.donutLegendCount}>{entry.count}</span>
           </li>
         ))}

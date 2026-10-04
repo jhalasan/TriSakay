@@ -2507,6 +2507,60 @@ export type Database = {
           status: Database["public"]["Enums"]["ride_status"]
         }[]
       }
+      admin_report_summary: {
+        Args: { p_since: string; p_until?: string }
+        Returns: {
+          average_fare: number
+          total_revenue: number
+          total_rides: number
+        }[]
+      }
+      admin_rides_revenue_daily: {
+        Args: { p_since: string }
+        Returns: {
+          day: string
+          revenue: number
+          rides: number
+        }[]
+      }
+      admin_ride_status_counts: {
+        Args: Record<PropertyKey, never>
+        Returns: {
+          ride_count: number
+          status: Database["public"]["Enums"]["ride_status"]
+        }[]
+      }
+      admin_list_ride_log: {
+        Args: { p_since: string }
+        Returns: {
+          cancelled_at: string | null
+          completed_at: string | null
+          dest_label: string | null
+          driver_name: string | null
+          fare_flagged: boolean
+          final_fare: number | null
+          has_emergency_alert: boolean
+          id: string
+          passenger_name: string | null
+          pickup_label: string | null
+          requested_at: string
+          status: Database["public"]["Enums"]["ride_status"]
+        }[]
+      }
+      admin_list_transactions: {
+        Args: { p_since: string }
+        Returns: {
+          amount: number
+          created_at: string
+          driver_name: string | null
+          id: string
+          method: Database["public"]["Enums"]["payment_method"]
+          passenger_name: string | null
+          ride_request_id: string
+          ride_status: Database["public"]["Enums"]["ride_status"]
+          status: Database["public"]["Enums"]["payment_status"]
+        }[]
+      }
       get_peak_hour_histogram: {
         Args: { p_since: string }
         Returns: {

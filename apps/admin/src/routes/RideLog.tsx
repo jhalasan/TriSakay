@@ -44,7 +44,7 @@ const PAGE_SIZE = 10;
  * view. Same list+toolbar+modal shape as Complaints/Passengers/Drivers.
  */
 export function RideLog() {
-  const { rides, loading, error, search, statusFilter, dateRange, page, fetch, setSearch, setStatusFilter, setDateRange, setPage } =
+  const { rides, loading, error, truncated, search, statusFilter, dateRange, page, fetch, setSearch, setStatusFilter, setDateRange, setPage } =
     useRideLogStore();
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
@@ -147,6 +147,7 @@ export function RideLog() {
         }
       />
 
+      {truncated && <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />}
       <DataTable
         columns={columns}
         rows={pageRows}

@@ -5,7 +5,6 @@ import { Badge } from '../components/Badge';
 import { StatTile } from '../components/StatTile';
 import { PeakHoursChart, RidesRevenueChart } from '../components/charts';
 import { getPeakHourHistogram, getReportSummary, getRidesRevenueOverTime, listTransactions, dateRangeSinceIso, type ReportDateRange } from '../services/reports';
-import { useSettingsStore } from '../store/useSettingsStore';
 import { useSessionStore } from '../store/useSessionStore';
 import { meetsRoleGate } from '../lib/rbac';
 import type { PeakHourBucket, ReportSummary, RidesRevenuePoint, TransactionRow } from '../types/report';
@@ -48,18 +47,12 @@ export function Reports() {
   const [peakHours, setPeakHours] = useState<PeakHourBucket[]>([]);
   const [peakHoursError, setPeakHoursError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const fareConfig = useSettingsStore((state) => state.fareConfig);
-  const fetchSettings = useSettingsStore((state) => state.fetch);
   const { showToast } = useToast();
   // A15 (UAT audit): viewing the table stays open to every PSO role; only
   // the bulk CSV export is gated — exfiltrating identifiable names in bulk
   // is a distinct risk from the same names being visible on-screen.
   const role = useSessionStore((state) => state.user?.role);
   const canExport = role ? meetsRoleGate(role, 'supervisor') : false;
-
-  useEffect(() => {
-    if (!fareConfig) fetchSettings();
-  }, [fareConfig, fetchSettings]);
 
   function load() {
     let cancelled = false;
@@ -104,6 +97,7 @@ export function Reports() {
       { header: 'Amount', value: (t) => t.amount },
       { header: 'Method', value: (t) => t.method },
       { header: 'Status', value: (t) => t.status },
+      { header: 'Ride Status', value: (t) => t.rideStatus },
     ]);
     const filename = `transactions-${dateRange}-${new Date().toISOString().slice(0, 10)}.csv`;
     const url = downloadCsv(filename, csv);
@@ -115,7 +109,16 @@ export function Reports() {
     { key: 'driver', header: 'Driver', render: (t) => t.driverName },
     { key: 'amount', header: 'Amount', align: 'right', sortValue: (t) => t.amount, render: (t) => formatCurrency(t.amount) },
     { key: 'method', header: 'Method', render: (t) => <Badge label={paymentMethodLabel(t.method)} tone="neutral" /> },
-    { key: 'status', header: 'Status', render: (t) => <Badge label={titleCaseLabel(t.status)} tone={PAYMENT_TONE[t.status]} /> },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (t) => (
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <Badge label={titleCaseLabel(t.status)} tone={PAYMENT_TONE[t.status]} />
+          {t.rideStatus !== 'completed' && <Badge label={`Ride ${t.rideStatus}`} tone="warn" />}
+        </div>
+      ),
+    },
     { key: 'time', header: 'Date', render: (t) => formatDateTime(t.createdAt) },
   ];
 
@@ -184,7 +187,7 @@ export function Reports() {
         <StatTile
           label="Average Fare"
           value={loading || !summary ? '—' : formatCurrency(summary.averageFare)}
-          hint={fareConfig ? `Base ${formatCurrency(fareConfig.baseFare)} + ${formatCurrency(fareConfig.ratePerKm)}/km` : undefined}
+          hint="Completed rides only"
         />
         <StatTile
           label="Peak Hour"

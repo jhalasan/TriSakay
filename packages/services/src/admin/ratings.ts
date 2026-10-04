@@ -35,11 +35,11 @@ export async function listFlaggedLowRatings(): Promise<ListFlaggedLowRatingsResu
   const [
     { data: users, error: usersError },
     { data: tricycles, error: tricyclesError },
-    { data: trips, error: tripsError },
+    { data: tripCounts, error: tripsError },
   ] = await Promise.all([
     client.from('users').select('id, status').in('id', driverIds),
     client.from('tricycles').select('driver_id, plate_no').in('driver_id', driverIds).eq('is_active', true),
-    client.from('trips').select('driver_id').in('driver_id', driverIds),
+    client.rpc('get_driver_trip_counts', { p_driver_ids: driverIds }),
   ]);
 
   if (usersError) return { data: [], error: usersError.message };
@@ -48,8 +48,7 @@ export async function listFlaggedLowRatings(): Promise<ListFlaggedLowRatingsResu
 
   const statusById = new Map((users ?? []).map((u) => [u.id, u.status]));
   const plateByDriverId = new Map((tricycles ?? []).map((t) => [t.driver_id, t.plate_no]));
-  const tripCountByDriverId = new Map<string, number>();
-  for (const t of trips ?? []) tripCountByDriverId.set(t.driver_id, (tripCountByDriverId.get(t.driver_id) ?? 0) + 1);
+  const tripCountByDriverId = new Map((tripCounts ?? []).map((r) => [r.driver_id, Number(r.trip_count)]));
 
   const rows: FlaggedLowRatingRow[] = data.map((row) => ({
     driverId: row.driver_id!,

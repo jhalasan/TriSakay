@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { getAdminDashboardStats, getRidesPerDay, getTripStatusBreakdown, listExpiringFranchises, listOverdueComplaints, listRecentTripActivity } from '../src/admin/dashboard.ts';
+import { getAdminDashboardStats, getRidesPerDay, getRideStatusBreakdown, listExpiringFranchises, listOverdueComplaints, listRecentTripActivity } from '../src/admin/dashboard.ts';
 
 function countQuery(count: number) {
   return {
@@ -19,13 +19,12 @@ test('getAdminDashboardStats issues the right table/filter per count and maps th
         eq: async (column: string, value: unknown) => {
           captured.push({ table, column, value });
           if (table === 'users') return { count: 12, error: null };
-          if (table === 'trips') return { count: 3, error: null };
           if (table === 'driver_profiles') return { count: 5, error: null };
           throw new Error(`unexpected eq() on ${table}`);
         },
         in: async (column: string, value: unknown) => {
           captured.push({ table, column, value });
-          return { count: 7, error: null };
+          return { count: table === 'ride_requests' ? 3 : 7, error: null };
         },
       }),
     }),
@@ -37,7 +36,8 @@ test('getAdminDashboardStats issues the right table/filter per count and maps th
   assert.deepEqual(data, { totalDrivers: 12, activeRides: 3, pendingVerifications: 5, openComplaints: 7 });
 
   assert.deepEqual(captured.find((c) => c.table === 'users'), { table: 'users', column: 'role', value: 'driver' });
-  assert.deepEqual(captured.find((c) => c.table === 'trips'), { table: 'trips', column: 'status', value: 'active' });
+  // Active rides are the rides in progress (assigned or ongoing), not active trips.
+  assert.deepEqual(captured.find((c) => c.table === 'ride_requests'), { table: 'ride_requests', column: 'status', value: ['assigned', 'ongoing'] });
   assert.deepEqual(captured.find((c) => c.table === 'driver_profiles'), {
     table: 'driver_profiles',
     column: 'verification_status',
@@ -54,8 +54,8 @@ test('getAdminDashboardStats returns { data: null, error } when any one count qu
   __setSupabaseClientForTests({
     from: (table: string) => ({
       select: () => ({
-        eq: async () => (table === 'trips' ? { count: null, error: { message: 'connection refused' } } : { count: 1, error: null }),
-        in: async () => ({ count: 1, error: null }),
+        eq: async () => ({ count: 1, error: null }),
+        in: async () => (table === 'ride_requests' ? { count: null, error: { message: 'connection refused' } } : { count: 1, error: null }),
       }),
     }),
   } as any);
@@ -247,16 +247,16 @@ test('listRecentTripActivity joins ride_requests to their trip, resolves both na
       if (table === 'ride_requests') {
         return rideRequestsTable(
           [
-            { id: 'rr1', passenger_id: 'u-passenger1', final_fare: 42, trip_id: 'trip1' },
-            { id: 'rr2', passenger_id: 'u-deleted-passenger', final_fare: null, trip_id: 'trip2' },
+            { id: 'rr1', passenger_id: 'u-passenger1', final_fare: 42, trip_id: 'trip1', status: 'completed', requested_at: '2026-08-13T23:00:00.000Z', completed_at: '2026-08-14T00:00:00.000Z', cancelled_at: null },
+            { id: 'rr2', passenger_id: 'u-deleted-passenger', final_fare: 30, trip_id: 'trip2', status: 'cancelled', requested_at: '2026-08-13T23:30:00.000Z', completed_at: null, cancelled_at: '2026-08-13T23:50:00.000Z' },
           ],
           (n) => (capturedLimit = n),
         );
       }
       if (table === 'trips') {
         return tripsTable([
-          { id: 'trip1', status: 'active', updated_at: '2026-08-14T00:00:00.000Z', driver_id: 'u-driver1' },
-          { id: 'trip2', status: 'completed', updated_at: '2026-08-13T23:50:00.000Z', driver_id: 'u-deleted-driver' },
+          { id: 'trip1', driver_id: 'u-driver1' },
+          { id: 'trip2', driver_id: 'u-deleted-driver' },
         ]);
       }
       if (table === 'users') {
@@ -275,24 +275,25 @@ test('listRecentTripActivity joins ride_requests to their trip, resolves both na
   assert.equal(error, null);
   assert.equal(capturedLimit, 80); // over-fetches 4x the requested limit
   assert.deepEqual(data, [
-    { id: 'rr1', driverName: 'Ronnie Bautista', passengerName: 'Maria Clara', status: 'active', fare: 42, updatedAt: '2026-08-14T00:00:00.000Z' },
-    { id: 'rr2', driverName: null, passengerName: null, status: 'completed', fare: null, updatedAt: '2026-08-13T23:50:00.000Z' },
+    { id: 'rr1', driverName: 'Ronnie Bautista', passengerName: 'Maria Clara', status: 'completed', fare: 42, updatedAt: '2026-08-14T00:00:00.000Z' },
+    // Cancelled on its own: shows the ride's status and no fare, even though it has a final_fare value.
+    { id: 'rr2', driverName: null, passengerName: null, status: 'cancelled', fare: null, updatedAt: '2026-08-13T23:50:00.000Z' },
   ]);
 });
 
-test('listRecentTripActivity sorts by the trip\'s recency, not the ride_request fetch order', async () => {
+test('listRecentTripActivity sorts by when each ride last changed, not the fetch order', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
       if (table === 'ride_requests') {
         return rideRequestsTable([
-          { id: 'rr-older-trip', passenger_id: 'p1', final_fare: 10, trip_id: 'trip-old' },
-          { id: 'rr-newer-trip', passenger_id: 'p2', final_fare: 20, trip_id: 'trip-new' },
+          { id: 'rr-older-trip', passenger_id: 'p1', final_fare: 10, trip_id: 'trip-old', status: 'completed', requested_at: '2026-08-01T00:00:00.000Z', completed_at: '2026-08-01T00:20:00.000Z', cancelled_at: null },
+          { id: 'rr-newer-trip', passenger_id: 'p2', final_fare: 20, trip_id: 'trip-new', status: 'completed', requested_at: '2026-08-14T00:00:00.000Z', completed_at: '2026-08-14T00:20:00.000Z', cancelled_at: null },
         ]);
       }
       if (table === 'trips') {
         return tripsTable([
-          { id: 'trip-old', status: 'completed', updated_at: '2026-08-01T00:00:00.000Z', driver_id: 'd1' },
-          { id: 'trip-new', status: 'completed', updated_at: '2026-08-14T00:00:00.000Z', driver_id: 'd2' },
+          { id: 'trip-old', driver_id: 'd1' },
+          { id: 'trip-new', driver_id: 'd2' },
         ]);
       }
       return usersTable([]);
@@ -335,7 +336,7 @@ test('listRecentTripActivity returns { data: [], error } when the ride_requests 
 test('listRecentTripActivity returns { data: [], error } when the trips query fails', async () => {
   __setSupabaseClientForTests({
     from: (table: string) => {
-      if (table === 'ride_requests') return rideRequestsTable([{ id: 'rr1', passenger_id: 'p1', final_fare: 10, trip_id: 'trip1' }]);
+      if (table === 'ride_requests') return rideRequestsTable([{ id: 'rr1', passenger_id: 'p1', final_fare: 10, trip_id: 'trip1', status: 'completed', requested_at: '2026-08-14T00:00:00.000Z', completed_at: null, cancelled_at: null }]);
       if (table === 'trips') return { select: () => ({ in: async () => ({ data: null, error: { message: 'connection refused' } }) }) };
       throw new Error(`unexpected table ${table}`);
     },
@@ -346,40 +347,35 @@ test('listRecentTripActivity returns { data: [], error } when the trips query fa
   assert.equal(error, 'connection refused');
 });
 
-test('getRidesPerDay groups completed ride_requests into calendar-day buckets, oldest first', async () => {
-  const now = new Date();
-  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0).toISOString();
-  const yesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 9, 0, 0).toISOString();
+function manilaDayKey(daysAgo: number): string {
+  return new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000).toLocaleDateString('en-CA', { timeZone: 'Asia/Manila' });
+}
 
+test('getRidesPerDay asks the database for completed rides since the start of the Manila week and zero-fills the 7 days', async () => {
+  const calls: unknown[] = [];
   __setSupabaseClientForTests({
-    from: (table: string) => {
-      if (table === 'ride_requests') {
-        return {
-          select: () => ({
-            eq: () => ({
-              gte: async () => ({
-                data: [{ requested_at: yesterday }, { requested_at: today }, { requested_at: today }],
-                error: null,
-              }),
-            }),
-          }),
-        };
-      }
-      throw new Error(`unexpected table ${table}`);
+    rpc: async (fn: string, args: unknown) => {
+      calls.push({ fn, args });
+      return {
+        data: [
+          { day: manilaDayKey(1), rides: 1, revenue: '15.00' },
+          { day: manilaDayKey(0), rides: 2, revenue: '30.00' },
+        ],
+        error: null,
+      };
     },
   } as any);
 
   const { data, error } = await getRidesPerDay();
+
   assert.equal(error, null);
+  assert.deepEqual(calls, [{ fn: 'admin_rides_revenue_daily', args: { p_since: `${manilaDayKey(6)}T00:00:00+08:00` } }]);
   assert.equal(data.length, 7);
-  assert.equal(data[5].count, 1); // yesterday
-  assert.equal(data[6].count, 2); // today
+  assert.deepEqual(data.map((d) => d.count), [0, 0, 0, 0, 0, 1, 2]); // oldest first; yesterday 1, today 2
 });
 
 test('getRidesPerDay returns 7 zero-count days (not an error) when nothing happened this week', async () => {
-  __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: [], error: null }) }) }) }),
-  } as any);
+  __setSupabaseClientForTests({ rpc: async () => ({ data: [], error: null }) } as any);
 
   const { data, error } = await getRidesPerDay();
   assert.equal(error, null);
@@ -387,56 +383,44 @@ test('getRidesPerDay returns 7 zero-count days (not an error) when nothing happe
   assert.ok(data.every((d) => d.count === 0));
 });
 
-test('getRidesPerDay returns { data: [], error } when the query fails', async () => {
-  __setSupabaseClientForTests({
-    from: () => ({ select: () => ({ eq: () => ({ gte: async () => ({ data: null, error: { message: 'connection refused' } }) }) }) }),
-  } as any);
+test('getRidesPerDay returns { data: [], error } when the call fails', async () => {
+  __setSupabaseClientForTests({ rpc: async () => ({ data: null, error: { message: 'connection refused' } }) } as any);
 
   const { data, error } = await getRidesPerDay();
   assert.deepEqual(data, []);
   assert.equal(error, 'connection refused');
 });
 
-test('getTripStatusBreakdown issues one count query per TripStatus and maps them', async () => {
-  const captured: { column: string; value: unknown }[] = [];
-
+test('getRideStatusBreakdown counts RIDES by status, in a fixed order, with 0 for a status that has none', async () => {
   __setSupabaseClientForTests({
-    from: (table: string) => {
-      assert.equal(table, 'trips');
+    rpc: async (fn: string) => {
+      assert.equal(fn, 'admin_ride_status_counts');
       return {
-        select: () => ({
-          eq: async (column: string, value: unknown) => {
-            captured.push({ column, value });
-            const counts: Record<string, number> = { forming: 2, active: 5, completed: 421, cancelled: 34 };
-            return { count: counts[value as string], error: null };
-          },
-        }),
+        data: [
+          { status: 'completed', ride_count: 30 },
+          { status: 'cancelled', ride_count: 55 },
+          { status: 'ongoing', ride_count: 1 },
+        ],
+        error: null,
       };
     },
   } as any);
 
-  const { data, error } = await getTripStatusBreakdown();
+  const { data, error } = await getRideStatusBreakdown();
   assert.equal(error, null);
   assert.deepEqual(data, [
-    { status: 'forming', count: 2 },
-    { status: 'active', count: 5 },
-    { status: 'completed', count: 421 },
-    { status: 'cancelled', count: 34 },
+    { status: 'pending', count: 0 },
+    { status: 'assigned', count: 0 },
+    { status: 'ongoing', count: 1 },
+    { status: 'completed', count: 30 },
+    { status: 'cancelled', count: 55 },
   ]);
-  assert.ok(captured.every((c) => c.column === 'status'));
 });
 
-test('getTripStatusBreakdown returns { data: [], error } when any one count query errors', async () => {
-  __setSupabaseClientForTests({
-    from: () => ({
-      select: () => ({
-        eq: async (_column: string, value: unknown) =>
-          value === 'active' ? { count: null, error: { message: 'connection refused' } } : { count: 1, error: null },
-      }),
-    }),
-  } as any);
+test('getRideStatusBreakdown returns { data: [], error } when the call fails', async () => {
+  __setSupabaseClientForTests({ rpc: async () => ({ data: null, error: { message: 'connection refused' } }) } as any);
 
-  const { data, error } = await getTripStatusBreakdown();
+  const { data, error } = await getRideStatusBreakdown();
   assert.deepEqual(data, []);
   assert.equal(error, 'connection refused');
 });

@@ -1,3 +1,4 @@
+import { daysFromTodayManila } from '../lib/format.ts';
 import type { AccountStatus, TricycleCluster, VerificationStatus } from './driver';
 
 export interface TricycleRow {
@@ -16,11 +17,8 @@ export interface TricycleRow {
   createdAt: string; // ISO
 }
 
-/** Positive = days remaining, 0 = expires today, negative = days lapsed. Null when no expiry date is on file. */
+/** Positive = days remaining, 0 = expires today, negative = days lapsed (counted against today in Manila). Null when no expiry date is on file. */
 export function daysUntilExpiry(mtopExpiryDate: string | null): number | null {
   if (!mtopExpiryDate) return null;
-  const today = new Date();
-  const todayUtc = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
-  const expiryUtc = Date.parse(mtopExpiryDate);
-  return Math.round((expiryUtc - todayUtc) / 86_400_000);
+  return daysFromTodayManila(mtopExpiryDate);
 }
