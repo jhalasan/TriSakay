@@ -3,11 +3,13 @@
 // the repo. This can only run server-side: creating another person's auth
 // account needs the service-role key, which must never reach the browser.
 //
-// handle_new_auth_user() (the auth.users insert trigger) always downgrades
-// any non-'driver' metadata role to 'passenger' — a deliberate guard against
-// privilege escalation through the public signup API. That guard applies
-// here too (this still goes through the same trigger), so the real PSO role
-// is set in a second step, after creation, using the service-role client.
+// handle_new_auth_user() (the auth.users insert trigger) downgrades any
+// non-'driver' user_metadata role to 'passenger' — a deliberate guard against
+// privilege escalation through the public signup API. The staff role is
+// passed in app_metadata instead, which only this service-role call can set,
+// so the row is created with the right role in one step (a passenger row
+// without a phone number would be rejected by users_contact_required_for_pax_driver).
+// The second step below then only sets must_change_password.
 //
 // No email is sent (no infra to send one) — a one-time temp password is
 // generated here and returned directly in the response for the admin UI to
@@ -103,6 +105,8 @@ Deno.serve(async (req: Request) => {
       password: tempPassword,
       email_confirm: true,
       user_metadata: { first_name: firstName, last_name: lastName },
+      // Read by handle_new_auth_user(). Only this service-role call can set app_metadata, so public signup cannot ask for it.
+      app_metadata: { staff_role: role },
     });
 
     if (createError || !created.user) {
