@@ -3,9 +3,10 @@ import {
   approveVerification,
   listVerificationCases,
   rejectVerification,
+  reviewDocument,
   updateVerificationCase,
 } from '../services/verification';
-import type { VerificationCase } from '../types/verification';
+import type { DocumentType, VerificationCase } from '../types/verification';
 
 // P2 (2026-09-15 launch audit): updateFields() used to fire one UPDATE per
 // keystroke — a 16-char MTOP number was 16 unordered round-trips, and a
@@ -27,6 +28,7 @@ interface VerificationState {
     driverId: string,
     patch: Partial<Pick<VerificationCase, 'bodyNo' | 'mtopNo' | 'mtopExpiryDate' | 'cluster' | 'notes'>>
   ) => Promise<void>;
+  reviewDocument: (driverId: string, docType: DocumentType, decision: 'approved' | 'rejected', remarks?: string) => Promise<boolean>;
   approve: (driverId: string, notes?: string) => Promise<boolean>;
   reject: (driverId: string, notes: string) => Promise<boolean>;
 }
@@ -83,6 +85,16 @@ export const useVerificationStore = create<VerificationState>()((set, get) => {
           void flushPendingWrite(driverId);
         }, DEBOUNCE_MS)
       );
+    },
+
+    reviewDocument: async (driverId, docType, decision, remarks) => {
+      const { error } = await reviewDocument(driverId, docType, decision, remarks);
+      if (error) {
+        set({ error });
+        return false;
+      }
+      await get().fetch();
+      return true;
     },
 
     approve: async (driverId, notes) => {

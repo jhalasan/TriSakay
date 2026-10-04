@@ -2,6 +2,7 @@ import {
   approveVerification as approveVerificationReal,
   listPendingVerifications,
   rejectVerification as rejectVerificationReal,
+  reviewDriverDocument as reviewDriverDocumentReal,
   updateVerificationFields as updateVerificationFieldsReal,
 } from '@trisakay/services';
 import type { VerificationCase, DocumentType } from '../types/verification';
@@ -29,6 +30,7 @@ export async function listVerificationCases(): Promise<ServiceResult<Verificatio
       label: DOCUMENT_LABEL[d.docType],
       status: d.status,
       storagePath: d.storagePath,
+      remarks: d.remarks ?? '',
     })),
     bodyNo: c.bodyNo ?? '',
     mtopNo: c.mtopNo ?? '',
@@ -54,6 +56,17 @@ export async function updateVerificationCase(
     ...(mtopExpiryDate !== undefined && { mtopExpiryDate }),
     ...(cluster !== undefined && cluster !== '' && { cluster }),
   });
+  return { data: null, error };
+}
+
+/** S+ action. Approves or rejects ONE document; a rejection needs a reason the driver will see. */
+export async function reviewDocument(
+  driverId: string,
+  docType: DocumentType,
+  decision: 'approved' | 'rejected',
+  remarks?: string
+): Promise<ServiceResult<null>> {
+  const { error } = await reviewDriverDocumentReal(driverId, docType, decision, remarks);
   return { data: null, error };
 }
 

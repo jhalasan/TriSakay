@@ -99,12 +99,17 @@ const DECISION_COPY: Record<PendingDecision['kind'], { title: string; confirmLab
     title: 'Reject verification',
     confirmLabel: 'Reject',
     tone: 'danger',
-    message: (c) => `Reject ${c.driverFullName}'s verification? They'll need to resubmit documents before they can go online.`,
+    message: (c) => {
+      const rejected = c.documents.filter((d) => d.status === 'rejected');
+      return rejected.length > 0
+        ? `Reject ${c.driverFullName}'s verification? They will be asked to replace only: ${rejected.map((d) => d.label).join(', ')}. The other documents stay as they are.`
+        : `Reject ${c.driverFullName}'s verification? They'll need to resubmit all documents before they can go online.`;
+    },
   },
 };
 
 export function DriverVerification() {
-  const { cases, selectedDriverId, loading, error, fetch, select, updateFields, approve, reject } = useVerificationStore();
+  const { cases, selectedDriverId, loading, error, fetch, select, updateFields, reviewDocument, approve, reject } = useVerificationStore();
   const [deciding, setDeciding] = useState<'approve' | 'reject' | null>(null);
   const [pendingDecision, setPendingDecision] = useState<PendingDecision | null>(null);
   const { showToast } = useToast();
@@ -174,7 +179,23 @@ export function DriverVerification() {
 
         <div className="evidence-grid">
           {c.documents.map((doc) => (
-            <DocumentPanel key={doc.docType} label={doc.label} status={doc.status} storagePath={doc.storagePath} />
+            <RoleGate
+              key={doc.docType}
+              min="supervisor"
+              fallback={<DocumentPanel label={doc.label} status={doc.status} storagePath={doc.storagePath} remarks={doc.remarks} />}
+            >
+              <DocumentPanel
+                label={doc.label}
+                status={doc.status}
+                storagePath={doc.storagePath}
+                remarks={doc.remarks}
+                review={{
+                  disabled: deciding !== null || c.overallStatus !== 'pending',
+                  onApprove: () => void reviewDocument(c.driverId, doc.docType, 'approved'),
+                  onReject: (reason) => void reviewDocument(c.driverId, doc.docType, 'rejected', reason),
+                }}
+              />
+            </RoleGate>
           ))}
         </div>
 
@@ -248,7 +269,7 @@ export function DriverVerification() {
             </p>
             <Textarea
               label="Reviewer Notes"
-              hint="Explain the decision. Required when rejecting."
+              hint="Explain the decision. When no document is marked Rejected above, this reason is required and the whole application is sent back."
               value={c.notes}
               onChange={(e) => updateFields(c.driverId, { notes: e.target.value })}
               placeholder="Required if rejecting…"
@@ -262,7 +283,7 @@ export function DriverVerification() {
                 superscript="S+"
                 fullWidth
                 loading={deciding === 'approve'}
-                disabled={deciding !== null || c.overallStatus !== 'pending'}
+                disabled={deciding !== null || c.overallStatus !== 'pending' || c.documents.some((d) => d.status === 'rejected')}
                 onClick={() => setPendingDecision({ kind: 'approve', case: c })}
               >
                 {deciding === 'approve' ? 'Approving…' : 'Approve'}
@@ -273,7 +294,7 @@ export function DriverVerification() {
                 superscript="S+"
                 fullWidth
                 loading={deciding === 'reject'}
-                disabled={deciding !== null || c.overallStatus !== 'pending' || !c.notes.trim()}
+                disabled={deciding !== null || c.overallStatus !== 'pending' || (!c.notes.trim() && !c.documents.some((d) => d.status === 'rejected'))}
                 onClick={() => setPendingDecision({ kind: 'reject', case: c })}
               >
                 {deciding === 'reject' ? 'Rejecting…' : 'Reject'}
@@ -281,7 +302,9 @@ export function DriverVerification() {
             </div>
             <p className="footnote">
               {c.overallStatus === 'pending'
-                ? 'Approve / Reject is limited to PSO Supervisor and Administrator. PSO Staff sees this panel read-only.'
+                ? c.documents.some((d) => d.status === 'rejected')
+                  ? 'A document is marked Rejected. Press Reject to send only those documents back, or mark it OK to approve.'
+                  : 'Approve / Reject is limited to PSO Supervisor and Administrator. PSO Staff sees this panel read-only.'
                 : `This case was already ${c.overallStatus}. Decisions can't be changed here.`}
             </p>
           </div>

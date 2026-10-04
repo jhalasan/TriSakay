@@ -3,7 +3,14 @@ import assert from 'node:assert/strict';
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '../src/supabase/database.types.ts';
 import { __setSupabaseClientForTests } from '../src/supabase/client.ts';
-import { listOwnDriverDocuments, submitDriverDocuments, updateDriverDocumentExpiry } from '../src/driver-documents/index.ts';
+import {
+  DRIVER_DOCUMENT_MAX_BYTES,
+  listOwnDriverDocuments,
+  resubmitDriverDocuments,
+  submitDriverDocuments,
+  updateDriverDocumentExpiry,
+  validateDriverDocumentFile,
+} from '../src/driver-documents/index.ts';
 
 test('submitDriverDocuments uploads every document then submits them via one RPC call', async () => {
   const uploadedPaths: string[] = [];
@@ -145,8 +152,8 @@ test('listOwnDriverDocuments scopes the read to the signed-in driver (D13)', asy
             capturedFilter = { column, value };
             return Promise.resolve({
               data: [
-                { id: 'd1', doc_type: 'drivers_license', status: 'approved', expiry_date: '2027-01-01' },
-                { id: 'd2', doc_type: 'or_cr', status: 'pending', expiry_date: null },
+                { id: 'd1', doc_type: 'drivers_license', status: 'approved', expiry_date: '2027-01-01', remarks: null },
+                { id: 'd2', doc_type: 'or_cr', status: 'pending', expiry_date: null, remarks: null },
               ],
               error: null,
             });
@@ -161,8 +168,8 @@ test('listOwnDriverDocuments scopes the read to the signed-in driver (D13)', asy
   assert.equal(error, null);
   assert.deepEqual(capturedFilter, { column: 'driver_id', value: 'driver1' });
   assert.deepEqual(data, [
-    { id: 'd1', docType: 'drivers_license', status: 'approved', expiryDate: '2027-01-01' },
-    { id: 'd2', docType: 'or_cr', status: 'pending', expiryDate: null },
+    { id: 'd1', docType: 'drivers_license', status: 'approved', expiryDate: '2027-01-01', remarks: null },
+    { id: 'd2', docType: 'or_cr', status: 'pending', expiryDate: null, remarks: null },
   ]);
 });
 
@@ -211,4 +218,90 @@ test('updateDriverDocumentExpiry scopes the update to the signed-in driver (D13)
     { column: 'id', value: 'd1' },
     { column: 'driver_id', value: 'driver1' },
   ]);
+});
+
+test('validateDriverDocumentFile accepts a JPG, PNG or WebP of 5 MB or less', () => {
+  assert.equal(validateDriverDocumentFile({ sizeBytes: 1_000_000, mimeType: 'image/jpeg' }), null);
+  assert.equal(validateDriverDocumentFile({ sizeBytes: DRIVER_DOCUMENT_MAX_BYTES, mimeType: 'image/png' }), null);
+  assert.equal(validateDriverDocumentFile({ sizeBytes: 10, mimeType: 'image/webp' }), null);
+  assert.equal(validateDriverDocumentFile({ sizeBytes: undefined, mimeType: undefined }), null, 'unknown size or type is left to the server rules');
+});
+
+test('validateDriverDocumentFile refuses a file over 5 MB or a type that is not an allowed image', () => {
+  assert.equal(validateDriverDocumentFile({ sizeBytes: DRIVER_DOCUMENT_MAX_BYTES + 1, mimeType: 'image/jpeg' }), 'too_large');
+  assert.equal(validateDriverDocumentFile({ sizeBytes: 1000, mimeType: 'application/pdf' }), 'wrong_type');
+  assert.equal(validateDriverDocumentFile({ sizeBytes: 1000, mimeType: 'image/heic' }), 'wrong_type');
+});
+
+test('resubmitDriverDocuments uploads only the given documents and calls resubmit_driver_documents', async () => {
+  const uploadedPaths: string[] = [];
+  let capturedRpc: { fn: string; args: any } | null = null;
+
+  __setSupabaseClientForTests({
+    storage: {
+      from: () => ({
+        upload: async (path: string) => {
+          uploadedPaths.push(path);
+          return { error: null };
+        },
+        remove: async () => ({ error: null }),
+      }),
+    },
+    rpc: async (fn: string, args: unknown) => {
+      capturedRpc = { fn, args };
+      return { data: 1, error: null };
+    },
+  } as unknown as SupabaseClient<Database>);
+
+  const { error, remaining } = await resubmitDriverDocuments('driver1', [{ type: 'or_cr', data: new ArrayBuffer(0) }]);
+
+  assert.equal(error, null);
+  assert.equal(remaining, 1);
+  assert.equal(uploadedPaths.length, 1);
+  assert.ok(uploadedPaths[0].startsWith('driver1/or_cr-'));
+  assert.equal(capturedRpc!.fn, 'resubmit_driver_documents');
+  assert.deepEqual(capturedRpc!.args.p_documents, [{ doc_type: 'or_cr', storage_path: uploadedPaths[0] }]);
+});
+
+test('resubmitDriverDocuments removes the uploaded files when the RPC refuses them', async () => {
+  const removedCalls: string[][] = [];
+
+  __setSupabaseClientForTests({
+    storage: {
+      from: () => ({
+        upload: async () => ({ error: null }),
+        remove: async (paths: string[]) => {
+          removedCalls.push(paths);
+          return { error: null };
+        },
+      }),
+    },
+    rpc: async () => ({ data: null, error: { message: 'That document is not waiting for a correction' } }),
+  } as unknown as SupabaseClient<Database>);
+
+  const { error, remaining } = await resubmitDriverDocuments('driver1', [{ type: 'or_cr', data: new ArrayBuffer(0) }]);
+
+  assert.equal(error, 'That document is not waiting for a correction');
+  assert.equal(remaining, null);
+  assert.equal(removedCalls.length, 1);
+  assert.equal(removedCalls[0].length, 1);
+});
+
+test('listOwnDriverDocuments returns the reviewer reason for each document', async () => {
+  __setSupabaseClientForTests({
+    auth: { getSession: async () => ({ data: { session: { user: { id: 'driver1' } } } }) },
+    from: () => ({
+      select: () => ({
+        eq: async () => ({
+          data: [{ id: 'd1', doc_type: 'or_cr', status: 'rejected', expiry_date: null, remarks: 'Plate number is cut off' }],
+          error: null,
+        }),
+      }),
+    }),
+  } as unknown as SupabaseClient<Database>);
+
+  const { data, error } = await listOwnDriverDocuments();
+
+  assert.equal(error, null);
+  assert.equal(data[0].remarks, 'Plate number is cut off');
 });

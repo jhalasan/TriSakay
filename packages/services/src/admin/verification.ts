@@ -10,6 +10,8 @@ export interface VerificationDocumentRow {
   docType: AdminDocumentType;
   status: AdminVerificationStatus;
   storagePath: string;
+  /** The reason the reviewer gave when rejecting this document, if any. */
+  remarks: string | null;
 }
 
 export interface VerificationCaseRow {
@@ -116,6 +118,7 @@ export async function listPendingVerifications(): Promise<ListPendingVerificatio
         docType: d.doc_type,
         status: d.status,
         storagePath: d.storage_path,
+        remarks: d.remarks ?? null,
       })),
     };
   });
@@ -156,6 +159,26 @@ export async function updateVerificationFields(
   if (Object.keys(dbPatch).length === 0) return { error: null };
 
   const { error } = await client.from('tricycles').update(dbPatch).eq('driver_id', driverId).eq('is_active', true);
+  return { error: error?.message ?? null };
+}
+
+export interface ReviewDriverDocumentResult {
+  error: string | null;
+}
+
+/** S+ action. Approves or rejects one document; rejecting needs a reason the driver will see. */
+export async function reviewDriverDocument(
+  driverId: string,
+  docType: AdminDocumentType,
+  decision: 'approved' | 'rejected',
+  remarks?: string
+): Promise<ReviewDriverDocumentResult> {
+  const { error } = await getSupabaseClient().rpc('review_driver_document', {
+    p_driver_id: driverId,
+    p_doc_type: docType,
+    p_decision: decision,
+    p_remarks: remarks ?? undefined,
+  });
   return { error: error?.message ?? null };
 }
 

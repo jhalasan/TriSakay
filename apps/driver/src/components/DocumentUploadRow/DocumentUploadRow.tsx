@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as ImagePicker from 'expo-image-picker';
 import { Alert, Image, Pressable, Text, View } from 'react-native';
+import { validateDriverDocumentFile } from '@trisakay/services';
 import { Badge, colors, type BadgeTone } from '@trisakay/ui';
 import { useTranslation } from '../../hooks/useTranslation';
 import type { DocumentStatus } from '../../types/document';
@@ -42,7 +43,18 @@ export function DocumentUploadRow({ label, hint, status, uri, onUpload, onRemove
     }
 
     const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
-    if (!result.canceled && result.assets[0]) onUpload(result.assets[0].uri);
+    if (result.canceled || !result.assets[0]) return;
+
+    const asset = result.assets[0];
+    const problem = validateDriverDocumentFile({ sizeBytes: asset.fileSize, mimeType: asset.mimeType });
+    if (problem) {
+      Alert.alert(
+        t.driver.documents.fileRules,
+        problem === 'too_large' ? t.driver.documents.fileTooLarge : t.driver.documents.fileWrongType
+      );
+      return;
+    }
+    onUpload(asset.uri);
   }
 
   function handleRemove() {
@@ -82,6 +94,7 @@ export function DocumentUploadRow({ label, hint, status, uri, onUpload, onRemove
           <Text style={styles.uploadText}>{t.driver.documents.upload}</Text>
         </Pressable>
       )}
+      {!uri ? <Text style={styles.hint}>{t.driver.documents.fileRules}</Text> : null}
     </View>
   );
 }

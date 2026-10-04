@@ -5,6 +5,7 @@ import {
   approveVerification,
   listPendingVerifications,
   rejectVerification,
+  reviewDriverDocument,
   updateVerificationFields,
 } from '../src/admin/verification.ts';
 
@@ -92,8 +93,8 @@ test('listPendingVerifications maps a pending driver with its tricycle and docum
       overallStatus: 'pending',
       notes: null,
       documents: [
-        { id: 'doc1', docType: 'drivers_license', status: 'pending', storagePath: 'a.jpg' },
-        { id: 'doc2', docType: 'or_cr', status: 'pending', storagePath: 'b.jpg' },
+        { id: 'doc1', docType: 'drivers_license', status: 'pending', storagePath: 'a.jpg', remarks: null },
+        { id: 'doc2', docType: 'or_cr', status: 'pending', storagePath: 'b.jpg', remarks: null },
       ],
       updatedAt: '2026-08-01T00:00:00.000Z',
     },
@@ -170,6 +171,22 @@ test('updateVerificationFields saves the tricycle identification number as body_
   assert.equal(error, null);
 
   assert.deepEqual((globalThis as any).__capturedTricycleUpdate.patch, { body_no: '042' });
+});
+
+test('reviewDriverDocument rejects one document with its reason through review_driver_document', async () => {
+  __setSupabaseClientForTests(fakeClient());
+
+  const { error } = await reviewDriverDocument('drv1', 'or_cr', 'rejected', 'Plate number is cut off');
+  assert.equal(error, null);
+
+  const captured = (globalThis as any).__capturedRpc;
+  assert.equal(captured.fn, 'review_driver_document');
+  assert.deepEqual(captured.args, {
+    p_driver_id: 'drv1',
+    p_doc_type: 'or_cr',
+    p_decision: 'rejected',
+    p_remarks: 'Plate number is cut off',
+  });
 });
 
 test('approveVerification calls perform_verification_decision with the approved decision', async () => {

@@ -1,11 +1,17 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { File } from 'expo-file-system';
-import { Alert, Platform, ScrollView, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Platform, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { submitDriverDocuments, type DriverDocumentInput } from '@trisakay/services';
-import { BrandMotif, Button, colors, TextField } from '@trisakay/ui';
+import {
+  listOwnDriverDocuments,
+  resubmitDriverDocuments,
+  submitDriverDocuments,
+  type DriverDocumentInput,
+  type OwnDriverDocumentRow,
+} from '@trisakay/services';
+import { Badge, BrandMotif, Button, colors, TextField } from '@trisakay/ui';
 import { DocumentUploadRow } from '../src/components/DocumentUploadRow';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
@@ -151,6 +157,139 @@ function UnsubmittedUpload({ rejectionReason }: { rejectionReason?: string | nul
   );
 }
 
+/**
+ * A rejected application where the reviewer marked specific documents: the
+ * driver sees which ones, why, and replaces only those. Everything else stays
+ * as it was. If the list cannot be read, or no document is marked rejected
+ * (an older rejection), it falls back to the full upload form above.
+ */
+function CorrectRejectedDocuments({ rejectionReason }: { rejectionReason?: string | null }) {
+  const t = useTranslation();
+  const v = t.driver.verificationPending;
+  const sessionUserId = useAuthStore((state) => state.sessionUserId);
+  const check = useVerificationStore((state) => state.check);
+  const documents = useDocumentsStore((state) => state.documents);
+  const submitDocument = useDocumentsStore((state) => state.submit);
+  const removeDocument = useDocumentsStore((state) => state.remove);
+
+  const [rows, setRows] = useState<OwnDriverDocumentRow[] | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+
+  const DOCUMENT_LABEL: Record<(typeof DOCUMENT_TYPES)[number], string> = {
+    drivers_license: t.driver.documents.driversLicense,
+    or_cr: t.driver.documents.orCr,
+    franchise_permit: t.driver.documents.franchisePermit,
+    tricycle_photo: t.driver.documents.tricyclePhoto,
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    void listOwnDriverDocuments().then(({ data, error }) => {
+      if (cancelled) return;
+      if (error) {
+        setLoadFailed(true);
+        return;
+      }
+      // A file staged at registration for a rejected document must never be sent again by accident.
+      for (const row of data) if (row.status === 'rejected') removeDocument(row.docType);
+      setRows(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  if (loadFailed) return <UnsubmittedUpload rejectionReason={rejectionReason} />;
+  if (rows === null) {
+    return (
+      <View style={[styles.uploadScrollContent, styles.centerSelf]}>
+        <ActivityIndicator color={colors.accentBluePressed} />
+      </View>
+    );
+  }
+
+  const rejected = DOCUMENT_TYPES.map((type) => rows.find((row) => row.docType === type)).filter(
+    (row): row is OwnDriverDocumentRow => row !== undefined && row.status === 'rejected'
+  );
+  if (rejected.length === 0) return <UnsubmittedUpload rejectionReason={rejectionReason} />;
+
+  const allChosen = rejected.every((row) => documents[row.docType].uri !== null);
+
+  async function handleSend() {
+    if (!sessionUserId || !allChosen) return;
+    setSubmitError(null);
+    setSubmitting(true);
+    try {
+      const inputs: DriverDocumentInput[] = [];
+      for (const row of rejected) {
+        const uri = documents[row.docType].uri;
+        if (uri) inputs.push({ type: row.docType, data: await readFileBytes(uri) });
+      }
+      const { error, remaining } = await resubmitDriverDocuments(sessionUserId, inputs);
+      if (error) {
+        setSubmitError(error);
+        return;
+      }
+      for (const row of rejected) removeDocument(row.docType);
+      Alert.alert(v.correctedSentTitle, v.correctedSentBody);
+      await check();
+      if (remaining) setSubmitError(v.stillRejected.replace('{count}', String(remaining)));
+    } catch {
+      setSubmitError(v.couldNotReadFile);
+    } finally {
+      setSubmitting(false);
+    }
+  }
+
+  return (
+    <ScrollView style={styles.uploadScroll} contentContainerStyle={styles.uploadScrollContent}>
+      <View style={[styles.iconBadge, styles.centerSelf]}>
+        <Ionicons name="alert-circle-outline" size={30} color={colors.accentBluePressed} />
+      </View>
+      <Text style={styles.title}>{v.fixTitle}</Text>
+      <Text style={styles.body}>{v.fixBody}</Text>
+
+      {DOCUMENT_TYPES.map((type) => {
+        const row = rows.find((r) => r.docType === type);
+        if (!row) return null;
+        if (row.status !== 'rejected') {
+          const approved = row.status === 'approved';
+          return (
+            <View key={type} style={styles.fixDoneRow}>
+              <Text style={styles.fixDoneLabel}>{DOCUMENT_LABEL[type]}</Text>
+              <Badge label={approved ? t.driver.documents.statusVerified : t.driver.documents.statusPending} tone={approved ? 'green' : 'neutral'} />
+            </View>
+          );
+        }
+        return (
+          <View key={type} style={styles.fixCard}>
+            {row.remarks ? (
+              <Text style={styles.fixReason}>
+                {v.reasonLabel}: {row.remarks}
+              </Text>
+            ) : null}
+            <DocumentUploadRow
+              label={DOCUMENT_LABEL[type]}
+              status={documents[type].uri ? 'selected' : 'rejected'}
+              uri={documents[type].uri}
+              onUpload={(uri) => submitDocument(type, uri)}
+              onRemove={() => removeDocument(type)}
+            />
+          </View>
+        );
+      })}
+
+      {submitError ? <Text style={styles.error}>{submitError}</Text> : null}
+      {!allChosen ? <Text style={styles.body}>{v.chooseAllRejected}</Text> : null}
+
+      <Button label={v.sendCorrected} onPress={handleSend} loading={submitting} disabled={!allChosen} fullWidth />
+    </ScrollView>
+  );
+}
+
 export default function VerificationPendingScreen() {
   const router = useRouter();
   const t = useTranslation();
@@ -169,7 +308,7 @@ export default function VerificationPendingScreen() {
   if (status === 'unsubmitted' || status === 'rejected') {
     return (
       <SafeAreaView style={styles.container} edges={['top']}>
-        <UnsubmittedUpload rejectionReason={status === 'rejected' ? rejectionReason : undefined} />
+        {status === 'rejected' ? <CorrectRejectedDocuments rejectionReason={rejectionReason} /> : <UnsubmittedUpload />}
         <View style={styles.logoutFooter}>
           <Button label={t.driver.verificationPending.logOut} variant="ghost" tone="neutral" onPress={() => router.push('/logout')} fullWidth />
         </View>

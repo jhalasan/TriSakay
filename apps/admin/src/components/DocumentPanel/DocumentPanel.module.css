@@ -21,3 +21,22 @@
   color: var(--ink-soft);
   text-transform: uppercase;
 }
+
+.reason {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.4;
+  color: var(--danger, #b3261e);
+}
+
+.actions {
+  display: flex;
+  gap: var(--sp-sm);
+  justify-content: flex-end;
+}
+
+.rejectForm {
+  display: flex;
+  flex-direction: column;
+  gap: var(--sp-sm);
+}

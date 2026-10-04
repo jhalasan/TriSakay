@@ -9,6 +9,8 @@ export interface DriverDocument {
   label: string;
   status: VerificationStatus;
   storagePath: string;
+  /** The reason the reviewer gave when rejecting this document ('' when none). */
+  remarks: string;
 }
 
 /**

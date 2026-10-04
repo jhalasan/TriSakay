@@ -40,5 +40,16 @@ export const styles = StyleSheet.create({
     gap: spacing.md,
   },
   centerSelf: { alignSelf: 'center' },
+  fixCard: { width: '100%', gap: spacing.sm },
+  fixReason: { ...typography.caption, color: colors.danger },
+  fixDoneRow: {
+    width: '100%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: spacing.sm,
+    minHeight: 44,
+  },
+  fixDoneLabel: { ...typography.body, color: colors.ink, flexShrink: 1 },
   logoutFooter: { padding: spacing.xl, paddingTop: 0 },
 });

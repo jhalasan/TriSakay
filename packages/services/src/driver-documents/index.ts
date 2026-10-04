@@ -15,6 +15,23 @@ export interface DriverDocumentInput {
   contentType?: 'image/jpeg' | 'image/png' | 'image/webp';
 }
 
+/** Same rule the `driver-docs` storage bucket enforces: JPG, PNG or WebP, 5 MB at most. */
+export const DRIVER_DOCUMENT_MAX_BYTES = 5 * 1024 * 1024;
+export const DRIVER_DOCUMENT_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const;
+
+export type DriverDocumentFileProblem = 'too_large' | 'wrong_type';
+
+/**
+ * Checks a picked file before upload so the driver gets a clear message instead
+ * of a storage error. An unknown size or type returns null and is left to the
+ * bucket's own rules.
+ */
+export function validateDriverDocumentFile(file: { sizeBytes?: number | null; mimeType?: string | null }): DriverDocumentFileProblem | null {
+  if (file.mimeType && !(DRIVER_DOCUMENT_MIME_TYPES as readonly string[]).includes(file.mimeType)) return 'wrong_type';
+  if (typeof file.sizeBytes === 'number' && file.sizeBytes > DRIVER_DOCUMENT_MAX_BYTES) return 'too_large';
+  return null;
+}
+
 export interface SubmitDriverDocumentsResult {
   error: string | null;
 }
@@ -98,11 +115,58 @@ export async function submitDriverDocuments(
   }
 }
 
+export interface ResubmitDriverDocumentsResult {
+  error: string | null;
+  /** How many documents are still rejected after this call; 0 means the application went back to review. */
+  remaining: number | null;
+}
+
+/**
+ * The driver replaces only the documents a reviewer rejected. Uploads each file
+ * to the private `driver-docs` bucket, then `resubmit_driver_documents` swaps
+ * them in and, once none is left rejected, puts the application back to
+ * pending. Uploaded files are removed again if the RPC refuses them.
+ */
+export async function resubmitDriverDocuments(userId: string, documents: DriverDocumentInput[]): Promise<ResubmitDriverDocumentsResult> {
+  const uploaded: { docType: DriverDocumentType; path: string }[] = [];
+  const cleanup = () =>
+    getSupabaseClient()
+      .storage.from('driver-docs')
+      .remove(uploaded.map((u) => u.path))
+      .catch(() => {});
+
+  try {
+    for (const doc of documents) {
+      const { path, error } = await uploadDriverDocument(userId, doc);
+      if (error) {
+        if (uploaded.length > 0) await cleanup();
+        return { error: error.message, remaining: null };
+      }
+      uploaded.push({ docType: doc.type, path });
+    }
+
+    const { data, error: rpcError } = await getSupabaseClient().rpc('resubmit_driver_documents', {
+      p_documents: uploaded.map((u) => ({ doc_type: u.docType, storage_path: u.path })),
+    });
+
+    if (rpcError) {
+      await cleanup();
+      return { error: rpcError.message, remaining: null };
+    }
+
+    return { error: null, remaining: data };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : 'Document submission failed', remaining: null };
+  }
+}
+
 export interface OwnDriverDocumentRow {
   id: string;
   docType: DriverDocumentType;
   status: Database['public']['Enums']['verification_status'];
   expiryDate: string | null;
+  /** The reviewer's reason, filled in when this document was rejected. */
+  remarks: string | null;
 }
 
 export interface ListOwnDriverDocumentsResult {
@@ -124,7 +188,7 @@ export async function listOwnDriverDocuments(): Promise<ListOwnDriverDocumentsRe
 
   const { data, error } = await client
     .from('driver_documents')
-    .select('id, doc_type, status, expiry_date')
+    .select('id, doc_type, status, expiry_date, remarks')
     .eq('driver_id', userId);
 
   if (error) return { data: [], error: error.message };
@@ -135,6 +199,7 @@ export async function listOwnDriverDocuments(): Promise<ListOwnDriverDocumentsRe
       docType: row.doc_type,
       status: row.status,
       expiryDate: row.expiry_date,
+      remarks: row.remarks,
     })),
     error: null,
   };

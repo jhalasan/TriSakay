@@ -2691,6 +2691,19 @@ export type Database = {
         Args: { p_documents: Json; p_plate_no: string }
         Returns: string
       }
+      resubmit_driver_documents: {
+        Args: { p_documents: Json }
+        Returns: number
+      }
+      review_driver_document: {
+        Args: {
+          p_decision: Database["public"]["Enums"]["verification_status"]
+          p_doc_type: Database["public"]["Enums"]["document_type"]
+          p_driver_id: string
+          p_remarks?: string
+        }
+        Returns: undefined
+      }
       update_fare_config: {
         Args: {
           p_base_fare: number
