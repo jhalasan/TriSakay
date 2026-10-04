@@ -4,6 +4,7 @@ import * as Location from 'expo-location';
 import { haversineKm } from '@trisakay/shared';
 import { pushDriverLocation } from '@trisakay/services/src/location/index.ts';
 import { useDriverStore } from '../store/useDriverStore';
+import { heartbeatDelayMs, shouldSendHeartbeat } from '../utils/locationHeartbeat';
 
 const DISTANCE_INTERVAL_METERS = 30;
 const TIME_INTERVAL_MS = 8000;
@@ -36,9 +37,46 @@ export function useDriverLocationSync(
   // and must be discarded (removed, not stored) rather than racing the ref.
   const generationRef = useRef(0);
   const lastPushRef = useRef<{ at: number; lat: number; lng: number } | null>(null);
+  const lastMovementRef = useRef(Date.now());
+  const heartbeatTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let cancelled = false;
+
+    function stopHeartbeat() {
+      if (heartbeatTimerRef.current) clearTimeout(heartbeatTimerRef.current);
+      heartbeatTimerRef.current = null;
+    }
+
+    /**
+     * A parked driver gets no movement updates, so re-send the position on a
+     * timer to keep it inside the server's 2 minute freshness window. Movement
+     * updates already refresh it, so a heartbeat is skipped when one just did.
+     */
+    function scheduleHeartbeat(myGeneration: number) {
+      stopHeartbeat();
+      heartbeatTimerRef.current = setTimeout(async () => {
+        if (cancelled || myGeneration !== generationRef.current) return;
+        const now = Date.now();
+        const last = lastPushRef.current;
+        if (shouldSendHeartbeat(last ? now - last.at : Infinity, now - lastMovementRef.current)) {
+          // A fresh fix when the phone can give one quickly, otherwise the last known spot.
+          let fix: { lat: number; lng: number; mocked?: boolean } | null = last ? { lat: last.lat, lng: last.lng } : null;
+          try {
+            const position = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.Balanced });
+            fix = { lat: position.coords.latitude, lng: position.coords.longitude, mocked: position.mocked };
+          } catch {
+            // keep the fallback above
+          }
+          if (cancelled || myGeneration !== generationRef.current) return;
+          if (fix) {
+            lastPushRef.current = { at: Date.now(), lat: fix.lat, lng: fix.lng };
+            void pushDriverLocation(fix);
+          }
+        }
+        scheduleHeartbeat(myGeneration);
+      }, heartbeatDelayMs(Date.now() - lastMovementRef.current));
+    }
 
     async function start() {
       if (subscriptionRef.current) return;
@@ -58,6 +96,7 @@ export function useDriverLocationSync(
           const now = Date.now();
           const movedM = last ? haversineKm(last.lat, last.lng, latitude, longitude) * 1000 : Infinity;
           if (!last || now - last.at >= TIME_INTERVAL_MS || movedM >= DISTANCE_INTERVAL_METERS) {
+            if (movedM >= DISTANCE_INTERVAL_METERS) lastMovementRef.current = now;
             lastPushRef.current = { at: now, lat: latitude, lng: longitude };
             void pushDriverLocation({ lat: latitude, lng: longitude, mocked: position.mocked });
           }
@@ -74,10 +113,13 @@ export function useDriverLocationSync(
         return;
       }
       subscriptionRef.current = subscription;
+      lastMovementRef.current = Date.now();
+      scheduleHeartbeat(myGeneration);
     }
 
     function stop() {
       generationRef.current += 1;
+      stopHeartbeat();
       subscriptionRef.current?.remove();
       subscriptionRef.current = null;
     }
