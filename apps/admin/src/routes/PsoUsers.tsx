@@ -87,6 +87,19 @@ export function PsoUsers() {
   const [pendingRevokeId, setPendingRevokeId] = useState<string | null>(null);
   const [revoking, setRevoking] = useState(false);
   const { showToast } = useToast();
+  const [copied, setCopied] = useState(false);
+
+  async function copyTempPassword(value: string) {
+    try {
+      await navigator.clipboard.writeText(value);
+    } catch {
+      showToast({ message: 'Could not copy. Select the password and copy it by hand.' });
+      return;
+    }
+    setCopied(true);
+    showToast({ message: 'Temporary password copied.' });
+    setTimeout(() => setCopied(false), 2500);
+  }
 
   const currentUserId = useSessionStore((state) => state.user?.id);
   const [pendingMfaReset, setPendingMfaReset] = useState<PsoUserRow | null>(null);
@@ -242,8 +255,8 @@ export function PsoUsers() {
           </div>
           <div className={styles.tempPasswordRow}>
             <code className={styles.tempPasswordValue}>{createdTempPassword}</code>
-            <Button variant="outline" tone="neutral" size="sm" onClick={() => navigator.clipboard?.writeText(createdTempPassword)}>
-              Copy
+            <Button variant="outline" tone="neutral" size="sm" onClick={() => copyTempPassword(createdTempPassword)}>
+              {copied ? 'Copied ✓' : 'Copy'}
             </Button>
             <Button variant="solid" tone="primary" size="sm" onClick={clearTempPassword}>
               Done
