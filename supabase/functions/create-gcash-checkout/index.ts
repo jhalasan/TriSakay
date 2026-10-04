@@ -107,6 +107,18 @@ Deno.serve(async (req: Request) => {
     const { data: userData, error: userError } = await supabase.auth.getUser();
     if (userError || !userData.user) return json({ checkoutUrl: null, error: 'Not authenticated' }, 401);
 
+    // Per user limit: 20 requests in 10 minutes covers creating, retrying and checking a payment, and stops a
+    // script from hammering PayMongo. A broken limiter must never block a payment, so it fails open.
+    const limiter = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+    const { data: allowed, error: limitError } = await limiter.rpc('increment_api_usage', {
+      p_user_id: userData.user.id,
+      p_bucket: 'create-gcash-checkout',
+      p_limit: 20,
+      p_window_seconds: 600,
+    });
+    if (limitError) console.error('create-gcash-checkout: rate limit check failed', limitError.message);
+    else if (!allowed) return json({ checkoutUrl: null, error: 'Too many payment requests. Please wait a few minutes and try again.' }, 429);
+
     const body = await req.json().catch(() => ({}) as Record<string, unknown>);
     const rideRequestId = typeof body.rideRequestId === 'string' ? body.rideRequestId : null;
     if (!rideRequestId) return json({ checkoutUrl: null, error: 'rideRequestId is required' }, 400);

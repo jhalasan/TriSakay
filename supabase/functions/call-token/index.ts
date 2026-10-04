@@ -47,6 +47,17 @@ Deno.serve(async (req: Request) => {
 
     const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+    // Per user limit: 20 tokens in 10 minutes is far more than real calls need and stops a script from asking
+    // endlessly. A broken limiter must never block a call, so it fails open.
+    const { data: allowed, error: limitError } = await supabase.rpc('increment_api_usage', {
+      p_user_id: userData.user.id,
+      p_bucket: 'call-token',
+      p_limit: 20,
+      p_window_seconds: 600,
+    });
+    if (limitError) console.error('call-token: rate limit check failed', limitError.message);
+    else if (!allowed) return json({ error: 'Too many call requests. Please wait a few minutes and try again.' }, 429);
+
     const { data: call, error: callError } = await supabase
       .from('ride_calls')
       .select('status, caller_id, callee_id, ride_request_id')
