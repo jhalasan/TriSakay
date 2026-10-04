@@ -19,8 +19,7 @@ import {
   Textarea,
   TextField,
   colors,
-  type IconTileTone,
-} from '@trisakay/ui';
+  type IconTileTone, ADAPTIVE_LABEL_PROPS } from '@trisakay/ui';
 import { complaintStepIndex } from '@trisakay/shared';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useComplaintsStore } from '../src/store/useComplaintsStore';
@@ -274,7 +273,7 @@ export default function ComplaintsScreen() {
                         </View>
                         {recentTrips.length > 1 && (
                           <Pressable accessibilityRole="button" onPress={() => setTripPickerOpen((open) => !open)} style={styles.linkButton}>
-                            <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.linkText}>{c.changeTrip}</Text>
+                            <Text {...ADAPTIVE_LABEL_PROPS} style={styles.linkText}>{c.changeTrip}</Text>
                           </Pressable>
                         )}
                       </View>

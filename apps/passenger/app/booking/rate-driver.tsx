@@ -13,7 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Avatar, Button, NavyBandHeader, SelectTile, StarPicker, Textarea, colors } from '@trisakay/ui';
+import { Avatar, Button, NavyBandHeader, SelectTile, StarPicker, Textarea, colors, ADAPTIVE_LABEL_PROPS } from '@trisakay/ui';
 import { RATING_TAGS, submitRating, type RatingTag } from '@trisakay/services';
 import { REPORT_PROMPT_MAX_SCORE, pruneTagsForScore, scoreTone, tagsForScore, type ScoreTone } from '@trisakay/shared';
 import { useBookingStore } from '../../src/store/useBookingStore';
@@ -168,7 +168,7 @@ export default function RateDriverScreen() {
       onPress={finish}
       style={styles.skipButton}
     >
-      <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.skipText}>{compact ? t.rateDriver.skipShort : t.rateDriver.skipForNow}</Text>
+      <Text {...ADAPTIVE_LABEL_PROPS} style={styles.skipText}>{compact ? t.rateDriver.skipShort : t.rateDriver.skipForNow}</Text>
     </Pressable>
   );
 

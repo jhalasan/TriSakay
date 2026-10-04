@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { ActivityIndicator, Animated, Pressable, StyleSheet, Text, View, type PressableProps } from 'react-native';
-import { colors, elevation, motion, radius } from '../../theme';
+import { ADAPTIVE_LABEL_PROPS, colors, elevation, motion, radius } from '../../theme';
 import { GradientSurface } from '../GradientSurface';
 import { styles } from './Button.styles';
 
@@ -141,14 +141,9 @@ export function Button({
                 ) : (
                   icon && <View style={styles.iconSlot}>{icon}</View>
                 )}
-                {/* One line that shrinks to fit: a two-up row on a narrow phone (e.g. the confirm dialog's Cancel / Complete)
-                    otherwise wraps mid-word ("Complet / e"). maxFontSizeMultiplier keeps a large system font size from
-                    pushing the label past what the shrink can absorb. */}
+                {/* Wraps to two lines before it shrinks, and shrinks only slightly (see ADAPTIVE_LABEL_PROPS). */}
                 <Text
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  minimumFontScale={0.75}
-                  maxFontSizeMultiplier={1.3}
+                  {...ADAPTIVE_LABEL_PROPS}
                   style={[size === 'md' ? styles.labelMd : styles.labelSm, styles.label, { color: s.textColor }]}
                 >
                   {label}

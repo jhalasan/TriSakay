@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { Button, IconTile, colors } from '@trisakay/ui';
+import { Button, IconTile, colors, ADAPTIVE_LABEL_PROPS } from '@trisakay/ui';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { styles } from '../src/styles/deactivate-account.styles';
@@ -90,7 +90,7 @@ export default function DeactivateAccountScreen() {
         )}
         <Button label={d.confirm} tone="danger" fullWidth disabled={!understood} loading={submitting} onPress={handleConfirm} />
         <Pressable accessibilityRole="button" onPress={() => router.dismiss()} style={styles.keepButton}>
-          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.keepText}>{d.keepAccount}</Text>
+          <Text {...ADAPTIVE_LABEL_PROPS} style={styles.keepText}>{d.keepAccount}</Text>
         </Pressable>
       </View>
     </View>

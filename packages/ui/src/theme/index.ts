@@ -7,6 +7,7 @@ export * from './motion';
 export * from './gradients';
 export * from './recordsPalette';
 export * from './scale';
+export * from './adaptiveLabel';
 
 import { colors } from './colors';
 import { spacing } from './spacing';

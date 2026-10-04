@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { EmptyState, NavyBandHeader, colors, recordsPalette } from '@trisakay/ui';
+import { EmptyState, NavyBandHeader, colors, recordsPalette, ADAPTIVE_LABEL_PROPS } from '@trisakay/ui';
 import { REPORT_PROMPT_MAX_SCORE, countRatingTags, ratingPercentages, scoreTone, type ScoreTone } from '@trisakay/shared';
 import { useTranslation } from '../src/hooks/useTranslation';
 import { useDriverStore } from '../src/store/useDriverStore';
@@ -133,7 +133,7 @@ export default function RatingsScreen() {
                   onPress={() => setFilter(option.value)}
                   style={[styles.chip, active && styles.chipActive]}
                 >
-                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={[styles.chipLabel, active && styles.chipLabelActive]}>{option.label}</Text>
+                  <Text {...ADAPTIVE_LABEL_PROPS} style={[styles.chipLabel, active && styles.chipLabelActive]}>{option.label}</Text>
                 </Pressable>
               );
             })}

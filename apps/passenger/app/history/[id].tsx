@@ -13,8 +13,7 @@ import {
   RouteRail,
   StatCells,
   StatusPill,
-  colors,
-} from '@trisakay/ui';
+  colors, ADAPTIVE_LABEL_PROPS } from '@trisakay/ui';
 import { formatClockTime, formatDetailDate, minutesBefore } from '@trisakay/shared';
 import { ScreenHeader } from '../../src/components/ScreenHeader';
 import { useHistoryStore } from '../../src/store/useHistoryStore';
@@ -112,7 +111,7 @@ export default function RideDetailScreen() {
         style={styles.copyLink}
       >
         <Ionicons name={copied ? 'checkmark' : 'copy-outline'} size={14} color={colors.accentBlue} />
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.copyText}>{copied ? t.history.copiedReference : t.history.copyReference}</Text>
+        <Text {...ADAPTIVE_LABEL_PROPS} style={styles.copyText}>{copied ? t.history.copiedReference : t.history.copyReference}</Text>
       </Pressable>
     </View>
   ) : null;
@@ -298,14 +297,14 @@ export default function RideDetailScreen() {
       <View style={[styles.bottomBar, { paddingBottom: Math.max(26, insets.bottom + 12) }]}>
         <Pressable accessibilityRole="button" onPress={handleGetHelp} style={styles.helpButton}>
           <Ionicons name="flag-outline" size={16} color={colors.inkSoft} />
-          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.helpText}>{t.history.getHelp}</Text>
+          <Text {...ADAPTIVE_LABEL_PROPS} style={styles.helpText}>{t.history.getHelp}</Text>
         </Pressable>
         <View style={styles.primarySlot}>
           <View style={styles.primaryShadow}>
             <Pressable accessibilityRole="button" onPress={handleBookAgain}>
               <GradientSurface token="button" direction="diagonal" style={styles.primary}>
                 <Ionicons name="refresh" size={17} color={colors.white} />
-                <Text style={styles.primaryText} numberOfLines={1} adjustsFontSizeToFit>
+                <Text style={styles.primaryText} {...ADAPTIVE_LABEL_PROPS}>
                   {isDone ? t.history.bookRouteAgain : t.history.tryRideAgain}
                 </Text>
               </GradientSurface>

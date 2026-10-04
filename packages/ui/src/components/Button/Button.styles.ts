@@ -9,6 +9,8 @@ export const styles = StyleSheet.create({
     borderRadius: radius.sm2,
     borderWidth: 1.5,
     borderColor: 'transparent',
+    // Lets two buttons side by side stay the same height when one label wraps to a second line.
+    flexGrow: 1,
   },
   md: {
     paddingVertical: spacing.md + 2,

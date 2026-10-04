@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getPassengerRideReceipt, type PassengerTripHistoryItem } from '@trisakay/services';
-import { Avatar, Button, NavyBandHeader, RouteRail, StarPicker, StatCells, colors, recordsPalette } from '@trisakay/ui';
+import { Avatar, Button, NavyBandHeader, RouteRail, StarPicker, StatCells, colors, recordsPalette, ADAPTIVE_LABEL_PROPS } from '@trisakay/ui';
 import { EmailReceiptButton } from '../../src/components/EmailReceiptButton';
 import { useBookingStore } from '../../src/store/useBookingStore';
 import { useTranslation } from '../../src/hooks/useTranslation';
@@ -150,7 +150,7 @@ export default function TripCompleteScreen() {
         style={styles.reportButton}
       >
         <Ionicons name="flag" size={16} color={colors.white} />
-        <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.reportButtonText}>{t.tripComplete.reportFareIssueButton}</Text>
+        <Text {...ADAPTIVE_LABEL_PROPS} style={styles.reportButtonText}>{t.tripComplete.reportFareIssueButton}</Text>
       </Pressable>
     </View>
   ) : null;
@@ -195,7 +195,7 @@ export default function TripCompleteScreen() {
           onPress={() => handleRate()}
         />
         <Pressable accessibilityRole="button" onPress={handleSkip} style={styles.skipButton}>
-          <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={styles.skipText}>{t.rateDriver.skipForNow}</Text>
+          <Text {...ADAPTIVE_LABEL_PROPS} style={styles.skipText}>{t.rateDriver.skipForNow}</Text>
         </Pressable>
       </View>
     </View>

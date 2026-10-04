@@ -3,7 +3,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { AccordionGroup, IconTile, NavyBandHeader, type IconTileTone } from '@trisakay/ui';
+import { AccordionGroup, IconTile, NavyBandHeader, type IconTileTone, ADAPTIVE_LABEL_PROPS } from '@trisakay/ui';
 import { CURRENT_PRIVACY_VERSION, CURRENT_TOS_VERSION } from '@trisakay/services';
 import { useTranslation } from '../../src/hooks/useTranslation';
 import { interpolate } from '../../src/utils/interpolate';
@@ -77,7 +77,7 @@ export default function LegalScreen() {
                   onPress={() => switchTab(item.value)}
                   style={[styles.segment, active && styles.segmentActive]}
                 >
-                  <Text numberOfLines={1} adjustsFontSizeToFit minimumFontScale={0.75} maxFontSizeMultiplier={1.3} style={[styles.segmentText, active && styles.segmentTextActive]}>{item.label}</Text>
+                  <Text {...ADAPTIVE_LABEL_PROPS} style={[styles.segmentText, active && styles.segmentTextActive]}>{item.label}</Text>
                 </Pressable>
               );
             })}
