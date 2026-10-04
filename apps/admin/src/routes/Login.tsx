@@ -97,7 +97,7 @@ export function Login() {
               hint="The email on your admin account."
               type="email"
               autoComplete="username"
-              placeholder="you@gensantos.gov.ph"
+              placeholder="name@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required

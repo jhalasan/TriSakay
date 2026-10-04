@@ -130,7 +130,7 @@ export default function ResetPasswordScreen() {
           <TextField
             label={t.driver.resetPassword.code}
             helperText={t.hints.resetCode}
-            placeholder="123456"
+            placeholder="6-digit code"
             value={code}
             onChangeText={setCode}
             error={errors.code}
@@ -161,7 +161,7 @@ export default function ResetPasswordScreen() {
             <TextField
               label={t.accountMgmt.mfaCodeLabel}
               helperText={t.accountMgmt.mfaChallengeBody}
-              placeholder="123456"
+              placeholder="6-digit code"
               value={mfaCode}
               onChangeText={(value) => setMfaCode(value.replace(/\D/g, ''))}
               keyboardType="number-pad"

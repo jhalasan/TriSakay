@@ -104,7 +104,7 @@ export function ForgotPassword() {
                 hint="The email on your admin account."
                 type="email"
                 autoComplete="username"
-                placeholder="you@gensantos.gov.ph"
+                placeholder="name@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -131,7 +131,7 @@ export function ForgotPassword() {
                 hint="The 6-digit code we just emailed you."
                 inputMode="numeric"
                 autoComplete="one-time-code"
-                placeholder="123456"
+                placeholder="6-digit code"
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
                 required
@@ -143,7 +143,7 @@ export function ForgotPassword() {
                 hint="The 6-digit code from your authenticator app. Staff accounts use MFA, so it is needed to reset a password."
                 inputMode="numeric"
                 autoComplete="off"
-                placeholder="123456"
+                placeholder="6-digit code"
                 maxLength={6}
                 value={mfaCode}
                 onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, ''))}

@@ -173,13 +173,13 @@ export function ProfileMenu({ onLogoutClick }: ProfileMenuProps) {
               <div className={styles.form}>
                 <TextField
                   label="First Name"
-                  hint="Your given name, e.g. Jonalyn."
+                  hint="Your given name."
                   value={firstName}
                   onChange={(e) => setFirstName(e.target.value)}
                   error={nameError ?? undefined}
                   autoFocus
                 />
-                <TextField label="Last Name" hint="Your surname, e.g. Carreon." value={lastName} onChange={(e) => setLastName(e.target.value)} />
+                <TextField label="Last Name" hint="Your surname." value={lastName} onChange={(e) => setLastName(e.target.value)} />
                 <div className={styles.formActions}>
                   <Button variant="outline" tone="neutral" size="sm" onClick={() => setEditingName(false)}>
                     Cancel

@@ -247,14 +247,14 @@ export function DriverVerification() {
               hint="The number painted on the front and rear of the tricycle (Ordinance 21, Sec. 3f). Leave blank if the permit does not show one."
               value={c.bodyNo}
               onChange={(e) => updateFields(c.driverId, { bodyNo: e.target.value })}
-              placeholder="e.g. 042"
+              placeholder="Number painted on the tricycle"
             />
             <TextField
               label="MTOP Number"
-              hint="As printed on the MTOP franchise, e.g. MTOP-2026-00123."
+              hint="As printed on the MTOP franchise."
               value={c.mtopNo}
               onChange={(e) => updateFields(c.driverId, { mtopNo: e.target.value })}
-              placeholder="e.g. MTOP-2026-00123"
+              placeholder="MTOP number as printed"
             />
             <TextField
               label="MTOP Expiry Date"

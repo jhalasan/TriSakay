@@ -189,7 +189,7 @@ export function DiscountReview() {
             hint="Copy it exactly as printed on the ID."
             value={d.idNumber}
             onChange={(e) => updateFields(d.id, { idNumber: e.target.value })}
-            placeholder="e.g. OSCA-GSC-114-2019"
+            placeholder="ID number as printed"
           />
           <TextField
             label="Date of Birth"
@@ -203,7 +203,7 @@ export function DiscountReview() {
             hint="The office that issued the ID, as printed on it."
             value={d.issuingOffice}
             onChange={(e) => updateFields(d.id, { issuingOffice: e.target.value })}
-            placeholder="e.g. OSCA General Santos"
+            placeholder="Name of the issuing office"
           />
         </div>
 

@@ -90,7 +90,7 @@ export default function LoginScreen() {
               <TextField
                 label={t.driver.login.mobileNumber}
                 helperText={t.hints.loginMobile}
-                placeholder="917 842 5510"
+                placeholder="9XX XXX XXXX"
                 value={mobile}
                 onChangeText={setMobile}
                 onBlur={handleMobileBlur}

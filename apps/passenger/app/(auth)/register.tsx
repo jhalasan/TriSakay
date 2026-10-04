@@ -211,7 +211,7 @@ export default function RegisterScreen() {
                 label={t.auth.register.firstName}
                 helperText={t.hints.name}
                 required
-                placeholder="Juan"
+                placeholder="First name"
                 value={form.firstName}
                 onChangeText={(v) => update('firstName', v)}
                 error={errors.firstName}
@@ -221,7 +221,7 @@ export default function RegisterScreen() {
                 label={t.auth.register.lastName}
                 helperText={t.hints.lastName}
                 required
-                placeholder="Dela Cruz"
+                placeholder="Last name"
                 value={form.lastName}
                 onChangeText={(v) => update('lastName', v)}
                 error={errors.lastName}
