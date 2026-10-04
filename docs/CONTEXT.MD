@@ -449,11 +449,11 @@ Source of truth for detail: git history, `supabase/migrations/`, and `docs/UAT_P
 - Table `ride_messages`, two party RLS (passenger and the ride's current driver), sending only while the ride is `assigned` or `ongoing`, then read only. Free text, fixed quick replies (stored as codes so both languages render), read receipts, typing indicator, photo sharing (EXIF stripped, private `ride-chat` bucket, signed URLs), phone number masking, 20 messages per minute limit, "Report message" into the complaints flow, push through `notify-new-message`.
 - PSO can open a ride's chat thread only with a reason, which is logged (`ride_message_view_log`). The rest of S1 (route trail, legal hold, timeline, map case view) is not built. No retention job yet.
 - Both buttons now read just **Message** (unread count as a badge). A "lost connection" banner clears when the realtime channel recovers.
-- Known gap: a full two device live test of chat has not been run.
+- Tested on two phones by the team (2026-10-03): messages work in both directions.
 
 ### 17.6 In-app voice call (C2)
 - Agora audio only. Table `ride_calls`, functions to start, answer, decline and end, a pg_cron job that expires unanswered calls, edge functions `call-token` and `notify-incoming-call`. Call buttons are on in both apps (`features.rideCall`). Calls are only possible while the ride is active; nothing is recorded; no phone numbers shared.
-- **Not yet tested with two phones.** Known limits: Android push rings once (no looping ringtone), no lock screen call screen, no missed call notification, no PSO call log, no iOS.
+- **Tested on two phones by the team (2026-10-03): calls work.** Known limits: Android push rings once (no looping ringtone), no lock screen call screen, no missed call notification, no PSO call log, no iOS.
 
 ### 17.7 Payments (PAY1, PAY2) and email receipts (P1)
 - **Payment settlement:** the driver can request GCash payment, switch to cash, and complete the ride only once paid; the passenger pays when requested, can switch to cash, and a passenger with an unpaid completed ride is blocked from booking until settled (applied live 2026-10-01). Checkout verifies with PayMongo; the webhook ignores rows that were switched to cash. Still PayMongo test mode only.
@@ -472,7 +472,7 @@ Source of truth for detail: git history, `supabase/migrations/`, and `docs/UAT_P
 - Tutorials and first run flow handoffs live in `docs/design_handoff_*`.
 
 ### 17.11 Open items (as of 2026-10-03)
-- Two phone live tests: chat and voice call. Re-check the driver map on the EAS build after any key change.
+- Re-check the driver map on the EAS build after any key change. A parked online driver needs the app open and the screen on (location heartbeat added 2026-10-04; background tracking is deliberately not used).
 - Purge the old leaked secret from git history; G3 screenshots; G5 scope note; P2, P3, PD3, PD4 survey and literature docs.
 - Not built: S1 route trail and legal hold, N1 status push notifications, N2 PSO cancellation charts, N3 share my trip, L1 and L18, chat retention job.
 - Stated limitation still true: the hard cluster filter (FR-2.5) has not been exercised, and the pilot area is one cluster (Melting Pot).
