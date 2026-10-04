@@ -8,6 +8,8 @@ export interface FakeConsentRow {
 
 export interface FakeClientConfig {
   signUp?: (args: unknown) => Promise<{ data: { session: unknown }; error: { message: string } | null }>;
+  /** Override for `auth.setSession(args)` — used when a sign in goes through the sign-in edge function. */
+  setSession?: (args: unknown) => Promise<{ data: { session: unknown }; error: { name?: string; message: string } | null }>;
   signInWithPassword?: (
     args: unknown
   ) => Promise<{ data: { session: unknown }; error: { message: string } | null }>;
@@ -65,6 +67,8 @@ export function createFakeSupabaseClient(config: FakeClientConfig = {}): Supabas
       config.signUp ? config.signUp(args) : { data: { session: null }, error: null },
     signInWithPassword: async (args: unknown) =>
       config.signInWithPassword ? config.signInWithPassword(args) : { data: { session: null }, error: null },
+    setSession: async (args: unknown) =>
+      config.setSession ? config.setSession(args) : { data: { session: null }, error: null },
     signOut: config.signOut ?? (async () => {}),
     getSession: config.getSession ?? (async () => ({ data: { session: null } })),
     onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),

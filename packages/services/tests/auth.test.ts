@@ -169,6 +169,82 @@ test('signIn translates a network failure into a connection-specific message (P3
   assert.match(result.error ?? '', /Couldn't reach the server/);
 });
 
+test('signIn goes through the sign-in function and uses the session it returns', async () => {
+  const fakeSession = { access_token: 'abc', user: { id: 'u1' } };
+  let invoked: { name: string; options: any } | null = null;
+  let setWith: any = null;
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      functionsInvoke: async (name: string, options: any) => {
+        invoked = { name, options };
+        return { data: { session: { access_token: 'abc', refresh_token: 'ref' } }, error: null };
+      },
+      setSession: async (args: unknown) => {
+        setWith = args;
+        return { data: { session: fakeSession }, error: null };
+      },
+      signInWithPassword: async () => {
+        throw new Error('must not sign in directly when the sign-in function answered');
+      },
+    })
+  );
+
+  const result = await signIn({ email: 'juan@example.com', password: 'secret1' });
+
+  assert.equal(invoked!.name, 'sign-in');
+  assert.deepEqual(invoked!.options.body, { email: 'juan@example.com', password: 'secret1' });
+  assert.deepEqual(setWith, { access_token: 'abc', refresh_token: 'ref' });
+  assert.deepEqual(result.session, fakeSession);
+  assert.equal(result.error, null);
+});
+
+test('signIn shows the lock message from the sign-in function and does not try the password again', async () => {
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      functionsInvoke: async () => ({
+        data: { error: { message: 'Too many failed sign in attempts. Try again in 5 minutes.', code: 'too_many_attempts' } },
+        error: null,
+      }),
+      signInWithPassword: async () => {
+        throw new Error('a locked account must not be retried directly');
+      },
+    })
+  );
+
+  const result = await signIn({ email: 'juan@example.com', password: 'secret1' });
+
+  assert.equal(result.session, null);
+  assert.equal(result.error, 'Too many failed sign in attempts. Try again in 5 minutes.');
+});
+
+test('signIn falls back to a direct sign in when the sign-in function cannot be reached', async () => {
+  const fakeSession = { access_token: 'direct', user: { id: 'u1' } };
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      functionsInvoke: async () => ({ data: null, error: { message: 'Failed to send a request to the Edge Function' } }) as any,
+      signInWithPassword: async () => ({ data: { session: fakeSession }, error: null }),
+    })
+  );
+
+  const result = await signIn({ email: 'juan@example.com', password: 'secret1' });
+
+  assert.deepEqual(result.session, fakeSession);
+});
+
+test('signIn falls back to a direct sign in when the sign-in function reports it is unavailable', async () => {
+  const fakeSession = { access_token: 'direct', user: { id: 'u1' } };
+  __setSupabaseClientForTests(
+    createFakeSupabaseClient({
+      functionsInvoke: async () => ({ data: { error: { message: 'Sign in is unavailable right now.', code: 'unavailable' } }, error: null }),
+      signInWithPassword: async () => ({ data: { session: fakeSession }, error: null }),
+    })
+  );
+
+  const result = await signIn({ email: 'juan@example.com', password: 'secret1' });
+
+  assert.deepEqual(result.session, fakeSession);
+});
+
 test('signOut calls the underlying auth.signOut with local scope, not global', async () => {
   let capturedArgs: unknown;
   __setSupabaseClientForTests(

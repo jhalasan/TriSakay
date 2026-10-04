@@ -81,7 +81,55 @@ function translateLoginError(error: { name?: string; message: string }): string 
   return error.message;
 }
 
+/**
+ * What the `sign-in` edge function sends back: always HTTP 200, with either a
+ * Supabase Auth session or an error. See supabase/functions/sign-in.
+ */
+interface SignInFunctionResponse {
+  session?: { access_token?: string; refresh_token?: string };
+  error?: { message: string; code?: string };
+}
+
+/**
+ * Returns the finished result when the sign-in function answered, or null when
+ * it could not be used (unreachable, or it reported an internal failure) so the
+ * caller can fall back to a direct sign in and people are never locked out of
+ * the app by an outage of the limiter itself.
+ */
+async function signInThroughLimiter(email: string, password: string): Promise<AuthResult | null> {
+  const client = getSupabaseClient();
+  try {
+    const { data, error } = await client.functions.invoke('sign-in', { body: { email, password } });
+    if (error) return null;
+
+    const response = data as SignInFunctionResponse | null;
+    if (response?.error) {
+      if (response.error.code === 'unavailable') return null;
+      return { session: null, error: response.error.message };
+    }
+
+    const accessToken = response?.session?.access_token;
+    const refreshToken = response?.session?.refresh_token;
+    if (!accessToken || !refreshToken) return null;
+
+    const { data: set, error: setError } = await client.auth.setSession({ access_token: accessToken, refresh_token: refreshToken });
+    if (setError) return { session: null, error: translateLoginError(setError) };
+    return { session: set.session, error: null };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Password sign in with an attempt limit: 5 wrong passwords for an email in 15
+ * minutes locks that email for a while (see supabase/functions/sign-in). The
+ * limit lives in the sign-in function, so the passenger app, the driver app
+ * and the admin portal all get it from this one call.
+ */
 export async function signIn({ email, password }: SignInInput): Promise<AuthResult> {
+  const limited = await signInThroughLimiter(email, password);
+  if (limited) return limited;
+
   const { data, error } = await getSupabaseClient().auth.signInWithPassword({ email, password });
   return { session: data.session, error: error ? translateLoginError(error) : null };
 }
