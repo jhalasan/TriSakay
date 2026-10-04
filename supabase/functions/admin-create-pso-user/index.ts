@@ -6,9 +6,10 @@
 // handle_new_auth_user() (the auth.users insert trigger) downgrades any
 // non-'driver' user_metadata role to 'passenger' — a deliberate guard against
 // privilege escalation through the public signup API. The staff role is
-// passed in app_metadata instead, which only this service-role call can set,
-// so the row is created with the right role in one step (a passenger row
-// without a phone number would be rejected by users_contact_required_for_pax_driver).
+// recorded in pending_staff_accounts (writable by the service role only)
+// just before the auth user is created, and the trigger reads it, so the row
+// is created with the right role in one step (a passenger row without a phone
+// number would be rejected by users_contact_required_for_pax_driver).
 // The second step below then only sets must_change_password.
 //
 // No email is sent (no infra to send one) — a one-time temp password is
@@ -100,16 +101,20 @@ Deno.serve(async (req: Request) => {
     const tempPassword = generateTempPassword();
     const serviceClient = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
 
+    // handle_new_auth_user() reads this row (and removes it) when the auth user is inserted, so the
+    // account is created with the staff role in one step. Only the service role can write the table.
+    const { error: pendingError } = await serviceClient.from('pending_staff_accounts').upsert({ email, role });
+    if (pendingError) return json({ userId: null, tempPassword: null, error: pendingError.message }, 500);
+
     const { data: created, error: createError } = await serviceClient.auth.admin.createUser({
       email,
       password: tempPassword,
       email_confirm: true,
       user_metadata: { first_name: firstName, last_name: lastName },
-      // Read by handle_new_auth_user(). Only this service-role call can set app_metadata, so public signup cannot ask for it.
-      app_metadata: { staff_role: role },
     });
 
     if (createError || !created.user) {
+      await serviceClient.from('pending_staff_accounts').delete().eq('email', email);
       return json({ userId: null, tempPassword: null, error: createError?.message ?? 'Could not create account' }, 500);
     }
 
