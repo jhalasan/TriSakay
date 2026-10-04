@@ -711,6 +711,8 @@ export type Database = {
           lat: number
           lng: number
           notes: string | null
+          closed_at: string | null
+          closed_by: string | null
           reviewed_at: string | null
           reviewed_by: string | null
           ride_request_id: string | null
@@ -726,6 +728,8 @@ export type Database = {
           lat: number
           lng: number
           notes?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           ride_request_id?: string | null
@@ -741,6 +745,8 @@ export type Database = {
           lat?: number
           lng?: number
           notes?: string | null
+          closed_at?: string | null
+          closed_by?: string | null
           reviewed_at?: string | null
           reviewed_by?: string | null
           ride_request_id?: string | null

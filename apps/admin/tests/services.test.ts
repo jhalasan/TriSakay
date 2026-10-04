@@ -324,7 +324,8 @@ function fakeEmergencyClient() {
           update: (patch: Record<string, unknown>) => ({
             eq: async (_col: string, id: string) => {
               const a = alerts.find((row) => row.id === id);
-              if (a) Object.assign(a, patch);
+              // The database, not the request, stamps who reviewed the alert (trg_emergency_review_stamps).
+              if (a) Object.assign(a, patch, patch.status === 'reviewed' ? { reviewed_by: 'supervisor1', reviewed_at: '2026-08-21T04:00:00.000Z' } : {});
               return { error: null };
             },
           }),

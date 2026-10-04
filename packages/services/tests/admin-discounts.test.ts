@@ -24,6 +24,8 @@ function fakeClient() {
                   date_of_birth: null,
                   issuing_office: null,
                   expires_at: null,
+                  reviewed_by: null,
+                  reviewed_at: null,
                 },
               ],
               error: null,
@@ -67,6 +69,8 @@ test('listPendingDiscounts maps rows and resolves passengerName', async () => {
       dateOfBirth: null,
       issuingOffice: null,
       expiresAt: null,
+      reviewedByName: null,
+      reviewedAt: null,
     },
   ]);
 });

@@ -7,7 +7,7 @@ interface EmergencyAlertsState {
   loading: boolean;
   error: string | null;
   fetch: () => Promise<void>;
-  markReviewed: (id: string, notes?: string) => Promise<boolean>;
+  markReviewed: (id: string, notes: string) => Promise<boolean>;
   close: (id: string) => Promise<boolean>;
 }
 

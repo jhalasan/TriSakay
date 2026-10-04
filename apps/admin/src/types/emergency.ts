@@ -15,6 +15,8 @@ export interface EmergencyAlertRow {
   status: EmergencyStatus;
   reviewedByName: string | null;
   reviewedAt: string | null;
+  closedByName: string | null;
+  closedAt: string | null;
   notes: string | null;
   createdAt: string;
 }

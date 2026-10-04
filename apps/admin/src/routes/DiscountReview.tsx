@@ -14,7 +14,7 @@ import { useToast } from '../components/Toast';
 import { useDiscountsStore } from '../store/useDiscountsStore';
 import { useSettingsStore } from '../store/useSettingsStore';
 import type { DiscountRow } from '../types/discount';
-import { formatDate, formatRelativeTime } from '../lib/format';
+import { formatDate, formatDateTime, formatRelativeTime } from '../lib/format';
 import { SkeletonRows } from '../components/Skeleton';
 import styles from './DiscountReview.module.css';
 
@@ -164,6 +164,13 @@ export function DiscountReview() {
             <Badge label={isExpired(d) ? `Expired ${formatDate(d.expiresAt)}` : `Expires ${formatDate(d.expiresAt)}`} tone={isExpired(d) ? 'danger' : 'neutral'} />
           )}
         </div>
+
+        {(d.status === 'approved' || d.status === 'rejected') && (
+          <p className="case-sub">
+            {d.status === 'approved' ? 'Approved' : 'Rejected'} by {d.reviewedByName ?? 'a PSO account that no longer exists'}
+            {d.reviewedAt ? ` · ${formatDateTime(d.reviewedAt)}` : ''}
+          </p>
+        )}
 
         <div className="evidence-grid">
           <div>

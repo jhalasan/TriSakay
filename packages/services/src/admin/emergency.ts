@@ -16,6 +16,9 @@ export interface AdminEmergencyAlertRow {
   status: AdminEmergencyStatus;
   reviewedByName: string | null;
   reviewedAt: string | null;
+  /** Who closed the alert and when; null until it is closed. */
+  closedByName: string | null;
+  closedAt: string | null;
   notes: string | null;
   createdAt: string;
 }
@@ -38,7 +41,7 @@ export async function listEmergencyAlertsForAdmin(): Promise<ListEmergencyAlerts
 
   const { data, error } = await client
     .from('emergency_alerts')
-    .select('id, ride_request_id, triggered_by, triggered_role, counterpart_id, lat, lng, status, reviewed_by, reviewed_at, notes, created_at')
+    .select('id, ride_request_id, triggered_by, triggered_role, counterpart_id, lat, lng, status, reviewed_by, reviewed_at, closed_by, closed_at, notes, created_at')
     .order('created_at', { ascending: false });
 
   if (error) return { data: [], error: error.message };
@@ -46,7 +49,7 @@ export async function listEmergencyAlertsForAdmin(): Promise<ListEmergencyAlerts
 
   const ids = [
     ...new Set(
-      data.flatMap((a) => [a.triggered_by, a.counterpart_id, a.reviewed_by].filter((id): id is string => !!id))
+      data.flatMap((a) => [a.triggered_by, a.counterpart_id, a.reviewed_by, a.closed_by].filter((id): id is string => !!id))
     ),
   ];
   const { data: users, error: usersError } = await client.from('users').select('id, full_name').in('id', ids);
@@ -86,6 +89,8 @@ export async function listEmergencyAlertsForAdmin(): Promise<ListEmergencyAlerts
     status: a.status,
     reviewedByName: a.reviewed_by ? (nameById.get(a.reviewed_by) ?? null) : null,
     reviewedAt: a.reviewed_at,
+    closedByName: a.closed_by ? (nameById.get(a.closed_by) ?? null) : null,
+    closedAt: a.closed_at,
     notes: a.notes,
     createdAt: a.created_at,
   }));
@@ -98,42 +103,24 @@ export interface MarkEmergencyAlertReviewedResult {
 }
 
 /**
- * FR-12.5 — PSO Supervisor+ marks an alert reviewed, with optional notes
- * (`emergency_review_supervisor` RLS: `is_supervisor()`, no new RPC needed,
- * same as Discount Review's direct-update pattern).
+ * FR-12.5 — PSO Supervisor+ marks an alert reviewed. A note saying what was done is required.
+ * Who reviewed it and when are recorded by the database (trg_emergency_review_stamps), not taken
+ * from this request, so they cannot be set to someone else or a different time
+ * (`emergency_review_supervisor` RLS: `is_supervisor()`).
  */
-export async function markEmergencyAlertReviewed(id: string, notes?: string): Promise<MarkEmergencyAlertReviewedResult> {
-  const client = getSupabaseClient();
-  const { data: sessionData } = await client.auth.getSession();
-  const reviewerId = sessionData.session?.user.id;
-  if (!reviewerId) return { error: 'Not signed in' };
+export async function markEmergencyAlertReviewed(id: string, notes: string): Promise<MarkEmergencyAlertReviewedResult> {
+  const trimmed = notes.trim();
+  if (!trimmed) return { error: 'Add a note describing what was done before marking this alert reviewed.' };
 
-  const { error } = await client
-    .from('emergency_alerts')
-    .update({
-      status: 'reviewed',
-      reviewed_by: reviewerId,
-      reviewed_at: new Date().toISOString(),
-      ...(notes ? { notes } : {}),
-    })
-    .eq('id', id);
-
+  const { error } = await getSupabaseClient().from('emergency_alerts').update({ status: 'reviewed', notes: trimmed }).eq('id', id);
   return { error: error?.message ?? null };
 }
 
 /**
- * `emergency_status`'s third value, `closed`, was originally left unwired
- * (see docs/superpowers/specs/2026-08-21-emergency-sos-alert-design.md,
- * section E) since the wireframe review named only "Mark Reviewed" — noted
- * there as worth revisiting if a real product need for a distinct closing
- * step showed up. UAT panelist review (2026-09-21) is that need: PSO wants
- * to explicitly close out a reviewed alert once follow-up is done, not leave
- * it sitting as "Reviewed" indefinitely. Same RLS/role tier as review
- * (`emergency_review_supervisor`), only reachable from `reviewed` — the
- * route enforces that transition, this function doesn't re-check it.
+ * Closing a reviewed alert once follow-up is done (UAT panelist review, 2026-09-21). Same RLS tier as
+ * review; the database records who closed it and when, and only allows it from `reviewed`.
  */
 export async function markEmergencyAlertClosed(id: string): Promise<MarkEmergencyAlertReviewedResult> {
-  const client = getSupabaseClient();
-  const { error } = await client.from('emergency_alerts').update({ status: 'closed' }).eq('id', id);
+  const { error } = await getSupabaseClient().from('emergency_alerts').update({ status: 'closed' }).eq('id', id);
   return { error: error?.message ?? null };
 }

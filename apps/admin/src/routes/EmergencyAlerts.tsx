@@ -64,7 +64,7 @@ export function EmergencyAlerts() {
   async function handleMarkReviewed() {
     if (!selected) return;
     setReviewing(true);
-    const ok = await markReviewed(selected.id, notesDraft || undefined);
+    const ok = await markReviewed(selected.id, notesDraft);
     setReviewing(false);
     if (ok) showToast({ message: 'Alert marked reviewed.' });
   }
@@ -178,21 +178,37 @@ export function EmergencyAlerts() {
           </div>
 
           {selected.status !== 'logged' && (
-            <div className="field">
-              <span className="field-label">Reviewed by</span>
-              <span>
-                {selected.reviewedByName ?? '—'}
-                {selected.reviewedAt ? ` · ${formatDateTime(selected.reviewedAt)}` : ''}
-              </span>
+            <div className="two-col">
+              <div className="field">
+                <span className="field-label">Reviewed by</span>
+                <span>
+                  {selected.reviewedByName ?? '—'}
+                  {selected.reviewedAt ? ` · ${formatDateTime(selected.reviewedAt)}` : ''}
+                </span>
+              </div>
+              {selected.status === 'closed' && (
+                <div className="field">
+                  <span className="field-label">Closed by</span>
+                  <span>
+                    {selected.closedByName ?? '—'}
+                    {selected.closedAt ? ` · ${formatDateTime(selected.closedAt)}` : ''}
+                  </span>
+                </div>
+              )}
             </div>
           )}
 
           <Textarea
             label="Review notes"
-            hint="What was done about this alert, for the record."
+            hint={
+              selected.status === 'logged'
+                ? 'Required. What was done about this alert, for the record. It cannot be edited after the alert is reviewed.'
+                : 'Recorded when the alert was reviewed. It cannot be edited.'
+            }
             value={notesDraft}
             onChange={(e) => setNotesDraft(e.target.value)}
-            placeholder="Optional notes on the review…"
+            placeholder="e.g. Called the driver, confirmed the passenger is safe…"
+            readOnly={selected.status !== 'logged'}
           />
 
           <ErrorBanner message={error} />
@@ -208,7 +224,7 @@ export function EmergencyAlerts() {
                 size="sm"
                 superscript="S+"
                 loading={reviewing}
-                disabled={selected.status !== 'logged'}
+                disabled={selected.status !== 'logged' || !notesDraft.trim()}
                 onClick={handleMarkReviewed}
               >
                 {reviewing ? 'Marking reviewed…' : 'Mark reviewed'}

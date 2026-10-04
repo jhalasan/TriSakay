@@ -15,6 +15,9 @@ export interface PendingDiscountRow {
   issuingOffice: string | null;
   /** UAT A11 — null until approved; set to reviewed_at + 1 year by approveDiscount(). */
   expiresAt: string | null;
+  /** Who approved or rejected it and when, recorded by the database. */
+  reviewedByName: string | null;
+  reviewedAt: string | null;
 }
 
 export interface ListPendingDiscountsResult {
@@ -28,13 +31,13 @@ export async function listPendingDiscounts(): Promise<ListPendingDiscountsResult
 
   const { data, error } = await client
     .from('passenger_discounts')
-    .select('id, passenger_id, category, status, submitted_at, remarks, id_photo_front_path, id_photo_back_path, id_number, date_of_birth, issuing_office, expires_at')
+    .select('id, passenger_id, category, status, submitted_at, remarks, id_photo_front_path, id_photo_back_path, id_number, date_of_birth, issuing_office, expires_at, reviewed_by, reviewed_at')
     .order('submitted_at', { ascending: true });
 
   if (error) return { data: [], error: error.message };
   if (!data || data.length === 0) return { data: [], error: null };
 
-  const ids = [...new Set(data.map((d) => d.passenger_id))];
+  const ids = [...new Set(data.flatMap((d) => [d.passenger_id, d.reviewed_by].filter((id): id is string => !!id)))];
   const { data: users } = await client.from('users').select('id, full_name').in('id', ids);
   const nameById = new Map((users ?? []).map((u) => [u.id, u.full_name]));
 
@@ -52,6 +55,8 @@ export async function listPendingDiscounts(): Promise<ListPendingDiscountsResult
     dateOfBirth: d.date_of_birth,
     issuingOffice: d.issuing_office,
     expiresAt: d.expires_at,
+    reviewedByName: d.reviewed_by ? (nameById.get(d.reviewed_by) ?? null) : null,
+    reviewedAt: d.reviewed_at,
   }));
 
   return { data: rows, error: null };

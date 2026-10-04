@@ -17,4 +17,7 @@ export interface DiscountRow {
   issuingOffice: string;
   /** UAT A11 — null until approved; set to reviewed_at + 1 year on approval. */
   expiresAt: string | null;
+  /** Who approved or rejected it and when. */
+  reviewedByName: string | null;
+  reviewedAt: string | null;
 }

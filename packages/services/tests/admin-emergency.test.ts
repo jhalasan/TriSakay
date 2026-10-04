@@ -18,6 +18,8 @@ function fakeClient() {
       status: 'logged',
       reviewed_by: null as string | null,
       reviewed_at: null as string | null,
+      closed_by: null as string | null,
+      closed_at: null as string | null,
       notes: null as string | null,
       created_at: '2026-08-21T03:00:00.000Z',
     },
@@ -72,6 +74,8 @@ test('listEmergencyAlertsForAdmin resolves triggered-by/counterpart names and pa
       status: 'logged',
       reviewedByName: null,
       reviewedAt: null,
+      closedByName: null,
+      closedAt: null,
       notes: null,
       createdAt: '2026-08-21T03:00:00.000Z',
     },
@@ -88,45 +92,121 @@ test('listEmergencyAlertsForAdmin returns { data: [], error } when the query fai
   assert.equal(error, 'connection refused');
 });
 
-test('markEmergencyAlertReviewed stamps status/reviewed_by/reviewed_at and passes notes through when given', async () => {
-  __setSupabaseClientForTests(fakeClient());
+test('markEmergencyAlertReviewed sends only the status and the trimmed note, so the database decides who and when', async () => {
+  const patches: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests({
+    from: (table: string) => {
+      assert.equal(table, 'emergency_alerts');
+      return {
+        update: (patch: Record<string, unknown>) => {
+          patches.push(patch);
+          return { eq: async () => ({ error: null }) };
+        },
+      };
+    },
+  } as any);
 
-  const { error } = await markEmergencyAlertReviewed('alert1', 'Contacted both parties, no further action.');
+  const { error } = await markEmergencyAlertReviewed('alert1', '  Contacted both parties, no further action.  ');
+
   assert.equal(error, null);
-
-  const { data } = await listEmergencyAlertsForAdmin();
-  assert.equal(data[0].status, 'reviewed');
-  assert.equal(data[0].reviewedByName, 'Rina Cabuslay');
-  assert.equal(data[0].notes, 'Contacted both parties, no further action.');
+  assert.deepEqual(patches, [{ status: 'reviewed', notes: 'Contacted both parties, no further action.' }]);
 });
 
-test('markEmergencyAlertReviewed leaves notes untouched when omitted', async () => {
-  __setSupabaseClientForTests(fakeClient());
+test('markEmergencyAlertReviewed refuses an empty or blank note without calling the database', async () => {
+  let called = false;
+  __setSupabaseClientForTests({
+    from: () => {
+      called = true;
+      return {};
+    },
+  } as any);
 
-  const { error } = await markEmergencyAlertReviewed('alert1');
-  assert.equal(error, null);
-
-  const { data } = await listEmergencyAlertsForAdmin();
-  assert.equal(data[0].status, 'reviewed');
-  assert.equal(data[0].notes, null);
+  for (const note of ['', '   ']) {
+    const { error } = await markEmergencyAlertReviewed('alert1', note);
+    assert.equal(error, 'Add a note describing what was done before marking this alert reviewed.');
+  }
+  assert.equal(called, false);
 });
 
-test('markEmergencyAlertReviewed returns an error when there is no active session', async () => {
-  __setSupabaseClientForTests({ auth: { getSession: async () => ({ data: { session: null } }) } } as any);
+test('markEmergencyAlertReviewed passes the database error through (for example when the alert is no longer logged)', async () => {
+  __setSupabaseClientForTests({
+    from: () => ({ update: () => ({ eq: async () => ({ error: { message: 'An alert cannot move from closed to reviewed.' } }) }) }),
+  } as any);
 
-  const { error } = await markEmergencyAlertReviewed('alert1');
-  assert.equal(error, 'Not signed in');
+  const { error } = await markEmergencyAlertReviewed('alert1', 'Checked.');
+  assert.equal(error, 'An alert cannot move from closed to reviewed.');
 });
 
-test('markEmergencyAlertClosed sets status to closed without touching reviewed_by/reviewed_at/notes', async () => {
-  __setSupabaseClientForTests(fakeClient());
+test('markEmergencyAlertClosed sends only the status change', async () => {
+  const patches: Record<string, unknown>[] = [];
+  __setSupabaseClientForTests({
+    from: () => ({
+      update: (patch: Record<string, unknown>) => {
+        patches.push(patch);
+        return { eq: async () => ({ error: null }) };
+      },
+    }),
+  } as any);
 
-  await markEmergencyAlertReviewed('alert1', 'Contacted both parties, no further action.');
   const { error } = await markEmergencyAlertClosed('alert1');
   assert.equal(error, null);
+  assert.deepEqual(patches, [{ status: 'closed' }]);
+});
+
+test('listEmergencyAlertsForAdmin shows who reviewed and who closed an alert', async () => {
+  const client = fakeClient();
+  const originalFrom = client.from;
+  client.from = (table: string) => {
+    if (table === 'emergency_alerts') {
+      return {
+        select: () => ({
+          order: async () => ({
+            data: [
+              {
+                id: 'alert1',
+                ride_request_id: 'rr1',
+                triggered_by: 'd1',
+                triggered_role: 'driver',
+                counterpart_id: 'p1',
+                lat: 6.1,
+                lng: 125.1,
+                status: 'closed',
+                reviewed_by: 'supervisor1',
+                reviewed_at: '2026-08-21T04:00:00.000Z',
+                closed_by: 'admin1',
+                closed_at: '2026-08-22T01:00:00.000Z',
+                notes: 'Contacted both parties.',
+                created_at: '2026-08-21T03:00:00.000Z',
+              },
+            ],
+            error: null,
+          }),
+        }),
+      };
+    }
+    if (table === 'users') {
+      return {
+        select: () => ({
+          in: async () => ({
+            data: [
+              { id: 'd1', full_name: 'Ferdinand Amaro' },
+              { id: 'p1', full_name: 'Maria Fe Santos' },
+              { id: 'supervisor1', full_name: 'Rina Cabuslay' },
+              { id: 'admin1', full_name: 'Jay Halasan' },
+            ],
+            error: null,
+          }),
+        }),
+      };
+    }
+    return originalFrom(table);
+  };
+  __setSupabaseClientForTests(client);
 
   const { data } = await listEmergencyAlertsForAdmin();
-  assert.equal(data[0].status, 'closed');
   assert.equal(data[0].reviewedByName, 'Rina Cabuslay');
-  assert.equal(data[0].notes, 'Contacted both parties, no further action.');
+  assert.equal(data[0].reviewedAt, '2026-08-21T04:00:00.000Z');
+  assert.equal(data[0].closedByName, 'Jay Halasan');
+  assert.equal(data[0].closedAt, '2026-08-22T01:00:00.000Z');
+  assert.equal(data[0].notes, 'Contacted both parties.');
 });
