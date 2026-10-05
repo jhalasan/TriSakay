@@ -64,8 +64,10 @@ test('listEmergencyAlertsForAdmin resolves triggered-by/counterpart names and pa
   assert.deepEqual(data, [
     {
       id: 'alert1',
+      triggeredById: 'd1',
       triggeredByName: 'Ferdinand Amaro',
       triggeredRole: 'driver',
+      counterpartId: 'p1',
       counterpartName: 'Maria Fe Santos',
       tricyclePlateNo: 'GSC-4821',
       rideRequestId: 'rr1',

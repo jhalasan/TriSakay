@@ -8,7 +8,9 @@ export interface AdminComplaintRow {
   id: string;
   subject: string;
   message: string;
+  submittedById: string;
   submittedByName: string;
+  againstUserId: string | null;
   againstUserName: string | null;
   rideRequestId: string | null;
   category: AdminComplaintCategory;
@@ -72,7 +74,9 @@ export async function listComplaintsForAdmin(): Promise<ListComplaintsForAdminRe
     id: c.id,
     subject: c.subject,
     message: c.message,
+    submittedById: c.submitted_by,
     submittedByName: nameById.get(c.submitted_by) ?? '—',
+    againstUserId: c.against_user_id,
     againstUserName: c.against_user_id ? (nameById.get(c.against_user_id) ?? null) : null,
     rideRequestId: c.ride_request_id,
     category: c.category,

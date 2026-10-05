@@ -26,6 +26,7 @@ export * from './admin/accounts.ts';
 export * from './admin/auditLog.ts';
 export * from './admin/barangays.ts';
 export * from './admin/casePrints.ts';
+export * from './admin/caseReports.ts';
 export * from './admin/complaints.ts';
 export * from './admin/dashboard.ts';
 export * from './admin/discounts.ts';

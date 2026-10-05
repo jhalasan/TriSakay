@@ -6,8 +6,10 @@ export type AdminEmergencyStatus = Database['public']['Enums']['emergency_status
 
 export interface AdminEmergencyAlertRow {
   id: string;
+  triggeredById: string;
   triggeredByName: string;
   triggeredRole: AdminEmergencyRole;
+  counterpartId: string | null;
   counterpartName: string | null;
   tricyclePlateNo: string | null;
   rideRequestId: string | null;
@@ -76,8 +78,10 @@ export async function listEmergencyAlertsForAdmin(): Promise<ListEmergencyAlerts
 
   const rows: AdminEmergencyAlertRow[] = data.map((a) => ({
     id: a.id,
+    triggeredById: a.triggered_by,
     triggeredByName: nameById.get(a.triggered_by) ?? '—',
     triggeredRole: a.triggered_role,
+    counterpartId: a.counterpart_id,
     counterpartName: a.counterpart_id ? (nameById.get(a.counterpart_id) ?? null) : null,
     tricyclePlateNo: (() => {
       const driverId = driverIdByAlertId.get(a.id);

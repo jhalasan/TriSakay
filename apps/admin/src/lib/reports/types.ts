@@ -8,7 +8,9 @@ export type ReportBlock =
   | { type: 'table'; columns: string[]; rows: string[][]; widths?: (number | '*' | 'auto')[] }
   | { type: 'paragraph'; text: string }
   /** A QR code with a caption, for example the map link of an SOS alert. */
-  | { type: 'qr'; text: string; caption: string };
+  | { type: 'qr'; text: string; caption: string }
+  /** A picture (a data URL) with a caption, for example complaint evidence. */
+  | { type: 'image'; dataUrl: string; caption: string };
 
 export interface ReportSection {
   heading: string;

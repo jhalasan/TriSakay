@@ -175,6 +175,15 @@ function renderBlock(block: ReportBlock): Node {
       };
     case 'paragraph':
       return { text: block.text, fontSize: FONT_BODY, lineHeight: 1.25, color: INK, margin: [4, 2, 4, 4] };
+    case 'image':
+      return {
+        stack: [
+          { image: block.dataUrl, fit: [CONTENT_WIDTH - 8, 300], alignment: 'center' },
+          { text: block.caption, fontSize: FONT_SMALL, color: SOFT, alignment: 'center', margin: [0, 3, 0, 0] },
+        ],
+        margin: [4, 4, 4, 6],
+        unbreakable: true,
+      };
     case 'qr':
       return {
         columns: [

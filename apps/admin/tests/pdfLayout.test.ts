@@ -147,3 +147,15 @@ test('the report ends with Prepared by, Noted by and Received by, and Prepared b
   assert.match(body, /Rina Cabuslay/);
   assert.match(body, /PSO Supervisor · 5 October 2026, 3:15 PM/);
 });
+
+test('an image block is drawn scaled to fit inside the page, kept in one piece with its caption', () => {
+  const def = toDocDefinition(
+    model({ sections: [{ heading: 'Evidence', blocks: [{ type: 'image', dataUrl: 'data:image/jpeg;base64,BBBB', caption: 'photo-1.jpg' }] }] }),
+    META,
+  );
+  const body = text(def.content);
+  assert.match(body, /"image":"data:image\/jpeg;base64,BBBB"/);
+  assert.match(body, /"fit":\[/);
+  assert.match(body, /photo-1\.jpg/);
+  assert.match(body, /"unbreakable":true/);
+});

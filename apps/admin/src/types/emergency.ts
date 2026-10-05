@@ -5,8 +5,10 @@ export type EmergencyStatus = 'logged' | 'reviewed' | 'closed';
 
 export interface EmergencyAlertRow {
   id: string;
+  triggeredById: string;
   triggeredByName: string;
   triggeredRole: EmergencyRole;
+  counterpartId: string | null;
   counterpartName: string | null;
   tricyclePlateNo: string | null;
   rideRequestId: string | null;

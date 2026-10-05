@@ -19,7 +19,9 @@ export interface ComplaintRow {
   id: string;
   subject: string;
   message: string;
+  submittedById: string;
   submittedByName: string;
+  againstUserId: string | null;
   againstUserName: string | null;
   rideRequestId: string | null;
   category: ComplaintCategory;
