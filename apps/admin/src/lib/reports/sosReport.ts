@@ -2,6 +2,7 @@ import type { AdminRideMessage, CaseContact, CaseRide } from '@trisakay/services
 import type { EmergencyAlertRow } from '../../types/emergency.ts';
 import { getReferenceCode, titleCaseLabel } from '../format.ts';
 import { contactLine, rideFacts } from './complaintReport.ts';
+import { chatSection } from './chatSection.ts';
 import { formatReportDateTime } from './format.ts';
 import type { ReportModel, ReportSection } from './types.ts';
 
@@ -17,30 +18,6 @@ export interface SosReportInput {
 
 const dash = '—';
 const ROLE_LABEL = { passenger: 'Passenger', driver: 'Driver' } as const;
-
-function chatText(message: AdminRideMessage): string {
-  if (message.kind === 'image') return '[Photo]';
-  return message.body?.trim() || dash;
-}
-
-function chatSection(chat: AdminRideMessage[]): ReportSection {
-  if (chat.length === 0) return { heading: 'Chat thread', blocks: [], emptyText: 'There are no messages in this ride’s chat thread.' };
-  return {
-    heading: 'Chat thread',
-    blocks: [
-      {
-        type: 'table',
-        columns: ['Time', 'From', 'Message'],
-        widths: [110, 110, '*'],
-        rows: chat.map((message) => [
-          formatReportDateTime(message.createdAt),
-          message.senderName ? `${message.senderName}${message.senderRole ? ` (${titleCaseLabel(message.senderRole)})` : ''}` : dash,
-          chatText(message),
-        ]),
-      },
-    ],
-  };
-}
 
 /** An SOS alert, who handled it and what was found, as a ReportModel. Pure: no network, no PDF. */
 export function buildSosReport(input: SosReportInput): ReportModel {

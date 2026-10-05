@@ -14,6 +14,7 @@ import { Pagination } from '../components/Pagination';
 import { EmptyState } from '../components/EmptyState';
 import { DocumentImage } from '../components/DocumentImage';
 import { RideChatThread } from '../components/RideChatThread';
+import { PrintCaseButton } from '../components/PrintCaseButton';
 import { SkeletonBar } from '../components/Skeleton';
 import { useToast } from '../components/Toast';
 import { useComplaintsStore } from '../store/useComplaintsStore';
@@ -22,6 +23,8 @@ import { complaintOwnership, ownershipLabel } from '../lib/complaintOwnership';
 import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { formatDate, getReferenceCode, titleCaseLabel, toDatetimeLocalValue } from '../lib/format';
 import { formatBulkTargets } from '../lib/bulkActions';
+import { printComplaintReport } from '../lib/reports/printCase';
+import { isSupervisor } from '../lib/rbac';
 import type { ComplaintAssignmentRow } from '../services/complaints';
 import styles from './Complaints.module.css';
 
@@ -734,6 +737,22 @@ export function Complaints() {
                   <span style={{ fontSize: 13 }}>{selected.resolutionNotes}</span>
                 </div>
               )}
+
+              <div className={styles.subsection}>
+                <div className={styles.subsectionTitle}>Case report</div>
+                <span className="footnote">A PDF of this complaint with its full handling record. Every print is logged in the Audit Log.</span>
+                {ownership?.canAct && viewer ? (
+                  <PrintCaseButton
+                    offerChat={isSupervisor(viewer.role) && !!selected.rideRequestId}
+                    disabled={attachmentsLoading || statusHistoryLoading || assignmentsLoading}
+                    onPrint={({ includeChat, chatReason }) =>
+                      printComplaintReport({ complaint: selected, assignments, statusHistory, attachments, viewerRole: viewer.role, includeChat, chatReason })
+                    }
+                  />
+                ) : (
+                  <span className="read-only-note">Claim this complaint (or accept it once assigned) to print it.</span>
+                )}
+              </div>
 
               {selected.rideRequestId && <RideChatThread rideRequestId={selected.rideRequestId} />}
         </Modal>

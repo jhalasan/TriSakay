@@ -1,7 +1,8 @@
-import type { CaseContact, CaseRide } from '@trisakay/services';
+import type { AdminRideMessage, CaseContact, CaseRide } from '@trisakay/services';
 import type { ComplaintAssignmentRow, ComplaintStatusHistoryRow } from '../../services/complaints.ts';
 import type { ComplaintRow } from '../../types/complaint.ts';
 import { formatCurrency, getReferenceCode, titleCaseLabel } from '../format.ts';
+import { chatSection } from './chatSection.ts';
 import { formatReportDate, formatReportDateTime } from './format.ts';
 import type { ReportBlock, ReportModel, ReportSection } from './types.ts';
 
@@ -24,6 +25,8 @@ export interface ComplaintReportInput {
   contacts: Record<string, CaseContact>;
   /** Supervisor and Admin only. PSO Staff never get phone numbers or emails on paper. */
   canSeeContacts: boolean;
+  /** The ride's chat thread, or null/undefined when it was not asked for. */
+  chat?: AdminRideMessage[] | null;
 }
 
 const dash = '—';
@@ -154,6 +157,7 @@ export function buildComplaintReport(input: ComplaintReportInput): ReportModel {
       : { heading: 'Resolution', blocks: [], emptyText: closed ? 'Closed without resolution notes.' : 'Not resolved yet.' },
     evidenceSection(input.evidence),
   ];
+  if (input.chat) sections.push(chatSection(input.chat));
 
   return {
     kind: 'complaint',

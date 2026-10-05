@@ -10,7 +10,10 @@ import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { RideChatThread } from '../components/RideChatThread';
+import { PrintCaseButton } from '../components/PrintCaseButton';
 import { useEmergencyAlertsStore } from '../store/useEmergencyAlertsStore';
+import { useSessionStore } from '../store/useSessionStore';
+import { printSosReport } from '../lib/reports/printCase';
 import type { EmergencyAlertRow, EmergencyStatus } from '../types/emergency';
 import { formatDateTime, formatRelativeTime, titleCaseLabel } from '../lib/format';
 import styles from './EmergencyAlerts.module.css';
@@ -47,6 +50,7 @@ export function EmergencyAlerts() {
   const [reviewing, setReviewing] = useState(false);
   const [closing, setClosing] = useState(false);
   const { showToast } = useToast();
+  const viewerRole = useSessionStore((state) => state.user?.role);
 
   useEffect(() => {
     fetch();
@@ -240,6 +244,19 @@ export function EmergencyAlerts() {
               >
                 {closing ? 'Closing…' : 'Close'}
               </Button>
+            </div>
+          </RoleGate>
+
+          <RoleGate min="supervisor">
+            <div className="field">
+              <span className="field-label">Case report</span>
+              <span className="footnote">A PDF of this alert with its review record. Every print is logged in the Audit Log.</span>
+              {viewerRole && (
+                <PrintCaseButton
+                  offerChat={!!selected.rideRequestId}
+                  onPrint={({ includeChat, chatReason }) => printSosReport({ alert: selected, viewerRole, includeChat, chatReason })}
+                />
+              )}
             </div>
           </RoleGate>
 
