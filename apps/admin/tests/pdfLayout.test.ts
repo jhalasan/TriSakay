@@ -159,3 +159,31 @@ test('an image block is drawn scaled to fit inside the page, kept in one piece w
   assert.match(body, /photo-1\.jpg/);
   assert.match(body, /"unbreakable":true/);
 });
+
+
+test('each section heading is grouped with the first block under it so it cannot sit alone at the bottom of a page', () => {
+  const content = toDocDefinition(model(), META).content as any[];
+  // content[0] is the title band; each section then starts with an unbreakable group of heading + first block.
+  const groups = content.filter((node) => node.unbreakable === true && Array.isArray(node.stack) && node.stack.length === 2);
+  assert.ok(groups.length >= 2, 'Parties and Evidence are both grouped');
+  assert.match(JSON.stringify(groups[0].stack[0]), /Parties/);
+  assert.match(JSON.stringify(groups[0].stack[1]), /Complainant/);
+  assert.match(JSON.stringify(groups[1].stack[0]), /Evidence/);
+  assert.match(JSON.stringify(groups[1].stack[1]), /No evidence was attached\./);
+});
+
+test('a section that starts with a very long paragraph or a long table lets it flow across pages instead of moving it whole', () => {
+  const long = 'x '.repeat(400);
+  const rows = Array.from({ length: 20 }, (_, i) => [String(i), 'a', 'b']);
+  const content = toDocDefinition(
+    model({
+      sections: [
+        { heading: 'Complaint', blocks: [{ type: 'paragraph', text: long }] },
+        { heading: 'Chat thread', blocks: [{ type: 'table', columns: ['A', 'B', 'C'], rows }] },
+      ],
+    }),
+    META,
+  ).content as any[];
+
+  assert.equal(content.filter((node) => node.unbreakable === true && Array.isArray(node.stack) && node.stack.length === 2).length, 0);
+});

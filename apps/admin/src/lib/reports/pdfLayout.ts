@@ -122,8 +122,6 @@ function sectionHeading(heading: string): Node {
       paddingBottom: () => 4,
     },
     margin: [0, 12, 0, 5],
-    // Keep the bar in one piece. pdfmake has no keep-with-next, so the sections below it start on the same page in practice.
-    unbreakable: true,
   };
 }
 
@@ -203,12 +201,31 @@ function renderBlock(block: ReportBlock): Node {
   }
 }
 
+/** A long first paragraph is allowed to flow across pages by itself; everything else is short enough to keep with its heading. */
+const LONG_PARAGRAPH = 500;
+const SHORT_TABLE_ROWS = 8;
+
+function keepsWithHeading(block: ReportBlock | undefined): boolean {
+  if (!block) return true;
+  if (block.type === 'paragraph') return block.text.length <= LONG_PARAGRAPH;
+  if (block.type === 'table') return block.rows.length <= SHORT_TABLE_ROWS;
+  return true;
+}
+
+/**
+ * The heading bar and the first block under it are one unbreakable group, so a heading is never left alone at
+ * the bottom of a page. (pdfmake's pageBreakBefore cannot do this reliably: it also counts the heading's own
+ * text and the letterhead and footer lines as content that follows.)
+ */
 function renderSection(section: ReportSection): Node[] {
   const body: Node[] =
     section.blocks.length > 0
       ? section.blocks.map(renderBlock)
       : [{ text: section.emptyText ?? EMPTY_SECTION_TEXT, fontSize: FONT_BODY, italics: true, color: SOFT, margin: [4, 2, 4, 4] }];
-  return [sectionHeading(section.heading), ...body];
+  const heading = sectionHeading(section.heading);
+
+  if (!keepsWithHeading(section.blocks[0])) return [heading, ...body];
+  return [{ unbreakable: true, stack: [heading, body[0]] }, ...body.slice(1)];
 }
 
 /** Three signature lines. Prepared by is filled with the printing user; the other two are left blank for the officers. */

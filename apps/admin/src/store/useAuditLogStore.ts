@@ -5,6 +5,8 @@ import { getFareConfigHistory } from '../services/settings';
 import type { FareConfigHistoryRow } from '../services/settings';
 import { listRideMessageViewLog } from '../services/rideChat';
 import type { RideMessageViewLogRow } from '../services/rideChat';
+import { listCasePrints } from '../services/caseReports';
+import type { CasePrintRow } from '../services/caseReports';
 
 interface AuditLogState {
   actions: AccountActionRow[];
@@ -25,6 +27,10 @@ interface AuditLogState {
   rideMessageViews: RideMessageViewLogRow[];
   rideMessageViewsLoading: boolean;
   rideMessageViewsTruncated: boolean;
+  /** Every printed complaint or SOS report (record_case_print). Supervisor and Admin only — others get an empty list from row security. */
+  casePrints: CasePrintRow[];
+  casePrintsLoading: boolean;
+  casePrintsTruncated: boolean;
   /**
    * `days`: '7' | '30' | 'all', mirrors AuditLog.tsx's date-range filter.
    * P1-22 (2026-09-15 launch audit): this used to fetch the entire table
@@ -54,21 +60,26 @@ export const useAuditLogStore = create<AuditLogState>()((set) => ({
   rideMessageViews: [],
   rideMessageViewsLoading: false,
   rideMessageViewsTruncated: false,
+  casePrints: [],
+  casePrintsLoading: false,
+  casePrintsTruncated: false,
 
   fetch: async (days) => {
-    set({ loading: true, decisionsLoading: true, loginEventsLoading: true, fareHistoryLoading: true, rideMessageViewsLoading: true, error: null });
+    set({ loading: true, decisionsLoading: true, loginEventsLoading: true, fareHistoryLoading: true, rideMessageViewsLoading: true, casePrintsLoading: true, error: null });
     const [
       { data: actions, error: actionsError, truncated },
       { data: decisions, error: decisionsError },
       { data: loginEvents, error: loginEventsError, truncated: loginEventsTruncated },
       { data: fareHistory, error: fareHistoryError },
       { data: rideMessageViews, error: rideMessageViewsError, truncated: rideMessageViewsTruncated },
+      { data: casePrints, error: casePrintsError, truncated: casePrintsTruncated },
     ] = await Promise.all([
       listAccountActions(sinceIsoForDays(days)),
       listReviewDecisions(),
       listLoginEvents(sinceIsoForDays(days)),
       getFareConfigHistory(),
       listRideMessageViewLog(sinceIsoForDays(days)),
+      listCasePrints(sinceIsoForDays(days) ?? new Date(0).toISOString()),
     ]);
     set({
       actions,
@@ -84,7 +95,10 @@ export const useAuditLogStore = create<AuditLogState>()((set) => ({
       rideMessageViews,
       rideMessageViewsLoading: false,
       rideMessageViewsTruncated,
-      error: actionsError ?? decisionsError ?? loginEventsError ?? fareHistoryError ?? rideMessageViewsError,
+      casePrints,
+      casePrintsLoading: false,
+      casePrintsTruncated,
+      error: actionsError ?? decisionsError ?? loginEventsError ?? fareHistoryError ?? rideMessageViewsError ?? casePrintsError,
     });
   },
 }));

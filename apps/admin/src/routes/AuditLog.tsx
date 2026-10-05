@@ -6,10 +6,13 @@ import { Select } from '../components/Select';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
 import { useAuditLogStore } from '../store/useAuditLogStore';
+import { useSessionStore } from '../store/useSessionStore';
 import type { AccountActionRow, LoginEventRow, ReviewDecisionRow } from '../services/auditLog';
 import type { FareConfigHistoryRow } from '../services/settings';
 import type { RideMessageViewLogRow } from '../services/rideChat';
-import { formatCurrency, formatDateTime, titleCaseLabel } from '../lib/format';
+import type { CasePrintRow } from '../services/caseReports';
+import { formatCurrency, formatDateTime, getReferenceCode, titleCaseLabel } from '../lib/format';
+import { isSupervisor } from '../lib/rbac';
 import { downloadCsv, toCsv } from '../lib/csv';
 import styles from './AuditLog.module.css';
 
@@ -80,6 +83,20 @@ const rideMessageViewColumns: DataTableColumn<RideMessageViewLogRow>[] = [
   { key: 'reason', header: 'Reason', render: (r) => r.reason },
 ];
 
+const casePrintColumns: DataTableColumn<CasePrintRow>[] = [
+  { key: 'when', header: 'When', sortValue: (r) => r.printedAt, render: (r) => formatDateTime(r.printedAt) },
+  { key: 'docNo', header: 'Document No.', sortValue: (r) => r.docNo, render: (r) => <span className="mono">{r.docNo}</span> },
+  { key: 'kind', header: 'Case', render: (r) => (r.caseKind === 'complaint' ? 'Complaint' : 'SOS alert') },
+  { key: 'ref', header: 'Ref.', render: (r) => <span className="mono">#{getReferenceCode(r.caseId, 4) ?? '—'}</span> },
+  { key: 'by', header: 'Printed By', sortValue: (r) => r.printedByName ?? '', render: (r) => <span style={{ fontWeight: 600 }}>{r.printedByName ?? '—'}</span> },
+  {
+    key: 'chat',
+    header: 'Chat Included',
+    render: (r) => (r.includeChat ? <Badge label="Yes" tone="warn" /> : <Badge label="No" tone="neutral" />),
+  },
+  { key: 'reason', header: 'Reason', render: (r) => r.reason ?? '—' },
+];
+
 const fareHistoryColumns: DataTableColumn<FareConfigHistoryRow>[] = [
   { key: 'when', header: 'Effective', sortValue: (r) => r.effectiveFrom, render: (r) => formatDateTime(r.effectiveFrom) },
   { key: 'base', header: 'Base Fare', align: 'right', render: (r) => formatCurrency(r.baseFare) },
@@ -121,7 +138,7 @@ const DATE_RANGE_OPTIONS = [
   { label: 'All time', value: 'all' },
 ];
 
-type SectionTab = 'actions' | 'decisions' | 'login' | 'fare' | 'chatViews';
+type SectionTab = 'actions' | 'decisions' | 'login' | 'fare' | 'chatViews' | 'prints';
 
 const SECTION_TABS: { label: string; value: SectionTab }[] = [
   { label: 'Account Actions', value: 'actions' },
@@ -129,6 +146,7 @@ const SECTION_TABS: { label: string; value: SectionTab }[] = [
   { label: 'Login Activity', value: 'login' },
   { label: 'Fare Change History', value: 'fare' },
   { label: 'PSO Chat-Thread Views', value: 'chatViews' },
+  { label: 'Case Prints', value: 'prints' },
 ];
 
 /**
@@ -164,8 +182,14 @@ export function AuditLog() {
     rideMessageViews,
     rideMessageViewsLoading,
     rideMessageViewsTruncated,
+    casePrints,
+    casePrintsLoading,
+    casePrintsTruncated,
     fetch,
   } = useAuditLogStore();
+  const viewerRole = useSessionStore((state) => state.user?.role);
+  // Case prints are for Supervisor and Admin (row security returns nothing to anyone else), so the tab is hidden from PSO Staff.
+  const sectionTabs = SECTION_TABS.filter((tab) => tab.value !== 'prints' || (viewerRole ? isSupervisor(viewerRole) : false));
   const [section, setSection] = useState<SectionTab>('actions');
   const [actionFilter, setActionFilter] = useState<ActionFilter>('all');
   const [dateRange, setDateRange] = useState('7');
@@ -224,7 +248,7 @@ export function AuditLog() {
     <div className="page">
       <div className={`panel ${styles.filterStrip}`}>
         <div className="segmented">
-          {SECTION_TABS.map((tab) => (
+          {sectionTabs.map((tab) => (
             <button
               key={tab.value}
               type="button"
@@ -380,6 +404,35 @@ export function AuditLog() {
               loading={rideMessageViewsLoading}
               emptyMessage="No ride chat threads have been viewed yet."
               emptyHint="Every time PSO opens a ride's chat thread from a complaint or emergency alert, the read and its reason appear here (S1)."
+            />
+          </div>
+        </>
+      )}
+
+      {section === 'prints' && (
+        <>
+          <div className={`panel ${styles.filterStrip}`}>
+            <Select aria-label="Date range" value={dateRange} onChange={(e) => setDateRange(e.target.value)} options={DATE_RANGE_OPTIONS} />
+          </div>
+
+          <div className="panel">
+            <div className={styles.tableHeader}>
+              <h2 className="panel-title" style={{ marginBottom: 0 }}>
+                Case Prints
+              </h2>
+              <div className={styles.tableHeaderRight}>
+                <span className={styles.recordCount}>{casePrints.length} recorded · newest first</span>
+                {casePrintsTruncated && <Badge label="Showing the most recent 2,000 — narrow the date range for a complete view" tone="warn" />}
+                <Badge label="Read-only · Supervisor and Admin" tone="neutral" />
+              </div>
+            </div>
+            <DataTable
+              columns={casePrintColumns}
+              rows={casePrints}
+              getRowKey={(r) => r.id}
+              loading={casePrintsLoading}
+              emptyMessage="No case reports have been printed yet."
+              emptyHint="Every PDF of a complaint or an SOS alert is recorded here with its document number and who printed it."
             />
           </div>
         </>
