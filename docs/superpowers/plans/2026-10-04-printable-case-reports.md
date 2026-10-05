@@ -8,7 +8,7 @@
 
 **Tech Stack:** React 19 + Vite admin app, `pdfmake` (new), Supabase RPC (`record_case_print`), node `--test` for tests.
 
-**Written for:** the TriSakay team (and the panel, as the design of the "generation of transportation reports" objective). The office name and logo wording in Section 3 are placeholders that the team must confirm.
+**Written for:** the TriSakay team (and the panel, as the design of the "generation of transportation reports" objective). The office name wording in Section 3 is a placeholder the team has accepted for now.
 
 ## 1. What gets printed
 
@@ -184,13 +184,13 @@ The table is readable by Supervisor and Admin only. A new "Case prints" tab in t
 - [ ] Confirm each print added exactly one row in the audit tab.
 - [ ] Save sample PDFs and screenshots to `uat_shots/` for the paper.
 
-## 8. Open decisions (the team's, not mine)
+## 8. Decisions (settled 2026-10-05)
 
-1. **Exact letterhead wording and any official seal or logo.** The plan uses a placeholder and the TriSakay mark only. An official city seal needs permission and a clean image file.
-2. **Who signs.** The plan prints "Prepared by / Noted by / Received by". Name the real position titles if the office uses fixed ones (for example the Department Head).
-3. **Document number format.** `PSO-CMP-2026-000123` is a suggestion; use the office's own scheme if it has one.
-4. **Map picture for SOS.** Version 1 prints coordinates and a QR code to the map link. A printed map picture needs the Google Static Maps API (more cost and key setup); decide if it is worth it.
-5. **Filipino version.** Not planned; the forms the office files are in English.
+1. **Letterhead:** keep the placeholder wording: "City Government of General Santos", "Public Safety Office (PSO)", "TriSakay Tricycle Ride-Hailing System", with the TriSakay mark. The wording lives in one constant so it can be changed later. An official city seal is not used.
+2. **Sign-off:** "Prepared by / Noted by / Received by". Prepared by is the printing user; the other two are blank lines.
+3. **Document number:** `PSO-CMP-2026-000123` for a complaint, `PSO-SOS-2026-000123` for an SOS alert (year in Manila time, running number per kind and year).
+4. **SOS map:** coordinates, a map link and a QR code. No printed map picture in version 1.
+5. **Filipino version:** not planned.
 
 ## 9. Not in this plan
 
