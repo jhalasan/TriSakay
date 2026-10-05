@@ -1,5 +1,5 @@
-import { getCaseContacts, getCaseRide, listCasePrints, recordCasePrint } from '@trisakay/services';
-import type { CaseContact, CasePrintKind, CasePrintReceipt, CasePrintRow, CaseRide } from '@trisakay/services';
+import { getCaseContacts, getCaseRide, listCasePrints, recordCasePrint, recordReportPrint } from '@trisakay/services';
+import type { CaseContact, CasePrintKind, CasePrintReceipt, CasePrintRow, CaseRide, ReportPrintKind } from '@trisakay/services';
 
-export { getCaseContacts, getCaseRide, listCasePrints, recordCasePrint };
-export type { CaseContact, CasePrintKind, CasePrintReceipt, CasePrintRow, CaseRide };
+export { getCaseContacts, getCaseRide, listCasePrints, recordCasePrint, recordReportPrint };
+export type { CaseContact, CasePrintKind, CasePrintReceipt, CasePrintRow, CaseRide, ReportPrintKind };

@@ -22,3 +22,17 @@ export function formatReportDate(iso: string): string {
   const get = manilaParts(iso, false);
   return `${get('day')} ${get('month')} ${get('year')}`;
 }
+
+/** "5 September" (no year) in Manila time, for the start of a period. */
+export function formatReportDayMonth(iso: string): string {
+  const parts = new Intl.DateTimeFormat('en-PH', { timeZone: MANILA_TZ, day: 'numeric', month: 'long' }).formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('day')} ${get('month')}`;
+}
+
+/** "5 Oct 2026" in Manila time, for tables where a full month name would wrap. */
+export function formatReportDateShort(iso: string): string {
+  const parts = new Intl.DateTimeFormat('en-PH', { timeZone: MANILA_TZ, day: 'numeric', month: 'short', year: 'numeric' }).formatToParts(new Date(iso));
+  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? '';
+  return `${get('day')} ${get('month').replace('.', '')} ${get('year')}`;
+}

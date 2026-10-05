@@ -85,6 +85,7 @@ function printRow(i: number, overrides: Record<string, unknown> = {}) {
     printed_at: '2026-10-05T01:00:00.000Z',
     include_chat: false,
     reason: null,
+    period: null,
     ...overrides,
   };
 }
@@ -129,6 +130,7 @@ test('listCasePrints maps rows, resolves who printed, and asks for one extra row
     id: 'p1',
     caseKind: 'sos_alert',
     caseId: 'case-1',
+    period: null,
     docNo: 'PSO-CMP-2026-000001',
     printedByName: 'Rina Cabuslay',
     printedAt: '2026-10-05T01:00:00.000Z',
@@ -154,4 +156,56 @@ test('listCasePrints returns { data: [], error } when the query fails', async ()
   assert.deepEqual(data, []);
   assert.equal(error, 'connection refused');
   assert.equal(truncated, false);
+});
+
+// ---- summary reports
+
+import { recordReportPrint } from '../src/admin/casePrints.ts';
+
+test('recordReportPrint sends the report type and the period and returns the document number', async () => {
+  const calls: unknown[] = [];
+  __setSupabaseClientForTests({
+    rpc: async (fn: string, args: unknown) => {
+      calls.push({ fn, args });
+      return {
+        data: [{ doc_no: 'PSO-RVN-2026-000001', printed_at: '2026-10-05T01:00:00.000Z', printed_by_name: 'Rina Cabuslay', printed_by_role: 'pso_supervisor' }],
+        error: null,
+      };
+    },
+  } as any);
+
+  const { data, error } = await recordReportPrint({ kind: 'report_rides', period: '  Last 30 days  ' });
+
+  assert.equal(error, null);
+  assert.deepEqual(calls, [{ fn: 'record_report_print', args: { p_kind: 'report_rides', p_period: 'Last 30 days' } }]);
+  assert.equal(data?.docNo, 'PSO-RVN-2026-000001');
+});
+
+test('recordReportPrint passes the database refusal through and gives no document number', async () => {
+  __setSupabaseClientForTests({
+    rpc: async () => ({ data: null, error: { message: 'Only a PSO Supervisor or Admin may print a summary report.' } }),
+  } as any);
+
+  const { data, error } = await recordReportPrint({ kind: 'report_drivers' });
+  assert.equal(data, null);
+  assert.equal(error, 'Only a PSO Supervisor or Admin may print a summary report.');
+});
+
+test('recordReportPrint reports an empty answer as an error', async () => {
+  __setSupabaseClientForTests({ rpc: async () => ({ data: [], error: null }) } as any);
+
+  const { data, error } = await recordReportPrint({ kind: 'report_franchise' });
+  assert.equal(data, null);
+  assert.equal(error, 'Could not record this print. Please try again.');
+});
+
+test('listCasePrints shows a summary report print with no case and its period', async () => {
+  __setSupabaseClientForTests(
+    fakePrintsClient([printRow(1, { case_kind: 'report_complaints', case_id: null, doc_no: 'PSO-CST-2026-000001', period: 'Last 7 days' })]),
+  );
+
+  const { data } = await listCasePrints('2026-10-01T00:00:00.000Z');
+  assert.equal(data[0].caseKind, 'report_complaints');
+  assert.equal(data[0].caseId, null);
+  assert.equal(data[0].period, 'Last 7 days');
 });

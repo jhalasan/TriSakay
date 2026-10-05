@@ -704,31 +704,34 @@ export type Database = {
       }
       case_print_log: {
         Row: {
-          case_id: string
+          case_id: string | null
           case_kind: string
           doc_no: string
           id: string
           include_chat: boolean
+          period: string | null
           printed_at: string
           printed_by: string
           reason: string | null
         }
         Insert: {
-          case_id: string
+          case_id?: string | null
           case_kind: string
           doc_no: string
           id?: string
           include_chat?: boolean
+          period?: string | null
           printed_at?: string
           printed_by: string
           reason?: string | null
         }
         Update: {
-          case_id?: string
+          case_id?: string | null
           case_kind?: string
           doc_no?: string
           id?: string
           include_chat?: boolean
+          period?: string | null
           printed_at?: string
           printed_by?: string
           reason?: string | null
@@ -2544,6 +2547,15 @@ export type Database = {
           ride_request_id: string
           seats: number
           status: Database["public"]["Enums"]["ride_status"]
+        }[]
+      }
+      record_report_print: {
+        Args: { p_kind: string; p_period?: string }
+        Returns: {
+          doc_no: string
+          printed_at: string
+          printed_by_name: string
+          printed_by_role: string
         }[]
       }
       record_case_print: {

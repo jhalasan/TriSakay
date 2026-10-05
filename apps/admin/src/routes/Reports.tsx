@@ -10,6 +10,10 @@ import { meetsRoleGate } from '../lib/rbac';
 import type { PeakHourBucket, ReportSummary, RidesRevenuePoint, TransactionRow } from '../types/report';
 import { formatCurrency, formatDate, formatDateTime, paymentMethodLabel, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
+import { PrintCaseButton } from '../components/PrintCaseButton';
+import { printSummaryReport } from '../lib/reports/printSummary';
+import { buildRidesRevenueReport } from '../lib/reports/ridesRevenueReport';
+import { reportPeriod } from '../lib/reports/periods';
 import { ErrorBanner } from '../components/ErrorBanner';
 import { EmptyState } from '../components/EmptyState';
 import { useToast } from '../components/Toast';
@@ -171,6 +175,30 @@ export function Reports() {
         >
           Export CSV
         </Button>
+        {canExport && (
+          <PrintCaseButton
+            offerChat={false}
+            label="Print summary (PDF)"
+            disabled={loading || !summary}
+            onPrint={() => {
+              const period = reportPeriod(dateRange);
+              return printSummaryReport({
+                kind: 'report_rides',
+                period: period.short,
+                build: () =>
+                  buildRidesRevenueReport({
+                    periodLabel: period.label,
+                    previousLabel: period.previousLabel,
+                    summary: summary!,
+                    daily: ridesRevenue,
+                    peakHours,
+                    transactions,
+                    transactionsTruncated,
+                  }),
+              });
+            }}
+          />
+        )}
       </div>
 
       <div className="stat-grid">

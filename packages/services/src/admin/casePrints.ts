@@ -2,6 +2,9 @@ import { getSupabaseClient } from '../supabase/client.ts';
 
 export type CasePrintKind = 'complaint' | 'sos_alert';
 
+/** The summary reports: rides and revenue, franchise status, complaints statistics, driver roster. */
+export type ReportPrintKind = 'report_rides' | 'report_franchise' | 'report_complaints' | 'report_drivers';
+
 export interface RecordCasePrintInput {
   kind: CasePrintKind;
   caseId: string;
@@ -51,10 +54,38 @@ export async function recordCasePrint({ kind, caseId, includeChat = false, reaso
   };
 }
 
+export interface RecordReportPrintInput {
+  kind: ReportPrintKind;
+  /** What the report covers, for the audit trail, for example "Last 30 days". */
+  period?: string;
+}
+
+/**
+ * Records that a summary report is about to be printed (Supervisor and Admin only, enforced by the database) and
+ * returns its document number. Same rule as recordCasePrint: call it BEFORE building the PDF and download nothing
+ * if it returns an error.
+ */
+export async function recordReportPrint({ kind, period }: RecordReportPrintInput): Promise<RecordCasePrintResult> {
+  const { data, error } = await getSupabaseClient().rpc('record_report_print', { p_kind: kind, p_period: period?.trim() || undefined });
+
+  if (error) return { data: null, error: error.message };
+
+  const row = data?.[0];
+  if (!row) return { data: null, error: 'Could not record this print. Please try again.' };
+
+  return {
+    data: { docNo: row.doc_no, printedAt: row.printed_at, printedByName: row.printed_by_name, printedByRole: row.printed_by_role },
+    error: null,
+  };
+}
+
 export interface CasePrintRow {
   id: string;
-  caseKind: CasePrintKind;
-  caseId: string;
+  caseKind: CasePrintKind | ReportPrintKind;
+  /** Null for a summary report, which is not about one case. */
+  caseId: string | null;
+  /** The period a summary report covers; null for a case report. */
+  period: string | null;
   docNo: string;
   printedByName: string | null;
   printedAt: string;
@@ -77,7 +108,7 @@ export async function listCasePrints(sinceIso: string): Promise<ListCasePrintsRe
 
   const { data, error } = await client
     .from('case_print_log')
-    .select('id, case_kind, case_id, doc_no, printed_by, printed_at, include_chat, reason')
+    .select('id, case_kind, case_id, doc_no, printed_by, printed_at, include_chat, reason, period')
     .gte('printed_at', sinceIso)
     .order('printed_at', { ascending: false })
     .limit(CASE_PRINTS_ROW_CAP + 1);
@@ -97,8 +128,9 @@ export async function listCasePrints(sinceIso: string): Promise<ListCasePrintsRe
 
   const rows: CasePrintRow[] = shown.map((row) => ({
     id: row.id,
-    caseKind: row.case_kind as CasePrintKind,
+    caseKind: row.case_kind as CasePrintKind | ReportPrintKind,
     caseId: row.case_id,
+    period: row.period,
     docNo: row.doc_no,
     printedByName: names.get(row.printed_by) ?? null,
     printedAt: row.printed_at,

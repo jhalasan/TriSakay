@@ -1,5 +1,5 @@
 /** What a printed report is made of. The builders (complaint, SOS) produce a ReportModel; pdfLayout turns it into a PDF. */
-export type ReportKind = 'complaint' | 'sos_alert';
+export type ReportKind = 'complaint' | 'sos_alert' | 'report_rides' | 'report_franchise' | 'report_complaints' | 'report_drivers';
 
 export type ReportBlock =
   /** Label and value pairs, shown as a two column table. */

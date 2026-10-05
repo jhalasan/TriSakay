@@ -17,3 +17,11 @@ test('formatReportDateTime uses the Manila day, not the UTC day', () => {
 test('formatReportDate drops the time', () => {
   assert.equal(formatReportDate('2026-10-05T07:15:00.000Z'), '5 October 2026');
 });
+
+import { formatReportDateShort } from '../src/lib/reports/format.ts';
+
+test('formatReportDateShort uses a three letter month in Manila time', () => {
+  assert.equal(formatReportDateShort('2026-10-05T07:15:00.000Z'), '5 Oct 2026');
+  assert.equal(formatReportDateShort('2026-10-04T17:00:00.000Z'), '5 Oct 2026');
+  assert.equal(formatReportDateShort('2026-09-10T02:00:00.000Z'), '10 Sep 2026');
+});

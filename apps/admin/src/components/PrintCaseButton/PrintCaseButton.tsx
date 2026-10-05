@@ -12,10 +12,12 @@ export interface PrintCaseButtonProps {
   onPrint: (options: { includeChat: boolean; chatReason: string }) => Promise<{ error: string | null; docNo?: string }>;
   /** Stops the button while the case's history is still loading, so the PDF is never printed half empty. */
   disabled?: boolean;
+  /** Button text. Defaults to the case report wording. */
+  label?: string;
 }
 
 /** "Print case report (PDF)" with the optional, reason-gated chat thread. The database decides who may print; this only asks. */
-export function PrintCaseButton({ offerChat, onPrint, disabled = false }: PrintCaseButtonProps) {
+export function PrintCaseButton({ offerChat, onPrint, disabled = false, label = 'Print case report (PDF)' }: PrintCaseButtonProps) {
   const [includeChat, setIncludeChat] = useState(false);
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
@@ -56,7 +58,7 @@ export function PrintCaseButton({ offerChat, onPrint, disabled = false }: PrintC
       <ErrorBanner message={error} />
       <div>
         <Button variant="outline" tone="neutral" size="sm" loading={busy} disabled={disabled || (includeChat && !reason.trim())} onClick={handlePrint}>
-          {busy ? 'Preparing PDF…' : 'Print case report (PDF)'}
+          {busy ? 'Preparing PDF…' : label}
         </Button>
       </div>
     </div>

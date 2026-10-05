@@ -17,6 +17,10 @@ import type { TricycleCluster, VerificationStatus } from '../types/driver';
 import { formatDate, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
 import { exportFilename, tricycleCsvColumns } from '../lib/exports';
+import { PrintCaseButton } from '../components/PrintCaseButton';
+import { RoleGate } from '../components/RoleGate';
+import { printSummaryReport } from '../lib/reports/printSummary';
+import { buildFranchiseReport } from '../lib/reports/franchiseReport';
 
 const PAGE_SIZE = 10;
 
@@ -272,9 +276,25 @@ export function Tricycles() {
           </>
         }
         actions={
-          <Button variant="outline" tone="neutral" size="sm" disabled={filtered.length === 0} onClick={exportCsv}>
-            Export
-          </Button>
+          <>
+            <Button variant="outline" tone="neutral" size="sm" disabled={filtered.length === 0} onClick={exportCsv}>
+              Export
+            </Button>
+            <RoleGate min="supervisor">
+              <PrintCaseButton
+                offerChat={false}
+                label="Print franchise report (PDF)"
+                disabled={loading || tricycles.length === 0}
+                onPrint={() =>
+                  printSummaryReport({
+                    kind: 'report_franchise',
+                    period: 'All active tricycles',
+                    build: () => buildFranchiseReport({ tricycles, asOfIso: new Date().toISOString() }),
+                  })
+                }
+              />
+            </RoleGate>
+          </>
         }
       />
 

@@ -24,6 +24,9 @@ import type { ComplaintRow, ComplaintStatus } from '../types/complaint';
 import { formatDate, getReferenceCode, titleCaseLabel, toDatetimeLocalValue } from '../lib/format';
 import { formatBulkTargets } from '../lib/bulkActions';
 import { printComplaintReport } from '../lib/reports/printCase';
+import { printSummaryReport } from '../lib/reports/printSummary';
+import { buildComplaintsStatsReport } from '../lib/reports/complaintsStatsReport';
+import { reportPeriod, type ReportPeriodKey } from '../lib/reports/periods';
 import { isSupervisor } from '../lib/rbac';
 import type { ComplaintAssignmentRow } from '../services/complaints';
 import styles from './Complaints.module.css';
@@ -184,6 +187,7 @@ export function Complaints() {
   const [selectedRowIds, setSelectedRowIds] = useState<Set<string>>(new Set());
   const [pendingBulkKind, setPendingBulkKind] = useState<BulkTriageKind | null>(null);
   const [bulkSubmitting, setBulkSubmitting] = useState(false);
+  const [statsPeriod, setStatsPeriod] = useState<ReportPeriodKey>('30d');
   const { showToast } = useToast();
 
   useEffect(() => {
@@ -409,6 +413,36 @@ export function Complaints() {
                   options={PAGE_SIZE_OPTIONS}
                 />
               </>
+            }
+            actions={
+              <RoleGate min="supervisor">
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: 8 }}>
+                  <Select
+                    aria-label="Period for the statistics report"
+                    value={statsPeriod}
+                    onChange={(e) => setStatsPeriod(e.target.value as ReportPeriodKey)}
+                    options={[
+                      { label: 'Last 7 days', value: '7d' },
+                      { label: 'Last 30 days', value: '30d' },
+                      { label: 'This quarter', value: 'quarter' },
+                      { label: 'All time', value: 'all' },
+                    ]}
+                  />
+                  <PrintCaseButton
+                    offerChat={false}
+                    label="Print statistics (PDF)"
+                    disabled={loading || complaints.length === 0}
+                    onPrint={() => {
+                      const period = reportPeriod(statsPeriod);
+                      return printSummaryReport({
+                        kind: 'report_complaints',
+                        period: period.short,
+                        build: () => buildComplaintsStatsReport({ complaints, periodLabel: period.label, sinceIso: period.sinceIso }),
+                      });
+                    }}
+                  />
+                </div>
+              </RoleGate>
             }
           />
           <div className={styles.slaStrip}>

@@ -83,18 +83,27 @@ const rideMessageViewColumns: DataTableColumn<RideMessageViewLogRow>[] = [
   { key: 'reason', header: 'Reason', render: (r) => r.reason },
 ];
 
+const CASE_PRINT_KIND_LABEL: Record<CasePrintRow['caseKind'], string> = {
+  complaint: 'Complaint',
+  sos_alert: 'SOS alert',
+  report_rides: 'Rides and revenue report',
+  report_franchise: 'Franchise status report',
+  report_complaints: 'Complaints statistics report',
+  report_drivers: 'Driver roster report',
+};
+
 const casePrintColumns: DataTableColumn<CasePrintRow>[] = [
   { key: 'when', header: 'When', sortValue: (r) => r.printedAt, render: (r) => formatDateTime(r.printedAt) },
   { key: 'docNo', header: 'Document No.', sortValue: (r) => r.docNo, render: (r) => <span className="mono">{r.docNo}</span> },
-  { key: 'kind', header: 'Case', render: (r) => (r.caseKind === 'complaint' ? 'Complaint' : 'SOS alert') },
-  { key: 'ref', header: 'Ref.', render: (r) => <span className="mono">#{getReferenceCode(r.caseId, 4) ?? '—'}</span> },
+  { key: 'kind', header: 'Printed', render: (r) => CASE_PRINT_KIND_LABEL[r.caseKind] ?? r.caseKind },
+  { key: 'ref', header: 'Ref.', render: (r) => (r.caseId ? <span className="mono">#{getReferenceCode(r.caseId, 4) ?? '—'}</span> : '—') },
   { key: 'by', header: 'Printed By', sortValue: (r) => r.printedByName ?? '', render: (r) => <span style={{ fontWeight: 600 }}>{r.printedByName ?? '—'}</span> },
   {
     key: 'chat',
     header: 'Chat Included',
     render: (r) => (r.includeChat ? <Badge label="Yes" tone="warn" /> : <Badge label="No" tone="neutral" />),
   },
-  { key: 'reason', header: 'Reason', render: (r) => r.reason ?? '—' },
+  { key: 'reason', header: 'Reason or period', render: (r) => r.reason ?? r.period ?? '—' },
 ];
 
 const fareHistoryColumns: DataTableColumn<FareConfigHistoryRow>[] = [

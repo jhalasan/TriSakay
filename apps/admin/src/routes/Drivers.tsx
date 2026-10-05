@@ -18,6 +18,9 @@ import { useDriversStore } from '../store/useDriversStore';
 import type { DriverRow } from '../types/driver';
 import { formatDate, titleCaseLabel } from '../lib/format';
 import { downloadCsv, toCsv } from '../lib/csv';
+import { PrintCaseButton } from '../components/PrintCaseButton';
+import { printSummaryReport } from '../lib/reports/printSummary';
+import { buildDriverRosterReport } from '../lib/reports/driverRosterReport';
 import { formatBulkTargets } from '../lib/bulkActions';
 import { driverCsvColumns, exportFilename } from '../lib/exports';
 
@@ -389,9 +392,25 @@ export function Drivers() {
           />
         }
         actions={
-          <Button variant="outline" tone="neutral" size="sm" disabled={filtered.length === 0} onClick={exportCsv}>
-            Export
-          </Button>
+          <>
+            <Button variant="outline" tone="neutral" size="sm" disabled={filtered.length === 0} onClick={exportCsv}>
+              Export
+            </Button>
+            <RoleGate min="supervisor">
+              <PrintCaseButton
+                offerChat={false}
+                label="Print roster (PDF)"
+                disabled={loading || drivers.length === 0}
+                onPrint={() =>
+                  printSummaryReport({
+                    kind: 'report_drivers',
+                    period: 'All drivers',
+                    build: () => buildDriverRosterReport({ drivers, asOfIso: new Date().toISOString() }),
+                  })
+                }
+              />
+            </RoleGate>
+          </>
         }
       />
       {selectedRowIds.size > 0 && (
