@@ -60,6 +60,48 @@ export async function respondTransfer(inviteId: string, accept: boolean): Promis
   return { error: null, accepted: row?.accepted ?? false, tripId: row?.trip_id ?? null };
 }
 
+export interface TransferInviteDetails {
+  pickupPlace: string | null;
+  destinationPlace: string | null;
+  seats: number;
+  rideKm: number | null;
+  /** The fare the passenger was quoted. It stays the same after the transfer. */
+  fare: number | null;
+  /** True when the passenger is already on board, so the meeting point is where the first driver is. */
+  handoffAfterPickup: boolean;
+  /** Straight line distance from the invited driver to the meeting point, null when their location is unknown. */
+  handoffKm: number | null;
+}
+
+export interface GetTransferInviteDetailsResult {
+  /** Null when the invite is gone or has expired. */
+  data: TransferInviteDetails | null;
+  error: string | null;
+}
+
+/** The invited (TO) driver's view of what they are being asked to take, read before they accept. */
+export async function getTransferInviteDetails(inviteId: string): Promise<GetTransferInviteDetailsResult> {
+  const { data, error } = await getSupabaseClient().rpc('get_transfer_invite_details', { p_invite_id: inviteId });
+
+  if (error) return { data: null, error: error.message };
+
+  const row = Array.isArray(data) ? data[0] : null;
+  if (!row) return { data: null, error: null };
+
+  return {
+    data: {
+      pickupPlace: row.pickup_place,
+      destinationPlace: row.destination_place,
+      seats: row.seats,
+      rideKm: row.ride_km,
+      fare: row.fare,
+      handoffAfterPickup: row.handoff_after_pickup,
+      handoffKm: row.handoff_km,
+    },
+    error: null,
+  };
+}
+
 export interface ReleaseToPoolResult {
   error: string | null;
 }

@@ -14,6 +14,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { getSupabaseClient } from '@trisakay/services/src/supabase/client.ts';
 import { subscribeToTripTransactions } from '@trisakay/services/src/payments/index.ts';
+import { getTransferInviteDetails, type TransferInviteDetails } from '@trisakay/services/src/transfers/index.ts';
 import { ConfirmModal, ConnectionBanner, colors, DRIVER_FINISHED_MESSAGE, DRIVER_STEPS, DRIVER_WELCOME_BODY, fontFamily, TutorialOverlay, TutorialProvider } from '@trisakay/ui';
 import { driverTutorialSeenKey } from '../src/constants/tutorial';
 import { useDriverLocationSync } from '../src/hooks/useDriverLocationSync';
@@ -24,6 +25,8 @@ import { useDriverTutorialNavigation } from '../src/hooks/useDriverTutorialNavig
 import { useDriverTutorialTrigger } from '../src/hooks/useDriverTutorialTrigger';
 import { useLocationPermission } from '../src/hooks/useLocationPermission';
 import { useTranslation } from '../src/hooks/useTranslation';
+import { formatCurrency } from '../src/utils/currency';
+import { buildTransferInviteMessage } from '../src/utils/transferInviteText';
 import { useAuthStore } from '../src/store/useAuthStore';
 import { useComplaintsStore } from '../src/store/useComplaintsStore';
 import { useConnectivityStore } from '../src/store/useConnectivityStore';
@@ -444,8 +447,44 @@ function TransferInviteGate() {
   const invites = useTransferInvitesStore((state) => state.invites);
   const respond = useTransferInvitesStore((state) => state.respond);
   const hydrate = useTripStore((state) => state.hydrate);
-  const invite = invites[0] ?? null;
   const [responding, setResponding] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+  const [details, setDetails] = useState<TransferInviteDetails | null>(null);
+
+  // The server only marks an invite expired on its once a minute sweep, so an old one can still be in the list.
+  // Hide it as soon as its own 30 seconds are up, and tick once a second for the countdown while one is showing.
+  const invite = invites.find((i) => !i.expires_at || new Date(i.expires_at).getTime() > now) ?? null;
+  const inviteId = invite?.id ?? null;
+
+  useEffect(() => {
+    if (!inviteId) return;
+    setNow(Date.now());
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, [inviteId]);
+
+  useEffect(() => {
+    setDetails(null);
+    if (!inviteId) return;
+    let cancelled = false;
+    void getTransferInviteDetails(inviteId).then(({ data }) => {
+      if (!cancelled) setDetails(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [inviteId]);
+
+  const secondsLeft = invite?.expires_at ? (new Date(invite.expires_at).getTime() - now) / 1000 : 30;
+  const message = invite
+    ? buildTransferInviteMessage({
+        reason: invite.reason,
+        details,
+        secondsLeft,
+        copy: t.driver.transfer,
+        formatMoney: formatCurrency,
+      })
+    : undefined;
 
   async function handleRespond(accept: boolean) {
     if (!invite || responding) return;
@@ -462,7 +501,7 @@ function TransferInviteGate() {
     <ConfirmModal
       visible={!!invite}
       title={t.driver.transfer.inviteTitle}
-      message={invite?.reason || t.driver.transfer.inviteMessageFallback}
+      message={message || t.driver.transfer.inviteMessageFallback}
       cancelLabel={t.driver.transfer.decline}
       confirmLabel={t.driver.transfer.accept}
       confirmLoading={responding}

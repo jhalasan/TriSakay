@@ -2681,6 +2681,18 @@ export type Database = {
       }
       is_pso: { Args: never; Returns: boolean }
       is_supervisor: { Args: never; Returns: boolean }
+      get_transfer_invite_details: {
+        Args: { p_invite_id: string }
+        Returns: {
+          destination_place: string | null
+          fare: number | null
+          handoff_after_pickup: boolean
+          handoff_km: number | null
+          pickup_place: string | null
+          ride_km: number | null
+          seats: number
+        }[]
+      }
       list_transfer_candidates: {
         Args: { p_ride_request_id: string }
         Returns: {
