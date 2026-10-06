@@ -1,44 +1,110 @@
 erDiagram
-  USERS ||--o| DRIVER_PROFILES : "has if driver"
-  DRIVER_PROFILES ||--o{ TRICYCLES : owns
-  DRIVER_PROFILES ||--o{ DRIVER_DOCUMENTS : uploads
-  TRICYCLES o|--o{ DRIVER_DOCUMENTS : "for (optional)"
-  USERS ||--o{ PASSENGER_DISCOUNTS : applies
-  DRIVER_PROFILES ||--o{ TRIPS : drives
-  TRICYCLES ||--o{ TRIPS : "used in"
-  USERS ||--o{ RIDE_REQUESTS : requests
-  TRIPS o|--o{ RIDE_REQUESTS : "carries (optional)"
-  BARANGAYS o|--o{ RIDE_REQUESTS : "pickup in (optional)"
-  RIDE_REQUESTS ||--o| TRANSACTIONS : "billed as"
-  RIDE_REQUESTS ||--o| RATINGS : "rated via"
-  USERS ||--o{ COMPLAINTS : submits
-  USERS o|--o{ COMPLAINTS : "named in (optional)"
-  RIDE_REQUESTS o|--o{ COMPLAINTS : "concerns (optional)"
-  COMPLAINTS ||--o{ COMPLAINT_ATTACHMENTS : "has evidence"
-  USERS ||--o{ COMPLAINT_ATTACHMENTS : uploads
-  USERS ||--o{ ACCOUNT_ACTIONS : "target of"
-  COMPLAINTS o|--o{ ACCOUNT_ACTIONS : "resulted in (optional)"
   USERS ||--o{ NOTIFICATIONS : receives
   USERS ||--o{ SAVED_PLACES : saves
   USERS ||--o{ USER_CONSENTS : accepts
+  USERS ||--o{ ACCOUNT_ACTIONS : "target of"
+  USERS ||--o{ PASSENGER_DISCOUNTS : applies
+  USERS o|--o{ COMPLAINTS : files
   USERS ||--o{ EMERGENCY_ALERTS : triggers
+  USERS ||--o{ RIDE_REQUESTS : requests
+  USERS ||--o| DRIVER_PROFILES : "has (if driver)"
+  RIDE_REQUESTS o|--o{ COMPLAINTS : "concerns (optional)"
   RIDE_REQUESTS o|--o{ EMERGENCY_ALERTS : "during (optional)"
-  DRIVER_PROFILES ||--o{ SETTLEMENTS : notifies
+  COMPLAINTS o|--o{ ACCOUNT_ACTIONS : "resulted in (optional)"
+  COMPLAINTS ||--o{ COMPLAINT_ATTACHMENTS : "has evidence"
+  COMPLAINTS ||--o{ COMPLAINT_ASSIGNMENTS : "handed off via"
+  COMPLAINTS ||--o{ COMPLAINT_STATUS_HISTORY : "tracked by"
+  COMPLAINTS ||--o{ RIDE_MESSAGE_VIEW_LOG : "chat viewed for"
+  EMERGENCY_ALERTS ||--o{ RIDE_MESSAGE_VIEW_LOG : "chat viewed for"
+  RIDE_REQUESTS ||--o| TRANSACTIONS : "billed as"
+  RIDE_REQUESTS ||--o| RATINGS : "rated via"
   RIDE_REQUESTS ||--o{ RIDE_REQUEST_DECLINES : "declined via"
+  RIDE_REQUESTS ||--o{ RIDE_TRANSFERS : "transferred via"
+  RIDE_REQUESTS ||--o{ RIDE_ASSIGNMENT_EVENTS : "audited by"
+  TRIPS o|--o{ RIDE_REQUESTS : "carries (optional)"
+  BARANGAYS o|--o{ RIDE_REQUESTS : "pickup in (optional)"
+  RIDE_REQUESTS ||--o{ RECEIPT_EMAILS : "receipt emailed"
+  RIDE_REQUESTS ||--o{ RIDE_MESSAGES : "has chat"
+  RIDE_REQUESTS ||--o{ RIDE_CALLS : "has calls"
+  DRIVER_PROFILES ||--o{ RATINGS : "is rated in"
   DRIVER_PROFILES ||--o{ RIDE_REQUEST_DECLINES : declines
-
+  DRIVER_PROFILES ||--o{ RIDE_TRANSFERS : "hands off / receives"
+  DRIVER_PROFILES ||--o{ DRIVER_LOCATIONS : reports
+  DRIVER_PROFILES ||--o{ TRICYCLES : owns
+  DRIVER_PROFILES ||--o{ TRIPS : drives
+  DRIVER_PROFILES ||--o{ DRIVER_DOCUMENTS : uploads
+  TRICYCLES ||--o{ TRIPS : "used in"
+  TRICYCLES o|--o{ DRIVER_DOCUMENTS : "for (optional)"
+  TRIPS ||--o{ RIDE_ASSIGNMENT_EVENTS : "logged in"
+  USERS ||--o{ CASE_PRINT_LOG : prints
+  USERS ||--o{ LOGIN_EVENTS : "signs in"
   USERS {
-    uuid id PK
+    uuid user_id PK
+    text first_name
+    text last_name
     text full_name
-    text contact_no
+    text contact_no UK
     text email
     user_role role
     account_status status
     text avatar_url
     text push_token
     boolean must_change_password
+    boolean email_receipts
     timestamp created_at
     timestamp updated_at
+  }
+  SAVED_PLACES {
+    uuid saved_place_id PK
+    uuid user_id FK
+    text label
+    text icon
+    text address
+    double_precision latitude
+    double_precision longitude
+    timestamp created_at
+  }
+  USER_CONSENTS {
+    uuid user_consent_id PK
+    uuid user_id FK
+    text policy_type
+    text policy_version
+    timestamp accepted_at
+  }
+  NOTIFICATIONS {
+    uuid notification_id PK
+    uuid user_id FK
+    notification_type type
+    text title
+    text message
+    uuid ref_id
+    boolean is_read
+    timestamp created_at
+  }
+  ACCOUNT_ACTIONS {
+    uuid account_action_id PK
+    uuid target_user_id FK
+    account_action_type action_type
+    uuid performed_by FK
+    text reason
+    uuid complaint_id FK
+    timestamp created_at
+  }
+  PASSENGER_DISCOUNTS {
+    uuid passenger_discount_id PK
+    uuid passenger_id FK
+    discount_category category
+    text id_number
+    date date_of_birth
+    text issuing_office
+    text id_photo_front_path
+    text id_photo_back_path
+    verification_status status
+    uuid reviewed_by FK
+    timestamp reviewed_at
+    text remarks
+    timestamp submitted_at
+    timestamp expires_at
   }
   DRIVER_PROFILES {
     uuid user_id PK, FK
@@ -52,13 +118,20 @@ erDiagram
     numeric declared_dest_lat
     numeric declared_dest_lng
     timestamp location_updated_at
+    boolean is_mocked
     numeric rating_avg
     int rating_count
     timestamp created_at
     timestamp updated_at
   }
+  DRIVER_LOCATIONS {
+    uuid user_id PK, FK
+    numeric current_lat
+    numeric current_lng
+    timestamp location_updated_at
+  }
   TRICYCLES {
-    uuid id PK
+    uuid tricycle_id PK
     uuid driver_id FK
     text plate_no UK
     text body_no
@@ -73,35 +146,8 @@ erDiagram
     timestamp created_at
     timestamp updated_at
   }
-  DRIVER_DOCUMENTS {
-    uuid id PK
-    uuid driver_id FK
-    uuid tricycle_id FK
-    document_type doc_type
-    text storage_path
-    verification_status status
-    uuid reviewed_by FK
-    timestamp reviewed_at
-    text remarks
-    timestamp created_at
-  }
-  PASSENGER_DISCOUNTS {
-    uuid id PK
-    uuid passenger_id FK
-    discount_category category
-    text id_photo_front_path
-    text id_photo_back_path
-    verification_status status
-    uuid reviewed_by FK
-    timestamp reviewed_at
-    text remarks
-    timestamp submitted_at
-    text id_number
-    date date_of_birth
-    text issuing_office
-  }
   TRIPS {
-    uuid id PK
+    uuid trip_id PK
     uuid driver_id FK
     uuid tricycle_id FK
     trip_status status
@@ -115,24 +161,28 @@ erDiagram
     timestamp created_at
     timestamp updated_at
   }
-  BARANGAYS {
-    uuid id PK
-    text name UK
-    tricycle_cluster cluster
-    boolean is_split
-    text notes
+  DRIVER_DOCUMENTS {
+    uuid driver_document_id PK
+    uuid driver_id FK
+    uuid tricycle_id FK
+    document_type doc_type
+    text storage_path
+    verification_status status
+    date expiry_date
+    timestamp expiry_notified_at
+    uuid reviewed_by FK
+    timestamp reviewed_at
+    text remarks
     timestamp created_at
-    timestamp updated_at
-    uuid updated_by FK
   }
   RIDE_REQUESTS {
-    uuid id PK
+    uuid ride_request_id PK
     uuid passenger_id FK
     uuid trip_id FK
+    uuid pickup_barangay_id FK
     numeric pickup_lat
     numeric pickup_lng
     text pickup_label
-    uuid pickup_barangay_id FK
     numeric dest_lat
     numeric dest_lng
     text dest_label
@@ -145,36 +195,153 @@ erDiagram
     ride_status status
     payment_method preferred_method
     timestamp requested_at
+    timestamp expires_at
     timestamp assigned_at
+    timestamp arrived_at
     timestamp picked_up_at
     timestamp completed_at
     timestamp cancelled_at
+    text cancelled_by
+    text cancel_reason_code
     text cancel_reason
+    numeric dropoff_lat
+    numeric dropoff_lng
+    boolean fare_flagged
+    timestamp payment_requested_at
+  }
+  RECEIPT_EMAILS {
+    uuid receipt_email_id PK
+    uuid ride_request_id FK
+    uuid user_id FK
+    text kind
+    text status
+    text error
+    timestamp created_at
+  }
+  BARANGAYS {
+    uuid barangay_id PK
+    text name UK
+    tricycle_cluster cluster
+    boolean is_split
+    text notes
+    timestamp created_at
+    timestamp updated_at
+    uuid updated_by FK
+  }
+  RIDE_TRANSFERS {
+    uuid ride_transfer_id PK
+    uuid ride_request_id FK
+    uuid from_driver_id FK
+    uuid to_driver_id FK
+    text reason
+    boolean after_pickup
+    numeric handoff_lat
+    numeric handoff_lng
+    text status
+    timestamp expires_at
+    timestamp responded_at
+    timestamp handoff_completed_at
+    timestamp created_at
+  }
+  RIDE_ASSIGNMENT_EVENTS {
+    uuid ride_assignment_event_id PK
+    uuid ride_request_id FK
+    uuid trip_id FK
+    uuid driver_id FK
+    text event_type
+    uuid actor_id FK
+    text from_status
+    text to_status
+    text reason
+    timestamp created_at
   }
   TRANSACTIONS {
-    uuid id PK
+    uuid transaction_id PK
     uuid ride_request_id FK, UK
     numeric amount
     payment_method method
     payment_status status
     text paymongo_session_id UK
+    text previous_paymongo_session_id
     jsonb paymongo_payload
+    text switched_from_method
+    text switch_reason
+    timestamp switched_at
     uuid cash_confirmed_by FK
     timestamp cash_confirmed_at
     timestamp created_at
     timestamp updated_at
   }
   RATINGS {
-    uuid id PK
-    uuid ride_request_id FK, UK
+    uuid rating_id PK
+    uuid ride_request_id FK
     uuid passenger_id FK
     uuid driver_id FK
     int stars
+    text tags
     text comment
     timestamp created_at
   }
+  RIDE_REQUEST_DECLINES {
+    uuid ride_request_id PK, FK
+    uuid driver_id PK, FK
+    timestamp declined_at
+  }
+  FARE_CONFIG {
+    uuid fare_config_id PK
+    numeric base_fare
+    numeric base_km
+    numeric rate_per_km
+    numeric discount_rate_percent
+    text ordinance_ref
+    timestamp effective_from
+    boolean is_active
+    uuid updated_by FK
+    timestamp created_at
+  }
+  SYSTEM_SETTINGS {
+    uuid system_setting_id PK
+    numeric bearing_tolerance_deg
+    numeric detour_ratio_max
+    numeric search_radius_km
+    numeric low_rating_threshold
+    boolean gcash_enabled
+    boolean cash_enabled
+    boolean franchise_expiry_notifications
+    int passenger_cancel_strike_limit
+    int passenger_cancel_strike_window_hours
+    int passenger_cancel_cooldown_hours
+    int passenger_search_cancel_limit
+    int passenger_search_cancel_window_minutes
+    int passenger_search_cancel_pause_minutes
+    boolean is_active
+    uuid updated_by FK
+    timestamp updated_at
+  }
+  RIDE_MESSAGES {
+    uuid ride_message_id PK
+    uuid ride_request_id FK
+    uuid sender_id FK
+    text kind
+    text body
+    text image_path
+    boolean contains_masked_phone
+    timestamp created_at
+    timestamp read_at
+  }
+  RIDE_CALLS {
+    uuid ride_call_id PK
+    uuid ride_request_id FK
+    uuid caller_id FK
+    uuid callee_id FK
+    text status
+    timestamp created_at
+    timestamp answered_at
+    timestamp ended_at
+    text end_reason
+  }
   COMPLAINTS {
-    uuid id PK
+    uuid complaint_id PK
     uuid submitted_by FK
     uuid against_user_id FK
     uuid ride_request_id FK
@@ -184,6 +351,10 @@ erDiagram
     complaint_status status
     uuid triaged_by FK
     timestamp triaged_at
+    text assigned_to FK
+    text assigned_by FK
+    timestamp assigned_at
+    timestamp assignment_accepted_at
     uuid dh_reviewed_by FK
     timestamp dh_reviewed_at
     text dh_directive
@@ -197,73 +368,8 @@ erDiagram
     timestamp created_at
     timestamp updated_at
   }
-  COMPLAINT_ATTACHMENTS {
-    uuid id PK
-    uuid complaint_id FK
-    text storage_path
-    uuid uploaded_by FK
-    timestamp created_at
-  }
-  ACCOUNT_ACTIONS {
-    uuid id PK
-    uuid target_user_id FK
-    account_action_type action_type
-    uuid performed_by FK
-    text reason
-    uuid complaint_id FK
-    timestamp created_at
-  }
-  FARE_CONFIG {
-    uuid id PK
-    numeric base_fare
-    numeric base_km
-    numeric rate_per_km
-    numeric discount_rate_percent
-    text ordinance_ref
-    timestamp effective_from
-    boolean is_active
-    uuid updated_by FK
-    timestamp created_at
-  }
-  SYSTEM_SETTINGS {
-    uuid id PK
-    numeric bearing_tolerance_deg
-    numeric detour_ratio_max
-    numeric search_radius_km
-    numeric low_rating_threshold
-    boolean is_active
-    uuid updated_by FK
-    timestamp updated_at
-  }
-  NOTIFICATIONS {
-    uuid id PK
-    uuid user_id FK
-    notification_type type
-    text title
-    text message
-    uuid ref_id
-    boolean is_read
-    timestamp created_at
-  }
-  SAVED_PLACES {
-    uuid id PK
-    uuid user_id FK
-    text label
-    text icon
-    text address
-    double_precision latitude
-    double_precision longitude
-    timestamp created_at
-  }
-  USER_CONSENTS {
-    uuid id PK
-    uuid user_id FK
-    text policy_type
-    text policy_version
-    timestamp accepted_at
-  }
   EMERGENCY_ALERTS {
-    uuid id PK
+    uuid emergency_alert_id PK
     uuid ride_request_id FK
     uuid triggered_by FK
     emergency_role triggered_role
@@ -274,16 +380,76 @@ erDiagram
     uuid reviewed_by FK
     timestamp reviewed_at
     text notes
+    boolean is_false_alarm
+    timestamp created_at
+    text closed_by FK
+    timestamp closed_at
+  }
+  RIDE_MESSAGE_VIEW_LOG {
+    uuid ride_message_view_log_id PK
+    uuid ride_request_id FK
+    uuid complaint_id FK
+    uuid emergency_alert_id FK
+    text viewed_by FK
+    text reason
     timestamp created_at
   }
-  SETTLEMENTS {
-    uuid id PK
-    uuid driver_id FK
-    numeric amount
-    timestamp notified_at
+  COMPLAINT_STATUS_HISTORY {
+    uuid complaint_status_history_id PK
+    uuid complaint_id FK
+    text old_status
+    text new_status
+    text changed_by FK
+    timestamp changed_at
   }
-  RIDE_REQUEST_DECLINES {
-    uuid ride_request_id PK, FK
-    uuid driver_id PK, FK
-    timestamp declined_at
+  COMPLAINT_ASSIGNMENTS {
+    uuid complaint_assignment_id PK
+    uuid complaint_id FK
+    text kind
+    uuid from_user FK
+    uuid to_user FK
+    uuid by_user FK
+    text note
+    timestamp created_at
+  }
+  COMPLAINT_ATTACHMENTS {
+    uuid complaint_attachment_id PK
+    uuid complaint_id FK
+    text storage_path
+    uuid uploaded_by FK
+    timestamp created_at
+  }
+  CASE_PRINT_LOG {
+    uuid case_print_log_id PK
+    text case_kind
+    uuid case_id
+    text doc_no UK
+    text printed_by FK
+    timestamp printed_at
+    boolean include_chat
+    text reason
+    text period
+  }
+  LOGIN_EVENTS {
+    uuid login_event_id PK
+    uuid user_id FK
+    text event_type
+    timestamp created_at
+  }
+  CASE_PRINT_COUNTERS {
+    text case_kind PK
+    int year PK
+    int last_number
+  }
+  LOGIN_ATTEMPTS {
+    uuid login_attempt_id PK
+    text email_key
+    text ip
+    boolean success
+    timestamp created_at
+  }
+  PENDING_STAFF_ACCOUNTS {
+    text email PK
+    text role
+    timestamp created_at
   }

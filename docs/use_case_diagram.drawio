@@ -1,14 +1,14 @@
 <mxfile host="app.diagrams.net">
   <diagram name="TriSakay Use Case Diagram" id="trisakay-uc">
-    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1820" pageHeight="1946" math="0" shadow="0">
+    <mxGraphModel dx="1400" dy="900" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1820" pageHeight="2346" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
         <mxCell id="grpPassenger" value="Passenger App" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=11;fontStyle=1;fillColor=none;strokeColor=#8a8f98;spacingLeft=10;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="280" y="85" width="560" height="868" as="geometry" /></mxCell>
         <mxCell id="grpDriver" value="Driver App" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=11;fontStyle=1;fillColor=none;strokeColor=#8a8f98;spacingLeft=10;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="280" y="988" width="560" height="868" as="geometry" /></mxCell>
-        <mxCell id="grpShared" value="Shared / System" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=11;fontStyle=1;fillColor=none;strokeColor=#8a8f98;spacingLeft=10;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="880" y="85" width="240" height="1756" as="geometry" /></mxCell>
-        <mxCell id="grpBack" value="PSO / Admin Back Office (web)" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=11;fontStyle=1;fillColor=none;strokeColor=#8a8f98;spacingLeft=10;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="1170" y="85" width="260" height="1756" as="geometry" /></mxCell>
-        <mxCell id="boundary" value="TriSakay Platform" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontSize=15;fontStyle=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="250" y="45" width="1210" height="1841" as="geometry" /></mxCell>
+        <mxCell id="grpShared" value="Shared / System" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=11;fontStyle=1;fillColor=none;strokeColor=#8a8f98;spacingLeft=10;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="880" y="85" width="240" height="2156" as="geometry" /></mxCell>
+        <mxCell id="grpBack" value="PSO / Admin Back Office (web)" style="rounded=0;dashed=1;whiteSpace=wrap;html=1;verticalAlign=top;align=left;fontSize=11;fontStyle=1;fillColor=none;strokeColor=#8a8f98;spacingLeft=10;spacingTop=6;" vertex="1" parent="1"><mxGeometry x="1170" y="85" width="260" height="2156" as="geometry" /></mxCell>
+        <mxCell id="boundary" value="TriSakay Platform" style="rounded=0;whiteSpace=wrap;html=1;verticalAlign=top;align=center;fontSize=15;fontStyle=1;fillColor=none;strokeColor=#000000;strokeWidth=2;" vertex="1" parent="1"><mxGeometry x="250" y="45" width="1210" height="2241" as="geometry" /></mxCell>
         <mxCell id="p1" value="Complete Onboarding, Consent &amp; Walkthrough" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="290" y="115" width="180" height="54" as="geometry" /></mxCell>
         <mxCell id="p2" value="Manage Saved Places" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="550" y="115" width="180" height="54" as="geometry" /></mxCell>
         <mxCell id="p3" value="Request Ride" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;strokeColor=#B5432A;fontColor=#B5432A;strokeWidth=2;fontStyle=1;" vertex="1" parent="1"><mxGeometry x="290" y="207" width="180" height="54" as="geometry" /></mxCell>
@@ -45,7 +45,7 @@
         <mxCell id="d16" value="Receive Document Expiry Reminder" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="550" y="1662" width="180" height="54" as="geometry" /></mxCell>
         <mxCell id="d17" value="Manage Settings &amp; Language" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="290" y="1754" width="180" height="54" as="geometry" /></mxCell>
         <mxCell id="d18" value="View My Complaints" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="550" y="1754" width="180" height="54" as="geometry" /></mxCell>
-        <mxCell id="s1" value="Register / Log In (MFA when enabled)" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="902" y="115" width="196" height="54" as="geometry" /></mxCell>
+        <mxCell id="s1" value="Register / Log In (MFA when enabled; attempt limit)" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="902" y="115" width="196" height="54" as="geometry" /></mxCell>
         <mxCell id="s2" value="Reset / Change Password" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="902" y="207" width="196" height="54" as="geometry" /></mxCell>
         <mxCell id="s3" value="Manage Two-Factor &amp; Trusted Devices" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="902" y="299" width="196" height="54" as="geometry" /></mxCell>
         <mxCell id="s4" value="Deactivate Own Account" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="902" y="391" width="196" height="54" as="geometry" /></mxCell>
@@ -66,7 +66,7 @@
         <mxCell id="b9" value="Assign &amp; Hand Off Complaints" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="915" width="200" height="54" as="geometry" /></mxCell>
         <mxCell id="b10" value="Schedule &amp; Record Mediation" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1015" width="200" height="54" as="geometry" /></mxCell>
         <mxCell id="b11" value="Review Emergency Alerts" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1115" width="200" height="54" as="geometry" /></mxCell>
-        <mxCell id="b12" value="Mark Alert Reviewed" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1215" width="200" height="54" as="geometry" /></mxCell>
+        <mxCell id="b12" value="Mark Alert Reviewed &amp; Close" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1215" width="200" height="54" as="geometry" /></mxCell>
         <mxCell id="b13" value="Review Rating Trends" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1315" width="200" height="54" as="geometry" /></mxCell>
         <mxCell id="b14" value="View Audit Log" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1415" width="200" height="54" as="geometry" /></mxCell>
         <mxCell id="b15" value="Manage Barangays" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1515" width="200" height="54" as="geometry" /></mxCell>
@@ -180,7 +180,17 @@
         <mxCell id="rl96" value="creates alert" style="endArrow=open;endFill=1;dashed=1;html=1;strokeColor=#000000;fontSize=9;fontStyle=2;" edge="1" parent="1" source="s7" target="b11"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="rl97" value="«extend»: Supervisor+" style="endArrow=open;endFill=1;dashed=1;html=1;strokeColor=#000000;fontSize=9;fontStyle=2;" edge="1" parent="1" source="b11" target="b12"><mxGeometry relative="1" as="geometry" /></mxCell>
         <mxCell id="rl98" value="«extend»: staff + MFA" style="endArrow=open;endFill=1;dashed=1;html=1;strokeColor=#000000;fontSize=9;fontStyle=2;" edge="1" parent="1" source="s1" target="b1"><mxGeometry relative="1" as="geometry" /></mxCell>
-      </root>
+              <mxCell id="b18" value="Print Complaint Report (PDF, logged)" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1815" width="200" height="54" as="geometry" /></mxCell>
+                <mxCell id="b19" value="Print SOS Alert Report (PDF, logged)" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="1915" width="200" height="54" as="geometry" /></mxCell>
+                <mxCell id="b20" value="Print Summary Report (PDF, logged)" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="2015" width="200" height="54" as="geometry" /></mxCell>
+                <mxCell id="b21" value="View Case Print Log" style="ellipse;whiteSpace=wrap;html=1;fontSize=11;" vertex="1" parent="1"><mxGeometry x="1200" y="2115" width="200" height="54" as="geometry" /></mxCell>
+                <mxCell id="asx1" style="endArrow=none;html=1;strokeColor=#000000;opacity=70;" edge="1" parent="1" source="aStaff" target="b18"><mxGeometry relative="1" as="geometry" /></mxCell>
+                <mxCell id="asx2" style="endArrow=none;html=1;strokeColor=#000000;opacity=70;" edge="1" parent="1" source="aSup" target="b19"><mxGeometry relative="1" as="geometry" /></mxCell>
+                <mxCell id="asx3" style="endArrow=none;html=1;strokeColor=#000000;opacity=70;" edge="1" parent="1" source="aSup" target="b20"><mxGeometry relative="1" as="geometry" /></mxCell>
+                <mxCell id="asx4" style="endArrow=none;html=1;strokeColor=#000000;opacity=70;" edge="1" parent="1" source="aSup" target="b21"><mxGeometry relative="1" as="geometry" /></mxCell>
+                <mxCell id="xMaps" value="Google Maps" style="shape=umlActor;whiteSpace=wrap;html=1;perimeter=ellipsePerimeter;verticalLabelPosition=bottom;verticalAlign=top;outlineConnect=0;fontSize=11;" vertex="1" parent="1"><mxGeometry x="60" y="300" width="30" height="60" as="geometry" /></mxCell>
+        <mxCell id="rlx7" value="searches via" style="endArrow=open;endFill=1;dashed=1;html=1;strokeColor=#000000;fontSize=9;fontStyle=2;" edge="1" parent="1" source="p4" target="xMaps"><mxGeometry relative="1" as="geometry" /></mxCell>
+        </root>
     </mxGraphModel>
   </diagram>
 </mxfile>
